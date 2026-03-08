@@ -54,6 +54,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://ounjal.web.app",
   },
+  verification: {
+    google: "pT2HHHagN-fpWgy6salyFyDgjf679FnLU5hb2btFn6s",
+  },
 };
 
 export default function RootLayout({
@@ -64,7 +67,6 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-      <meta name="google-site-verification" content="pT2HHHagN-fpWgy6salyFyDgjf679FnLU5hb2btFn6s"/>
         <link
           rel="stylesheet"
           as="style"
