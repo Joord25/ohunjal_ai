@@ -67,7 +67,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [showWeightEdit, setShowWeightEdit] = useState(false);
 
   const [view, setView] = useState<"active" | "feedback">("active");
-  const [failedReps, setFailedReps] = useState(setInfo.targetReps);
+  const [failedReps, setFailedReps] = useState(Math.max(0, setInfo.targetReps - 1));
   const [easyExtraReps, setEasyExtraReps] = useState(2);
   const [isDoneAnimating, setIsDoneAnimating] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -81,7 +81,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [prevTargetReps, setPrevTargetReps] = useState(setInfo.targetReps);
   if (setInfo.targetReps !== prevTargetReps) {
     setPrevTargetReps(setInfo.targetReps);
-    setFailedReps(setInfo.targetReps);
+    setFailedReps(Math.max(0, setInfo.targetReps - 1));
     setAdjustedReps(setInfo.targetReps);
   }
 
@@ -163,7 +163,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  const isTimerMode = exercise.type === 'cardio' || exercise.type === 'warmup';
+  const isTimerMode = exercise.type === 'cardio' || exercise.type === 'warmup' || exercise.type === 'mobility';
 
   // Determine if it's a distance-based measurement (LSD, km, etc.)
   const isDistanceMode = exercise.name.includes("LSD") || exercise.count.includes("km") || exercise.count.includes("Distance");
@@ -924,15 +924,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         <input
                             type="number"
                             value={failedReps}
-                            onChange={(e) => setFailedReps(Number(e.target.value))}
+                            onChange={(e) => setFailedReps(Math.min(adjustedReps - 1, Math.max(0, Number(e.target.value))))}
                             className="w-12 text-center bg-transparent font-bold text-lg outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-red-600"
                         />
-                        <button
-                            onClick={() => setFailedReps(failedReps + 1)}
-                            className="w-8 h-8 flex items-center justify-center text-red-400 font-bold hover:text-red-600"
-                        >
-                            +
-                        </button>
                     </div>
 
                     <button

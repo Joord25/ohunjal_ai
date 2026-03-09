@@ -146,7 +146,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
 
       // Rest duration: sex & age adjusted
       // ACSM: older adults need longer rest. Hunter (2014): women recover faster.
-      if (currentExercise.type === "warmup") {
+      if (currentExercise.type === "warmup" || currentExercise.type === "mobility") {
         setCurrentSet((prev) => prev + 1);
       } else {
         setIsResting(true);

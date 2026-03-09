@@ -57,7 +57,7 @@ export default function Home() {
 
         // Check subscription status
         firebaseUser.getIdToken().then(token => {
-          fetch("https://us-central1-ounjal.cloudfunctions.net/getSubscription", {
+          fetch("https://us-central1-ohunjal.cloudfunctions.net/getSubscription", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           })
@@ -369,7 +369,7 @@ export default function Home() {
   return (
     <PhoneFrame>
       <div className="h-full w-full relative overflow-hidden">
-        <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-hide pb-[calc(80px+env(safe-area-inset-bottom))]">
+        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${isLoggedIn && view !== "login" && view !== "workout_session" ? "pb-[calc(80px+env(safe-area-inset-bottom))]" : ""}`}>
           {renderContent()}
         </div>
         
@@ -382,7 +382,7 @@ export default function Home() {
                 setShowPaywall(false);
                 // Re-check subscription status
                 user.getIdToken().then(token => {
-                  fetch("https://us-central1-ounjal.cloudfunctions.net/getSubscription", {
+                  fetch("https://us-central1-ohunjal.cloudfunctions.net/getSubscription", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                   })
