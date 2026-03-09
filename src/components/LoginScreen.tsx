@@ -38,7 +38,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-gray-50" />
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 pb-8 pt-2 text-center gap-12">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 pb-2 pt-2 text-center gap-12">
         {/* Logo Area */}
         <div className="flex flex-col items-center gap-6">
           <div className="w-[280px] sm:w-[360px] flex items-center justify-center">

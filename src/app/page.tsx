@@ -369,7 +369,7 @@ export default function Home() {
   return (
     <PhoneFrame>
       <div className="h-full w-full relative overflow-hidden">
-        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${isLoggedIn && view !== "login" && view !== "workout_session" ? "pb-[calc(80px+env(safe-area-inset-bottom))]" : ""}`}>
+        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : "pb-[calc(80px+env(safe-area-inset-bottom))]"}`}>
           {renderContent()}
         </div>
         

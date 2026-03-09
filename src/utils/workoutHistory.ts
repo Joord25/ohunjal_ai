@@ -14,6 +14,17 @@ import { WorkoutHistory } from "@/constants/workout";
 
 const COLLECTION = "workout_history";
 
+/** Remove undefined values recursively (Firestore rejects undefined) */
+function stripUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(stripUndefined) as T;
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (v !== undefined) clean[k] = stripUndefined(v);
+  }
+  return clean as T;
+}
+
 function getUserCollection() {
   const uid = auth.currentUser?.uid;
   if (!uid) return null;
@@ -36,10 +47,10 @@ export async function saveWorkoutHistory(entry: WorkoutHistory): Promise<void> {
 
   try {
     const docRef = doc(col, entry.id);
-    await setDoc(docRef, {
+    await setDoc(docRef, stripUndefined({
       ...entry,
       createdAt: Timestamp.fromDate(new Date(entry.date)),
-    });
+    }));
   } catch (e) {
     console.error("Failed to save workout history to Firestore", e);
   }
@@ -151,10 +162,10 @@ async function migrateToFirestore(history: WorkoutHistory[]): Promise<void> {
   try {
     const batch = history.map((entry) => {
       const docRef = doc(col, entry.id);
-      return setDoc(docRef, {
+      return setDoc(docRef, stripUndefined({
         ...entry,
         createdAt: Timestamp.fromDate(new Date(entry.date)),
-      });
+      }));
     });
     await Promise.all(batch);
     console.log(`Migrated ${history.length} workout history entries to Firestore`);
