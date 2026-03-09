@@ -1,4 +1,4 @@
-import { ExerciseLog, ExerciseStep } from "@/constants/workout";
+import { ExerciseLog, ExerciseStep, WorkoutHistory } from "@/constants/workout";
 
 /**
  * Epley formula: e1RM = weight × (1 + reps / 30)
@@ -66,6 +66,28 @@ function calcLoadScore(totalVolume: number, bodyWeightKg?: number): number {
   return totalVolume;
 }
 
+/** Compound lifts eligible for e1RM / BW Ratio display */
+const COMPOUND_LIFT_KEYWORDS = [
+  // 한국어
+  "스쿼트", "데드리프트", "벤치 프레스", "벤치프레스", "오버헤드 프레스", "오버헤드프레스",
+  "숄더 프레스", "숄더프레스", "밀리터리 프레스", "밀리터리프레스",
+  "바벨 로우", "바벨로우", "펜들레이 로우", "펜들레이로우",
+  "프론트 스쿼트", "프론트스쿼트", "루마니안 데드리프트", "루마니안데드리프트",
+  "레그 프레스", "레그프레스", "힙 쓰러스트", "힙쓰러스트",
+  "인클라인 벤치", "인클라인벤치", "디클라인 벤치", "디클라인벤치",
+  "클린", "스내치", "저크", "클린 앤 프레스",
+  // English
+  "squat", "deadlift", "bench press", "overhead press", "shoulder press",
+  "military press", "barbell row", "pendlay row", "front squat",
+  "romanian deadlift", "leg press", "hip thrust", "incline bench",
+  "decline bench", "clean", "snatch", "jerk", "clean and press",
+];
+
+function isCompoundLift(exerciseName: string): boolean {
+  const lower = exerciseName.toLowerCase();
+  return COMPOUND_LIFT_KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
+}
+
 function isTimerExercise(ex: ExerciseStep): boolean {
   return ex.type === "cardio" || ex.type === "warmup" || ex.type === "mobility";
 }
@@ -94,6 +116,326 @@ function detectSessionCategory(exercises: ExerciseStep[]): SessionCategory {
   if (strength > 0 && cardio > 0) return "mixed";
   // fallback: only warmup+core exercises → treat as mobility/recovery
   return "mobility";
+}
+
+// ============================================================
+// Training Level Estimation (근거: NSCA, Rippetoe & Kilgore 2006)
+// ============================================================
+
+export type TrainingLevel = "beginner" | "intermediate" | "advanced";
+
+/** 3대 운동 키워드 매칭 (e1RM/BW 비율로 레벨 판정) */
+const BIG3_PATTERNS: {
+  category: "squat" | "bench" | "deadlift";
+  keywords: string[];
+}[] = [
+  {
+    category: "squat",
+    keywords: ["스쿼트", "squat", "프론트 스쿼트", "프론트스쿼트", "front squat"],
+  },
+  {
+    category: "bench",
+    keywords: ["벤치 프레스", "벤치프레스", "bench press", "인클라인 벤치", "인클라인벤치", "incline bench"],
+  },
+  {
+    category: "deadlift",
+    keywords: ["데드리프트", "deadlift", "루마니안 데드리프트", "루마니안데드리프트", "romanian deadlift"],
+  },
+];
+
+/** 맨몸 운동 키워드 */
+const BODYWEIGHT_PATTERNS: {
+  category: "pushup" | "pullup";
+  keywords: string[];
+}[] = [
+  { category: "pushup", keywords: ["푸쉬업", "푸시업", "push-up", "pushup", "push up"] },
+  { category: "pullup", keywords: ["풀업", "턱걸이", "pull-up", "pullup", "pull up", "chin-up", "chinup"] },
+];
+
+/**
+ * e1RM/BW 비율 기준 레벨 판정 (남성 기준)
+ * 여성은 x0.6 보정 (NSCA 성별 보정)
+ */
+const LEVEL_THRESHOLDS_MALE: Record<string, { intermediate: number; advanced: number }> = {
+  squat:    { intermediate: 0.75, advanced: 1.25 },
+  bench:    { intermediate: 0.50, advanced: 1.00 },
+  deadlift: { intermediate: 0.75, advanced: 1.50 },
+};
+
+/** 맨몸 운동 렙수 기준 (남성 기준, 여성 상체 x0.5) */
+const BODYWEIGHT_THRESHOLDS_MALE: Record<string, { intermediate: number; advanced: number }> = {
+  pushup: { intermediate: 10, advanced: 25 },
+  pullup: { intermediate: 1, advanced: 8 },
+};
+
+/** 연령 보정 계수 (ACSM 2011, 고령자 메타분석 2024) */
+export function getAgeMultiplier(birthYear?: number): number {
+  if (!birthYear) return 1.0;
+  const age = new Date().getFullYear() - birthYear;
+  if (age < 40) return 1.0;
+  if (age < 50) return 0.9;
+  if (age < 60) return 0.8;
+  if (age < 70) return 0.7;
+  return 0.6;
+}
+
+/** 레벨 판정 결과 + 근거 */
+export interface LevelEstimation {
+  level: TrainingLevel;
+  source: "big3" | "bodyweight" | "default";
+  details: { exercise: string; value: string; level: TrainingLevel }[];
+  decayed?: boolean; // 최근 4주 미활동으로 한 단계 하향 조정됨
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  squat: "스쿼트", bench: "벤치프레스", deadlift: "데드리프트",
+  pushup: "푸쉬업", pullup: "풀업/턱걸이",
+};
+
+/**
+ * 히스토리에서 훈련 레벨을 자동 추정 (판정 근거 포함)
+ * 1순위: 3대 운동 e1RM/BW 비율
+ * 2순위: 맨몸 운동 렙수
+ * 3순위: 기본값 "beginner"
+ */
+export function estimateTrainingLevel(
+  history: WorkoutHistory[],
+  bodyWeightKg?: number,
+  gender?: "male" | "female"
+): TrainingLevel {
+  return estimateTrainingLevelDetailed(history, bodyWeightKg, gender).level;
+}
+
+export function estimateTrainingLevelDetailed(
+  history: WorkoutHistory[],
+  bodyWeightKg?: number,
+  gender?: "male" | "female"
+): LevelEstimation {
+  const genderMult = gender === "female" ? 0.6 : 1.0;
+  const bwGenderMult = gender === "female" ? 0.5 : 1.0; // 여성 상체 맨몸 보정
+
+  // 최근 4주 기준선
+  const recentCutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+
+  // 헬퍼: 3대 운동 e1RM/BW를 기간 필터 적용하여 추출
+  function extractBig3(sessions: WorkoutHistory[]): Record<string, number> {
+    const best: Record<string, number> = {};
+    if (!bodyWeightKg || bodyWeightKg <= 0) return best;
+    for (const h of sessions) {
+      const exercises = h.sessionData?.exercises || [];
+      const logs = h.logs || {};
+      exercises.forEach((ex, idx) => {
+        const exLogs = logs[idx] || [];
+        for (const pattern of BIG3_PATTERNS) {
+          const lower = ex.name.toLowerCase();
+          if (pattern.keywords.some(kw => lower.includes(kw.toLowerCase()))) {
+            for (const log of exLogs) {
+              const weightStr = log.weightUsed || ex.weight;
+              if (weightStr && weightStr !== "Bodyweight") {
+                const weight = parseFloat(weightStr);
+                if (!isNaN(weight) && weight > 0 && log.repsCompleted > 0) {
+                  const e1rm = estimate1RM(weight, log.repsCompleted);
+                  const ratio = e1rm / bodyWeightKg!;
+                  if (!best[pattern.category] || ratio > best[pattern.category]) {
+                    best[pattern.category] = ratio;
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    return best;
+  }
+
+  // 헬퍼: 맨몸 운동 최고 렙수를 기간 필터 적용하여 추출
+  function extractBodyweight(sessions: WorkoutHistory[]): Record<string, number> {
+    const best: Record<string, number> = {};
+    for (const h of sessions) {
+      const exercises = h.sessionData?.exercises || [];
+      const logs = h.logs || {};
+      exercises.forEach((ex, idx) => {
+        const exLogs = logs[idx] || [];
+        for (const pattern of BODYWEIGHT_PATTERNS) {
+          const lower = ex.name.toLowerCase();
+          if (pattern.keywords.some(kw => lower.includes(kw.toLowerCase()))) {
+            for (const log of exLogs) {
+              if (log.repsCompleted > 0) {
+                if (!best[pattern.category] || log.repsCompleted > best[pattern.category]) {
+                  best[pattern.category] = log.repsCompleted;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    return best;
+  }
+
+  // 헬퍼: 카테고리별 레벨 판정
+  function assessBig3Level(ratios: Record<string, number>): { details: LevelEstimation["details"]; level: TrainingLevel } {
+    const details: LevelEstimation["details"] = [];
+    const levels: TrainingLevel[] = Object.keys(ratios).map(cat => {
+      const ratio = ratios[cat];
+      const thresholds = LEVEL_THRESHOLDS_MALE[cat];
+      if (!thresholds) return "beginner" as TrainingLevel;
+      const intThresh = thresholds.intermediate * genderMult;
+      const advThresh = thresholds.advanced * genderMult;
+      const lvl: TrainingLevel = ratio >= advThresh ? "advanced" : ratio >= intThresh ? "intermediate" : "beginner";
+      details.push({ exercise: CATEGORY_LABELS[cat] || cat, value: `e1RM/BW ${ratio.toFixed(2)}x`, level: lvl });
+      return lvl;
+    });
+    const counts = { beginner: 0, intermediate: 0, advanced: 0 };
+    levels.forEach(l => counts[l]++);
+    const level: TrainingLevel =
+      counts.advanced >= counts.intermediate && counts.advanced >= counts.beginner ? "advanced"
+      : counts.intermediate >= counts.beginner ? "intermediate" : "beginner";
+    return { details, level };
+  }
+
+  function assessBWLevel(repsMap: Record<string, number>): { details: LevelEstimation["details"]; level: TrainingLevel } {
+    const details: LevelEstimation["details"] = [];
+    const levels: TrainingLevel[] = Object.keys(repsMap).map(cat => {
+      const reps = repsMap[cat];
+      const thresholds = BODYWEIGHT_THRESHOLDS_MALE[cat];
+      if (!thresholds) return "beginner" as TrainingLevel;
+      const intThresh = thresholds.intermediate * bwGenderMult;
+      const advThresh = thresholds.advanced * bwGenderMult;
+      const lvl: TrainingLevel = reps >= advThresh ? "advanced" : reps >= intThresh ? "intermediate" : "beginner";
+      details.push({ exercise: CATEGORY_LABELS[cat] || cat, value: `${reps}회`, level: lvl });
+      return lvl;
+    });
+    const counts = { beginner: 0, intermediate: 0, advanced: 0 };
+    levels.forEach(l => counts[l]++);
+    const level: TrainingLevel =
+      counts.advanced >= counts.intermediate && counts.advanced >= counts.beginner ? "advanced"
+      : counts.intermediate >= counts.beginner ? "intermediate" : "beginner";
+    return { details, level };
+  }
+
+  // 한 단계 내리기
+  function decayLevel(level: TrainingLevel): TrainingLevel {
+    if (level === "advanced") return "intermediate";
+    if (level === "intermediate") return "beginner";
+    return "beginner";
+  }
+
+  const recentHistory = history.filter(h => new Date(h.date).getTime() > recentCutoff);
+
+  // 1순위: 3대 운동
+  const allBig3 = extractBig3(history);
+  if (Object.keys(allBig3).length > 0) {
+    const allTime = assessBig3Level(allBig3);
+    // 최근 4주 기록으로 유지 확인
+    const recentBig3 = extractBig3(recentHistory);
+    const recentResult = Object.keys(recentBig3).length > 0 ? assessBig3Level(recentBig3) : null;
+
+    let finalLevel = allTime.level;
+    let decayed = false;
+
+    // 최근 4주에 해당 레벨 수준 기록이 없으면 한 단계 하향
+    if (allTime.level !== "beginner") {
+      if (!recentResult || recentResult.level < allTime.level) {
+        finalLevel = decayLevel(allTime.level);
+        decayed = true;
+      }
+    }
+
+    // details는 역대 최고 기록 표시 (유저가 자기 최고를 볼 수 있게)
+    return { level: finalLevel, source: "big3", details: allTime.details, decayed };
+  }
+
+  // 2순위: 맨몸 운동
+  const allBW = extractBodyweight(history);
+  if (Object.keys(allBW).length > 0) {
+    const allTime = assessBWLevel(allBW);
+    const recentBW = extractBodyweight(recentHistory);
+    const recentResult = Object.keys(recentBW).length > 0 ? assessBWLevel(recentBW) : null;
+
+    let finalLevel = allTime.level;
+    let decayed = false;
+
+    if (allTime.level !== "beginner") {
+      if (!recentResult || recentResult.level < allTime.level) {
+        finalLevel = decayLevel(allTime.level);
+        decayed = true;
+      }
+    }
+
+    return { level: finalLevel, source: "bodyweight", details: allTime.details, decayed };
+  }
+
+  return { level: "beginner", source: "default", details: [] };
+}
+
+/**
+ * 레벨+연령 기반 최적 부하 밴드 계산 (세션당 볼륨/체중 기준)
+ *
+ * 옵션 C 하이브리드: ACSM 연령/레벨별 절대 기준 + Israetel MV/MEV/MAV/MRV 개념
+ *
+ * Israetel Volume Landmarks:
+ * - MV  (Maintenance Volume): 현재 근량 유지에 필요한 최소 볼륨
+ * - MEV (Minimum Effective Volume): 성장이 시작되는 최소 볼륨
+ * - MAV (Maximum Adaptive Volume): 최대 적응 효과를 내는 볼륨 상한
+ * - MRV (Maximum Recoverable Volume): 회복 가능한 최대 볼륨 (초과 시 과훈련)
+ *
+ * 세션당 Load Score (볼륨/체중) 기준:
+ * - 초급: MEV 15, MAV 55, MRV 70 (가벼운 무게, 적은 세트)
+ * - 중급: MEV 40, MAV 110, MRV 140 (중간 무게, 보통 세트)
+ * - 상급: MEV 70, MAV 180, MRV 220 (무거운 무게, 많은 세트)
+ *
+ * 근거: ACSM (2009) 점진적 과부하, Israetel RP Strength, NSCA 4th ed.
+ */
+export interface LoadBand {
+  low: number;      // MEV: 성장 최소 볼륨 (이하 = 볼륨 부족)
+  high: number;     // MAV: 성장 최적 상한 (이상 = 고부하)
+  overload: number; // MRV: 회복 가능 한계 (이상 = 과부하)
+  source: "reference" | "hybrid"; // 기준선 출처
+}
+
+export function getOptimalLoadBand(
+  avgLoadScore: number,
+  sessionCount: number,
+  level: TrainingLevel,
+  birthYear?: number
+): LoadBand {
+  const ageMult = getAgeMultiplier(birthYear);
+
+  // ACSM/Israetel 기반 세션당 Load Score(볼륨/체중) 절대 기준
+  // MEV (low): Minimum Effective Volume — 성장이 시작되는 최소치
+  // MAV (high): Maximum Adaptive Volume — 최대 적응 효과 상한
+  // MRV (overload): Maximum Recoverable Volume — 회복 가능 한계
+  const reference = {
+    beginner:     { mev: 15, mav: 55, mrv: 70 },
+    intermediate: { mev: 40, mav: 110, mrv: 140 },
+    advanced:     { mev: 70, mav: 180, mrv: 220 },
+  };
+
+  const ref = reference[level];
+
+  if (sessionCount >= 4 && avgLoadScore > 0) {
+    // 하이브리드: ACSM 기준(70%) + 개인 히스토리(30%) 블렌딩
+    // 히스토리가 쌓일수록 개인 비중 증가 (최대 40%)
+    const personalWeight = Math.min(0.4, sessionCount * 0.04);
+    const refWeight = 1 - personalWeight;
+
+    return {
+      low: (ref.mev * refWeight + avgLoadScore * 0.75 * personalWeight) * ageMult,
+      high: ref.mav * refWeight + avgLoadScore * 1.35 * personalWeight,
+      overload: ref.mrv * refWeight + avgLoadScore * 1.55 * personalWeight,
+      source: "hybrid",
+    };
+  }
+
+  // 히스토리 부족: 순수 ACSM 기준
+  return {
+    low: ref.mev * ageMult,
+    high: ref.mav,
+    overload: ref.mrv,
+    source: "reference",
+  };
 }
 
 export function buildWorkoutMetrics(
@@ -140,9 +482,11 @@ export function buildWorkoutMetrics(
           if (!isNaN(weight) && weight > 0) {
             totalVolume += weight * log.repsCompleted;
 
-            const e1rm = estimate1RM(weight, log.repsCompleted);
-            if (!bestE1RM || e1rm > bestE1RM.value) {
-              bestE1RM = { exerciseName: exercise.name, value: e1rm };
+            if (isCompoundLift(exercise.name)) {
+              const e1rm = estimate1RM(weight, log.repsCompleted);
+              if (!bestE1RM || e1rm > bestE1RM.value) {
+                bestE1RM = { exerciseName: exercise.name, value: e1rm };
+              }
             }
           }
         }

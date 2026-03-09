@@ -25,7 +25,16 @@ body {
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
   overflow: hidden; /* Prevent scrolling outside the frame */
+}
+
+/* Windows font rendering fix */
+@supports (-ms-ime-align: auto) {
+  body {
+    -webkit-font-smoothing: auto;
+  }
 }
 
 /* Animations from PRD */

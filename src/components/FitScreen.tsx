@@ -32,7 +32,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   onSetComplete,
   onBack,
   isResting,
-  restTimer,
+  restTimer: _restTimer,
   onSkipRest,
   isLastExercise,
 }) => {
@@ -70,6 +70,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [failedReps, setFailedReps] = useState(Math.max(0, setInfo.targetReps - 1));
   const [easyExtraReps, setEasyExtraReps] = useState(2);
   const [isDoneAnimating, setIsDoneAnimating] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [localRestSec, setLocalRestSec] = useState(0);
+  const pendingFeedbackRef = useRef<{ feedback: FeedbackType; reps: number } | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [timerCompleted, setTimerCompleted] = useState(false);
   const [showRepsEdit, setShowRepsEdit] = useState(false);
@@ -286,6 +289,24 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     return () => clearInterval(interval);
   }, [repsStopwatchRunning, isTimerMode]);
 
+  // Local rest timer (starts when feedback sheet opens)
+  useEffect(() => {
+    if (view !== "feedback" || localRestSec <= 0) return;
+    const interval = setInterval(() => setLocalRestSec(prev => prev - 1), 1000);
+    return () => clearInterval(interval);
+  }, [view, localRestSec]);
+
+  // Auto-advance when both feedback given AND local timer done
+  useEffect(() => {
+    if (feedbackGiven && localRestSec <= 0 && pendingFeedbackRef.current) {
+      const { feedback, reps } = pendingFeedbackRef.current;
+      pendingFeedbackRef.current = null;
+      onSetComplete(reps, feedback, hasWeight ? selectedWeight : undefined);
+      // Skip parent's rest since we already rested locally
+      setTimeout(() => onSkipRest(), 50);
+    }
+  }, [feedbackGiven, localRestSec]);
+
   const handleDoneClick = () => {
     if (exercise.type !== "strength" && exercise.type !== "core") {
       setIsDoneAnimating(true);
@@ -297,36 +318,32 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     }
     setRepsStopwatchRunning(false);
     setView("feedback");
+    setFeedbackGiven(false);
+    setLocalRestSec(75); // default rest, will be active immediately
+    pendingFeedbackRef.current = null;
   };
 
   const actualWeight = hasWeight ? selectedWeight : undefined;
 
   const submitFeedback = (feedback: FeedbackType, reps: number) => {
-    setIsDoneAnimating(true);
-    setTimeout(() => {
+    pendingFeedbackRef.current = { feedback, reps };
+    setFeedbackGiven(true);
+    // If timer already done, advance immediately
+    if (localRestSec <= 0) {
       onSetComplete(reps, feedback, actualWeight);
-      setIsDoneAnimating(false);
-    }, 500);
+      setTimeout(() => onSkipRest(), 50);
+    }
   };
 
-  // Render Rest View (Full Screen)
-  if (isResting) {
-    return (
-      <div className="flex flex-col h-full bg-[#1B4332] text-white animate-fade-in items-center justify-center relative">
-        <h2 className="text-3xl font-bold mb-8">REST</h2>
-        <div className="text-9xl font-black mb-12 tracking-tighter">
-          {Math.floor(restTimer / 60)}:{(restTimer % 60).toString().padStart(2, "0")}
-        </div>
-        <button
-          onClick={onSkipRest}
-          className="px-8 py-4 bg-emerald-500 rounded-full text-lg font-bold tracking-widest hover:bg-emerald-400 transition-colors"
-        >
-          SKIP REST
-        </button>
-        <p className="absolute bottom-12 text-sm text-emerald-300/50">NEXT: SET {setInfo.current + 1}</p>
-      </div>
-    );
-  }
+  const handleSkipLocalRest = () => {
+    setLocalRestSec(0);
+    if (feedbackGiven && pendingFeedbackRef.current) {
+      const { feedback, reps } = pendingFeedbackRef.current;
+      pendingFeedbackRef.current = null;
+      onSetComplete(reps, feedback, actualWeight);
+      setTimeout(() => onSkipRest(), 50);
+    }
+  };
 
   // Weight Picker View (First set of strength exercises)
   if (hasWeight && !weightConfirmed) {
@@ -352,8 +369,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
           <div className="text-center">
-            <h1 className="text-2xl font-black text-[#1B4332] tracking-tight mb-1">{mainTitle}</h1>
-            {subTitle && <p className="text-sm text-gray-400 font-medium">{subTitle}</p>}
+            <h1 className="text-4xl font-black text-[#1B4332] tracking-tight mb-2">{mainTitle}</h1>
+            {subTitle && <p className="text-lg text-gray-400 font-medium">{subTitle}</p>}
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -831,116 +848,98 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         </div>
       )}
 
-      {/* Feedback Popup Modal (Bottom Sheet Style) */}
+      {/* Feedback + Rest Bottom Sheet */}
       {view === "feedback" && (
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-          {/* Close Area */}
-          <div className="absolute inset-0" onClick={() => setView("active")} />
+          {!feedbackGiven && <div className="absolute inset-0" onClick={() => { setView("active"); setLocalRestSec(0); }} />}
 
-          <div className="bg-white w-full rounded-t-[2.5rem] p-8 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] animate-slide-up flex flex-col gap-6 relative z-10 max-w-md mx-auto">
-             {/* Drag Handle Indicator */}
-             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
+          <div className="w-full rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.2)] animate-slide-up flex flex-col relative z-10 max-w-md mx-auto bg-white p-6 pb-8">
+             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-            <div className="text-center mb-2">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: THEME.textMain }}>
-                FEEDBACK
-              </h2>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {/* Option: EASY */}
-              <div
-                className="w-full p-5 rounded-2xl text-white shadow-lg overflow-hidden bg-[#1B4332]"
-              >
-                <div className="flex items-center justify-between">
-                   <div className="flex flex-col items-start">
-                    <span className="font-bold text-lg">{easyExtraReps}개 더 가능</span>
-                    <span className="text-xs text-emerald-300 font-medium tracking-wide">WEIGHT UP ▲</span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-[#2D6A4F]/50 rounded-lg px-2">
-                        <button
-                            onClick={() => setEasyExtraReps(Math.max(1, easyExtraReps - 1))}
-                            className="w-8 h-8 flex items-center justify-center text-emerald-200 font-bold hover:text-white"
-                        >
-                            -
-                        </button>
-                        <input
-                            type="number"
-                            value={easyExtraReps}
-                            onChange={(e) => setEasyExtraReps(Math.max(1, Number(e.target.value)))}
-                            className="w-12 text-center bg-transparent font-bold text-lg outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-white"
-                        />
-                        <button
-                            onClick={() => setEasyExtraReps(easyExtraReps + 1)}
-                            className="w-8 h-8 flex items-center justify-center text-emerald-200 font-bold hover:text-white"
-                        >
-                            +
-                        </button>
-                    </div>
-
-                    <button
-                        onClick={() => submitFeedback(easyExtraReps > 3 ? "too_easy" : "easy", adjustedReps + easyExtraReps)}
-                        className="bg-emerald-400 text-white w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-sm hover:bg-emerald-300 transition-all"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                    </button>
-                  </div>
+            {/* Rest Timer (always visible) */}
+            <div className="flex items-center justify-between mb-5 bg-[#1B4332] rounded-2xl px-5 py-4">
+              <div className="flex items-center gap-3">
+                <p className="text-xs font-bold text-emerald-300/70 uppercase tracking-[0.15em]">REST</p>
+                <div className="text-3xl font-black text-white tracking-tighter">
+                  {Math.floor(localRestSec / 60)}:{(localRestSec % 60).toString().padStart(2, "0")}
                 </div>
               </div>
-
-              {/* Option: TARGET */}
               <button
-                onClick={() => submitFeedback("target", adjustedReps)}
-                className="w-full p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-100 active:scale-[0.98] transition-all hover:bg-emerald-100"
+                onClick={handleSkipLocalRest}
+                className="px-4 py-2 bg-emerald-500 rounded-full text-xs font-bold text-white tracking-widest hover:bg-emerald-400 active:scale-95 transition-all"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col items-start">
-                    <span className="font-bold text-lg text-[#1B4332]">딱 조아!</span>
-                    <span className="text-xs font-bold tracking-wide text-[#2D6A4F]/70">KEEP GOING -</span>
-                  </div>
-                  <span className="text-2xl">👌</span>
-                </div>
+                {feedbackGiven ? "SKIP" : "SKIP REST"}
               </button>
-
-              {/* Option: FAIL */}
-              <div className="w-full p-5 rounded-2xl bg-red-50 border-2 border-red-100 active:scale-[0.98] transition-all hover:border-red-200 flex items-center justify-between">
-                  <div className="flex flex-col items-start shrink-0">
-                    <span className="font-bold text-lg text-red-500">실패 지점</span>
-                    <span className="text-xs text-red-300 font-bold tracking-wide">FAIL REPS</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center bg-red-100/60 rounded-lg px-2">
-                        <button
-                            onClick={() => setFailedReps(Math.max(0, failedReps - 1))}
-                            className="w-8 h-8 flex items-center justify-center text-red-400 font-bold hover:text-red-600"
-                        >
-                            -
-                        </button>
-                        <input
-                            type="number"
-                            value={failedReps}
-                            onChange={(e) => setFailedReps(Math.min(adjustedReps - 1, Math.max(0, Number(e.target.value))))}
-                            className="w-12 text-center bg-transparent font-bold text-lg outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-red-600"
-                        />
-                    </div>
-
-                    <button
-                        onClick={() => submitFeedback("fail", failedReps)}
-                        className="bg-red-500 text-white w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-sm hover:bg-red-600 transition-all"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                    </button>
-                  </div>
-              </div>
-
             </div>
+
+            {!feedbackGiven ? (
+              /* === FEEDBACK OPTIONS === */
+              <>
+                <div className="text-center mb-3">
+                  <h2 className="text-lg font-black tracking-tight" style={{ color: THEME.textMain }}>
+                    FEEDBACK
+                  </h2>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  {/* Option: EASY */}
+                  <div className="w-full p-4 rounded-2xl text-white shadow-lg overflow-hidden bg-[#1B4332]">
+                    <div className="flex items-center justify-between">
+                       <div className="flex flex-col items-start">
+                        <span className="font-bold text-base">{easyExtraReps}개 더 가능</span>
+                        <span className="text-[10px] text-emerald-300 font-medium tracking-wide">WEIGHT UP ▲</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-[#2D6A4F]/50 rounded-lg px-1.5">
+                            <button onClick={() => setEasyExtraReps(Math.max(1, easyExtraReps - 1))} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">-</button>
+                            <input type="number" value={easyExtraReps} onChange={(e) => setEasyExtraReps(Math.max(1, Number(e.target.value)))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-white" />
+                            <button onClick={() => setEasyExtraReps(easyExtraReps + 1)} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">+</button>
+                        </div>
+                        <button onClick={() => submitFeedback(easyExtraReps > 3 ? "too_easy" : "easy", adjustedReps + easyExtraReps)} className="bg-emerald-400 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option: TARGET */}
+                  <button onClick={() => submitFeedback("target", adjustedReps)} className="w-full p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-100 active:scale-[0.98] transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col items-start">
+                        <span className="font-bold text-base text-[#1B4332]">딱 조아!</span>
+                        <span className="text-[10px] font-bold tracking-wide text-[#2D6A4F]/70">KEEP GOING -</span>
+                      </div>
+                      <span className="text-xl">👌</span>
+                    </div>
+                  </button>
+
+                  {/* Option: FAIL */}
+                  <div className="w-full p-4 rounded-2xl bg-red-50 border-2 border-red-100 flex items-center justify-between">
+                      <div className="flex flex-col items-start shrink-0">
+                        <span className="font-bold text-base text-red-500">실패 지점</span>
+                        <span className="text-[10px] text-red-300 font-bold tracking-wide">FAIL REPS</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-red-100/60 rounded-lg px-1.5">
+                            <button onClick={() => setFailedReps(Math.max(0, failedReps - 1))} className="w-7 h-7 flex items-center justify-center text-red-400 font-bold">-</button>
+                            <input type="number" value={failedReps} onChange={(e) => setFailedReps(Math.min(adjustedReps - 1, Math.max(0, Number(e.target.value))))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-red-600" />
+                            <button onClick={() => setFailedReps(Math.min(adjustedReps - 1, failedReps + 1))} className="w-7 h-7 flex items-center justify-center text-red-400 font-bold">+</button>
+                        </div>
+                        <button onClick={() => submitFeedback("fail", failedReps)} className="bg-red-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        </button>
+                      </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* === Feedback done, waiting for timer === */
+              <div className="flex flex-col items-center py-4">
+                <svg className="w-10 h-10 text-[#2D6A4F] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                <p className="text-sm font-bold text-[#1B4332]">피드백 완료</p>
+                <p className="text-xs text-gray-400 mt-1">타이머 종료 후 다음 세트로 이동해요</p>
+              </div>
+            )}
           </div>
         </div>
       )}

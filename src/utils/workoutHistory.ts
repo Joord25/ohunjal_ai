@@ -7,6 +7,7 @@ import {
   query,
   orderBy,
   updateDoc,
+  deleteDoc,
   where,
   Timestamp,
 } from "firebase/firestore";
@@ -151,6 +152,31 @@ export async function loadRecentHistory(): Promise<WorkoutHistory[]> {
   } catch (e) {
     console.error("Failed to load recent history from Firestore", e);
     return loadRecentFromLocalStorage();
+  }
+}
+
+/** Delete workout history entries from Firestore + localStorage */
+export async function deleteWorkoutHistory(sessionIds: string[]): Promise<void> {
+  // Update localStorage
+  try {
+    const all = loadFromLocalStorage();
+    const idSet = new Set(sessionIds);
+    const remaining = all.filter(h => !idSet.has(h.id));
+    localStorage.setItem("alpha_workout_history", JSON.stringify(remaining));
+  } catch (e) {
+    console.error("Failed to delete from localStorage", e);
+  }
+
+  // Delete from Firestore
+  const col = getUserCollection();
+  if (!col) return;
+
+  try {
+    await Promise.all(
+      sessionIds.map(id => deleteDoc(doc(col, id)))
+    );
+  } catch (e) {
+    console.error("Failed to delete from Firestore", e);
   }
 }
 

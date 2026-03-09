@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 
 import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
-import { loadWorkoutHistory } from "@/utils/workoutHistory";
+import { loadWorkoutHistory, deleteWorkoutHistory } from "@/utils/workoutHistory";
+import { estimateTrainingLevelDetailed } from "@/utils/workoutMetrics";
 import { WorkoutReport } from "./WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 
@@ -19,8 +20,33 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
   const [selectedHistory, setSelectedHistory] = useState<WorkoutHistoryType | null>(null);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, -1 = last month, etc.
   const [weightLog, setWeightLog] = useState<{ date: string; weight: number }[]>([]);
+  const [helpCard, setHelpCard] = useState<string | null>(null);
   const [activeVolumeDot, setActiveVolumeDot] = useState<number | null>(null);
   const [activeWeightDot, setActiveWeightDot] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const isPulling = useRef(false);
+
+  const refreshData = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await loadWorkoutHistory();
+      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setHistory(data);
+      // Reload weight log
+      const savedWeight = localStorage.getItem("alpha_weight_log");
+      if (savedWeight) {
+        try { setWeightLog(JSON.parse(savedWeight)); } catch { /* ignore */ }
+      }
+    } catch (e) {
+      console.error("Failed to refresh", e);
+    } finally {
+      setIsRefreshing(false);
+      setPullDistance(0);
+    }
+  }, []);
 
   useEffect(() => {
     loadWorkoutHistory().then((data) => {
@@ -65,8 +91,11 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
   });
   const monthWorkouts = monthHistory.length;
 
-  const handleSessionClick = (session: WorkoutHistoryType) => {
+  const [reportReturnView, setReportReturnView] = useState<"dashboard" | "list">("list");
+
+  const handleSessionClick = (session: WorkoutHistoryType, returnTo: "dashboard" | "list" = "list") => {
     setSelectedHistory(session);
+    setReportReturnView(returnTo);
     setView("report");
   };
 
@@ -74,7 +103,8 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
     const idSet = new Set(sessionIds);
     const updatedHistory = history.filter(h => !idSet.has(h.id));
     setHistory(updatedHistory);
-    localStorage.setItem("alpha_workout_history", JSON.stringify(updatedHistory));
+    // Sync deletion to Firestore + localStorage
+    deleteWorkoutHistory(sessionIds);
   };
 
   // Load user profile from localStorage for consistent report rendering
@@ -90,8 +120,9 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
         bodyWeightKg={!isNaN(savedBodyWeight) ? savedBodyWeight : undefined}
         gender={savedGender}
         birthYear={!isNaN(savedBirthYear) ? savedBirthYear : undefined}
+        sessionDate={selectedHistory.date}
         initialAnalysis={selectedHistory.analysis}
-        onClose={() => setView("list")}
+        onClose={() => setView(reportReturnView)}
         onAnalysisComplete={(analysis) => {
             // Update history in localStorage and state
             try {
@@ -125,9 +156,9 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
   return (
     <div className="flex flex-col h-full bg-[#FAFBF9] animate-fade-in relative overflow-hidden">
       {/* Fixed Header */}
-      <div className="pt-6 pb-4 px-6 text-center z-10 shrink-0">
+      <div className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-3 sm:pb-4 px-4 sm:px-6 text-center z-10 shrink-0">
         <span className="text-[11px] tracking-[0.4em] uppercase font-serif font-medium text-[#2D6A4F]">Proof</span>
-        <h1 className="text-4xl font-black text-[#1B4332] mt-2">훈련 기록</h1>
+        <h1 className="text-3xl sm:text-4xl font-black text-[#1B4332] mt-2">훈련 기록</h1>
         <div className="mt-4 inline-flex items-center gap-1 bg-[#2D6A4F]/10 rounded-full">
           <button
             onClick={() => setMonthOffset(prev => prev - 1)}
@@ -150,8 +181,44 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 px-6 pb-6 overflow-y-auto scrollbar-hide pt-2">
+      {/* Scrollable Content with pull-to-refresh */}
+      <div
+        ref={scrollRef}
+        className="flex-1 px-4 sm:px-6 pb-24 sm:pb-6 overflow-y-auto scrollbar-hide pt-2"
+        onTouchStart={(e) => {
+          if (scrollRef.current && scrollRef.current.scrollTop === 0) {
+            touchStartY.current = e.touches[0].clientY;
+            isPulling.current = true;
+          }
+        }}
+        onTouchMove={(e) => {
+          if (!isPulling.current) return;
+          const dy = e.touches[0].clientY - touchStartY.current;
+          if (dy > 0 && scrollRef.current && scrollRef.current.scrollTop === 0) {
+            setPullDistance(Math.min(dy * 0.5, 80));
+          } else {
+            isPulling.current = false;
+            setPullDistance(0);
+          }
+        }}
+        onTouchEnd={() => {
+          if (isPulling.current && pullDistance > 50) {
+            refreshData();
+          } else {
+            setPullDistance(0);
+          }
+          isPulling.current = false;
+        }}
+      >
+        {/* Pull-to-refresh indicator */}
+        <div
+          className="flex items-center justify-center overflow-hidden transition-all"
+          style={{ height: pullDistance > 0 || isRefreshing ? Math.max(pullDistance, isRefreshing ? 40 : 0) : 0 }}
+        >
+          <div className={`w-5 h-5 border-2 border-[#2D6A4F] border-t-transparent rounded-full ${isRefreshing ? "animate-spin" : ""}`}
+            style={{ opacity: pullDistance > 20 || isRefreshing ? 1 : pullDistance / 20, transform: `rotate(${pullDistance * 3}deg)` }}
+          />
+        </div>
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
           <div className="grid grid-cols-7 gap-2">
             {['월', '화', '수', '목', '금', '토', '일'].map((day, i) => (
@@ -173,22 +240,36 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
               const dateStr = dateObj.toDateString();
               const dayOfWeek = dateObj.getDay();
 
-              const isCompleted = history.some(h => new Date(h.date).toDateString() === dateStr);
+              const daySessions = history.filter(h => new Date(h.date).toDateString() === dateStr);
+              const isCompleted = daySessions.length > 0;
               const isToday = isCurrentMonth && day === today.getDate();
               const isSunday = dayOfWeek === 0;
-
 
               return (
                 <div
                   key={day}
+                  onClick={() => {
+                    if (daySessions.length === 1) {
+                      handleSessionClick(daySessions[0], "dashboard");
+                    } else if (daySessions.length > 1) {
+                      // Multiple sessions on same day — show the most recent one
+                      const sorted = [...daySessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                      handleSessionClick(sorted[0], "dashboard");
+                    }
+                  }}
                   className={`aspect-square rounded-xl flex items-center justify-center text-xs font-bold relative transition-all ${
                     isCompleted
-                      ? 'bg-[#2D6A4F] text-white shadow-md shadow-[#2D6A4F]/20'
+                      ? 'bg-[#2D6A4F] text-white shadow-md shadow-[#2D6A4F]/20 cursor-pointer active:scale-90'
                       : isSunday ? 'bg-gray-50 text-rose-400'
                       : 'bg-gray-50 text-gray-300'
                   } ${isToday ? 'ring-2 ring-emerald-400 ring-offset-2' : ''}`}
                 >
                   {day}
+                  {daySessions.length > 1 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-[7px] font-black text-[#2D6A4F]">{daySessions.length}</span>
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -209,6 +290,62 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             <h3 className="text-3xl font-black text-white">{monthWorkouts} <span className="text-lg text-emerald-300">세션</span></h3>
             <p className="text-xs text-emerald-400/50 mt-2 font-medium">클릭하여 기록 상세보기</p>
           </button>
+
+          {/* Training Level Estimation Card */}
+          {(() => {
+            const bw = !isNaN(savedBodyWeight) ? savedBodyWeight : undefined;
+            const g = savedGender;
+            const levelEst = estimateTrainingLevelDetailed(history, bw, g);
+            const lvlLabel = levelEst.level === "advanced" ? "상급" : levelEst.level === "intermediate" ? "중급" : "초급";
+            const lvlBadgeCls = levelEst.level === "advanced" ? "bg-amber-50 text-amber-600"
+              : levelEst.level === "intermediate" ? "bg-emerald-50 text-[#2D6A4F]"
+              : "bg-gray-100 text-gray-500";
+
+            return (
+              <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-[#1B4332]">훈련 레벨</h3>
+                    <button onClick={() => setHelpCard("trainingLevel")} className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-[8px] font-black text-gray-400">?</span>
+                    </button>
+                  </div>
+                  <span className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${lvlBadgeCls}`}>{lvlLabel}</span>
+                </div>
+                {levelEst.source === "default" ? (
+                  <p className="text-[12px] text-gray-400 leading-relaxed">아직 3대 운동이나 맨몸 운동 기록이 없어서 기본값(초급)으로 설정돼 있어요. 운동을 기록하면 자동으로 레벨이 조정돼요.</p>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-gray-400 mb-3">
+                      {levelEst.source === "big3"
+                        ? "3대 운동 e1RM/체중 비율 기준"
+                        : "맨몸 운동 최대 렙수 기준"}
+                      {levelEst.decayed && (
+                        <span className="text-amber-500 ml-1">· 최근 4주 기록 부족으로 하향 조정</span>
+                      )}
+                    </p>
+                    <div className="space-y-2">
+                      {levelEst.details.map((d, i) => {
+                        const clr = d.level === "advanced" ? "text-amber-600" : d.level === "intermediate" ? "text-[#2D6A4F]" : "text-gray-400";
+                        const bg = d.level === "advanced" ? "bg-amber-50" : d.level === "intermediate" ? "bg-emerald-50" : "bg-gray-50";
+                        const nm = d.level === "advanced" ? "상급" : d.level === "intermediate" ? "중급" : "초급";
+                        return (
+                          <div key={i} className="flex items-center justify-between">
+                            <span className="text-[12px] font-bold text-gray-700">{d.exercise}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-gray-400 font-medium">{d.value}</span>
+                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${bg} ${clr}`}>{nm}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                <p className="text-[9px] text-gray-300 mt-3 pt-2 border-t border-gray-100">NSCA · Rippetoe & Kilgore (2006) · Epley e1RM</p>
+              </div>
+            );
+          })()}
 
           {/* Volume Trend Graph — grouped by date */}
           {(() => {
@@ -282,13 +419,13 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             const getY = (v: number) => 95 - ((v - minV) / range) * 90;
 
             return (
-              <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
-                <div className="flex justify-between items-baseline mb-4">
-                  <h3 className="text-lg font-black text-[#1B4332]">세션별 볼륨</h3>
+              <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible">
+                <div className="flex justify-between items-baseline mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-black text-[#1B4332]">세션별 볼륨</h3>
                   <span className="text-[10px] font-black text-[#2D6A4F]/60">최근 {recentGroups.length}일</span>
                 </div>
 
-                <div className="flex h-32 gap-2 pt-4 pb-5">
+                <div className="flex h-36 sm:h-32 gap-2 pt-6 pb-5">
                   {/* Y-axis labels */}
                   <div className="flex flex-col justify-between shrink-0 w-10">
                     <span className="text-[8px] text-gray-300 font-bold text-right">{(rawMax / 1000).toFixed(1)}k</span>
@@ -350,27 +487,26 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                       );
                     })}
 
-                    {/* All dots with hover tooltip */}
+                    {/* Dots — tap to show value */}
                     {allDots.map((d, i) => {
                       const yPct = getY(d.volume);
                       const isLast = i === allDots.length - 1;
                       const isActive = activeVolumeDot === i;
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={i}
-                          className="absolute flex flex-col items-center cursor-pointer"
-                          style={{ left: `${d.xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)" }}
-                          onPointerEnter={() => setActiveVolumeDot(i)}
-                          onPointerLeave={() => setActiveVolumeDot(null)}
-                          onTouchStart={() => setActiveVolumeDot(isActive ? null : i)}
+                          className="absolute z-10 flex items-center justify-center"
+                          style={{ left: `${d.xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
+                          onPointerUp={(e) => { e.stopPropagation(); setActiveVolumeDot(isActive ? null : i); }}
                         >
                           {isActive && (
-                            <span className="absolute -top-6 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 animate-fade-in z-20 whitespace-nowrap">
+                            <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
                               {d.volume.toLocaleString()}kg
                             </span>
                           )}
                           <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -398,19 +534,19 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             const diff = latestWeight - firstWeight;
 
             return (
-              <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
+              <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible">
                 <div className="flex justify-between items-baseline mb-1">
                   <p className="text-[10px] font-bold text-[#2D6A4F] uppercase tracking-widest">체중 변화</p>
                   <span className={`text-[10px] font-black ${diff > 0 ? "text-rose-400" : diff < 0 ? "text-sky-400" : "text-gray-400"}`}>
                     {diff > 0 ? "+" : ""}{diff.toFixed(1)}kg
                   </span>
                 </div>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <h3 className="text-3xl font-black text-[#1B4332]">{latestWeight.toFixed(1)}</h3>
-                  <span className="text-lg text-[#2D6A4F]/50">kg</span>
+                <div className="flex items-baseline gap-1 mb-3 sm:mb-4">
+                  <h3 className="text-2xl sm:text-3xl font-black text-[#1B4332]">{latestWeight.toFixed(1)}</h3>
+                  <span className="text-base sm:text-lg text-[#2D6A4F]/50">kg</span>
                 </div>
 
-                <div className="flex h-32 gap-2 pt-4 pb-5">
+                <div className="flex h-36 sm:h-32 gap-2 pt-6 pb-5">
                   {/* Y-axis labels */}
                   <div className="flex flex-col justify-between shrink-0 w-8">
                     <span className="text-[8px] text-gray-300 font-bold text-right">{rawMax.toFixed(1)}</span>
@@ -473,28 +609,27 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                       );
                     })}
 
-                    {/* Dots with hover tooltip */}
+                    {/* Dots — tap to show value */}
                     {weights.map((w, i) => {
                       const xPct = weights.length === 1 ? 50 : (i / (weights.length - 1)) * 100;
                       const yPct = 95 - ((w - minW) / range) * 90;
                       const isLast = i === weights.length - 1;
                       const isActive = activeWeightDot === i;
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={i}
-                          className="absolute flex flex-col items-center cursor-pointer"
-                          style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)" }}
-                          onPointerEnter={() => setActiveWeightDot(i)}
-                          onPointerLeave={() => setActiveWeightDot(null)}
-                          onTouchStart={() => setActiveWeightDot(isActive ? null : i)}
+                          className="absolute z-10 flex items-center justify-center"
+                          style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
+                          onPointerUp={(e) => { e.stopPropagation(); setActiveWeightDot(isActive ? null : i); }}
                         >
                           {isActive && (
-                            <span className="absolute -top-6 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 animate-fade-in z-20 whitespace-nowrap">
+                            <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
                               {w.toFixed(1)}kg
                             </span>
                           )}
                           <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -504,6 +639,99 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
           })()}
         </div>
       </div>
+
+      {/* Help Card Bottom Sheet */}
+      {helpCard && (
+        <div className="absolute inset-0 z-40">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setHelpCard(null)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-2 animate-slide-up shadow-2xl z-50">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            {helpCard === "trainingLevel" && (
+              <>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">훈련 레벨 추정</h3>
+                <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
+                  <p>운동 기록을 분석해서 <span className="font-bold text-[#1B4332]">자동으로 훈련 레벨을 판정</span>해요. 이 레벨에 따라 부하 타임라인의 최적 범위가 조정돼요.</p>
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                    <p className="text-[11px] font-bold text-gray-500">판정 기준</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <span className="text-[10px] font-black text-[#2D6A4F] mt-0.5 shrink-0">1순위</span>
+                        <p className="text-[11px]"><span className="font-bold">3대 운동</span>(스쿼트/벤치프레스/데드리프트)의 추정 최대중량(e1RM)을 체중으로 나눈 비율</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-[10px] font-black text-[#2D6A4F] mt-0.5 shrink-0">2순위</span>
+                        <p className="text-[11px]"><span className="font-bold">맨몸 운동</span>(푸쉬업/풀업)의 최대 반복 횟수</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                    <p className="text-[11px] font-bold text-gray-500">레벨 기준 (남성 · 3대 운동 e1RM/체중)</p>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px]">
+                        <span className="font-medium text-gray-500">종목</span>
+                        <div className="flex gap-3">
+                          <span className="font-bold text-gray-400 w-10 text-center">초급</span>
+                          <span className="font-bold text-[#2D6A4F] w-10 text-center">중급</span>
+                          <span className="font-bold text-amber-600 w-10 text-center">상급</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-gray-600">스쿼트</span>
+                        <div className="flex gap-3">
+                          <span className="text-gray-400 w-10 text-center">~0.75x</span>
+                          <span className="text-[#2D6A4F] w-10 text-center">0.75x</span>
+                          <span className="text-amber-600 w-10 text-center">1.25x+</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-gray-600">벤치프레스</span>
+                        <div className="flex gap-3">
+                          <span className="text-gray-400 w-10 text-center">~0.50x</span>
+                          <span className="text-[#2D6A4F] w-10 text-center">0.50x</span>
+                          <span className="text-amber-600 w-10 text-center">1.00x+</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-gray-600">데드리프트</span>
+                        <div className="flex gap-3">
+                          <span className="text-gray-400 w-10 text-center">~0.75x</span>
+                          <span className="text-[#2D6A4F] w-10 text-center">0.75x</span>
+                          <span className="text-amber-600 w-10 text-center">1.50x+</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                    <p className="text-[11px] font-bold text-gray-500">맨몸 운동 기준 (남성)</p>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-gray-600">푸쉬업</span>
+                        <span className="text-gray-500">~10회 초급 · 10~25회 중급 · 25회+ 상급</span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-gray-600">풀업</span>
+                        <span className="text-gray-500">~1회 초급 · 1~8회 중급 · 8회+ 상급</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-amber-50 rounded-xl p-3">
+                    <p className="text-[11px] font-bold text-amber-700 mb-1">레벨 유지 조건</p>
+                    <p className="text-[10px] text-amber-600">역대 최고 기록으로 레벨이 올라가지만, 최근 4주간 해당 레벨 수준의 운동 기록이 없으면 한 단계 하향돼요. 꾸준히 운동해야 레벨이 유지됩니다.</p>
+                  </div>
+                  <p>여성은 3대 운동 기준 ×0.6, 맨몸 상체 기준 ×0.5가 적용돼요.</p>
+                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: NSCA Essentials of S&C (4th ed.), Rippetoe & Kilgore (2006), Epley e1RM 공식</p>
+                </div>
+              </>
+            )}
+            <button
+              onClick={() => setHelpCard(null)}
+              className="w-full py-3 mt-5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm active:scale-[0.98] transition-all"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

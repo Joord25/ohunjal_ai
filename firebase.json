@@ -9,6 +9,17 @@
     "frameworksBackend": {
       "region": "asia-east1"
     },
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin-allow-popups"
+          }
+        ]
+      }
+    ],
     "rewrites": [
       { "source": "/api/generateWorkout", "function": { "functionId": "generateWorkout", "region": "us-central1" } },
       { "source": "/api/analyzeWorkout", "function": { "functionId": "analyzeWorkout", "region": "us-central1" } }

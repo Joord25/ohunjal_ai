@@ -120,7 +120,7 @@ export const generateWorkout = onRequest(
 
       CRITICAL LANGUAGE & FORMAT RULES:
       1. RESPONSE MUST BE IN KOREAN (한국어).
-      2. Exercise names should be in Korean (e.g., "벤치 프레스", "스쿼트").
+      2. Exercise names MUST be in "한글 (English)" format (e.g., "벤치 프레스 (Bench Press)", "바벨 스쿼트 (Barbell Squat)", "흉추 가동성 드릴 (Thoracic Openers)").
       3. "title" MUST be exactly "마스터 플랜".
       4. "description" MUST follow this format:
          "${dayName}: [Workout Theme] - [Focus Area]"
