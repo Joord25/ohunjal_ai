@@ -58,7 +58,7 @@ export default function Home() {
 
         // Check subscription status
         firebaseUser.getIdToken().then(token => {
-          fetch("/api/getSubscription", {
+          fetch("https://us-central1-ohunjal.cloudfunctions.net/getSubscription", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           })
@@ -438,7 +438,7 @@ export default function Home() {
                 setShowPaywall(false);
                 // Re-check subscription status
                 user.getIdToken().then(token => {
-                  fetch("/api/getSubscription", {
+                  fetch("https://us-central1-ohunjal.cloudfunctions.net/getSubscription", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                   })

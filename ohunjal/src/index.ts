@@ -8,7 +8,7 @@ import type {Response} from "express";
 initializeApp();
 const db = getFirestore();
 
-setGlobalOptions({maxInstances: 10, minInstances: 1});
+setGlobalOptions({maxInstances: 10});
 
 // ─── Helpers ────────────────────────────────────────────────
 

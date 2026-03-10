@@ -239,7 +239,7 @@ const PULL_EXERCISES = {
     "풀업 (Pull-ups)",
     "랫 풀다운 (Lat Pulldown)",
     "친업 (Chin-ups)",
-    "풀업 또는 랫 풀다운 (Pull-ups or Lat Pulldown)",
+    "어시스티드 풀업 (Assisted Pull-ups)",
   ],
   horizontalPull: [
     "바벨 로우 (Barbell Row)",
@@ -315,7 +315,7 @@ const FULL_BODY_EXERCISES = {
   pull: [
     "케이블 로우 (Cable Row)",
     "덤벨 로우 (Dumbbell Row)",
-    "풀업 또는 랫 풀다운 (Pull-ups or Lat Pulldown)",
+    "어시스티드 풀업 (Assisted Pull-ups)",
   ],
   lower: [
     "고블렛 스쿼트 (Goblet Squat)",
@@ -419,6 +419,46 @@ const CORE_EXERCISES = {
     "능동적 발목 펌핑 (Active Ankle Pumps)",
   ],
 };
+
+// --- Exercise Swap: find alternatives from the same muscle-group pool ---
+const ALL_EXERCISE_POOLS: string[][] = [
+  // Push
+  PUSH_EXERCISES.mainCompound,
+  PUSH_EXERCISES.verticalPress,
+  PUSH_EXERCISES.accessory,
+  PUSH_EXERCISES.isoShoulder,
+  PUSH_EXERCISES.isoTricep,
+  // Pull
+  PULL_EXERCISES.verticalPull,
+  PULL_EXERCISES.horizontalPull,
+  PULL_EXERCISES.unilateral,
+  PULL_EXERCISES.rearDelt,
+  PULL_EXERCISES.bicep,
+  // Leg
+  LEG_EXERCISES.squat,
+  LEG_EXERCISES.hinge,
+  LEG_EXERCISES.unilateral,
+  LEG_EXERCISES.isolation,
+  LEG_EXERCISES.calf,
+  // Full Body
+  FULL_BODY_EXERCISES.compound,
+  FULL_BODY_EXERCISES.upper,
+  FULL_BODY_EXERCISES.pull,
+  FULL_BODY_EXERCISES.lower,
+  // Core
+  CORE_EXERCISES.plank,
+  CORE_EXERCISES.dynamic,
+];
+
+export function getAlternativeExercises(exerciseName: string): string[] {
+  const lower = exerciseName.toLowerCase();
+  for (const pool of ALL_EXERCISE_POOLS) {
+    if (pool.some(e => e.toLowerCase() === lower || lower.includes(e.toLowerCase().split(" (")[0]))) {
+      return pool.filter(e => e !== exerciseName && !lower.includes(e.toLowerCase().split(" (")[0]));
+    }
+  }
+  return [];
+}
 
 // --- Additional Cardio Pools (Korean) ---
 const ADDITIONAL_CARDIO = {
@@ -609,6 +649,9 @@ export const generateAdaptiveWorkout = (
     "full_body_circuit", "hiit_cardio", "lower_core",
     "upper_cardio", "full_body_mobility", "mobility", "mobility",
   ];
+  const fatLossSchedule: WorkoutType[] = [
+    "push", "pull", "leg_core", "full_body_circuit", "push", "leg_core", "mobility",
+  ];
   const defaultSchedule: WorkoutType[] = [
     "push", "run_speed", "pull", "run_easy", "leg_core", "run_long", "mobility",
   ];
@@ -620,7 +663,7 @@ export const generateAdaptiveWorkout = (
     workoutType = pool[dayIndex % pool.length];
   } else {
     // Day-based schedule (AI 추천 / Recommended)
-    const schedule = goal === "general_fitness" ? generalFitnessSchedule : defaultSchedule;
+    const schedule = goal === "fat_loss" ? fatLossSchedule : goal === "general_fitness" ? generalFitnessSchedule : defaultSchedule;
     workoutType = schedule[dayIndex];
   }
   const exercises: ExerciseStep[] = [];

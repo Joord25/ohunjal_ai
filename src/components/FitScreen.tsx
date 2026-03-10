@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { THEME } from "@/constants/theme";
-import { ExerciseStep } from "@/constants/workout";
+import { ExerciseStep, getAlternativeExercises } from "@/constants/workout";
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
 
@@ -22,6 +22,7 @@ interface FitScreenProps {
   restTimer: number;
   onSkipRest: () => void;
   isLastExercise: boolean;
+  onSwapExercise?: (newExerciseName: string) => void;
 }
 
 export const FitScreen: React.FC<FitScreenProps> = ({
@@ -35,7 +36,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   restTimer: _restTimer,
   onSkipRest,
   isLastExercise,
+  onSwapExercise,
 }) => {
+  const [showSwapMenu, setShowSwapMenu] = useState(false);
+  const alternatives = onSwapExercise ? getAlternativeExercises(exercise.name) : [];
   const isStrengthType = exercise.type === "strength" || exercise.type === "core";
   const isBodyweight = !exercise.weight || exercise.weight === "Bodyweight"
     || /맨몸|체중|bodyweight/i.test(exercise.weight)
@@ -429,6 +433,38 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         </div>
 
         <div className="pb-12 flex flex-col items-center gap-3 shrink-0 px-6">
+          {alternatives.length > 0 && !showSwapMenu && (
+            <button
+              onClick={() => setShowSwapMenu(true)}
+              className="text-[12px] font-bold text-gray-400 underline underline-offset-2"
+            >
+              운동 변경
+            </button>
+          )}
+          {showSwapMenu && (
+            <div className="w-full bg-gray-50 rounded-2xl p-4 space-y-2 animate-fade-in">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
+                <button onClick={() => setShowSwapMenu(false)} className="text-[10px] text-gray-400 font-bold">닫기</button>
+              </div>
+              {alternatives.map((alt) => {
+                const altParts = alt.split('(');
+                const altName = altParts[0].trim();
+                return (
+                  <button
+                    key={alt}
+                    onClick={() => {
+                      onSwapExercise?.(alt);
+                      setShowSwapMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                  >
+                    {altName}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <button
             onClick={confirmWeight}
             className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"

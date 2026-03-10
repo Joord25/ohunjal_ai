@@ -90,20 +90,28 @@ function isCompoundLift(exerciseName: string): boolean {
   return COMPOUND_LIFT_KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
 }
 
-const BIG4_KEYWORDS = [
-  "스쿼트", "squat",
-  "데드리프트", "deadlift",
-  "벤치 프레스", "벤치프레스", "bench press",
-  "오버헤드 프레스", "오버헤드프레스",
-  "overhead press", "military press",
+// Exact big-4 barbell lifts only
+const BIG4_PATTERNS: { match: string[]; exclude: string[] }[] = [
+  // 바벨 백스쿼트
+  { match: ["바벨 스쿼트", "바벨 백 스쿼트", "바벨 백스쿼트", "barbell squat", "barbell back squat", "back squat"],
+    exclude: ["프론트", "front", "고블릿", "goblet", "덤벨", "dumbbell", "케틀벨", "kettlebell"] },
+  // 바벨 벤치프레스
+  { match: ["바벨 벤치 프레스", "바벨 벤치프레스", "벤치 프레스", "벤치프레스", "barbell bench press", "bench press", "flat bench"],
+    exclude: ["덤벨", "dumbbell", "케틀벨", "kettlebell", "인클라인", "incline", "디클라인", "decline", "플로어", "floor"] },
+  // 바벨 데드리프트 (컨벤셔널)
+  { match: ["바벨 데드리프트", "컨벤셔널 데드리프트", "barbell deadlift", "conventional deadlift", "deadlift"],
+    exclude: ["케틀벨", "kettlebell", "덤벨", "dumbbell", "루마니안", "romanian", "스티프", "stiff", "스모", "sumo", "트랩바", "trap bar", "hex"] },
+  // 바벨 오버헤드프레스
+  { match: ["오버헤드 프레스", "오버헤드프레스", "밀리터리 프레스", "밀리터리프레스", "바벨 숄더 프레스", "overhead press", "military press", "barbell shoulder press"],
+    exclude: ["덤벨", "dumbbell", "케틀벨", "kettlebell"] },
 ];
-
-const BIG4_EXCLUDE = ["덤벨", "dumbbell"];
 
 function isBig4Lift(exerciseName: string): boolean {
   const lower = exerciseName.toLowerCase();
-  if (BIG4_EXCLUDE.some(ex => lower.includes(ex))) return false;
-  return BIG4_KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
+  return BIG4_PATTERNS.some(pattern =>
+    pattern.match.some(m => lower.includes(m.toLowerCase())) &&
+    !pattern.exclude.some(ex => lower.includes(ex.toLowerCase()))
+  );
 }
 
 function isTimerExercise(ex: ExerciseStep): boolean {

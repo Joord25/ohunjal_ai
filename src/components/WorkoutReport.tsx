@@ -354,7 +354,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
                   {fatigueDrop !== null
-                    ? `필요회복시간 ${fatigueDrop > -10 ? "24" : fatigueDrop > -20 ? "36" : fatigueDrop > -30 ? "48" : "72"}시간`
+                    ? `필요회복시간 ${fatigueDrop >= 0 ? "12" : fatigueDrop > -15 ? "24" : fatigueDrop > -25 ? "48" : "72"}시간`
                     : "후반 reps 변화"}
                 </p>
               </div>

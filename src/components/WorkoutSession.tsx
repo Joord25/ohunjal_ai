@@ -197,10 +197,16 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     }
   };
 
+  const handleSwapExercise = (newExerciseName: string) => {
+    const updated = [...exercises];
+    updated[currentExerciseIndex] = { ...updated[currentExerciseIndex], name: newExerciseName };
+    setExercises(updated);
+  };
+
   return (
     <div className="h-full relative">
       <FitScreen
-        key={currentExerciseIndex} // Remounts on new exercise, keeps state on new set
+        key={`${currentExerciseIndex}-${currentExercise.name}`}
         exercise={currentExercise}
         setInfo={{
             current: currentSet,
@@ -216,6 +222,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         restTimer={restTimer}
         onSkipRest={skipRest}
         isLastExercise={currentExerciseIndex === totalExercises - 1 && currentSet === (currentExercise.sets || 1)}
+        onSwapExercise={currentExercise.type === "strength" ? handleSwapExercise : undefined}
       />
     </div>
   );
