@@ -15,6 +15,10 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
   title: "오운잘 AI - AI 맞춤 운동 플래너 | 헬스 루틴 자동 생성",
   description: "AI가 오늘 컨디션에 맞춰 운동 루틴을 자동 생성해주는 헬스 트래커. 근력 운동, 벌크업, 다이어트, 체지방 감량, 홈트레이닝까지. 세트별 무게·횟수 기록, 볼륨 추적, 체중 변화 그래프, AI 운동 분석 리포트 제공. 초보자부터 상급자까지 맞춤형 웨이트 트레이닝 프로그램.",
   keywords: [
