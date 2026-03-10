@@ -644,8 +644,9 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
       {helpCard && (
         <div className="absolute inset-0 z-40">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setHelpCard(null)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-2 animate-slide-up shadow-2xl z-50">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-2 animate-slide-up shadow-2xl z-50 max-h-[85vh] flex flex-col">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5 shrink-0" />
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
             {helpCard === "trainingLevel" && (
               <>
                 <h3 className="text-lg font-black text-[#1B4332] mb-3">훈련 레벨 추정</h3>
@@ -723,9 +724,10 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                 </div>
               </>
             )}
+            </div>
             <button
               onClick={() => setHelpCard(null)}
-              className="w-full py-3 mt-5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm active:scale-[0.98] transition-all"
+              className="w-full py-3 mt-5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm active:scale-[0.98] transition-all shrink-0"
             >
               확인
             </button>

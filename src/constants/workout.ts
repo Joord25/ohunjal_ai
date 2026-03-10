@@ -329,6 +329,7 @@ const CORE_EXERCISES = {
   plank: [
     "플랭크 (Plank)",
     "사이드 플랭크 (Side Plank)",
+    "플랭크 숄더 탭 (Plank Shoulder Tap)",
   ],
   dynamic: [
     "러시안 트위스트 (Russian Twist)",
@@ -336,6 +337,15 @@ const CORE_EXERCISES = {
     "버드 독 (Bird Dog)",
     "행잉 레그 레이즈 (Hanging Leg Raise)",
     "앱 휠 롤아웃 (Ab Wheel Rollout)",
+    "크런치 (Crunch)",
+    "바이시클 크런치 (Bicycle Crunch)",
+    "오블리크 크런치 (Oblique Crunch)",
+    "싱글 레그 레이즈 (Single Leg Raise)",
+    "리버스 크런치 (Reverse Crunch)",
+    "마운틴 클라이머 (Mountain Climber)",
+    "시저 킥 (Scissor Kick)",
+    "토 터치 크런치 (Toe Touch Crunch)",
+    "플러터 킥 (Flutter Kick)",
   ],
   mobility_core: [
     "고양이-소 자세 (Cat-Cow Pose)",
@@ -763,8 +773,16 @@ export const generateAdaptiveWorkout = (
         { type: "strength", name: pick(LEG_EXERCISES.squat), count: formatCountKo(sets, `${lcReps}회`), weight: "중간 무게", sets, reps: lcReps },
         { type: "strength", name: pick(LEG_EXERCISES.hinge), count: formatCountKo(sets, `${lcReps}회`), weight: "중간 무게", sets, reps: lcReps },
         { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, `${lcReps}회 양측`), weight: "맨몸", sets, reps: lcReps },
-        { type: "core", name: pick(CORE_EXERCISES.plank), count: formatCountKo(sets, "30초"), sets, reps: 1 },
-        { type: "core", name: pick(CORE_EXERCISES.dynamic), count: formatCountKo(sets, "30초"), sets, reps: 1 },
+        ...(() => {
+          const pool = [...CORE_EXERCISES.dynamic];
+          const first = pick(pool);
+          const remaining = pool.filter(e => e !== first);
+          const second = pick(remaining);
+          return [
+            { type: "core" as const, name: first, count: formatCountKo(sets, "15회"), sets, reps: 15 },
+            { type: "core" as const, name: second, count: formatCountKo(sets, "12회"), sets, reps: 12 },
+          ];
+        })(),
       );
       break;
     }
@@ -791,12 +809,25 @@ export const generateAdaptiveWorkout = (
 
   // ====== 3. CORE (5 min, 2-3 exercises) ======
   if (workoutType === "push" || workoutType === "pull" || workoutType === "leg_core") {
-    const corePlank = pick(CORE_EXERCISES.plank);
-    const coreDynamic = pick(CORE_EXERCISES.dynamic);
-    exercises.push(
-      { type: "core", name: corePlank, count: formatCountKo(3, "30-45초 유지"), sets: 3, reps: 1 },
-      { type: "core", name: coreDynamic, count: formatCountKo(3, "10회"), sets: 3, reps: 10 },
-    );
+    // 50% chance: 2 dynamic abs exercises, 50% chance: 1 plank + 1 dynamic
+    const doubleDynamic = Math.random() < 0.5;
+    if (doubleDynamic) {
+      const pool = [...CORE_EXERCISES.dynamic];
+      const first = pick(pool);
+      const remaining = pool.filter(e => e !== first);
+      const second = pick(remaining);
+      exercises.push(
+        { type: "core", name: first, count: formatCountKo(3, "15회"), sets: 3, reps: 15 },
+        { type: "core", name: second, count: formatCountKo(3, "12회"), sets: 3, reps: 12 },
+      );
+    } else {
+      const corePlank = pick(CORE_EXERCISES.plank);
+      const coreDynamic = pick(CORE_EXERCISES.dynamic);
+      exercises.push(
+        { type: "core", name: corePlank, count: formatCountKo(3, "30-45초 유지"), sets: 3, reps: 1 },
+        { type: "core", name: coreDynamic, count: formatCountKo(3, "12회"), sets: 3, reps: 12 },
+      );
+    }
   }
 
   // ====== 4. ADDITIONAL CARDIO ======

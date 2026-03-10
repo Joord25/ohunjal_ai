@@ -353,13 +353,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
     return (
       <div className="flex flex-col h-full bg-white animate-fade-in relative">
-        <div className="pt-16 pb-4 px-6 flex items-center justify-between relative shrink-0">
+        <div className="pt-[max(2.5rem,env(safe-area-inset-top))] pb-4 px-6 flex items-center justify-between relative shrink-0">
           <button onClick={onBack} className="p-2 -ml-2 z-50 relative">
             <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-16 pb-4 pointer-events-none z-0">
+          <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-[max(2.5rem,env(safe-area-inset-top))] pb-4 pointer-events-none z-0">
             <span className="text-[10px] font-bold text-gray-400 tracking-[0.2em]">
               EXERCISE {exerciseIndex} / {totalExercises}
             </span>
@@ -431,7 +431,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   return (
     <div className="flex flex-col h-full bg-white animate-fade-in relative">
       {/* Header with Back Button */}
-      <div className="pt-16 pb-8 px-6 flex items-center justify-between relative shrink-0">
+      <div className="pt-[max(2.5rem,env(safe-area-inset-top))] pb-3 sm:pb-8 px-6 flex items-center justify-between relative shrink-0">
         <button
           onClick={onBack}
           className="p-2 -ml-2 z-50 relative"
@@ -452,7 +452,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           </svg>
         </button>
 
-        <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-16 pb-8 pointer-events-none z-0">
+        <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-[max(2.5rem,env(safe-area-inset-top))] pb-3 sm:pb-8 pointer-events-none z-0">
           <span
             className="text-lg tracking-widest uppercase font-black"
             style={{ color: THEME.textMain }}
@@ -478,8 +478,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6 overflow-y-auto">
-        <div className="flex flex-col items-center gap-2">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 text-center gap-3 sm:gap-6 overflow-y-auto">
+        <div className="flex flex-col items-center gap-1 sm:gap-2">
           {(() => {
             const parts = exercise.name.split('(');
             const mainTitle = parts[0].trim();
@@ -488,14 +488,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             return (
               <>
                 <h1
-                  className="text-4xl md:text-5xl font-black leading-tight break-keep"
+                  className={`${titleSizeClass} font-black leading-tight break-keep`}
                   style={{ color: THEME.textMain }}
                 >
                   {mainTitle}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
                   {subTitle && (
-                    <span className="text-lg md:text-xl text-gray-400 font-medium font-english tracking-tight">
+                    <span className="text-base sm:text-lg md:text-xl text-gray-400 font-medium font-english tracking-tight">
                       {subTitle}
                     </span>
                   )}
@@ -522,10 +522,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   </div>
                 ) : (
                   <>
-                    <p className="text-7xl font-black tracking-tighter tabular-nums" style={{ color: THEME.textMain }}>
+                    <p className="text-5xl sm:text-7xl font-black tracking-tighter tabular-nums" style={{ color: THEME.textMain }}>
                       {formatTime(elapsedTime)}
                     </p>
-                    <p className="text-xl font-bold text-[#2D6A4F] mt-2">
+                    <p className="text-lg sm:text-xl font-bold text-[#2D6A4F] mt-2">
                         {isDistanceMode ? `${exercise.count}` : (
                             exercise.count.includes('회') || exercise.count.toLowerCase().includes('reps')
                             ? `Goal: ${exercise.count}`
@@ -542,8 +542,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 onClick={() => setShowRepsEdit(true)}
                 className="flex items-baseline gap-1.5 active:opacity-60 transition-all"
               >
-                <span className="text-6xl font-black" style={{ color: THEME.textMain }}>{adjustedReps}</span>
-                <span className="text-xl font-bold text-gray-400">REPS</span>
+                <span className="text-5xl sm:text-6xl font-black" style={{ color: THEME.textMain }}>{adjustedReps}</span>
+                <span className="text-lg sm:text-xl font-bold text-gray-400">REPS</span>
               </button>
 
               {/* Weight */}
@@ -563,8 +563,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               )}
 
               {/* Stopwatch */}
-              <div className="flex flex-col items-center mt-8 h-24">
-                <span className="text-7xl font-black tabular-nums tracking-tighter" style={{ color: THEME.textMain }}>
+              <div className="flex flex-col items-center mt-4 sm:mt-8 h-20 sm:h-24">
+                <span className="text-5xl sm:text-7xl font-black tabular-nums tracking-tighter" style={{ color: THEME.textMain }}>
                   {formatTime(repsStopwatch)}
                 </span>
                 <button
@@ -582,14 +582,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main CTA */}
-      <div className="pb-12 flex flex-col items-center gap-4 shrink-0 mt-auto">
+      <div className="pb-6 sm:pb-12 flex flex-col items-center gap-4 shrink-0 mt-auto">
         {isTimerMode ? (
-            <div className="flex flex-col items-center gap-4 h-40 justify-center">
+            <div className="flex flex-col items-center gap-4 h-32 sm:h-40 justify-center">
                 {timerCompleted ? (
                   /* Timer completed — show prominent DONE button with pulse */
                   <button
                     onClick={handleDoneClick}
-                    className="w-32 h-32 rounded-full flex flex-col items-center justify-center bg-[#1B4332] text-white shadow-2xl active:scale-95 transition-all animate-pulse"
+                    className="w-24 h-24 sm:w-32 sm:h-32 rounded-full flex flex-col items-center justify-center bg-[#1B4332] text-white shadow-2xl active:scale-95 transition-all animate-pulse"
                   >
                     <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -639,18 +639,18 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 )}
             </div>
         ) : (
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-5 sm:gap-8">
               {/* Play/Pause stopwatch button */}
               <button
                 onClick={() => setRepsStopwatchRunning(!repsStopwatchRunning)}
-                className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-all ${
+                className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-all ${
                   repsStopwatchRunning ? "bg-amber-500 hover:bg-amber-400" : "bg-[#2D6A4F] hover:bg-[#1B4332]"
                 }`}
               >
                 {repsStopwatchRunning ? (
-                  <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 ) : (
-                  <svg className="w-10 h-10 ml-1 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 ml-1 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 )}
               </button>
 
@@ -658,7 +658,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               <button
                 onClick={handleDoneClick}
                 disabled={isDoneAnimating || view === "feedback"}
-                className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 shadow-xl bg-[#2D6A4F] hover:bg-[#1B4332] ${
+                className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 shadow-xl bg-[#2D6A4F] hover:bg-[#1B4332] ${
                   isDoneAnimating ? "scale-105" : ""
                 }`}
               >
