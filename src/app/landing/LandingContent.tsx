@@ -134,58 +134,85 @@ export default function LandingContent() {
   useBodyScroll();
   return (
     <div className="min-h-screen bg-[#FAFBF9] overflow-x-hidden" style={{ overflow: "auto" }}>
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <img src="/favicon.png" alt="오운잘 AI" className="w-8 h-8 rounded-lg" />
-            <span className="font-bold text-[#1B4332] text-lg">오운잘 AI</span>
+      {/* Hero (nav included inside for seamless background) */}
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(to bottom, #0a1a14 0%, #0f2a1f 30%, #143728 60%, #1B4332 85%, #FAFBF9 100%)" }}>
+        {/* Nav */}
+        <nav className="sticky top-0 z-50">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-2">
+              <img src="/favicon.png" alt="오운잘 AI" className="w-8 h-8 rounded-lg" />
+              <span className="font-bold text-white text-lg">오운잘 AI</span>
+            </div>
+            <a
+              href="/"
+              className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors"
+            >
+              시작하기
+            </a>
           </div>
-          <a
-            href="/"
-            className="px-5 py-2.5 bg-[#1B4332] text-white text-sm font-bold rounded-xl hover:bg-[#143728] transition-colors"
-          >
-            시작하기
-          </a>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f0fdf4] via-white to-[#FAFBF9]" />
-        <div className="relative max-w-5xl mx-auto px-6 pt-20 pb-24 text-center">
+        {/* Animated orbs */}
+        <div
+          className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-30 blur-[100px]"
+          style={{ background: "radial-gradient(circle, #059669 0%, transparent 70%)", animation: "hero-orb-1 12s ease-in-out infinite" }}
+        />
+        <div
+          className="absolute top-[30%] right-[-15%] w-[600px] h-[600px] rounded-full opacity-20 blur-[120px]"
+          style={{ background: "radial-gradient(circle, #10b981 0%, transparent 70%)", animation: "hero-orb-2 15s ease-in-out infinite" }}
+        />
+        <div
+          className="absolute bottom-[-10%] left-[30%] w-[400px] h-[400px] rounded-full opacity-25 blur-[80px]"
+          style={{ background: "radial-gradient(circle, #2D6A4F 0%, transparent 70%)", animation: "hero-orb-3 10s ease-in-out infinite" }}
+        />
+
+        {/* Dot grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+
+        {/* Gradient fade to bottom - smoother transition */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#FAFBF9] via-[#FAFBF9]/60 to-transparent" />
+
+        <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-32 text-center">
           <RevealSection>
-            <div className="inline-block px-4 py-1.5 bg-[#d1fae5] text-[#065f46] text-xs font-bold rounded-full mb-6">
+            <div className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-sm text-[#6ee7b7] text-xs font-bold rounded-full mb-6 border border-white/10">
               AI 퍼스널 트레이너
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#1B4332] leading-tight tracking-tight">
-              오늘 컨디션에 맞는<br />
-              <span className="text-[#059669]">AI 맞춤 운동</span>
+            <p className="text-base sm:text-lg text-[#a7f3d0]/80 font-medium mb-4 tracking-wide">
+              컨디션 맞춤 운동, 더 빠르고 정확하게
+            </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+              <span className="text-[#34d399] text-5xl sm:text-6xl lg:text-7xl">오</span>늘의 <span className="text-[#34d399] text-5xl sm:text-6xl lg:text-7xl">운</span>동 <span className="text-[#34d399] text-5xl sm:text-6xl lg:text-7xl">잘</span>하자!<br />
+              <span className="text-gray-300 text-2xl sm:text-3xl lg:text-4xl font-bold mt-2 inline-block">이젠 <span className="text-[#34d399]">AI</span>가 도와드립니다</span>
             </h1>
-            <p className="mt-6 text-lg text-gray-500 max-w-md mx-auto leading-relaxed">
+            <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-md mx-auto leading-relaxed">
               운동하겠단 마음만 가지고 나오세요<br />
               AI가 당신에게 딱 맞는 운동 루틴을 만들어드립니다
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-10">
               <a
                 href="/"
-                className="px-8 py-4 bg-[#1B4332] text-white font-bold text-base rounded-2xl shadow-[0_4px_16px_rgba(27,67,50,0.35)] hover:shadow-[0_8px_28px_rgba(27,67,50,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:shadow-[0_8px_40px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
               >
                 무료로 시작하기
-              </a>
-              <a
-                href="#features"
-                className="px-8 py-4 bg-white text-[#1B4332] font-bold text-base rounded-2xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
-              >
-                더 알아보기
               </a>
             </div>
           </RevealSection>
 
-          {/* Phone Mockup */}
-          <RevealSection className="mt-16">
+          {/* Phone Mockup with glow */}
+          <RevealSection className="mt-20">
             <div className="relative mx-auto w-[280px] sm:w-[320px]">
-              <div className="rounded-[40px] border-[6px] border-[#1B4332] bg-white shadow-2xl overflow-hidden">
+              {/* Glow behind phone */}
+              <div
+                className="absolute -inset-8 rounded-[56px] z-0"
+                style={{ animation: "hero-glow 4s ease-in-out infinite" }}
+              />
+              <div className="relative z-10 rounded-[40px] border-[6px] border-white/20 bg-white shadow-2xl overflow-hidden">
                 <div className="px-4 pt-6 pb-4">
                   <div className="text-left mb-4">
                     <p className="text-[10px] text-gray-400 font-medium">AI 분석 · 단계 1</p>
@@ -381,7 +408,7 @@ export default function LandingContent() {
       </section>
 
       {/* FAQ */}
-      <section className="py-24 sm:py-32 bg-white">
+      <section className="pt-24 sm:pt-32 pb-6 bg-white">
         <div className="max-w-3xl mx-auto px-6">
           <RevealSection>
             <div className="text-center mb-16">
@@ -401,18 +428,18 @@ export default function LandingContent() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-[#1B4332]">
+      <section className="py-24 bg-white">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <RevealSection>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#1B4332] mb-4">
               오늘 운동, AI에게 맡기세요
             </h2>
-            <p className="text-lg text-[#a7f3d0] mb-10">
+            <p className="text-lg text-gray-500 mb-10">
               지금 바로 무료로 시작하세요.
             </p>
             <a
               href="/"
-              className="inline-block px-10 py-4 bg-white text-[#1B4332] font-bold text-base rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+              className="inline-block px-10 py-4 bg-[#1B4332] text-white font-bold text-base rounded-2xl shadow-[0_4px_16px_rgba(27,67,50,0.35)] hover:shadow-[0_8px_28px_rgba(27,67,50,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
             >
               무료로 시작하기
             </a>
@@ -421,7 +448,7 @@ export default function LandingContent() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-[#143728] text-gray-400">
+      <footer className="py-12 text-gray-400" style={{ background: "linear-gradient(to bottom, #ffffff 0%, #1B4332 10%, #143728 40%, #0f2a1f 75%, #0a1a14 100%)" }}>
         <div className="max-w-5xl mx-auto px-6 text-center">
           {/* 로고 */}
           <div className="flex items-center justify-center gap-2 mb-8">
