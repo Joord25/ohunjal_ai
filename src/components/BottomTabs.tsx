@@ -24,8 +24,11 @@ const TABS: Tab[] = [
 export const BottomTabs: React.FC<BottomTabsProps> = ({ active, onChange }) => {
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 flex justify-center pb-[max(20px,calc(env(safe-area-inset-bottom)+4px))] px-4 sm:px-6"
-      style={{ zIndex: 40 }}
+      className="absolute bottom-0 left-0 right-0 flex justify-center px-4 sm:px-6"
+      style={{
+        zIndex: 40,
+        paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)",
+      }}
     >
       <div
         className="flex items-center justify-around w-full max-w-[340px] h-[52px] rounded-full border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"

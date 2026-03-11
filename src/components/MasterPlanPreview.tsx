@@ -264,7 +264,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
       </div>
 
       {/* Bottom CTA */}
-      <div className="absolute bottom-0 left-0 right-0 px-5 pb-2 pt-8 bg-gradient-to-t from-[#FAFBF9] via-[#FAFBF9] to-transparent z-20">
+      <div className="absolute bottom-0 left-0 right-0 px-5 pt-8 bg-gradient-to-t from-[#FAFBF9] via-[#FAFBF9] to-transparent z-20" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)" }}>
         <button
           onClick={onStart}
           className="w-full h-14 rounded-2xl bg-[#1B4332] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-xl shadow-[#1B4332]/20 hover:bg-[#2D6A4F]"

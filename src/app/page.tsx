@@ -18,8 +18,9 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/SubscriptionScreen";
 import { loadUserProfile } from "@/utils/userProfile";
+import { useSafeArea } from "@/hooks/useSafeArea";
 
-type ViewState = 
+type ViewState =
   | "login"
   | "home" 
   | "condition_check"
@@ -28,6 +29,7 @@ type ViewState =
   | "workout_report";
 
 export default function Home() {
+  useSafeArea();
   const [activeTab, setActiveTab] = useState<TabId>("today");
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [isInitialized, setIsInitialized] = useState(false);
@@ -437,7 +439,7 @@ export default function Home() {
   return (
     <PhoneFrame>
       <div className="h-full w-full relative overflow-hidden">
-        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : "pb-[calc(80px+env(safe-area-inset-bottom))]"}`}>
+        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : ""}`} style={view !== "login" ? { paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" } : undefined}>
           {renderContent()}
         </div>
         
