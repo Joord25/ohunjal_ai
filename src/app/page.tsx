@@ -149,8 +149,12 @@ export default function Home() {
   const handleExitConfirm = useCallback(() => {
     setShowExitConfirm(false);
     guardPushedRef.current = false;
-    // Go back twice: once to consume the re-pushed guard, once to actually exit
-    window.history.go(-2);
+    // Try to close the PWA window; fall back to navigating away
+    window.close();
+    // If window.close() is blocked (common in browsers), navigate away
+    setTimeout(() => {
+      window.location.href = "about:blank";
+    }, 100);
   }, []);
 
   const handleExitCancel = useCallback(() => {
@@ -433,7 +437,7 @@ export default function Home() {
   return (
     <PhoneFrame>
       <div className="h-full w-full relative overflow-hidden">
-        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : "pb-[calc(80px+env(safe-area-inset-bottom))]"}`}>
+        <div data-scroll-container className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : "pb-[calc(80px+env(safe-area-inset-bottom))]"}`}>
           {renderContent()}
         </div>
         

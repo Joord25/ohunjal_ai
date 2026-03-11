@@ -6,13 +6,14 @@ const THRESHOLD = 80;
 const MAX_PULL = 120;
 
 export const PullToRefresh: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isStandalone, setIsStandalone] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const startYRef = useRef(0);
   const pullingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Detect standalone mode on client only to avoid SSR hydration mismatch
   useEffect(() => {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -20,25 +21,32 @@ export const PullToRefresh: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsStandalone(standalone);
   }, []);
 
-  const findScrollTop = useCallback(() => {
-    // Check if any scrollable ancestor is scrolled
-    let el = containerRef.current?.firstElementChild as HTMLElement | null;
-    while (el) {
-      if (el.scrollTop > 0) return el.scrollTop;
-      // Also check overflow-auto/scroll children
-      const scrollChild = el.querySelector("[class*='overflow']") as HTMLElement | null;
-      if (scrollChild && scrollChild.scrollTop > 0) return scrollChild.scrollTop;
-      el = el.firstElementChild as HTMLElement | null;
+  // Find the nearest scrollable child element
+  const getScrollableChild = useCallback((): HTMLElement | null => {
+    const container = containerRef.current;
+    if (!container) return null;
+    // The scrollable element is the overflow-y-auto div inside page content
+    const scrollable = container.querySelector("[data-scroll-container]") as HTMLElement | null;
+    if (scrollable) return scrollable;
+    // Fallback: find first child with overflow scroll/auto
+    const children = container.querySelectorAll("*");
+    for (const child of children) {
+      const style = window.getComputedStyle(child);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") {
+        return child as HTMLElement;
+      }
     }
-    return 0;
+    return null;
   }, []);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (isRefreshing) return;
-    if (findScrollTop() > 0) return;
+    // Check if the scrollable content is at the top
+    const scrollEl = getScrollableChild();
+    if (scrollEl && scrollEl.scrollTop > 0) return;
     startYRef.current = e.touches[0].clientY;
     pullingRef.current = true;
-  }, [isRefreshing, findScrollTop]);
+  }, [isRefreshing, getScrollableChild]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!pullingRef.current || isRefreshing) return;
@@ -105,7 +113,7 @@ export const PullToRefresh: React.FC<{ children: React.ReactNode }> = ({ childre
           />
         </div>
       )}
-      {/* Content pushed down when pulling */}
+      {/* Content — only translate when actively pulling */}
       <div
         className="w-full h-full"
         style={{
