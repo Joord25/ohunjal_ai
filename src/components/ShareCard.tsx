@@ -85,7 +85,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
     if (!cardRef.current) return null;
     const html2canvas = (await import("html2canvas-pro")).default;
     const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: null,
+      backgroundColor: "rgba(0,0,0,0)",
       scale: 3,
       useCORS: true,
       logging: false,
@@ -254,7 +254,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
               {/* Illustration */}
               <div style={{ marginBottom: 4 }}>
                 {comparison.image ? (
-                  <img src={comparison.image} alt="" style={{ height: 100, objectFit: "contain" }} />
+                  <img src={comparison.image} alt="" style={{ height: 140, objectFit: "contain" }} />
                 ) : (
                   <p style={{ fontSize: 64, lineHeight: 1 }}>{comparison.emoji}</p>
                 )}
