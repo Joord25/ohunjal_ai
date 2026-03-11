@@ -7,9 +7,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev       # Start dev server (Next.js with Turbopack)
 npm run build     # Production build
-npm run start     # Start production server
 npm run lint      # ESLint check
 ```
+
+**Cloud Functions** (separate npm project in `functions/`):
+```bash
+cd functions && npm run build        # Compile TypeScript
+cd functions && npm run serve        # Build + emulators
+firebase deploy --only functions     # Deploy functions only
+```
+
+There is no test suite configured.
 
 Deployed to Firebase Hosting (project: `ounjal`, region: asia-east1). CI/CD via GitHub Actions auto-deploys on push to main and creates preview deployments on PRs.
 
@@ -19,13 +27,28 @@ Deployed to Firebase Hosting (project: `ounjal`, region: asia-east1). CI/CD via 
 
 ### Core Data Flow
 
-`page.tsx` is the sole orchestrator — it owns all app state and passes props/callbacks down to child components. There is no external state library. View routing is managed via a `ViewState` enum (`login → condition_check → master_plan_preview → workout_session → workout_report → home`). Persistence is localStorage-only (keys prefixed `alpha_`).
+`src/app/page.tsx` is the sole orchestrator — it owns all app state and passes props/callbacks down to child components. There is no external state library. View routing is managed via a `ViewState` type (`login → condition_check → master_plan_preview → workout_session → workout_report → home`). Tab navigation uses `BottomTabs` with a `TabId` type.
+
+### Three Codebases in One Repo
+
+1. **Next.js frontend** (root `package.json`, `src/`) — the main app
+2. **`functions/`** — Firebase Cloud Functions (Node 22, `firebase-functions` v2). Handles server-side Gemini calls, subscription management. Deployed to `us-central1`.
+3. **`ohunjal/`** — Separate Cloud Functions codebase for subscription/payment endpoints (uses `firebase-functions/https`).
+
+Each has its own `package.json`, `tsconfig.json`, and `node_modules`. The root `tsconfig.json` excludes `functions` and `ohunjal`.
+
+### Firebase Rewrites
+
+Frontend calls Cloud Functions via `/api/*` paths, rewritten in `firebase.json`:
+- `/api/generateWorkout`, `/api/analyzeWorkout` → AI functions
+- `/api/getSubscription`, `/api/subscribe`, `/api/cancelSubscription` → subscription functions
 
 ### Key Directories
 
 - **`src/components/`** — All UI components. `FitScreen.tsx` handles exercise execution (timer + reps modes). `WorkoutSession.tsx` manages session flow with adaptive rep logic.
 - **`src/constants/`** — `workout.ts` contains all TypeScript interfaces, exercise pools, and the algorithmic workout generator (`generateAdaptiveWorkout`). `theme.ts` has design tokens.
-- **`src/utils/gemini.ts`** — Gemini API integration: `generateAIWorkoutPlan()` and `analyzeWorkoutSession()`. Falls back to algorithm if AI fails.
+- **`src/utils/`** — `gemini.ts` (AI integration), `workoutHistory.ts` (Firestore persistence), `workoutMetrics.ts` (stats), `userProfile.ts` (profile loading).
+- **`src/lib/firebase.ts`** — Firebase client SDK initialization.
 
 ### Workout Generation
 
@@ -35,6 +58,10 @@ Two paths: (1) AI via Gemini with structured JSON output and Korean-language coa
 
 In `WorkoutSession.tsx`, feedback from each set adjusts subsequent sets: "easy" → +2 reps, "too_easy" → +5 reps, "fail" → clamp to actual reps completed.
 
+### Authentication
+
+Firebase Auth with Google sign-in (real auth, not mocked). The `onAuthStateChanged` listener in `page.tsx` drives login state. Cloud Functions verify tokens via `Authorization: Bearer <idToken>` headers.
+
 ## UI Conventions
 
 - Phone frame container: 384×824px on desktop, full viewport on mobile (`PhoneFrame.tsx`)
@@ -42,10 +69,10 @@ In `WorkoutSession.tsx`, feedback from each set adjusts subsequent sets: "easy" 
 - Theme colors defined in both `src/constants/theme.ts` and CSS variables in `globals.css`
 - All user-facing workout feedback and AI analysis is in **Korean**
 - Path alias: `@/*` maps to `src/*`
+- `Cross-Origin-Opener-Policy: same-origin-allow-popups` header set in both `next.config.ts` and `firebase.json` (required for Google sign-in popup)
 
 ## Important Notes
 
-- Gemini API key is exposed client-side via `NEXT_PUBLIC_GEMINI_API_KEY` in `.env.local`
-- Authentication is currently mocked (no real Firebase Auth)
-- No backend database — all data lives in localStorage
+- Gemini API key: client-side via `NEXT_PUBLIC_GEMINI_API_KEY`, server-side via `GEMINI_API_KEY` (Cloud Functions)
+- Subscription gating: free plan limited to 3 workouts (`FREE_PLAN_LIMIT` in `page.tsx`)
 - The PRD (`prd.md`) contains detailed product requirements and design specs

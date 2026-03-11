@@ -110,14 +110,21 @@ export default function Home() {
   const isLoggedInRef = useRef(isLoggedIn);
   isLoggedInRef.current = isLoggedIn;
 
-  useEffect(() => {
-    if (!isLoggedIn || view === "login") return;
+  const guardPushedRef = useRef(false);
 
-    // Push a dummy state so there's something to "go back" to
-    window.history.pushState({ alphaGuard: true }, "");
+  useEffect(() => {
+    if (!isLoggedIn || view === "login") {
+      guardPushedRef.current = false;
+      return;
+    }
+
+    // Push a single dummy state so there's something to "go back" to
+    if (!guardPushedRef.current) {
+      window.history.pushState({ alphaGuard: true }, "");
+      guardPushedRef.current = true;
+    }
 
     const handlePopState = () => {
-      // If user is in an active flow, show confirmation instead of leaving
       if (isLoggedInRef.current && viewRef.current !== "login") {
         setShowExitConfirm(true);
         // Re-push so back button can be caught again
@@ -141,8 +148,9 @@ export default function Home() {
 
   const handleExitConfirm = useCallback(() => {
     setShowExitConfirm(false);
-    // Actually go back — exit the app / navigate away
-    window.history.back();
+    guardPushedRef.current = false;
+    // Go back twice: once to consume the re-pushed guard, once to actually exit
+    window.history.go(-2);
   }, []);
 
   const handleExitCancel = useCallback(() => {

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { LAYOUT, THEME } from "@/constants/theme";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface PhoneFrameProps {
   children: React.ReactNode;
@@ -21,7 +22,9 @@ export const PhoneFrame: React.FC<PhoneFrameProps> = ({ children }) => {
         <main
           className="relative w-full h-full flex flex-col animate-fade-in overflow-hidden"
         >
-          {children}
+          <PullToRefresh>
+            {children}
+          </PullToRefresh>
         </main>
       </div>
     </div>
