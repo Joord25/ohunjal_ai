@@ -163,3 +163,10 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Landing page partner scroll */
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
