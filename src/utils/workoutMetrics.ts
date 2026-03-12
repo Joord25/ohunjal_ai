@@ -467,7 +467,8 @@ export function getOptimalLoadBand(
 export function buildWorkoutMetrics(
   exercises: ExerciseStep[],
   logs: Record<number, ExerciseLog[]>,
-  bodyWeightKg?: number
+  bodyWeightKg?: number,
+  elapsedSec?: number
 ): WorkoutMetrics {
   let totalVolume = 0;
   let totalSets = 0;
@@ -560,6 +561,11 @@ export function buildWorkoutMetrics(
       return filtered;
     })()
   ) : null;
+
+  // Use actual elapsed time if provided, otherwise fall back to timer-exercise estimate
+  if (elapsedSec !== undefined && elapsedSec > 0) {
+    totalDurationSec = elapsedSec;
+  }
 
   const loadScore = calcLoadScore(totalVolume, bodyWeightKg);
 

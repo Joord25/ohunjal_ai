@@ -43,6 +43,7 @@ export default function Home() {
   const [currentCondition, setCurrentCondition] = useState<UserCondition | null>(null);
   const [currentGoal, setCurrentGoal] = useState<WorkoutGoal | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<Record<number, ExerciseLog[]>>({});
+  const [workoutDurationSec, setWorkoutDurationSec] = useState<number | undefined>(undefined);
   const [selectedSessionType, setSelectedSessionType] = useState<string | undefined>(undefined);
   const [showPaywall, setShowPaywall] = useState(false);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
@@ -314,7 +315,7 @@ export default function Home() {
         return (
           <MasterPlanPreview
             sessionData={currentWorkoutSession!}
-            onStart={() => setView("workout_session")}
+            onStart={(modifiedData) => { setCurrentWorkoutSession(modifiedData); setView("workout_session"); }}
             onBack={() => setView("condition_check")}
             onRegenerate={handleRegenerate}
             initialSessionType={selectedSessionType}
@@ -325,13 +326,14 @@ export default function Home() {
         return (
           <WorkoutSession
             sessionData={currentWorkoutSession!}
-            onComplete={(completedData, logs) => {
+            onComplete={(completedData, logs, timing) => {
               setCurrentWorkoutSession(completedData);
               setWorkoutLogs(logs);
+              setWorkoutDurationSec(timing.totalDurationSec);
               completeRitual("workout");
 
-              // Calculate stats for history
-              const wMetrics = buildWorkoutMetrics(completedData.exercises, logs, currentCondition?.bodyWeightKg);
+              // Calculate stats for history (pass actual elapsed time)
+              const wMetrics = buildWorkoutMetrics(completedData.exercises, logs, currentCondition?.bodyWeightKg, timing.totalDurationSec);
 
               // Save to Workout History
               const historyEntry: WorkoutHistory = {
@@ -343,11 +345,13 @@ export default function Home() {
                   totalVolume: wMetrics.totalVolume,
                   totalSets: wMetrics.totalSets,
                   totalReps: wMetrics.totalReps,
+                  totalDurationSec: wMetrics.totalDurationSec,
                   bestE1RM: wMetrics.bestE1RM?.value,
                   bwRatio: wMetrics.bwRatio ?? undefined,
                   successRate: wMetrics.successRate,
                   loadScore: wMetrics.loadScore,
-                }
+                },
+                exerciseTimings: timing.exerciseTimings,
               };
 
               saveWorkoutHistory(historyEntry);
@@ -366,6 +370,7 @@ export default function Home() {
             bodyWeightKg={currentCondition?.bodyWeightKg}
             gender={currentCondition?.gender}
             birthYear={currentCondition?.birthYear}
+            savedDurationSec={workoutDurationSec}
             onClose={() => {
               setActiveTab("proof");
             }}
@@ -395,6 +400,7 @@ export default function Home() {
                bodyWeightKg={currentCondition?.bodyWeightKg || (() => { const w = parseFloat(localStorage.getItem("alpha_body_weight") || ""); return isNaN(w) ? undefined : w; })()}
                gender={currentCondition?.gender || (localStorage.getItem("alpha_gender") as "male" | "female") || undefined}
                birthYear={currentCondition?.birthYear || (() => { const y = parseInt(localStorage.getItem("alpha_birth_year") || ""); return isNaN(y) ? undefined : y; })()}
+               savedDurationSec={workoutDurationSec}
                onClose={() => {
                  setActiveTab("proof");
                }} 

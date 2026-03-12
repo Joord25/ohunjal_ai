@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
-import { WorkoutSessionData, ExerciseStep, ExerciseLog } from "@/constants/workout";
+import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming } from "@/constants/workout";
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
-  onComplete: (completedSessionData: WorkoutSessionData, logs: Record<number, ExerciseLog[]>) => void;
+  onComplete: (completedSessionData: WorkoutSessionData, logs: Record<number, ExerciseLog[]>, timing: { totalDurationSec: number; exerciseTimings: ExerciseTiming[] }) => void;
   onBack: () => void;
 }
 
@@ -26,10 +26,24 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const [restTimer, setRestTimer] = useState(60);
   const [logs, setLogs] = useState<Record<number, ExerciseLog[]>>({});
 
+  // Timing: session start + per-exercise tracking
+  const sessionStartRef = useRef(Date.now());
+  const exerciseStartRef = useRef(Date.now());
+  const timingsRef = useRef<ExerciseTiming[]>([]);
+  const [elapsedSec, setElapsedSec] = useState(0);
+
   const currentExercise = exercises[currentExerciseIndex];
   const totalExercises = exercises.length;
 
-  // Timer Logic
+  // Session elapsed time (ticks every second)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Rest timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isResting && restTimer > 0) {
@@ -162,17 +176,28 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       }
       
     } else {
-      // Exercise Completed
+      // Exercise Completed — record timing for this exercise
+      const now = Date.now();
+      timingsRef.current.push({
+        exerciseIndex: currentExerciseIndex,
+        startedAt: exerciseStartRef.current,
+        endedAt: now,
+        durationSec: Math.round((now - exerciseStartRef.current) / 1000),
+      });
+
       // Check if there are more exercises
       if (currentExerciseIndex < totalExercises - 1) {
-        // Move to next exercise immediately (or add inter-exercise rest if desired)
+        exerciseStartRef.current = now; // next exercise starts now
         setCurrentIndex((prev) => prev + 1);
         setCurrentSet(1);
-        setIsResting(false); // Reset rest state just in case
+        setIsResting(false);
       } else {
         // All Exercises Completed
-        // Pass the FINAL state of exercises (with adaptations) and logs
-        onComplete({ ...sessionData, exercises }, updatedLogs);
+        const totalDurationSec = Math.round((now - sessionStartRef.current) / 1000);
+        onComplete({ ...sessionData, exercises }, updatedLogs, {
+          totalDurationSec,
+          exerciseTimings: timingsRef.current,
+        });
       }
     }
   };
@@ -203,8 +228,25 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     setExercises(updated);
   };
 
+  const formatElapsed = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
   return (
     <div className="h-full relative">
+      {/* Elapsed time indicator */}
+      <div className="absolute top-[max(0.75rem,env(safe-area-inset-top))] left-4 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-sm">
+        <svg className="w-3 h-3 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+        <span className="text-[11px] font-bold text-white/90 tabular-nums tracking-wide">
+          {formatElapsed(elapsedSec)}
+        </span>
+      </div>
+
       <FitScreen
         key={`${currentExerciseIndex}-${currentExercise.name}`}
         exercise={currentExercise}

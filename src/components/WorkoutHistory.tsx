@@ -210,6 +210,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                    </span>
                    <span className="text-xs font-bold text-gray-400">
                      {session.stats?.totalSets || 0} Sets
+                     {session.stats?.totalDurationSec ? ` · ${session.stats.totalDurationSec >= 3600 ? `${Math.floor(session.stats.totalDurationSec / 3600)}h${Math.floor((session.stats.totalDurationSec % 3600) / 60)}m` : `${Math.floor(session.stats.totalDurationSec / 60)}m`}` : ""}
                    </span>
                 </div>
               </button>

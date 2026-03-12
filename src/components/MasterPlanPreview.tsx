@@ -6,10 +6,25 @@ import { WorkoutSessionData, ExerciseStep } from "@/constants/workout";
 
 interface MasterPlanPreviewProps {
   sessionData: WorkoutSessionData;
-  onStart: () => void;
+  onStart: (modifiedSessionData: WorkoutSessionData) => void;
   onBack: () => void;
   onRegenerate?: (type: string) => void;
   initialSessionType?: string;
+}
+
+/** Rebuild count string from sets/reps to ensure consistency */
+function rebuildCount(ex: ExerciseStep): string {
+  // Timer-based exercises (warmup, cardio, mobility with time-based counts)
+  if (ex.type === "warmup" || ex.type === "cardio" || ex.type === "mobility") {
+    // If count already looks like a time string, keep it
+    if (/분|초|min|sec/i.test(ex.count)) return ex.count;
+  }
+  // Strength/core with sets > 1
+  if (ex.sets > 1) {
+    const repsStr = typeof ex.reps === "number" ? `${ex.reps}회` : String(ex.reps);
+    return `${ex.sets}세트 / ${repsStr}`;
+  }
+  return ex.count;
 }
 
 const PHASE_CONFIG = [
@@ -33,6 +48,16 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   onRegenerate,
   initialSessionType
 }) => {
+  // Local mutable copy of exercises (for set count adjustments)
+  const [localExercises, setLocalExercises] = useState<ExerciseStep[]>(() =>
+    sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex) }))
+  );
+
+  // Sync when sessionData changes (e.g. after regenerate)
+  useEffect(() => {
+    setLocalExercises(sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex) })));
+  }, [sessionData]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [guideExercise, setGuideExercise] = useState<ExerciseStep | null>(null);
   const [showIntroTip, setShowIntroTip] = useState(() => {
@@ -108,14 +133,25 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
     }
   }, [showIntroTip, showTip, showGuideTip]);
 
-  const warmups = sessionData.exercises.filter(e => e.type === "warmup");
-  const main = sessionData.exercises.filter(e => {
+  const adjustSets = (exerciseIndex: number, delta: number) => {
+    setLocalExercises(prev => prev.map((ex, i) => {
+      if (i !== exerciseIndex) return ex;
+      const newSets = Math.max(1, Math.min(10, ex.sets + delta));
+      if (newSets === ex.sets) return ex;
+      const updated = { ...ex, sets: newSets };
+      updated.count = rebuildCount(updated);
+      return updated;
+    }));
+  };
+
+  const warmups = localExercises.filter(e => e.type === "warmup");
+  const main = localExercises.filter(e => {
     if (e.type === "strength") return true;
     if (e.type === "cardio") return !e.name.includes("추가") && !e.name.includes("Additional");
     return false;
   });
-  const core = sessionData.exercises.filter(e => e.type === "core" || e.type === "mobility");
-  const additionalCardio = sessionData.exercises.filter(e => {
+  const core = localExercises.filter(e => e.type === "core" || e.type === "mobility");
+  const additionalCardio = localExercises.filter(e => {
     if (e.type === "cardio") return e.name.includes("추가") || e.name.includes("Additional");
     return false;
   });
@@ -198,7 +234,10 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
 
               {/* Exercise Cards */}
               <div className="flex flex-col gap-2 ml-4">
-                {phase.exercises.map((ex, i) => (
+                {phase.exercises.map((ex, i) => {
+                  const globalIdx = localExercises.indexOf(ex);
+                  const canAdjustSets = (ex.type === "strength" || ex.type === "core") && ex.sets > 0;
+                  return (
                   <div
                     key={i}
                     className={`rounded-2xl p-4 transition-all bg-white border-2 ${
@@ -241,22 +280,47 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                           <span className="text-xs text-[#2D6A4F] font-bold mt-1 block">{ex.weight}</span>
                         )}
                       </div>
-                      <span className={`text-[10px] font-black uppercase tracking-wide ml-2 shrink-0 px-2 py-1 rounded-lg ${
-                        phase.key === "main"
-                          ? "bg-[#1B4332] text-white"
-                          : phase.key === "warmup"
-                          ? "bg-gray-700 text-white"
-                          : phase.key === "core"
-                          ? "bg-gray-600 text-white"
-                          : phase.key === "cardio"
-                          ? "bg-emerald-500 text-white"
-                          : "bg-gray-200 text-gray-600"
-                      }`}>
-                        {ex.count}
-                      </span>
+                      <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                        {canAdjustSets && (
+                          <button
+                            onClick={() => adjustSets(globalIdx, -1)}
+                            disabled={ex.sets <= 1}
+                            className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 active:scale-90 transition-all disabled:opacity-30"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" d="M5 12h14" />
+                            </svg>
+                          </button>
+                        )}
+                        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-lg min-w-[40px] text-center ${
+                          phase.key === "main"
+                            ? "bg-[#1B4332] text-white"
+                            : phase.key === "warmup"
+                            ? "bg-gray-700 text-white"
+                            : phase.key === "core"
+                            ? "bg-gray-600 text-white"
+                            : phase.key === "cardio"
+                            ? "bg-emerald-500 text-white"
+                            : "bg-gray-200 text-gray-600"
+                        }`}>
+                          {ex.count}
+                        </span>
+                        {canAdjustSets && (
+                          <button
+                            onClick={() => adjustSets(globalIdx, 1)}
+                            disabled={ex.sets >= 10}
+                            className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 active:scale-90 transition-all disabled:opacity-30"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -266,7 +330,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
       {/* Bottom CTA */}
       <div className="absolute bottom-0 left-0 right-0 px-5 pt-8 bg-gradient-to-t from-[#FAFBF9] via-[#FAFBF9] to-transparent z-20" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)" }}>
         <button
-          onClick={onStart}
+          onClick={() => onStart({ ...sessionData, exercises: localExercises })}
           className="w-full h-14 rounded-2xl bg-[#1B4332] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-xl shadow-[#1B4332]/20 hover:bg-[#2D6A4F]"
         >
           <span className="text-white font-black text-base tracking-wide">START WORKOUT</span>

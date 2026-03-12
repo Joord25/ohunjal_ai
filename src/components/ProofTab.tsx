@@ -121,6 +121,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
         gender={savedGender}
         birthYear={!isNaN(savedBirthYear) ? savedBirthYear : undefined}
         sessionDate={selectedHistory.date}
+        savedDurationSec={selectedHistory.stats?.totalDurationSec}
         initialAnalysis={selectedHistory.analysis}
         onClose={() => setView(reportReturnView)}
         onAnalysisComplete={(analysis) => {

@@ -17,6 +17,15 @@ export interface ExerciseLog {
   repsCompleted: number;
   weightUsed?: string;
   feedback: "fail" | "target" | "easy" | "too_easy";
+  timestamp?: number; // epoch ms when this set was completed
+}
+
+/** Per-exercise timing recorded by WorkoutSession */
+export interface ExerciseTiming {
+  exerciseIndex: number;
+  startedAt: number;  // epoch ms
+  endedAt: number;    // epoch ms
+  durationSec: number;
 }
 
 export interface WorkoutSessionData {
@@ -39,11 +48,13 @@ export interface WorkoutHistory {
     totalVolume: number;
     totalSets: number;
     totalReps: number;
+    totalDurationSec?: number;
     bestE1RM?: number;
     bwRatio?: number;
     successRate?: number;
     loadScore?: number; // normalized session load
   };
+  exerciseTimings?: ExerciseTiming[];
   analysis?: WorkoutAnalysis;
 }
 

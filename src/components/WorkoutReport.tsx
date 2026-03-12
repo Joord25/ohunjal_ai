@@ -14,6 +14,7 @@ interface WorkoutReportProps {
   gender?: "male" | "female";
   birthYear?: number;
   sessionDate?: string; // ISO date string — for past sessions from history
+  savedDurationSec?: number; // actual elapsed time saved in history
   initialAnalysis?: WorkoutAnalysis | null;
   onClose: () => void;
   onRestart?: () => void;
@@ -47,6 +48,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   gender,
   birthYear,
   sessionDate,
+  savedDurationSec,
   initialAnalysis = null,
   onClose,
   onRestart,
@@ -62,7 +64,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const [activeTimelineDot, setActiveTimelineDot] = useState<number | null>(null);
   const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>(getRecentHistorySync);
 
-  const metrics = buildWorkoutMetrics(sessionData.exercises, logs, bodyWeightKg);
+  const metrics = buildWorkoutMetrics(sessionData.exercises, logs, bodyWeightKg, savedDurationSec);
   const { sessionCategory, totalVolume, bestE1RM, allE1RMs, successRate, fatigueDrop, loadScore, totalDurationSec } = metrics;
   const isStrengthSession = sessionCategory === "strength" || sessionCategory === "mixed";
 
@@ -417,6 +419,22 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             </>
           )}
         </div>
+
+        {/* Total Duration (strength sessions — cardio/mobility already shows above) */}
+        {isStrengthSession && totalDurationSec > 0 && (
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-5 flex items-center justify-between animate-count-up" style={{ animationDelay: "0.8s" }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </div>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">총 운동 시간</p>
+            </div>
+            <p className="text-xl font-black text-[#1B4332]">{formatDuration(totalDurationSec)}</p>
+          </div>
+        )}
 
         {/* === 4-Week Load Graph (strength only) === */}
         {isStrengthSession && graphData.length > 1 && (

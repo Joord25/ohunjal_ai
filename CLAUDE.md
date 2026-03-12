@@ -19,7 +19,7 @@ firebase deploy --only functions     # Deploy functions only
 
 There is no test suite configured.
 
-Deployed to Firebase Hosting (project: `ounjal`, region: asia-east1). CI/CD via GitHub Actions auto-deploys on push to main and creates preview deployments on PRs.
+Deployed to Firebase Hosting (project: `ohunjal`, region: asia-east1). CI/CD via GitHub Actions auto-deploys on push to main and creates preview deployments on PRs.
 
 ## Architecture
 
@@ -32,8 +32,8 @@ Deployed to Firebase Hosting (project: `ounjal`, region: asia-east1). CI/CD via 
 ### Three Codebases in One Repo
 
 1. **Next.js frontend** (root `package.json`, `src/`) — the main app
-2. **`functions/`** — Firebase Cloud Functions (Node 22, `firebase-functions` v2). Handles server-side Gemini calls, subscription management. Deployed to `us-central1`.
-3. **`ohunjal/`** — Separate Cloud Functions codebase for subscription/payment endpoints (uses `firebase-functions/https`).
+2. **`functions/`** — Firebase Cloud Functions (Node 22, `firebase-functions` v6). Handles server-side Gemini calls and subscription management via PortOne billing API. Deployed to `us-central1`. This is the active codebase referenced in `firebase.json`.
+3. **`ohunjal/`** — Separate Cloud Functions codebase (Node 24, `firebase-functions` v7) with subscription/payment endpoints. Has its own manual CORS handling. Not referenced in `firebase.json` rewrites.
 
 Each has its own `package.json`, `tsconfig.json`, and `node_modules`. The root `tsconfig.json` excludes `functions` and `ohunjal`.
 
@@ -45,9 +45,11 @@ Frontend calls Cloud Functions via `/api/*` paths, rewritten in `firebase.json`:
 
 ### Key Directories
 
-- **`src/components/`** — All UI components. `FitScreen.tsx` handles exercise execution (timer + reps modes). `WorkoutSession.tsx` manages session flow with adaptive rep logic.
+- **`src/components/`** — All UI components. `FitScreen.tsx` handles exercise execution (timer + reps modes). `WorkoutSession.tsx` manages session flow with adaptive rep logic. `ShareCard.tsx` uses `html2canvas-pro` for workout screenshot sharing.
 - **`src/constants/`** — `workout.ts` contains all TypeScript interfaces, exercise pools, and the algorithmic workout generator (`generateAdaptiveWorkout`). `theme.ts` has design tokens.
 - **`src/utils/`** — `gemini.ts` (AI integration), `workoutHistory.ts` (Firestore persistence), `workoutMetrics.ts` (stats), `userProfile.ts` (profile loading).
+- **`src/hooks/`** — `useSafeArea.ts` sets `--safe-area-bottom` CSS variable for iOS/Android PWA bottom spacing.
+- **`src/app/`** — Next.js App Router pages: main app (`page.tsx`), `landing/` (marketing page), `terms/`, `privacy/`, `sitemap.ts`.
 - **`src/lib/firebase.ts`** — Firebase client SDK initialization.
 
 ### Workout Generation
