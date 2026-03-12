@@ -335,12 +335,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const actualWeight = hasWeight ? selectedWeight : undefined;
 
   const submitFeedback = (feedback: FeedbackType, reps: number) => {
-    pendingFeedbackRef.current = { feedback, reps };
     setFeedbackGiven(true);
     // If timer already done, advance immediately
     if (localRestSec <= 0) {
+      pendingFeedbackRef.current = null;
       onSetComplete(reps, feedback, actualWeight);
       setTimeout(() => onSkipRest(), 50);
+    } else {
+      pendingFeedbackRef.current = { feedback, reps };
     }
   };
 
@@ -994,6 +996,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <svg className="w-10 h-10 text-[#2D6A4F] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                 <p className="text-sm font-bold text-[#1B4332]">피드백 완료</p>
                 <p className="text-xs text-gray-400 mt-1">타이머 종료 후 다음 세트로 이동해요</p>
+                <button
+                  onClick={() => { setFeedbackGiven(false); pendingFeedbackRef.current = null; }}
+                  className="mt-3 px-4 py-2 rounded-full bg-gray-100 text-xs font-bold text-gray-500 active:scale-95 transition-all"
+                >
+                  다시 선택
+                </button>
               </div>
             )}
           </div>

@@ -60,16 +60,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     setIsResting(false);
     if (currentSet < currentExercise.sets) {
       setCurrentSet((prev) => prev + 1);
-    } else {
-      // Logic for moving to next exercise is handled in handleSetComplete
-      // But if we are resting between exercises (not implemented yet), handle here
-      // Current logic: Rest is only BETWEEN sets of same exercise
-      // If we want rest between exercises, we need to adjust logic.
-      // For now, let's assume Rest is only between sets.
-      // But wait, handleSetComplete triggers rest only if currentSet < totalSets.
-      // So this block (skipRest) only runs when moving to next set.
-      setCurrentSet((prev) => prev + 1);
     }
+    // else: 마지막 세트 후 호출된 경우 — handleSetComplete가 이미 다음 운동으로 이동 처리함
   };
 
   const handleSetComplete = (reps: number, feedback: FeedbackType, weightKg?: number) => {
