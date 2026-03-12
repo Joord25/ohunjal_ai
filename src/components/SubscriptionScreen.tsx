@@ -45,6 +45,52 @@ const FAQ_ITEMS = [
   },
 ];
 
+const REFUND_TEXT = `제1조(목적)
+본 환불정책은 오운잘 AI(이하 '회사')가 제공하는 프리미엄 구독 서비스의 환불 기준 및 절차를 안내합니다.
+
+제2조(환불 가능 조건)
+
+결제일로부터 7일 이내에 환불을 요청한 경우에 한해 환불이 가능합니다.
+
+단, 결제 후 프리미엄 기능(AI 운동 플랜 생성, AI 분석 리포트 등)을 1회라도 사용한 경우에는 환불이 불가합니다.
+
+제3조(환불 불가 사유)
+
+결제일로부터 7일이 경과한 경우
+
+프리미엄 전용 기능을 사용한 이력이 있는 경우
+
+이용약관 위반으로 인한 이용 제한 또는 강제 해지의 경우
+
+제4조(구독 취소와 환불의 구분)
+
+구독 취소: 다음 결제 주기부터 자동 결제가 중단됩니다. 취소 후에도 현재 결제 기간이 만료될 때까지 프리미엄 기능을 계속 이용할 수 있습니다.
+
+환불: 결제 금액을 돌려받는 것으로, 환불 처리 시 프리미엄 기능 이용이 즉시 중단됩니다.
+
+제5조(환불 절차)
+
+서비스 내 고객센터 또는 아래 연락처로 환불을 요청합니다.
+
+회사는 요청 접수 후 환불 가능 여부를 확인합니다 (영업일 기준 1~3일 소요).
+
+환불이 승인되면 원래 결제 수단으로 환불이 진행됩니다 (카카오페이 기준 3~5 영업일 소요).
+
+제6조(부분 환불)
+
+월 구독의 경우 부분 환불(일할 계산)은 제공하지 않습니다.
+
+환불은 전액 환불 또는 환불 불가 중 하나로 처리됩니다.
+
+제7조(환불 문의)
+
+이메일: ounjal.ai.app@gmail.com
+
+전화: 010-4042-2820
+
+부칙
+본 환불정책은 2026년 3월 1일부터 시행합니다.`;
+
 export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, onClose, initialStatus }) => {
   const [status, setStatus] = useState<"loading" | "free" | "active" | "cancelled">(initialStatus || "loading");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -59,6 +105,9 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   const [cancelReasonText, setCancelReasonText] = useState("");
   const [confirmInput, setConfirmInput] = useState("");
   const [confirmCountdown, setConfirmCountdown] = useState(5);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
 
   // Always fetch full subscription details (initialStatus only sets initial UI state)
   useEffect(() => {
@@ -399,6 +448,13 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
 
         {/* Business Registration Footer */}
         <div className="mt-6 pt-6 border-t border-gray-100">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <button type="button" onClick={() => setShowTerms(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">이용약관</button>
+            <span className="text-gray-300">|</span>
+            <button type="button" onClick={() => setShowPrivacy(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">개인정보 처리방침</button>
+            <span className="text-gray-300">|</span>
+            <button type="button" onClick={() => setShowRefund(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">환불정책</button>
+          </div>
           <div className="flex flex-col gap-1 text-[10px] text-gray-500 leading-relaxed text-center">
             <p className="font-medium text-gray-600">주드(Joord) · 대표 임주용</p>
             <p>사업자등록번호 623-36-01460</p>
@@ -410,6 +466,68 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         </div>
       </div>
       </div>
+
+      {/* Terms Modal */}
+      {showTerms && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowTerms(false)}>
+          <div className="bg-white rounded-2xl mx-4 max-w-[360px] w-full max-h-[80vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="text-base font-bold text-[#1B4332]">이용약관</h2>
+              <button type="button" onClick={() => setShowTerms(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">이용약관 전문은 서비스 하단의 이용약관 페이지에서 확인하실 수 있습니다.</pre>
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-xs text-[#2D6A4F] font-bold underline underline-offset-2">전문 보기 →</a>
+            </div>
+            <div className="px-5 py-3 border-t border-gray-100">
+              <button type="button" onClick={() => setShowTerms(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Modal */}
+      {showPrivacy && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPrivacy(false)}>
+          <div className="bg-white rounded-2xl mx-4 max-w-[360px] w-full max-h-[80vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="text-base font-bold text-[#1B4332]">개인정보 처리방침</h2>
+              <button type="button" onClick={() => setShowPrivacy(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">개인정보 처리방침 전문은 서비스 하단의 개인정보 처리방침 페이지에서 확인하실 수 있습니다.</pre>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-xs text-[#2D6A4F] font-bold underline underline-offset-2">전문 보기 →</a>
+            </div>
+            <div className="px-5 py-3 border-t border-gray-100">
+              <button type="button" onClick={() => setShowPrivacy(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Policy Modal */}
+      {showRefund && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowRefund(false)}>
+          <div className="bg-white rounded-2xl mx-4 max-w-[360px] w-full max-h-[80vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="text-base font-bold text-[#1B4332]">환불정책</h2>
+              <button type="button" onClick={() => setShowRefund(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{REFUND_TEXT}</pre>
+            </div>
+            <div className="px-5 py-3 border-t border-gray-100">
+              <button type="button" onClick={() => setShowRefund(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cancel Flow Overlay */}
       {cancelStep > 0 && (
