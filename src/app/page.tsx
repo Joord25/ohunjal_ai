@@ -484,7 +484,7 @@ export default function Home() {
           </div>
         )}
 
-        {isLoggedIn && view !== "login" && (
+        {isLoggedIn && view !== "login" && view !== "workout_session" && (
           <div className="absolute bottom-0 left-0 right-0 z-40">
             <BottomTabs active={activeTab} onChange={handleTabChange} />
           </div>

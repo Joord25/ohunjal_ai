@@ -434,7 +434,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <p className="text-[10px] text-gray-300 font-medium">이전 기록에서 자동 불러옴 · 2.5kg 단위 조절</p>
         </div>
 
-        <div className="pb-12 flex flex-col items-center gap-3 shrink-0 px-6">
+        <div className="flex flex-col items-center gap-3 shrink-0 px-6" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)" }}>
           {alternatives.length > 0 && !showSwapMenu && (
             <button
               onClick={() => setShowSwapMenu(true)}
@@ -632,7 +632,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main CTA */}
-      <div className="pb-6 sm:pb-12 flex flex-col items-center gap-4 shrink-0 mt-auto">
+      <div className="flex flex-col items-center gap-4 shrink-0 mt-auto" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}>
         {isTimerMode ? (
             <div className="flex flex-col items-center gap-4 h-32 sm:h-40 justify-center">
                 {timerCompleted ? (
