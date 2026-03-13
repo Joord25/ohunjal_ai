@@ -217,23 +217,42 @@ const PUSH_EXERCISES = {
   mainCompound: [
     "바벨 벤치 프레스 (Barbell Bench Press)",
     "덤벨 벤치 프레스 (Dumbbell Bench Press)",
+    "벤치 프레스 (Bench Press)",
+    "디클라인 벤치 프레스 (Decline Bench Press)",
+    "헤머 벤치 프레스 (Hammer Bench Press)",
     "웨이티드 푸쉬업 (Weighted Push-ups)",
     "케틀벨 플로어 프레스 (Kettlebell Floor Press)",
+    "체스트 프레스 머신 (Chest Press Machine)",
   ],
   verticalPress: [
     "오버헤드 프레스 (Overhead Press)",
     "덤벨 숄더 프레스 (Seated Dumbbell Press)",
     "아놀드 프레스 (Arnold Press)",
     "케틀벨 오버헤드 프레스 (Kettlebell Overhead Press)",
+    "밀리터리 프레스 (Military Press)",
   ],
   accessory: [
     "인클라인 덤벨 프레스 (Incline Dumbbell Press)",
+    "인클라인 덤벨 플라이 (Incline Dumbbell Fly)",
+    "케이블 크로스오버 (Cable Crossover)",
+    "케이블 체스트 프레스 (Cable Chest Press)",
+    "펙덱 플라이 (Pec Deck Fly)",
+    "중량 딥스 (Weighted Dips)",
     "랜드마인 프레스 (Landmine Press)",
     "딥스 (Dips - Chest Version)",
     "바텀스업 케틀벨 프레스 (Bottoms-Up Kettlebell Press)",
+    "푸쉬업 (Push-ups)",
+    "니 푸쉬업 (Knee Push-ups)",
+    "다이아몬드 푸쉬업 (Diamond Push-ups)",
+    "와이드 푸쉬업 (Wide Push-ups)",
+    "아처 푸쉬업 (Archer Push-ups)",
+    "힌두 푸쉬업 (Hindu Push-ups)",
+    "딥스 (Dips - Bodyweight)",
   ],
   isoShoulder: [
-    "레터럴 레이즈 (Lateral Raises)",
+    "사이드 레터럴 레이즈 (Side Lateral Raises)",
+    "프론트 레터럴 레이즈 (Front Lateral Raises)",
+    "벤트 오버 레터럴 레이즈 (Bent Over Lateral Raises)",
     "케이블 레터럴 레이즈 (Cable Lateral Raises)",
     "업라이트 로우 (Upright Row)",
   ],
@@ -242,6 +261,9 @@ const PUSH_EXERCISES = {
     "스컬크러셔 (Skullcrushers)",
     "오버헤드 트라이셉 익스텐션 (Overhead Tricep Extension)",
     "케이블 푸쉬 다운 (Cable Pushdown)",
+    "케이블 오버헤드 트라이셉 익스텐션 (Cable Overhead Tricep Extension)",
+    "트라이셉스 킥백 (Tricep Kickback)",
+    "트라이셉스 딥스 (Tricep Dips)",
   ],
 };
 
@@ -251,18 +273,28 @@ const PULL_EXERCISES = {
     "랫 풀다운 (Lat Pulldown)",
     "친업 (Chin-ups)",
     "어시스티드 풀업 (Assisted Pull-ups)",
+    "암 풀다운 (Arm Pulldown)",
+    "원 암 랫 풀다운 (One Arm Lat Pulldown)",
   ],
   horizontalPull: [
     "바벨 로우 (Barbell Row)",
     "펜들레이 로우 (Pendlay Row)",
     "티바 로우 (T-Bar Row)",
     "케틀벨 고릴라 로우 (Kettlebell Gorilla Row)",
+    "인버티드 로우 (Inverted Row)",
+    "하이로우 머신 (High Row Machine)",
+    "케틀벨 로우 (Kettlebell Row)",
+    "TRX 로우 (TRX Row)",
   ],
   unilateral: [
     "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)",
     "시티드 케이블 로우 (Seated Cable Row)",
     "체스트 서포티드 로우 (Chest Supported Row)",
     "케이블 로우 (Cable Row)",
+    "원 암 시티드 로우 머신 (One Arm Seated Row Machine)",
+    "백익스텐션 머신 (Back Extension Machine)",
+    "슈퍼맨 동작 (Superman)",
+    "T-W 레이즈 (T-W Raise)",
   ],
   rearDelt: [
     "페이스 풀 (Face Pulls)",
@@ -273,6 +305,13 @@ const PULL_EXERCISES = {
     "바벨 컬 (Barbell Curl)",
     "해머 컬 (Hammer Curl)",
     "인클라인 덤벨 컬 (Incline Dumbbell Curl)",
+    "케이블 바이셉 컬 (Cable Bicep Curl)",
+    "친업 (Chin-ups)",
+    "덤벨 프리쳐 컬 (Dumbbell Preacher Curl)",
+    "덤벨 컬 (Dumbbell Curl)",
+    "프리처 컬 머신 (Preacher Curl Machine)",
+    "오버헤드 케이블 바이셉 컬 (Overhead Cable Bicep Curl)",
+    "TRX 바이셉스 컬 (TRX Biceps Curl)",
   ],
 };
 
@@ -357,6 +396,11 @@ const CORE_EXERCISES = {
     "시저 킥 (Scissor Kick)",
     "토 터치 크런치 (Toe Touch Crunch)",
     "플러터 킥 (Flutter Kick)",
+    "레그 레이즈 (Leg Raise)",
+    "케이블 크런치 (Cable Crunch)",
+    "덤벨 사이드 벤드 (Dumbbell Side Bend)",
+    "브이 업 (V-Up)",
+    "Ab 슬라이드 (Ab Slide)",
   ],
   mobility_core: [
     "고양이-소 자세 (Cat-Cow Pose)",
@@ -432,7 +476,7 @@ const CORE_EXERCISES = {
 };
 
 // --- Exercise Swap: find alternatives from the same muscle-group pool ---
-const ALL_EXERCISE_POOLS: string[][] = [
+export const ALL_EXERCISE_POOLS: string[][] = [
   // Push
   PUSH_EXERCISES.mainCompound,
   PUSH_EXERCISES.verticalPress,
@@ -459,6 +503,20 @@ const ALL_EXERCISE_POOLS: string[][] = [
   // Core
   CORE_EXERCISES.plank,
   CORE_EXERCISES.dynamic,
+];
+
+// Labeled exercise pools for search with muscle group info
+export const LABELED_EXERCISE_POOLS: { label: string; keywords: string[]; exercises: string[] }[] = [
+  { label: "가슴", keywords: ["가슴", "chest", "푸쉬", "push"], exercises: [...PUSH_EXERCISES.mainCompound, ...PUSH_EXERCISES.accessory] },
+  { label: "어깨", keywords: ["어깨", "shoulder", "숄더", "델트"], exercises: [...PUSH_EXERCISES.verticalPress, ...PUSH_EXERCISES.isoShoulder] },
+  { label: "삼두", keywords: ["삼두", "트라이셉", "tricep", "팔뒤"], exercises: [...PUSH_EXERCISES.isoTricep] },
+  { label: "등", keywords: ["등", "back", "풀", "pull", "로우", "row"], exercises: [...PULL_EXERCISES.verticalPull, ...PULL_EXERCISES.horizontalPull, ...PULL_EXERCISES.unilateral] },
+  { label: "후면 어깨", keywords: ["후면", "rear", "리어"], exercises: [...PULL_EXERCISES.rearDelt] },
+  { label: "이두", keywords: ["이두", "바이셉", "bicep", "팔앞"], exercises: [...PULL_EXERCISES.bicep] },
+  { label: "하체", keywords: ["하체", "다리", "leg", "스쿼트", "squat"], exercises: [...LEG_EXERCISES.squat, ...LEG_EXERCISES.hinge, ...LEG_EXERCISES.unilateral, ...LEG_EXERCISES.isolation] },
+  { label: "종아리", keywords: ["종아리", "calf", "카프"], exercises: [...LEG_EXERCISES.calf] },
+  { label: "전신", keywords: ["전신", "full", "풀바디", "컴파운드"], exercises: [...FULL_BODY_EXERCISES.compound, ...FULL_BODY_EXERCISES.upper, ...FULL_BODY_EXERCISES.pull, ...FULL_BODY_EXERCISES.lower] },
+  { label: "코어", keywords: ["코어", "core", "복근", "abs", "플랭크"], exercises: [...CORE_EXERCISES.plank, ...CORE_EXERCISES.dynamic] },
 ];
 
 export function getAlternativeExercises(exerciseName: string): string[] {

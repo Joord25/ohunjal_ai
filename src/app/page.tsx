@@ -59,16 +59,20 @@ export default function Home() {
       if (firebaseUser) {
         setIsLoggedIn(true);
 
-        // Check subscription status
-        firebaseUser.getIdToken().then(token => {
-          fetch("/api/getSubscription", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          })
-            .then(res => res.ok ? res.json() : { status: "free" })
-            .then(data => setSubStatus(data.status || "free"))
-            .catch(() => setSubStatus("free"));
-        }).catch(() => setSubStatus("free"));
+        // Check subscription status (bypass in dev)
+        if (process.env.NODE_ENV === "development") {
+          setSubStatus("active");
+        } else {
+          firebaseUser.getIdToken().then(token => {
+            fetch("/api/getSubscription", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            })
+              .then(res => res.ok ? res.json() : { status: "free" })
+              .then(data => setSubStatus(data.status || "free"))
+              .catch(() => setSubStatus("free"));
+          }).catch(() => setSubStatus("free"));
+        }
 
         // Load user profile from Firestore → localStorage
         loadUserProfile().catch((e) => console.error("Failed to load profile", e));

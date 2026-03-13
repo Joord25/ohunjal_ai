@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
-import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming } from "@/constants/workout";
+import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
@@ -25,6 +25,11 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const [isResting, setIsResting] = useState(false);
   const [restTimer, setRestTimer] = useState(60);
   const [logs, setLogs] = useState<Record<number, ExerciseLog[]>>({});
+  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [addSearch, setAddSearch] = useState("");
+  const [pendingExercise, setPendingExercise] = useState<string | null>(null);
+  const [addSets, setAddSets] = useState(3);
+  const [addReps, setAddReps] = useState(12);
 
   // Timing: session start + per-exercise tracking
   const sessionStartRef = useRef(Date.now());
@@ -184,12 +189,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         setCurrentSet(1);
         setIsResting(false);
       } else {
-        // All Exercises Completed
-        const totalDurationSec = Math.round((now - sessionStartRef.current) / 1000);
-        onComplete({ ...sessionData, exercises }, updatedLogs, {
-          totalDurationSec,
-          exerciseTimings: timingsRef.current,
-        });
+        // All Exercises Completed — show add exercise prompt
+        setShowAddExercise(true);
       }
     }
   };
@@ -214,6 +215,41 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     }
   };
 
+  const handleFinishWorkout = () => {
+    const now = Date.now();
+    const totalDurationSec = Math.round((now - sessionStartRef.current) / 1000);
+    onComplete({ ...sessionData, exercises }, logs, {
+      totalDurationSec,
+      exerciseTimings: timingsRef.current,
+    });
+  };
+
+  const handleSelectExercise = (exerciseName: string) => {
+    setPendingExercise(exerciseName);
+    setAddSets(3);
+    setAddReps(12);
+  };
+
+  const handleConfirmAddExercise = () => {
+    if (!pendingExercise) return;
+    const newExercise: ExerciseStep = {
+      type: "strength",
+      name: pendingExercise,
+      count: `${addSets}세트 / ${addReps}회`,
+      sets: addSets,
+      reps: addReps,
+      weight: "적당한 무게",
+    };
+    setExercises(prev => [...prev, newExercise]);
+    setCurrentIndex(exercises.length);
+    setCurrentSet(1);
+    setIsResting(false);
+    setShowAddExercise(false);
+    setPendingExercise(null);
+    setAddSearch("");
+    exerciseStartRef.current = Date.now();
+  };
+
   const handleSwapExercise = (newExerciseName: string) => {
     const updated = [...exercises];
     updated[currentExerciseIndex] = { ...updated[currentExerciseIndex], name: newExerciseName };
@@ -225,6 +261,149 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     const s = sec % 60;
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
+
+  if (showAddExercise) {
+    const q = addSearch.replace(/\s/g, "").toLowerCase();
+    const isSearching = q.length > 0;
+
+    return (
+      <div className="h-full flex flex-col bg-white animate-fade-in">
+        <div className="pt-[max(2.5rem,env(safe-area-inset-top))] pb-4 px-6 shrink-0">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/10 w-fit mb-6">
+            <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            <span className="text-[11px] font-bold text-gray-600 tabular-nums tracking-wide">
+              {formatElapsed(elapsedSec)}
+            </span>
+          </div>
+          <h1 className="text-3xl font-black text-[#1B4332] tracking-tight mb-1">오늘 운동 끝!</h1>
+          <p className="text-sm text-gray-400 font-medium">추가로 더 하고 싶은 운동이 있나요?</p>
+        </div>
+
+        {pendingExercise ? (
+          /* Setup screen for selected exercise */
+          <div className="flex-1 flex flex-col px-6">
+            <div className="flex-1 flex flex-col items-center justify-center gap-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-black text-[#1B4332]">{pendingExercise.split('(')[0].trim()}</h2>
+                {pendingExercise.includes('(') && (
+                  <p className="text-sm text-gray-400 mt-1">{pendingExercise.split('(')[1]?.replace(')', '').trim()}</p>
+                )}
+              </div>
+
+              {/* Sets */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">세트</p>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setAddSets(Math.max(1, addSets - 1))}
+                    className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg active:scale-95"
+                  >-</button>
+                  <span className="text-4xl font-black text-[#1B4332] w-12 text-center">{addSets}</span>
+                  <button
+                    onClick={() => setAddSets(addSets + 1)}
+                    className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg active:scale-95"
+                  >+</button>
+                </div>
+              </div>
+
+              {/* Reps */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">횟수</p>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setAddReps(Math.max(1, addReps - 1))}
+                    className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg active:scale-95"
+                  >-</button>
+                  <span className="text-4xl font-black text-[#1B4332] w-12 text-center">{addReps}</span>
+                  <button
+                    onClick={() => setAddReps(addReps + 1)}
+                    className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg active:scale-95"
+                  >+</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex flex-col gap-2 pb-6">
+              <button
+                onClick={handleConfirmAddExercise}
+                className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
+              >
+                운동 시작
+              </button>
+              <button
+                onClick={() => setPendingExercise(null)}
+                className="w-full py-3 rounded-xl text-gray-400 font-bold text-sm active:scale-[0.98] transition-all"
+              >
+                다른 운동 선택
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Exercise search list */
+          <>
+            <div className="flex-1 overflow-y-auto px-6 pb-4">
+              <input
+                type="text"
+                value={addSearch}
+                onChange={(e) => setAddSearch(e.target.value)}
+                placeholder="운동 또는 부위 검색 (예: 등, 벤치프레스)"
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-3 sticky top-0 z-10"
+              />
+              {isSearching ? (
+                LABELED_EXERCISE_POOLS
+                  .map((group) => {
+                    const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
+                    const matched = group.exercises.filter((e: string) =>
+                      keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q)
+                    );
+                    if (matched.length === 0) return null;
+                    return (
+                      <div key={group.label} className="mb-3">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1.5">{group.label}</p>
+                        {matched.map((ex: string) => (
+                          <button
+                            key={ex}
+                            onClick={() => handleSelectExercise(ex)}
+                            className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all mb-1.5"
+                          >
+                            {ex.split('(')[0].trim()}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })
+                  .filter(Boolean)
+              ) : (
+                LABELED_EXERCISE_POOLS.map((group) => (
+                  <div key={group.label} className="mb-3">
+                    <button
+                      onClick={() => setAddSearch(group.keywords[0])}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                    >
+                      {group.label}
+                      <span className="text-[11px] text-gray-400 ml-2">{group.exercises.length}개 운동</span>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="shrink-0 px-6" style={{ paddingTop: "16px", paddingBottom: "8px" }}>
+              <button
+                onClick={handleFinishWorkout}
+                className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
+              >
+                운동 종료
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="h-full relative">

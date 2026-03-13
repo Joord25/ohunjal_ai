@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { THEME } from "@/constants/theme";
-import { ExerciseStep, getAlternativeExercises } from "@/constants/workout";
+import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
 
@@ -39,6 +39,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   onSwapExercise,
 }) => {
   const [showSwapMenu, setShowSwapMenu] = useState(false);
+  const [swapSearch, setSwapSearch] = useState("");
   const alternatives = onSwapExercise ? getAlternativeExercises(exercise.name) : [];
   const isStrengthType = exercise.type === "strength" || exercise.type === "core";
   const isBodyweight = !exercise.weight || exercise.weight === "Bodyweight"
@@ -151,17 +152,35 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     } catch (e) {}
   };
 
-  // Weight presets: selected weight centered, 10 below + 10 above (0.5kg step)
+  // Weight presets: 5 nearest 10kg steps centered around current weight
   const weightPresets = (() => {
     const center = selectedWeight || getDefaultWeight();
-    const step = 0.5;
+    const base = Math.round(center / 10) * 10;
     const presets: number[] = [];
-    for (let i = -10; i <= 10; i++) {
-      const v = center + i * step;
-      if (v > 0) presets.push(parseFloat(v.toFixed(1)));
+    for (let i = -2; i <= 2; i++) {
+      const v = base + i * 10;
+      if (v > 0) presets.push(v);
     }
     return presets;
   })();
+
+  // Long-press support for +/- buttons
+  const longPressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startLongPress = (direction: "up" | "down") => {
+    const step = direction === "up" ? 0.5 : -0.5;
+    longPressRef.current = setInterval(() => {
+      setSelectedWeight(prev => {
+        const next = parseFloat((prev + step).toFixed(1));
+        return Math.max(0.5, next);
+      });
+    }, 80);
+  };
+  const stopLongPress = () => {
+    if (longPressRef.current) {
+      clearInterval(longPressRef.current);
+      longPressRef.current = null;
+    }
+  };
 
   const confirmWeight = () => {
     const key = `alpha_weight_${exercise.name.replace(/[^a-zA-Z가-힣]/g, "_")}`;
@@ -379,16 +398,28 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-black text-[#1B4332] tracking-tight mb-2">{mainTitle}</h1>
+          <div className="flex flex-col items-center gap-1">
+            <h1 className="text-4xl font-black text-[#1B4332] tracking-tight">{mainTitle}</h1>
             {subTitle && <p className="text-lg text-gray-400 font-medium">{subTitle}</p>}
+            <button
+              onClick={() => setShowGuide(true)}
+              className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[#2D6A4F] active:scale-95 transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              </svg>
+              <span className="text-[11px] font-bold tracking-wide">자세 가이드</span>
+            </button>
           </div>
 
           <div className="flex flex-col items-center gap-2">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">사용 무게</p>
             <div className="flex items-center justify-center gap-4 w-full">
               <button
-                onClick={() => setSelectedWeight(Math.max(0, selectedWeight - 2.5))}
+                onClick={() => setSelectedWeight(Math.max(0.5, parseFloat((selectedWeight - 0.5).toFixed(1))))}
+                onPointerDown={() => startLongPress("down")}
+                onPointerUp={stopLongPress}
+                onPointerLeave={stopLongPress}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
               >
                 -
@@ -398,7 +429,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <span className="text-xl font-bold text-gray-400 ml-1">kg</span>
               </div>
               <button
-                onClick={() => setSelectedWeight(selectedWeight + 2.5)}
+                onClick={() => setSelectedWeight(parseFloat((selectedWeight + 0.5).toFixed(1)))}
+                onPointerDown={() => startLongPress("up")}
+                onPointerUp={stopLongPress}
+                onPointerLeave={stopLongPress}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
               >
                 +
@@ -431,40 +465,82 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             })}
           </div>
 
-          <p className="text-[10px] text-gray-300 font-medium">이전 기록에서 자동 불러옴 · 2.5kg 단위 조절</p>
         </div>
 
-        <div className="flex flex-col items-center gap-3 shrink-0 px-6" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)" }}>
+        <div className="flex flex-col items-center gap-3 shrink-0 px-6" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)" }}>
           {alternatives.length > 0 && !showSwapMenu && (
             <button
               onClick={() => setShowSwapMenu(true)}
-              className="text-[12px] font-bold text-gray-400 underline underline-offset-2"
+              className="w-full py-4 rounded-2xl bg-gray-100 text-[#1B4332] font-bold text-lg active:scale-[0.98] transition-all"
             >
-              운동 변경
+              대체 운동 변경
             </button>
           )}
           {showSwapMenu && (
             <div className="w-full bg-gray-50 rounded-2xl p-4 space-y-2 animate-fade-in">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
-                <button onClick={() => setShowSwapMenu(false)} className="text-[10px] text-gray-400 font-bold">닫기</button>
+                <button onClick={() => { setShowSwapMenu(false); setSwapSearch(""); }} className="text-[10px] text-gray-400 font-bold">닫기</button>
               </div>
-              {alternatives.map((alt) => {
-                const altParts = alt.split('(');
-                const altName = altParts[0].trim();
-                return (
-                  <button
-                    key={alt}
-                    onClick={() => {
-                      onSwapExercise?.(alt);
-                      setShowSwapMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
-                  >
-                    {altName}
-                  </button>
-                );
-              })}
+              <input
+                type="text"
+                value={swapSearch}
+                onChange={(e) => setSwapSearch(e.target.value)}
+                placeholder="운동 검색..."
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors"
+              />
+              <div className="max-h-[20vh] overflow-y-auto space-y-2">
+                {(() => {
+                  const q = swapSearch.replace(/\s/g, "").toLowerCase();
+                  const isSearching = q.length > 0;
+
+                  if (!isSearching) {
+                    return alternatives.map((alt: string) => {
+                      const altName = alt.split('(')[0].trim();
+                      return (
+                        <button
+                          key={alt}
+                          onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
+                          className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                        >
+                          {altName}
+                        </button>
+                      );
+                    });
+                  }
+
+                  // Search: match by group keywords or exercise name
+                  return LABELED_EXERCISE_POOLS
+                    .map((group) => {
+                      const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
+                      const matched = group.exercises
+                        .filter((e: string) => e !== exercise.name)
+                        .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
+                      if (matched.length === 0) return null;
+                      return (
+                        <div key={group.label}>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                          {matched.map((alt: string) => {
+                            const altName = alt.split('(')[0].trim();
+                            const isAlt = alternatives.includes(alt);
+                            return (
+                              <button
+                                key={alt}
+                                onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
+                                className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
+                                  isAlt ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
+                                }`}
+                              >
+                                {altName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })
+                    .filter(Boolean);
+                })()}
+              </div>
             </div>
           )}
           <button
@@ -474,6 +550,54 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             {selectedWeight}kg 으로 시작
           </button>
         </div>
+
+        {/* Exercise Guide Bottom Sheet */}
+        {showGuide && (
+          <div className="absolute inset-0 z-40">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowGuide(false)} />
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-2 animate-slide-up shadow-2xl">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
+              <div className="mb-5">
+                <h3 className="text-xl font-black text-[#1B4332] tracking-tight">{mainTitle}</h3>
+                {subTitle && <p className="text-sm text-gray-400 mt-1">{subTitle}</p>}
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Type</p>
+                  <p className="text-sm font-black text-gray-900 uppercase">{exercise.type}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Sets</p>
+                  <p className="text-sm font-black text-gray-900">{setInfo.total}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Reps</p>
+                  <p className="text-sm font-black text-gray-900">{setInfo.targetReps}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const searchTerm = subTitle || mainTitle;
+                  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
+                }}
+                className="w-full p-4 rounded-2xl bg-[#1B4332] text-white flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="#FF0000" />
+                  <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="white" />
+                </svg>
+                <span className="font-black text-sm tracking-wide">YouTube에서 자세 가이드 보기</span>
+              </button>
+
+              <button
+                onClick={() => setShowGuide(false)}
+                className="w-full p-3 mt-2 rounded-xl text-gray-400 font-bold text-sm active:scale-[0.98] transition-all"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -786,8 +910,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               }}
               className="w-full p-4 rounded-2xl bg-[#1B4332] text-white flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg hover:bg-[#2D6A4F]"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="#FF0000" />
+                <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="white" />
               </svg>
               <span className="font-black text-sm tracking-wide">YouTube에서 자세 가이드 보기</span>
             </button>
@@ -811,7 +936,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center mb-4">무게 변경</p>
             <div className="flex items-center justify-center gap-4 mb-6">
               <button
-                onClick={() => setSelectedWeight(Math.max(0, selectedWeight - 2.5))}
+                onClick={() => setSelectedWeight(Math.max(0.5, parseFloat((selectedWeight - 0.5).toFixed(1))))}
+                onPointerDown={() => startLongPress("down")}
+                onPointerUp={stopLongPress}
+                onPointerLeave={stopLongPress}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 shrink-0"
               >
                 -
@@ -821,7 +949,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <span className="text-lg text-gray-400 ml-1">kg</span>
               </div>
               <button
-                onClick={() => setSelectedWeight(selectedWeight + 2.5)}
+                onClick={() => setSelectedWeight(parseFloat((selectedWeight + 0.5).toFixed(1)))}
+                onPointerDown={() => startLongPress("up")}
+                onPointerUp={stopLongPress}
+                onPointerLeave={stopLongPress}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 shrink-0"
               >
                 +

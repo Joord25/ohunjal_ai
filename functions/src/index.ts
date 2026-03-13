@@ -113,7 +113,10 @@ export const generateWorkout = onRequest(
          - IMPORTANT: For Running Days, the Main Workout MUST be the Run itself (type: "cardio").
          - EQUIPMENT USAGE: Actively incorporate a variety of equipment including Barbell, Dumbbell, Kettlebell, and Cables/Machines.
          - Kettlebell Examples: KB Swings, Goblet Squats, KB Clean & Press, Turkish Get-up.
-      3. Core (5 min): Functional core stability.
+      3. Core (5 min): Pick 2-3 exercises from the pool below. Do NOT always use planks — vary between dynamic and static core exercises.
+         - Dynamic Core Pool: 크런치 (Crunch), 바이시클 크런치 (Bicycle Crunch), 러시안 트위스트 (Russian Twist), 행잉 레그 레이즈 (Hanging Leg Raise), 앱 휠 롤아웃 (Ab Wheel Rollout), 리버스 크런치 (Reverse Crunch), 마운틴 클라이머 (Mountain Climber), 시저 킥 (Scissor Kick), 토 터치 크런치 (Toe Touch Crunch), 플러터 킥 (Flutter Kick), 데드버그 (Deadbug)
+         - Static Core Pool: 플랭크 (Plank), 사이드 플랭크 (Side Plank), 플랭크 숄더 탭 (Plank Shoulder Tap)
+         - IMPORTANT: Prioritize dynamic core exercises. Use static plank variations at most 1 out of 3 core exercises.
       4. Additional Cardio (Phase 04):
          - If Main Workout was Strength: Recommend 15-20 min Running.
          - If Main Workout was Running: Recommend Mobility or Cooldown.
