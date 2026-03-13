@@ -673,15 +673,28 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     {subTitle}
                   </p>
                 )}
-                <button
-                  onClick={() => setShowGuide(true)}
-                  className="mt-2.5 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[#2D6A4F] active:scale-95 transition-all animate-[guideHint_2s_ease-in-out_1]"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-                  </svg>
-                  <span className="text-[11px] font-bold tracking-wide">자세 가이드</span>
-                </button>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <button
+                    onClick={() => setShowGuide(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[#2D6A4F] active:scale-95 transition-all"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                    </svg>
+                    <span className="text-[11px] font-bold tracking-wide">자세 가이드</span>
+                  </button>
+                  {alternatives.length > 0 && (
+                    <button
+                      onClick={() => setShowSwapMenu(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-gray-500 active:scale-95 transition-all"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span className="text-[11px] font-bold tracking-wide">운동 변경</span>
+                    </button>
+                  )}
+                </div>
               </>
             );
           })()}
@@ -923,6 +936,69 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             >
               닫기
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Swap Exercise Bottom Sheet (during exercise) */}
+      {showSwapMenu && (
+        <div className="absolute inset-0 z-40">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => { setShowSwapMenu(false); setSwapSearch(""); }} />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-2 animate-slide-up shadow-2xl">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
+              <button onClick={() => { setShowSwapMenu(false); setSwapSearch(""); }} className="text-sm text-gray-400 font-bold">닫기</button>
+            </div>
+            <input
+              type="text"
+              value={swapSearch}
+              onChange={(e) => setSwapSearch(e.target.value)}
+              placeholder="운동 검색..."
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
+            />
+            <div className="max-h-[30vh] overflow-y-auto space-y-1.5">
+              {(() => {
+                const q = swapSearch.replace(/\s/g, "").toLowerCase();
+                const isSearching = q.length > 0;
+                if (!isSearching) {
+                  return alternatives.map((alt: string) => (
+                    <button
+                      key={alt}
+                      onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                    >
+                      {alt.split('(')[0].trim()}
+                    </button>
+                  ));
+                }
+                return LABELED_EXERCISE_POOLS
+                  .map((group) => {
+                    const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
+                    const matched = group.exercises
+                      .filter((e: string) => e !== exercise.name)
+                      .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
+                    if (matched.length === 0) return null;
+                    return (
+                      <div key={group.label}>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                        {matched.map((alt: string) => (
+                          <button
+                            key={alt}
+                            onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
+                            className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
+                              alternatives.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
+                            }`}
+                          >
+                            {alt.split('(')[0].trim()}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })
+                  .filter(Boolean);
+              })()}
+            </div>
           </div>
         </div>
       )}

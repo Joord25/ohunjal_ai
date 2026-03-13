@@ -435,7 +435,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         restTimer={restTimer}
         onSkipRest={skipRest}
         isLastExercise={currentExerciseIndex === totalExercises - 1 && currentSet === (currentExercise.sets || 1)}
-        onSwapExercise={currentExercise.type === "strength" ? handleSwapExercise : undefined}
+        onSwapExercise={currentExercise.type === "strength" || currentExercise.type === "core" ? handleSwapExercise : undefined}
       />
     </div>
   );
