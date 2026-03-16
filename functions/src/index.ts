@@ -412,17 +412,46 @@ export const subscribe = onRequest(
       const expiresAt = new Date(now);
       expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-      await db.collection("subscriptions").doc(uid).set({
-        uid,
-        billingKey,
-        status: "active",
-        plan: "monthly",
+      const subRef = db.collection("subscriptions").doc(uid);
+      const existingDoc = await subRef.get();
+
+      if (existingDoc.exists) {
+        // Re-subscribing: update existing doc, keep original createdAt
+        await subRef.update({
+          billingKey,
+          status: "active",
+          plan: "monthly",
+          amount: SUBSCRIPTION_AMOUNT,
+          lastPaymentId: paymentId,
+          lastPaymentAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } else {
+        await subRef.set({
+          uid,
+          billingKey,
+          status: "active",
+          plan: "monthly",
+          amount: SUBSCRIPTION_AMOUNT,
+          lastPaymentId: paymentId,
+          lastPaymentAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      // 3. Save payment record to history subcollection
+      await subRef.collection("payments").doc(paymentId).set({
+        paymentId,
         amount: SUBSCRIPTION_AMOUNT,
-        lastPaymentId: paymentId,
-        lastPaymentAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
+        plan: "monthly",
+        status: "paid",
+        paidAt: now.toISOString(),
+        periodStart: now.toISOString(),
+        periodEnd: expiresAt.toISOString(),
         createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
       });
 
       res.status(200).json({
@@ -471,12 +500,33 @@ export const getSubscription = onRequest(
         }
       }
 
+      // Fetch payment history
+      const paymentsSnap = await db.collection("subscriptions").doc(uid)
+        .collection("payments")
+        .orderBy("createdAt", "desc")
+        .limit(50)
+        .get();
+
+      const payments = paymentsSnap.docs.map((pDoc) => {
+        const p = pDoc.data();
+        return {
+          paymentId: p.paymentId,
+          amount: p.amount,
+          plan: p.plan,
+          status: p.status,
+          paidAt: p.paidAt,
+          periodStart: p.periodStart,
+          periodEnd: p.periodEnd,
+        };
+      });
+
       res.status(200).json({
         status: data.status,
         expiresAt: data.expiresAt || null,
         lastPaymentAt: data.lastPaymentAt || null,
         amount: data.amount || null,
         createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+        payments,
       });
     } catch (error) {
       console.error("getSubscription error:", error);

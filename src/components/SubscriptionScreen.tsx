@@ -318,6 +318,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSubDetail, setShowSubDetail] = useState(false);
+  const [payments, setPayments] = useState<Array<{ paymentId: string; amount: number; plan: string; status: string; paidAt: string; periodStart: string; periodEnd: string }>>([]);
   const [cancelStep, setCancelStep] = useState<0 | 1 | 2>(0); // 0=hidden, 1=reason, 2=confirm
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [cancelReasonText, setCancelReasonText] = useState("");
@@ -349,6 +350,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         setLastPaymentAt(data.lastPaymentAt || null);
         setAmount(data.amount || null);
         setCreatedAt(data.createdAt || null);
+        setPayments(data.payments || []);
       } else {
         setStatus("free");
       }
@@ -529,6 +531,35 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                 <span className="text-sm font-bold text-[#1B4332]">{item.value}</span>
               </div>
             ))}
+
+            {/* Payment History */}
+            {payments.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-bold text-gray-400 mb-3 px-1">결제 내역</p>
+                <div className="flex flex-col gap-2">
+                  {payments.map((p) => (
+                    <div key={p.paymentId} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold text-[#1B4332]">{p.amount.toLocaleString()}원</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          p.status === "paid" ? "bg-[#2D6A4F]/10 text-[#2D6A4F]" : "bg-gray-100 text-gray-500"
+                        }`}>
+                          {p.status === "paid" ? "결제완료" : p.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">결제일</span>
+                        <span className="text-xs text-gray-600">{formatDate(p.paidAt)}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-400">이용기간</span>
+                        <span className="text-xs text-gray-600">{formatDate(p.periodStart)} ~ {formatDate(p.periodEnd)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => setShowSubDetail(false)}
