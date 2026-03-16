@@ -160,8 +160,16 @@ export default function Home() {
     setShowExitConfirm(false);
     guardPushedRef.current = false;
     exitingRef.current = true;
-    // Go back twice: once to consume the re-pushed guard, once to actually exit
-    window.history.go(-2);
+    // PWA standalone mode: close the app window
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+      || (navigator as unknown as { standalone?: boolean }).standalone === true;
+    if (isStandalone) {
+      window.close();
+      // Fallback: if window.close() didn't work (iOS), go back
+      setTimeout(() => window.history.go(-2), 100);
+    } else {
+      window.history.go(-2);
+    }
   }, []);
 
   const handleExitCancel = useCallback(() => {
