@@ -573,23 +573,24 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             )}
 
             {/* Pricing Card */}
-            <div className="bg-[#1B4332] rounded-3xl p-6 text-center">
-              <p className="text-xs font-bold text-emerald-300/60 uppercase tracking-wider mb-2">Monthly</p>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-black text-white">9,900</span>
-                <span className="text-lg text-emerald-300/70">원/월</span>
+            <div className="p-6 rounded-2xl border-2 border-[#2D6A4F] bg-[#f0fdf4] relative text-center">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#2D6A4F] text-white text-xs font-bold rounded-full whitespace-nowrap">초기 특가</div>
+              <div className="mb-5 mt-2">
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="text-lg text-gray-400 line-through">₩9,900</span>
+                  <span className="text-4xl font-black text-[#1B4332]">₩6,900</span>
+                  <span className="text-base font-medium text-gray-400">/월</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">30% 할인</span>
+                  <span className="text-xs text-[#2D6A4F] font-semibold">초기 특가</span>
+                </div>
               </div>
-              <p className="text-xs text-emerald-400/50 mt-2">카카오페이로 간편 결제</p>
-            </div>
-
-            {/* Features */}
-            <div className="bg-gray-50 rounded-2xl p-5">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">프리미엄 기능</h3>
-              <div className="flex flex-col gap-2">
-                {["AI 맞춤 운동 플랜 무제한 생성", "세션별 AI 분석 리포트", "체중 변화 그래프 추적", "운동 히스토리 무제한 저장"].map((feature) => (
+              <div className="flex flex-col gap-2.5 text-left">
+                {["AI 운동 플랜 무제한", "세션별 AI 분석 리포트", "체중 변화 그래프 추적", "운동 히스토리 무제한 저장", "적응형 운동 세션"].map((feature) => (
                   <div key={feature} className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
+                      <path d="M4 9L7.5 12.5L14 6" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span className="text-sm text-gray-700">{feature}</span>
                   </div>

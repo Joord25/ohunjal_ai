@@ -305,8 +305,11 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout }) =>
             <span className="text-lg font-bold text-white">프리미엄 구독</span>
             <span className="text-xs text-emerald-300/60">AI 맞춤 운동 무제한</span>
           </div>
-          <div className="bg-[#FEE500] rounded-full px-3 py-1">
-            <span className="text-xs font-black text-[#3C1E1E]">9,900원/월</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-emerald-300/50 line-through">9,900원</span>
+            <div className="bg-[#FEE500] rounded-full px-3 py-1">
+              <span className="text-xs font-black text-[#3C1E1E]">6,900원/월</span>
+            </div>
           </div>
         </button>
 
