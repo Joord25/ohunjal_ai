@@ -8,7 +8,7 @@ import { GoogleGenAI } from "@google/genai";
 const app = initializeApp();
 const db = getFirestore(app);
 
-setGlobalOptions({ region: "us-central1", minInstances: 1 });
+setGlobalOptions({ region: "us-central1" });
 
 // Helper: verify Firebase ID token from Authorization header
 async function verifyAuth(authHeader: string | undefined): Promise<string> {
