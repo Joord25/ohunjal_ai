@@ -501,11 +501,40 @@ export const getSubscription = onRequest(
       }
 
       // Fetch payment history
-      const paymentsSnap = await db.collection("subscriptions").doc(uid)
+      const subRef = db.collection("subscriptions").doc(uid);
+      const paymentsSnap = await subRef
         .collection("payments")
         .orderBy("createdAt", "desc")
         .limit(50)
         .get();
+
+      // Auto-migrate: if subscription exists but no payment records, create one from existing data
+      if (paymentsSnap.empty && data.lastPaymentId && data.lastPaymentAt) {
+        const createdAtDate = data.createdAt?.toDate?.() || new Date(data.lastPaymentAt);
+        await subRef.collection("payments").doc(data.lastPaymentId).set({
+          paymentId: data.lastPaymentId,
+          amount: data.amount || 9900,
+          plan: data.plan || "monthly",
+          status: "paid",
+          paidAt: data.lastPaymentAt,
+          periodStart: createdAtDate.toISOString(),
+          periodEnd: data.expiresAt || "",
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        // Re-fetch after migration
+        const reFetch = await subRef.collection("payments").orderBy("createdAt", "desc").limit(50).get();
+        const migratedPayments = reFetch.docs.map((pDoc) => {
+          const p = pDoc.data();
+          return { paymentId: p.paymentId, amount: p.amount, plan: p.plan, status: p.status, paidAt: p.paidAt, periodStart: p.periodStart, periodEnd: p.periodEnd };
+        });
+        res.status(200).json({
+          status: data.status,
+          expiresAt: data.expiresAt || null,
+          amount: data.amount || null,
+          payments: migratedPayments,
+        });
+        return;
+      }
 
       const payments = paymentsSnap.docs.map((pDoc) => {
         const p = pDoc.data();
