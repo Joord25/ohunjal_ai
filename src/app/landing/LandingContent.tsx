@@ -435,6 +435,55 @@ export default function LandingContent() {
         </div>
       </section>
 
+      {/* PWA Install Guide */}
+      <section className="py-24 bg-[#FAFBF9]">
+        <div className="max-w-3xl mx-auto px-6">
+          <RevealSection>
+            <div className="text-center mb-12">
+              <p className="text-sm font-bold text-[#059669] mb-2">INSTALL</p>
+              <h2 className="text-3xl sm:text-4xl font-black text-[#1B4332]">
+                앱처럼 설치하세요
+              </h2>
+              <p className="text-base text-gray-500 mt-3">앱스토어 없이, 홈 화면에 추가하면 앱처럼 사용할 수 있습니다</p>
+            </div>
+          </RevealSection>
+          <div className="grid sm:grid-cols-2 gap-6">
+            <RevealSection>
+              <div className="p-6 rounded-2xl bg-white border border-gray-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-[#d1fae5] rounded-xl flex items-center justify-center">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17.6 11.8L16.2 10.4L13 13.6V4H11V13.6L7.8 10.4L6.4 11.8L12 17.4L17.6 11.8Z" fill="#2D6A4F"/><path d="M19 19H5V15H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V15H19V19Z" fill="#2D6A4F"/></svg>
+                  </div>
+                  <h3 className="text-base font-bold text-[#1B4332]">Android (Chrome)</h3>
+                </div>
+                <ol className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">1.</span>크롬에서 오운잘 AI 접속</li>
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">2.</span>우측 상단 <span className="font-bold text-[#1B4332]">⋮</span> 메뉴 탭</li>
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">3.</span><span className="font-bold text-[#1B4332]">&apos;홈 화면에 추가&apos;</span> 선택</li>
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">4.</span><span className="font-bold text-[#1B4332]">&apos;추가&apos;</span> 확인</li>
+                </ol>
+              </div>
+            </RevealSection>
+            <RevealSection>
+              <div className="p-6 rounded-2xl bg-white border border-gray-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-[#d1fae5] rounded-xl flex items-center justify-center">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 16.99 2.97 12.5 4.7 9.56C5.57 8.08 7.13 7.16 8.82 7.14C10.1 7.12 11.32 8.02 12.11 8.02C12.91 8.02 14.37 6.93 15.91 7.11C16.54 7.14 18.33 7.37 19.47 9.04C19.37 9.1 17.2 10.35 17.23 12.95C17.26 16.1 20 17.12 20.03 17.13C20 17.2 19.56 18.65 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z" fill="#2D6A4F"/></svg>
+                  </div>
+                  <h3 className="text-base font-bold text-[#1B4332]">iPhone (Safari)</h3>
+                </div>
+                <ol className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">1.</span>Safari에서 오운잘 AI 접속</li>
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">2.</span>하단 <span className="font-bold text-[#1B4332]">공유 버튼(□↑)</span> 탭</li>
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">3.</span><span className="font-bold text-[#1B4332]">&apos;홈 화면에 추가&apos;</span> 선택</li>
+                  <li className="flex items-start gap-2"><span className="text-[#059669] font-bold shrink-0">4.</span><span className="font-bold text-[#1B4332]">&apos;추가&apos;</span> 확인</li>
+                </ol>
+              </div>
+            </RevealSection>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24 bg-white">
         <div className="max-w-3xl mx-auto px-6 text-center">
@@ -466,9 +515,10 @@ export default function LandingContent() {
 
           {/* 사업자 정보 */}
           <div className="text-sm leading-loose space-y-1 text-gray-400 mb-8">
-            <p>대표 | 임주용</p>
-            <p>이메일 | ounjal.ai.app@gmail.com</p>
+            <p>주드(Joord) · 대표 임주용</p>
             <p>사업자등록번호 | 623-36-01460</p>
+            <p>서울특별시 관악구 은천로35길 40-6, 404호</p>
+            <p>Tel 010-4042-2820 | ounjal.ai.app@gmail.com</p>
           </div>
 
           {/* 링크 */}
