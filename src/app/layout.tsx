@@ -88,6 +88,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <meta name="theme-color" content="#1B4332" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="google-site-verification" content="pT2HHHagN-fpWgy6salyFyDgjf679FnLU5hb2btFn6s" />
         <link
           rel="stylesheet"
@@ -96,6 +99,11 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
         <script src="https://cdn.portone.io/v2/browser-sdk.js" async />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if("serviceWorker"in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("/sw.js")})}`,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -108,7 +116,7 @@ export default function RootLayout({
               "description": "AI가 오늘 컨디션에 맞춰 운동 루틴을 자동 생성해주는 맞춤형 헬스 트래커. 근력 운동 기록, 볼륨 추적, 체중 변화 그래프, AI 운동 분석 리포트 제공.",
               "offers": {
                 "@type": "Offer",
-                "price": "6900",
+                "price": "9900",
                 "priceCurrency": "KRW",
                 "description": "프리미엄 월간 구독"
               },
@@ -150,7 +158,7 @@ export default function RootLayout({
             <h2>운동 종류</h2>
             <p>스쿼트, 벤치프레스, 데드리프트, 오버헤드프레스, 바벨로우, 풀업, 딥스, 런지, 레그프레스, 케이블 운동 등 100가지 이상의 운동을 지원합니다.</p>
             <h2>요금</h2>
-            <p>무료 플랜: 하루 3회 AI 플랜 생성 / 프리미엄: 월 6,900원 (초기 특가, 카카오페이 결제)</p>
+            <p>무료 플랜: 하루 3회 AI 플랜 생성 / 프리미엄: 월 9,900원 (초기 특가, 카카오페이 결제)</p>
             <p>사업자: 주드(Joord) | 대표: 임주용 | 사업자등록번호: 623-36-01460</p>
           </div>
         </noscript>
