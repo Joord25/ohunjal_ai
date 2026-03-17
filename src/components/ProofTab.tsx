@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
 import { loadWorkoutHistory, deleteWorkoutHistory } from "@/utils/workoutHistory";
 import { updateWeightLog } from "@/utils/userProfile";
-import { estimateTrainingLevelDetailed } from "@/utils/workoutMetrics";
+import { estimateTrainingLevelDetailed, getOptimalLoadBand } from "@/utils/workoutMetrics";
 import { WorkoutReport } from "./WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 
@@ -32,6 +32,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
   const [weightSelectMode, setWeightSelectMode] = useState(false);
   const [selectedWeightIdxs, setSelectedWeightIdxs] = useState<Set<number>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [activeTimelineDot, setActiveTimelineDot] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
@@ -534,72 +535,334 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
         </div>
 
         <div className="mt-6 flex flex-col gap-3">
-          <button
-            onClick={() => setView("list")}
-            className="p-6 bg-[#1B4332] rounded-3xl text-white shadow-lg shadow-[#1B4332]/20 w-full text-left active:scale-[0.98] transition-all group"
-          >
-            <div className="flex justify-between items-center mb-1">
-                <p className="text-[10px] font-bold text-emerald-300/80 uppercase tracking-widest">총 운동 횟수</p>
-                <svg className="w-5 h-5 text-emerald-400/50 group-hover:text-emerald-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-            </div>
-            <h3 className="text-3xl font-black text-white">{monthWorkouts} <span className="text-lg text-emerald-300">세션</span></h3>
-            <p className="text-xs text-emerald-400/50 mt-2 font-medium">클릭하여 기록 상세보기</p>
-          </button>
-
           {/* Training Level Estimation Card */}
           {(() => {
             const bw = !isNaN(savedBodyWeight) ? savedBodyWeight : undefined;
             const g = savedGender;
             const levelEst = estimateTrainingLevelDetailed(history, bw, g);
             const lvlLabel = levelEst.level === "advanced" ? "상급" : levelEst.level === "intermediate" ? "중급" : "초급";
-            const lvlBadgeCls = levelEst.level === "advanced" ? "bg-amber-50 text-amber-600"
-              : levelEst.level === "intermediate" ? "bg-emerald-50 text-[#2D6A4F]"
-              : "bg-gray-100 text-gray-500";
+            const lvlGradient = levelEst.level === "advanced"
+              ? "from-amber-500 to-orange-400"
+              : levelEst.level === "intermediate"
+              ? "from-emerald-500 to-teal-400"
+              : "from-gray-400 to-gray-300";
 
             return (
-              <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-black text-[#1B4332]">훈련 레벨</h3>
-                    <button onClick={() => setHelpCard("trainingLevel")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-[10px] font-black text-gray-400">?</span>
-                    </button>
+              <div className="rounded-3xl overflow-hidden border border-[#2D6A4F]/10 shadow-sm">
+                {/* Header — dark with gradient accent */}
+                <div className={`bg-gradient-to-r ${lvlGradient} px-6 py-4`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-black text-white">훈련 레벨</h3>
+                      <button onClick={() => setHelpCard("trainingLevel")} className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                        <span className="text-[10px] font-black text-white/80">?</span>
+                      </button>
+                    </div>
+                    <span className="text-xl font-black text-white tracking-tight">{lvlLabel}</span>
                   </div>
-                  <span className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${lvlBadgeCls}`}>{lvlLabel}</span>
+                  {levelEst.decayed && (
+                    <p className="text-[10px] text-white/70 mt-1">최근 4주 기록 부족으로 하향 조정됨</p>
+                  )}
                 </div>
-                {levelEst.source === "default" ? (
-                  <p className="text-[12px] text-gray-400 leading-relaxed">아직 3대 운동이나 맨몸 운동 기록이 없어서 기본값(초급)으로 설정돼 있어요. 운동을 기록하면 자동으로 레벨이 조정돼요.</p>
-                ) : (
-                  <>
-                    <p className="text-[11px] text-gray-400 mb-3">
-                      {levelEst.source === "big3"
-                        ? "3대 운동 e1RM/체중 비율 기준"
-                        : "맨몸 운동 최대 렙수 기준"}
-                      {levelEst.decayed && (
-                        <span className="text-amber-500 ml-1">· 최근 4주 기록 부족으로 하향 조정</span>
-                      )}
-                    </p>
-                    <div className="space-y-2">
+
+                {/* Body */}
+                <div className="bg-white px-5 py-4">
+                  {levelEst.source === "default" ? (
+                    <p className="text-[12px] text-gray-400 leading-relaxed py-2">아직 3대 운동이나 맨몸 운동 기록이 없어서 기본값(초급)으로 설정돼 있어요. 운동을 기록하면 자동으로 레벨이 조정돼요.</p>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
                       {levelEst.details.map((d, i) => {
-                        const clr = d.level === "advanced" ? "text-amber-600" : d.level === "intermediate" ? "text-[#2D6A4F]" : "text-gray-400";
-                        const bg = d.level === "advanced" ? "bg-amber-50" : d.level === "intermediate" ? "bg-emerald-50" : "bg-gray-50";
+                        const accent = d.level === "advanced" ? "border-amber-400 text-amber-500 bg-amber-50"
+                          : d.level === "intermediate" ? "border-emerald-400 text-emerald-600 bg-emerald-50"
+                          : "border-gray-300 text-gray-400 bg-gray-50";
                         const nm = d.level === "advanced" ? "상급" : d.level === "intermediate" ? "중급" : "초급";
                         return (
-                          <div key={i} className="flex items-center justify-between">
-                            <span className="text-[12px] font-bold text-gray-700">{d.exercise}</span>
+                          <div key={i} className="flex items-center gap-4 py-4 first:pt-1 last:pb-1">
+                            {/* Left accent bar */}
+                            <div className={`w-1 h-12 rounded-full ${accent.split(" ")[0].replace("border", "bg")}`} />
+                            {/* Exercise name */}
+                            <p className="flex-1 min-w-0 text-[14px] text-gray-700 font-bold">{d.exercise}</p>
+                            {/* Right: 1RM value + badge in a row */}
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-gray-400 font-medium">{d.value}</span>
-                              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${bg} ${clr}`}>{nm}</span>
+                              <span className="text-[10px] text-gray-400 font-medium">예상 1RM</span>
+                              <span className="text-[20px] font-black text-[#1B4332] leading-none">{d.value}</span>
+                              <span className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${accent.split(" ").slice(1).join(" ")}`}>{nm}</span>
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                  </>
-                )}
-                <p className="text-[9px] text-gray-300 mt-3 pt-2 border-t border-gray-100">NSCA · Rippetoe & Kilgore (2006) · Epley e1RM</p>
+                  )}
+                  <p className="text-[8px] text-gray-300 mt-2 pt-2 border-t border-gray-50">NSCA · Rippetoe & Kilgore (2006) · Epley e1RM</p>
+                </div>
+              </div>
+            );
+          })()}
+
+          <button
+            onClick={() => setView("list")}
+            className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm w-full text-left active:scale-[0.98] transition-all group"
+          >
+            <div className="flex justify-between items-center mb-1">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">총 운동 횟수</p>
+                <svg className="w-5 h-5 text-gray-300 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+            <h3 className="text-3xl font-black text-[#1B4332]">{monthWorkouts} <span className="text-lg text-[#2D6A4F]/50">세션</span></h3>
+            <p className="text-xs text-gray-400 mt-2 font-medium">클릭하여 기록 상세보기</p>
+          </button>
+
+          {/* Weight Trend Graph */}
+          {weightLog.length > 0 && (() => {
+            const sorted = [...weightLog].sort((a, b) => a.date.localeCompare(b.date));
+            const recent = sorted.slice(-30);
+            if (recent.length === 0) return null;
+
+            const weights = recent.map(e => e.weight);
+            const rawMin = Math.min(...weights);
+            const rawMax = Math.max(...weights);
+            const padding = rawMax - rawMin < 1 ? 2 : (rawMax - rawMin) * 0.2;
+            const minW = rawMin - padding;
+            const maxW = rawMax + padding;
+            const range = maxW - minW;
+            const latestWeight = weights[weights.length - 1];
+            const firstWeight = weights[0];
+            const diff = latestWeight - firstWeight;
+
+            return (
+              <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible transition-all">
+                <div className="flex justify-between items-baseline mb-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">체중 변화</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => setView("weight_detail")}
+                  >
+                    <span className={`text-[10px] font-black ${diff > 0 ? "text-rose-400" : diff < 0 ? "text-sky-400" : "text-gray-400"}`}>
+                      {diff > 0 ? "+" : ""}{diff.toFixed(1)}kg
+                    </span>
+                    <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex items-baseline gap-1 mb-3 sm:mb-4">
+                  <h3 className="text-2xl sm:text-3xl font-black text-[#1B4332]">{latestWeight.toFixed(1)}</h3>
+                  <span className="text-base sm:text-lg text-[#2D6A4F]/50">kg</span>
+                </div>
+
+                <div className="relative h-36 sm:h-32 mt-5 sm:mt-4 mb-2 mx-5">
+                  {/* Y-axis reference lines */}
+                  {(() => {
+                    const ticks = [rawMin, (rawMin + rawMax) / 2, rawMax];
+                    return ticks.map((v, ti) => {
+                      const yPct = 95 - ((v - minW) / range) * 90;
+                      return (
+                        <div key={ti} className="absolute left-0 right-0 pointer-events-none" style={{ top: `${yPct}%` }}>
+                          <div className="border-t border-dashed border-gray-200/60 w-full" />
+                          <span className="absolute -left-1 -translate-x-full -translate-y-1/2 text-[8px] text-gray-300 font-bold">{v.toFixed(1)}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={recent.map((_, i) => {
+                        const x = recent.length === 1 ? 50 : (i / (recent.length - 1)) * 100;
+                        const y = 95 - ((weights[i] - minW) / range) * 90;
+                        return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+                      }).join(" ") + ` L 100 100 L 0 100 Z`}
+                      fill="url(#weightGradient)"
+                    />
+                    <defs>
+                      <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d={recent.map((_, i) => {
+                        const x = recent.length === 1 ? 50 : (i / (recent.length - 1)) * 100;
+                        const y = 95 - ((weights[i] - minW) / range) * 90;
+                        return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+                      }).join(" ")}
+                      fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                  {weights.map((w, i) => {
+                    const xPct = weights.length === 1 ? 50 : (i / (weights.length - 1)) * 100;
+                    const yPct = 95 - ((w - minW) / range) * 90;
+                    const isLast = i === weights.length - 1;
+                    const isActive = activeWeightDot === i;
+                    return (
+                      <button type="button" key={i} className="absolute z-10 flex items-center justify-center"
+                        style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
+                        onPointerUp={(e) => { e.stopPropagation(); setActiveWeightDot(isActive ? null : i); }}
+                      >
+                        {isActive && (
+                          <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
+                            {w.toFixed(1)}kg
+                          </span>
+                        )}
+                        <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="relative text-[9px] text-gray-300 font-medium mx-5">
+                  <span className="absolute left-0 -translate-x-1/2">{recent[0].date.slice(5).replace("-", "/")}</span>
+                  <span className="absolute right-0 translate-x-1/2">{recent[recent.length - 1].date.slice(5).replace("-", "/")}</span>
+                  <span>&nbsp;</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 4-Week Load Timeline */}
+          {(() => {
+            const bw = !isNaN(savedBodyWeight) ? savedBodyWeight : undefined;
+            const g = savedGender;
+            const levelEst = estimateTrainingLevelDetailed(history, bw, g);
+
+            // Last 28 days sessions with volume
+            const now = new Date();
+            const fourWeeksAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 28);
+            const recentSessions = history
+              .filter(h => (h.stats?.totalVolume || 0) > 0 && new Date(h.date) >= fourWeeksAgo)
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            if (recentSessions.length < 2) return null;
+
+            const graphData = recentSessions.map(h => ({
+              date: new Date(h.date),
+              loadScore: h.stats.totalVolume && bw ? Math.round((h.stats.totalVolume / bw) * 10) / 10 : h.stats.totalVolume,
+              volume: h.stats.totalVolume,
+            }));
+
+            const avgLoad = graphData.length > 0
+              ? graphData.reduce((s, d) => s + d.loadScore, 0) / graphData.length
+              : 0;
+            const loadBand = getOptimalLoadBand(avgLoad, graphData.length, levelEst.level, !isNaN(savedBirthYear) ? savedBirthYear : undefined);
+            const maxLoad = Math.max(...graphData.map(g => g.loadScore), 1);
+            const maxScale = Math.max(maxLoad, loadBand.high, loadBand.overload) * 1.1;
+
+            return (
+              <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">4주 부하 타임라인</p>
+                  <button onClick={() => setHelpCard("loadTimeline")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span className="text-[10px] font-black text-gray-400">?</span>
+                  </button>
+                </div>
+                <div className="relative h-36 sm:h-32 mt-5 sm:mt-4 mb-2 mx-5">
+                  {/* Y-axis reference lines */}
+                  {(() => {
+                    const tickValues = [0, Math.round(loadBand.low), Math.round(loadBand.high), Math.round(loadBand.overload)].filter((v, i, a) => a.indexOf(v) === i);
+                    return tickValues.map((v, ti) => {
+                      const yPct = 100 - ((v / maxScale) * 80);
+                      if (yPct < 0 || yPct > 100) return null;
+                      return (
+                        <div key={ti} className="absolute left-0 right-0 pointer-events-none" style={{ top: `${yPct}%` }}>
+                          <div className="border-t border-dashed border-gray-200/60 w-full" />
+                          <span className="absolute -left-1 -translate-x-full -translate-y-1/2 text-[8px] text-gray-300 font-bold">{v}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                  {/* Zones */}
+                  {(() => {
+                    const topPct = 100 - (loadBand.high / maxScale) * 80;
+                    const overloadPct = 100 - (loadBand.overload / maxScale) * 80;
+                    const bottomPct = 100 - (loadBand.low / maxScale) * 80;
+                    return (
+                      <>
+                        <div className="absolute left-0 right-0 bg-amber-50/50 border-t border-amber-200/50 rounded-t" style={{ top: `${Math.max(0, overloadPct)}%`, height: `${Math.max(0, topPct - overloadPct)}%` }} />
+                        <div className="absolute left-0 right-0 bg-emerald-50 border-y border-emerald-100 rounded" style={{ top: `${Math.max(0, topPct)}%`, height: `${Math.max(4, bottomPct - topPct)}%` }} />
+                      </>
+                    );
+                  })()}
+                  {/* Line */}
+                  <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      className="animate-draw-line"
+                      style={{ animationDelay: "0.8s" }}
+                      d={graphData.map((d, i) => {
+                        const x = (i / (graphData.length - 1)) * 100;
+                        const y = 100 - ((d.loadScore / maxScale) * 80);
+                        return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+                      }).join(" ")}
+                      fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                  {/* Dots */}
+                  {graphData.map((d, i) => {
+                    const xPct = (i / (graphData.length - 1)) * 100;
+                    const yPct = 100 - ((d.loadScore / maxScale) * 80);
+                    const isLast = i === graphData.length - 1;
+                    const isOverload = d.loadScore > loadBand.overload;
+                    const isAboveBand = d.loadScore > loadBand.high && !isOverload;
+                    const isBelowBand = d.loadScore < loadBand.low;
+                    const isActive = activeTimelineDot === i;
+                    return (
+                      <button
+                        type="button"
+                        key={i}
+                        className="absolute animate-dot-pop z-10 flex items-center justify-center"
+                        style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0, animationDelay: `${0.9 + i * 0.1}s` }}
+                        onPointerUp={(e) => { e.stopPropagation(); setActiveTimelineDot(isActive ? null : i); }}
+                      >
+                        {isActive && (
+                          <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
+                            {d.loadScore.toFixed(1)}
+                          </span>
+                        )}
+                        <div className={`rounded-full border-2 transition-transform ${isActive ? "scale-150" : ""} ${
+                          isLast
+                            ? isOverload ? "bg-red-500 border-red-500 w-3 h-3"
+                              : isAboveBand ? "bg-amber-500 border-amber-500 w-3 h-3"
+                              : isBelowBand ? "bg-blue-400 border-blue-400 w-3 h-3"
+                              : "bg-[#2D6A4F] border-[#2D6A4F] w-3 h-3"
+                            : "bg-white border-[#2D6A4F] w-2.5 h-2.5"
+                        }`} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="relative text-[9px] text-gray-300 font-medium mx-5">
+                  <span className="absolute left-0 -translate-x-1/2">{graphData.length > 0 ? `${graphData[0].date.getMonth() + 1}/${graphData[0].date.getDate()}` : ""}</span>
+                  <span className="absolute right-0 translate-x-1/2">{graphData.length > 0 ? `${graphData[graphData.length - 1].date.getMonth() + 1}/${graphData[graphData.length - 1].date.getDate()}` : ""}</span>
+                  <span>&nbsp;</span>
+                </div>
+                <div className="flex justify-center gap-2 text-[9px] text-gray-300 font-medium mt-1">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-50 border border-amber-200 rounded-sm inline-block" /> 주의</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-100 rounded-sm inline-block" /> 최적</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#2D6A4F] rounded-full inline-block" /> 부하</span>
+                </div>
+                {/* Load verdict */}
+                {(() => {
+                  const latest = graphData[graphData.length - 1].loadScore;
+                  const isOverload = latest > loadBand.overload;
+                  const isHigh = latest > loadBand.high && !isOverload;
+                  const isOptimal = latest >= loadBand.low && latest <= loadBand.high;
+                  const label = isOverload ? "과부하" : isHigh ? "높음" : isOptimal ? "적정" : "낮음";
+                  const color = isOverload ? "text-red-500" : isHigh ? "text-amber-500" : isOptimal ? "text-[#2D6A4F]" : "text-blue-400";
+                  const comment = isOverload
+                    ? "회복이 부족할 수 있어요. 다음 세션은 가볍게 가는 걸 추천해요."
+                    : isHigh
+                    ? "적정 범위를 살짝 넘었어요. 가끔은 괜찮지만 자주 넘으면 조절이 필요해요."
+                    : isOptimal
+                    ? "성장에 딱 맞는 부하예요. 이 페이스를 유지하세요!"
+                    : "부하가 낮아요. 회복엔 좋지만 계속되면 근력과 체력이 떨어질 수 있어요.";
+                  return (
+                    <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+                      <p className="text-2xl font-black text-[#1B4332]">{latest.toFixed(1)} <span className={`text-base ${color}`}>— {label}</span></p>
+                      <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{comment}</p>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -613,7 +876,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             if (sessionsWithVolume.length === 0) {
               return (
                 <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
-                  <p className="text-[10px] font-bold text-[#2D6A4F] uppercase tracking-widest mb-1">세션별 볼륨</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">세션별 볼륨</p>
                   <h3 className="text-xl font-black text-gray-300">기록 없음</h3>
                 </div>
               );
@@ -678,235 +941,78 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             return (
               <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible">
                 <div className="flex justify-between items-baseline mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-black text-[#1B4332]">세션별 볼륨</h3>
-                  <span className="text-[10px] font-black text-[#2D6A4F]/60">최근 {recentGroups.length}일</span>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">세션별 볼륨</p>
+                  <span className="text-[9px] font-black text-gray-300">최근 {recentGroups.length}일</span>
                 </div>
 
-                <div className="flex h-36 sm:h-32 gap-2 pt-6 pb-5">
-                  {/* Y-axis labels */}
-                  <div className="flex flex-col justify-between shrink-0 w-10">
-                    <span className="text-[8px] text-gray-300 font-bold text-right">{(rawMax / 1000).toFixed(1)}k</span>
-                    <span className="text-[8px] text-gray-300 font-bold text-right">{(rawMin / 1000).toFixed(1)}k</span>
-                  </div>
-
-                  {/* Graph area */}
-                  <div className="relative flex-1 overflow-visible">
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                      <line x1="0" y1="5" x2="100" y2="5" stroke="#f3f4f6" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-                      <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-                      <line x1="0" y1="95" x2="100" y2="95" stroke="#f3f4f6" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-
-                      {/* Area fill — follows max line */}
-                      <path
-                        d={
-                          lineDots.map((d, i) => {
-                            const y = getY(d.volume);
-                            return `${i === 0 ? "M" : "L"} ${d.xPct} ${y}`;
-                          }).join(" ") + ` L ${lineDots[lineDots.length - 1].xPct} 100 L ${lineDots[0].xPct} 100 Z`
-                        }
-                        fill="url(#volumeGradient)"
-                      />
-                      <defs>
-                        <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.15" />
-                          <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Line through max volume per date */}
-                      <path
-                        d={lineDots.map((d, i) => {
+                <div className="relative h-36 sm:h-32 mt-5 sm:mt-4 mb-2 mx-5">
+                  {/* Y-axis reference lines */}
+                  {(() => {
+                    const mid = Math.round((rawMin + rawMax) / 2 / 100) * 100;
+                    const ticks = [rawMin, mid, rawMax].filter((v, i, a) => a.indexOf(v) === i && v >= 0);
+                    return ticks.map((v, ti) => {
+                      const yPct = getY(v);
+                      if (yPct < 0 || yPct > 100) return null;
+                      return (
+                        <div key={ti} className="absolute left-0 right-0 pointer-events-none" style={{ top: `${yPct}%` }}>
+                          <div className="border-t border-dashed border-gray-200/60 w-full" />
+                          <span className="absolute -left-1 -translate-x-full -translate-y-1/2 text-[8px] text-gray-300 font-bold">{v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={
+                        lineDots.map((d, i) => {
                           const y = getY(d.volume);
                           return `${i === 0 ? "M" : "L"} ${d.xPct} ${y}`;
-                        }).join(" ")}
-                        fill="none"
-                        stroke="#2D6A4F"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    </svg>
-
-                    {/* Date labels under each group x position */}
-                    {recentGroups.map((group, gi) => {
-                      const xPct = isSingleGroup
-                        ? (totalSessions === 1 ? 50 : (gi / Math.max(recentGroups.length - 1, 1)) * 100)
-                        : (gi / (recentGroups.length - 1)) * 100;
-                      return (
-                        <span
-                          key={`date-${gi}`}
-                          className="absolute text-[9px] text-gray-300 font-medium whitespace-nowrap"
-                          style={{ left: `${xPct}%`, bottom: "-18px", transform: "translateX(-50%)" }}
-                        >
-                          {group.dateStr}
-                        </span>
-                      );
-                    })}
-
-                    {/* Dots — tap to show value */}
-                    {allDots.map((d, i) => {
-                      const yPct = getY(d.volume);
-                      const isLast = i === allDots.length - 1;
-                      const isActive = activeVolumeDot === i;
-                      return (
-                        <button
-                          type="button"
-                          key={i}
-                          className="absolute z-10 flex items-center justify-center"
-                          style={{ left: `${d.xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
-                          onPointerUp={(e) => { e.stopPropagation(); setActiveVolumeDot(isActive ? null : i); }}
-                        >
-                          {isActive && (
-                            <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
-                              {d.volume.toLocaleString()}kg
-                            </span>
-                          )}
-                          <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
-                        </button>
-                      );
-                    })}
-                  </div>
+                        }).join(" ") + ` L ${lineDots[lineDots.length - 1].xPct} 100 L ${lineDots[0].xPct} 100 Z`
+                      }
+                      fill="url(#volumeGradient)"
+                    />
+                    <defs>
+                      <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d={lineDots.map((d, i) => {
+                        const y = getY(d.volume);
+                        return `${i === 0 ? "M" : "L"} ${d.xPct} ${y}`;
+                      }).join(" ")}
+                      fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                  {allDots.map((d, i) => {
+                    const yPct = getY(d.volume);
+                    const isLast = i === allDots.length - 1;
+                    const isActive = activeVolumeDot === i;
+                    return (
+                      <button type="button" key={i} className="absolute z-10 flex items-center justify-center"
+                        style={{ left: `${d.xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
+                        onPointerUp={(e) => { e.stopPropagation(); setActiveVolumeDot(isActive ? null : i); }}
+                      >
+                        {isActive && (
+                          <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
+                            {d.volume.toLocaleString()}kg
+                          </span>
+                        )}
+                        <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="relative text-[9px] text-gray-300 font-medium mx-5">
+                  <span className="absolute left-0 -translate-x-1/2">{recentGroups[0].dateStr}</span>
+                  <span className="absolute right-0 translate-x-1/2">{recentGroups[recentGroups.length - 1].dateStr}</span>
+                  <span>&nbsp;</span>
                 </div>
               </div>
             );
           })()}
 
-          {/* Weight Trend Graph */}
-          {weightLog.length > 0 && (() => {
-            const sorted = [...weightLog].sort((a, b) => a.date.localeCompare(b.date));
-            const recent = sorted.slice(-30); // last 30 entries
-            if (recent.length === 0) return null;
-
-            const weights = recent.map(e => e.weight);
-            const rawMin = Math.min(...weights);
-            const rawMax = Math.max(...weights);
-            // Add padding so flat lines sit in the middle, not at edges
-            const padding = rawMax - rawMin < 1 ? 2 : (rawMax - rawMin) * 0.2;
-            const minW = rawMin - padding;
-            const maxW = rawMax + padding;
-            const range = maxW - minW;
-            const latestWeight = weights[weights.length - 1];
-            const firstWeight = weights[0];
-            const diff = latestWeight - firstWeight;
-
-            return (
-              <div
-                className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible transition-all"
-              >
-                <div className="flex justify-between items-baseline mb-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[10px] font-bold text-[#2D6A4F] uppercase tracking-widest">체중 변화</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => setView("weight_detail")}
-                  >
-                    <span className={`text-[10px] font-black ${diff > 0 ? "text-rose-400" : diff < 0 ? "text-sky-400" : "text-gray-400"}`}>
-                      {diff > 0 ? "+" : ""}{diff.toFixed(1)}kg
-                    </span>
-                    <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex items-baseline gap-1 mb-3 sm:mb-4">
-                  <h3 className="text-2xl sm:text-3xl font-black text-[#1B4332]">{latestWeight.toFixed(1)}</h3>
-                  <span className="text-base sm:text-lg text-[#2D6A4F]/50">kg</span>
-                </div>
-
-                <div className="flex h-36 sm:h-32 gap-2 pt-6 pb-5">
-                  {/* Y-axis labels */}
-                  <div className="flex flex-col justify-between shrink-0 w-8">
-                    <span className="text-[8px] text-gray-300 font-bold text-right">{rawMax.toFixed(1)}</span>
-                    <span className="text-[8px] text-gray-300 font-bold text-right">{rawMin.toFixed(1)}</span>
-                  </div>
-
-                  {/* Graph area */}
-                  <div className="relative flex-1 overflow-visible">
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                      {/* Grid lines */}
-                      <line x1="0" y1="5" x2="100" y2="5" stroke="#f3f4f6" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-                      <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-                      <line x1="0" y1="95" x2="100" y2="95" stroke="#f3f4f6" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-
-                      {/* Area fill */}
-                      <path
-                        d={
-                          recent.map((_, i) => {
-                            const x = recent.length === 1 ? 50 : (i / (recent.length - 1)) * 100;
-                            const y = 95 - ((weights[i] - minW) / range) * 90;
-                            return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-                          }).join(" ") + ` L 100 100 L 0 100 Z`
-                        }
-                        fill="url(#weightGradient)"
-                      />
-                      <defs>
-                        <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.15" />
-                          <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Line */}
-                      <path
-                        d={recent.map((_, i) => {
-                          const x = recent.length === 1 ? 50 : (i / (recent.length - 1)) * 100;
-                          const y = 95 - ((weights[i] - minW) / range) * 90;
-                          return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-                        }).join(" ")}
-                        fill="none"
-                        stroke="#2D6A4F"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    </svg>
-
-                    {/* Date labels — first and last */}
-                    {recent.length > 0 && [0, recent.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(idx => {
-                      const xPct = recent.length === 1 ? 50 : (idx / (recent.length - 1)) * 100;
-                      return (
-                        <span
-                          key={`wdate-${idx}`}
-                          className="absolute text-[9px] text-gray-300 font-medium whitespace-nowrap"
-                          style={{ left: `${xPct}%`, bottom: "-18px", transform: "translateX(-50%)" }}
-                        >
-                          {recent[idx].date.slice(5).replace("-", "/")}
-                        </span>
-                      );
-                    })}
-
-                    {/* Dots — tap to show value */}
-                    {weights.map((w, i) => {
-                      const xPct = weights.length === 1 ? 50 : (i / (weights.length - 1)) * 100;
-                      const yPct = 95 - ((w - minW) / range) * 90;
-                      const isLast = i === weights.length - 1;
-                      const isActive = activeWeightDot === i;
-                      return (
-                        <button
-                          type="button"
-                          key={i}
-                          className="absolute z-10 flex items-center justify-center"
-                          style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
-                          onPointerUp={(e) => { e.stopPropagation(); setActiveWeightDot(isActive ? null : i); }}
-                        >
-                          {isActive && (
-                            <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
-                              {w.toFixed(1)}kg
-                            </span>
-                          )}
-                          <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       </div>
 
@@ -917,6 +1023,33 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-2 animate-slide-up shadow-2xl z-50 max-h-[85vh] flex flex-col">
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5 shrink-0" />
             <div className="flex-1 overflow-y-auto scrollbar-hide">
+            {helpCard === "loadTimeline" && (
+              <>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">4주 부하 타임라인</h3>
+                <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
+                  <p>최근 4주간의 <span className="font-bold text-[#1B4332]">운동 부하(볼륨)를 그래프로</span> 보여줘요. 점 하나가 운동 한 번이에요.</p>
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded-sm inline-block shrink-0" />
+                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">초록색 영역 = 성장 구간</span></p>
+                    </div>
+                    <p className="text-[11px] text-gray-500 ml-5">훈련 레벨과 연령에 맞춘 적정 볼륨 구간이에요. 이 안에 있으면 잘하고 있는 거예요.</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="w-3 h-3 bg-amber-50 border border-amber-200 rounded-sm inline-block shrink-0" />
+                      <p className="text-[11px]"><span className="font-bold text-amber-600">노란색 영역 = 고부하 주의</span></p>
+                    </div>
+                    <p className="text-[11px] text-gray-500 ml-5">적정 범위를 넘은 구간이에요. 가끔은 괜찮지만 자주 넘으면 조절이 필요해요.</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="w-3 h-3 bg-[#2D6A4F] rounded-full inline-block shrink-0" />
+                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">점 = 세션별 부하</span></p>
+                    </div>
+                    <p className="text-[11px] text-gray-500 ml-5">총 볼륨(무게 × 횟수)을 체중으로 나눈 값이에요. 점을 터치하면 수치를 확인할 수 있어요.</p>
+                  </div>
+                  <p>꾸준히 초록 영역 안에 점이 찍히면 <span className="font-bold text-[#2D6A4F]">잘 관리되고 있는 거예요</span>.</p>
+                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM 점진적 과부하 원칙, Schoenfeld et al. (2017), Israetel RP Strength, NSCA</p>
+                </div>
+              </>
+            )}
             {helpCard === "trainingLevel" && (
               <>
                 <h3 className="text-lg font-black text-[#1B4332] mb-3">훈련 레벨 추정</h3>

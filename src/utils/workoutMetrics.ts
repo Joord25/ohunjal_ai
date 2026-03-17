@@ -243,10 +243,11 @@ export function estimateTrainingLevelDetailed(
   // 최근 4주 기준선
   const recentCutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
 
-  // 헬퍼: 3대 운동 e1RM/BW를 기간 필터 적용하여 추출
-  function extractBig3(sessions: WorkoutHistory[]): Record<string, number> {
-    const best: Record<string, number> = {};
-    if (!bodyWeightKg || bodyWeightKg <= 0) return best;
+  // 헬퍼: 3대 운동 e1RM/BW ratio + raw e1RM 추출
+  function extractBig3(sessions: WorkoutHistory[]): { ratios: Record<string, number>; rawE1rm: Record<string, number> } {
+    const ratios: Record<string, number> = {};
+    const rawE1rm: Record<string, number> = {};
+    if (!bodyWeightKg || bodyWeightKg <= 0) return { ratios, rawE1rm };
     for (const h of sessions) {
       const exercises = h.sessionData?.exercises || [];
       const logs = h.logs || {};
@@ -262,8 +263,9 @@ export function estimateTrainingLevelDetailed(
                 if (!isNaN(weight) && weight > 0 && log.repsCompleted > 0) {
                   const e1rm = estimate1RM(weight, log.repsCompleted);
                   const ratio = e1rm / bodyWeightKg!;
-                  if (!best[pattern.category] || ratio > best[pattern.category]) {
-                    best[pattern.category] = ratio;
+                  if (!ratios[pattern.category] || ratio > ratios[pattern.category]) {
+                    ratios[pattern.category] = ratio;
+                    rawE1rm[pattern.category] = e1rm;
                   }
                 }
               }
@@ -272,7 +274,7 @@ export function estimateTrainingLevelDetailed(
         }
       });
     }
-    return best;
+    return { ratios, rawE1rm };
   }
 
   // 헬퍼: 맨몸 운동 최고 렙수를 기간 필터 적용하여 추출
@@ -301,16 +303,17 @@ export function estimateTrainingLevelDetailed(
   }
 
   // 헬퍼: 카테고리별 레벨 판정
-  function assessBig3Level(ratios: Record<string, number>): { details: LevelEstimation["details"]; level: TrainingLevel } {
+  function assessBig3Level(big3: { ratios: Record<string, number>; rawE1rm: Record<string, number> }): { details: LevelEstimation["details"]; level: TrainingLevel } {
     const details: LevelEstimation["details"] = [];
-    const levels: TrainingLevel[] = Object.keys(ratios).map(cat => {
-      const ratio = ratios[cat];
+    const levels: TrainingLevel[] = Object.keys(big3.ratios).map(cat => {
+      const ratio = big3.ratios[cat];
       const thresholds = LEVEL_THRESHOLDS_MALE[cat];
       if (!thresholds) return "beginner" as TrainingLevel;
       const intThresh = thresholds.intermediate * genderMult;
       const advThresh = thresholds.advanced * genderMult;
       const lvl: TrainingLevel = ratio >= advThresh ? "advanced" : ratio >= intThresh ? "intermediate" : "beginner";
-      details.push({ exercise: CATEGORY_LABELS[cat] || cat, value: `e1RM/BW ${ratio.toFixed(2)}x`, level: lvl });
+      const e1rm = big3.rawE1rm[cat];
+      details.push({ exercise: CATEGORY_LABELS[cat] || cat, value: e1rm ? `${Math.round(e1rm)}kg` : `${ratio.toFixed(2)}x`, level: lvl });
       return lvl;
     });
     const counts = { beginner: 0, intermediate: 0, advanced: 0 };
@@ -352,11 +355,11 @@ export function estimateTrainingLevelDetailed(
 
   // 1순위: 3대 운동
   const allBig3 = extractBig3(history);
-  if (Object.keys(allBig3).length > 0) {
+  if (Object.keys(allBig3.ratios).length > 0) {
     const allTime = assessBig3Level(allBig3);
     // 최근 4주 기록으로 유지 확인
     const recentBig3 = extractBig3(recentHistory);
-    const recentResult = Object.keys(recentBig3).length > 0 ? assessBig3Level(recentBig3) : null;
+    const recentResult = Object.keys(recentBig3.ratios).length > 0 ? assessBig3Level(recentBig3) : null;
 
     let finalLevel = allTime.level;
     let decayed = false;

@@ -61,7 +61,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const [helpCard, setHelpCard] = useState<string | null>(null);
   const [activeDot, setActiveDot] = useState<string | null>(null);
   const [e1rmIndex, setE1rmIndex] = useState(0);
-  const [activeTimelineDot, setActiveTimelineDot] = useState<number | null>(null);
   const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>(getRecentHistorySync);
 
   const metrics = buildWorkoutMetrics(sessionData.exercises, logs, bodyWeightKg, savedDurationSec);
@@ -433,113 +432,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">총 운동 시간</p>
             </div>
             <p className="text-xl font-black text-[#1B4332]">{formatDuration(totalDurationSec)}</p>
-          </div>
-        )}
-
-        {/* === 4-Week Load Graph (strength only) === */}
-        {isStrengthSession && graphData.length > 1 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-5 shadow-sm">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">4주 부하 타임라인</p>
-              <button onClick={() => setHelpCard("loadTimeline")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                <span className="text-[10px] font-black text-gray-400">?</span>
-              </button>
-            </div>
-            <div className="relative h-32 sm:h-28 mt-5 sm:mt-4 mb-2">
-              {/* Evidence-based optimal band (레벨+연령 보정) */}
-              {graphData.length > 1 && (() => {
-                const maxLoad = Math.max(...graphData.map(g => g.loadScore), 1);
-                const maxScale = Math.max(maxLoad, loadBand.high, loadBand.overload) * 1.1;
-                const topPct = 100 - (loadBand.high / maxScale) * 80;
-                const bottomPct = 100 - (loadBand.low / maxScale) * 80;
-                const overloadPct = 100 - (loadBand.overload / maxScale) * 80;
-                return (
-                  <>
-                    {/* Overload warning zone (above optimal) */}
-                    <div
-                      className="absolute left-0 right-0 bg-amber-50/50 border-t border-amber-200/50 rounded-t"
-                      style={{
-                        top: `${Math.max(0, overloadPct)}%`,
-                        height: `${Math.max(0, topPct - overloadPct)}%`,
-                      }}
-                    />
-                    {/* Optimal zone */}
-                    <div
-                      className="absolute left-0 right-0 bg-emerald-50 border-y border-emerald-100 rounded"
-                      style={{
-                        top: `${Math.max(0, topPct)}%`,
-                        height: `${Math.max(4, bottomPct - topPct)}%`,
-                      }}
-                    />
-                  </>
-                );
-              })()}
-              {/* Line + dots */}
-              <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                {graphData.length > 1 && (
-                  <path
-                    className="animate-draw-line"
-                    style={{ animationDelay: "0.8s" }}
-                    d={graphData.map((d, i) => {
-                      const x = (i / (graphData.length - 1)) * 100;
-                      const maxLoad = Math.max(...graphData.map(g => g.loadScore), 1);
-                      const maxScale = Math.max(maxLoad, loadBand.high, loadBand.overload) * 1.1;
-                      const y = 100 - ((d.loadScore / maxScale) * 80);
-                      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-                    }).join(" ")}
-                    fill="none"
-                    stroke="#2D6A4F"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                )}
-              </svg>
-              {graphData.map((d, i) => {
-                const xPct = graphData.length === 1 ? 50 : (i / (graphData.length - 1)) * 100;
-                const maxLoad = Math.max(...graphData.map(g => g.loadScore), 1);
-                const maxScale = Math.max(maxLoad, loadBand.high, loadBand.overload) * 1.1;
-                const yPct = 100 - ((d.loadScore / maxScale) * 80);
-                const isToday = i === graphData.length - 1;
-                const isOverload = d.loadScore > loadBand.overload;
-                const isAboveBand = d.loadScore > loadBand.high && !isOverload;
-                const isBelowBand = d.loadScore < loadBand.low;
-                const isActive = activeTimelineDot === i;
-                return (
-                  <button
-                    type="button"
-                    key={i}
-                    className="absolute animate-dot-pop z-10 flex items-center justify-center"
-                    style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0, animationDelay: `${0.9 + i * 0.1}s` }}
-                    onPointerUp={(e) => { e.stopPropagation(); setActiveTimelineDot(isActive ? null : i); }}
-                  >
-                    {isActive && (
-                      <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
-                        {d.loadScore.toFixed(1)}
-                      </span>
-                    )}
-                    <div className={`rounded-full border-2 transition-transform ${isActive ? "scale-150" : ""} ${
-                      isToday
-                        ? isOverload ? "bg-red-500 border-red-500 w-3 h-3"
-                          : isAboveBand ? "bg-amber-500 border-amber-500 w-3 h-3"
-                          : isBelowBand ? "bg-blue-400 border-blue-400 w-3 h-3"
-                          : "bg-[#2D6A4F] border-[#2D6A4F] w-3 h-3"
-                        : "bg-white border-[#2D6A4F] w-2.5 h-2.5"
-                    }`} />
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex justify-between text-[9px] text-gray-300 font-medium">
-              <span>{graphData.length > 0 ? `${graphData[0].date.getMonth() + 1}/${graphData[0].date.getDate()}` : ""}</span>
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-50 border border-amber-200 rounded-sm inline-block" /> 주의</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-100 rounded-sm inline-block" /> 최적</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#2D6A4F] rounded-full inline-block" /> 부하</span>
-              </div>
-              <span>오늘</span>
-            </div>
           </div>
         )}
 
