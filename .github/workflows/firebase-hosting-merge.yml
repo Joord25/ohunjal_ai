@@ -20,11 +20,10 @@ jobs:
           echo "NEXT_PUBLIC_PORTONE_CHANNEL_KEY=${{ secrets.NEXT_PUBLIC_PORTONE_CHANNEL_KEY }}" >> .env.local
           echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.NEXT_PUBLIC_GEMINI_API_KEY }}" >> .env.local
       - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_OHUNJAL }}
-          channelId: live
-          projectId: ohunjal
+      - name: Write service account key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_OHUNJAL }}' > sa-key.json
+      - name: Deploy to Firebase Hosting
+        run: npx firebase-tools deploy --only hosting --project ohunjal
         env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
           FIREBASE_CLI_EXPERIMENTS: webframeworks
