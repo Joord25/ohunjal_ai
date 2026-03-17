@@ -124,7 +124,7 @@ export async function loadWorkoutHistory(): Promise<WorkoutHistory[]> {
   }
 }
 
-/** Load recent history (last 28 days) — used by WorkoutReport */
+/** Load recent history (last 90 days) — used by WorkoutReport & AI analysis */
 export async function loadRecentHistory(): Promise<WorkoutHistory[]> {
   const col = getUserCollection();
 
@@ -133,7 +133,7 @@ export async function loadRecentHistory(): Promise<WorkoutHistory[]> {
   }
 
   try {
-    const cutoff = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const q = query(
       col,
       where("createdAt", ">=", Timestamp.fromDate(cutoff)),
@@ -212,6 +212,6 @@ function loadFromLocalStorage(): WorkoutHistory[] {
 
 function loadRecentFromLocalStorage(): WorkoutHistory[] {
   const all = loadFromLocalStorage();
-  const cutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
   return all.filter((h) => new Date(h.date).getTime() > cutoff);
 }

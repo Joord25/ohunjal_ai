@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory } from "@/constants/workout";
 import { analyzeWorkoutSession } from "@/utils/gemini";
-import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory } from "@/utils/workoutMetrics";
+import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, summarizeHistoryForAI, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore } from "@/utils/workoutHistory";
 
@@ -28,7 +28,7 @@ function getRecentHistorySync(): WorkoutHistory[] {
     const raw = localStorage.getItem("alpha_workout_history");
     if (!raw) return [];
     const all: WorkoutHistory[] = JSON.parse(raw);
-    const cutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
     return all.filter(h => new Date(h.date).getTime() > cutoff);
   } catch {
     return [];
@@ -58,6 +58,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [closeAfterShare, setCloseAfterShare] = useState(false);
   const [helpCard, setHelpCard] = useState<string | null>(null);
   const [activeDot, setActiveDot] = useState<string | null>(null);
   const [e1rmIndex, setE1rmIndex] = useState(0);
@@ -89,9 +90,14 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   };
 
   const historyStats = get28dAvgVolume(recentHistory);
+  const historyTrend = summarizeHistoryForAI(recentHistory);
 
   // Training level estimation from history (근거: NSCA, Rippetoe 2006)
   const trainingLevel = estimateTrainingLevel(recentHistory, bodyWeightKg, gender);
+
+  // Session intensity classification (ACSM 2009 + NSCA)
+  const sessionIntensity = classifySessionIntensity(sessionData.exercises, logs);
+  const intensityRec = getIntensityRecommendation(recentHistory, birthYear, gender);
 
   // Load recent history from Firestore (async update after initial sync render)
   useEffect(() => {
@@ -108,7 +114,13 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
       const fetchAnalysis = async () => {
         setIsAnalyzing(true);
         const result = await analyzeWorkoutSession(
-          sessionData, logs, bodyWeightKg, gender, birthYear, historyStats
+          sessionData, logs, bodyWeightKg, gender, birthYear, historyStats, historyTrend,
+          {
+            sessionIntensity: { level: sessionIntensity.level, avgPercentile1RM: sessionIntensity.avgPercentile1RM, avgRepsPerSet: sessionIntensity.avgRepsPerSet },
+            weekSummary: intensityRec.weekSummary,
+            target: intensityRec.target,
+            nextRecommended: intensityRec.nextRecommended,
+          }
         );
         setAnalysis(result);
         setIsAnalyzing(false);
@@ -175,22 +187,31 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           <p className="text-xs text-gray-400 font-medium mt-1 animate-report-slide" style={{ animationDelay: "0.2s" }}>{(sessionDate ? new Date(sessionDate) : new Date()).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}</p>
         </div>
 
-        {/* === AI Coach Briefing === */}
+        {/* === AI Trend Analysis === */}
         <div className="mb-5">
           {isAnalyzing ? (
             <div className="bg-white rounded-2xl p-5 border border-gray-100 flex flex-col items-center gap-3 animate-pulse shadow-sm">
               <div className="w-7 h-7 border-2 border-emerald-200 border-t-[#2D6A4F] rounded-full animate-spin" />
-              <p className="text-xs font-bold text-gray-400">AI 코치가 세션을 분석중입니다...</p>
+              <p className="text-xs font-bold text-gray-400">{historyTrend.sessionCount >= 2 ? "AI가 변화 추이를 분석중입니다..." : "AI 코치가 세션을 분석중입니다..."}</p>
             </div>
           ) : analysis ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm animate-report-slide" style={{ animationDelay: "0.3s" }}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 rounded-full bg-[#1B4332] flex items-center justify-center">
                   <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    {historyTrend.sessionCount >= 2 ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    )}
                   </svg>
                 </div>
-                <h2 className="text-sm font-black text-[#1B4332] tracking-tight uppercase">코치 브리핑</h2>
+                <h2 className="text-sm font-black text-[#1B4332] tracking-tight uppercase">
+                  {historyTrend.sessionCount >= 2 ? "변화 분석" : "코치 브리핑"}
+                </h2>
+                {historyTrend.sessionCount >= 2 && (
+                  <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">최근 {historyTrend.sessionCount}세션 기반</span>
+                )}
               </div>
               <p className="text-[13px] font-medium text-gray-700 leading-relaxed">
                 {analysis.briefing}
@@ -304,30 +325,30 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 </p>
               </div>
 
-              {/* Target Rate */}
+              {/* Session Intensity */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.6s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">타깃 적중률</p>
-                  <button onClick={() => setHelpCard("targetRate")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">운동 강도</p>
+                  <button onClick={() => setHelpCard("intensity")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-[10px] font-black text-gray-400">?</span>
                   </button>
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <p className="text-2xl font-black text-[#1B4332] leading-none">
-                    {successRate}%
+                    {sessionIntensity.level === "high" ? "고강도" : sessionIntensity.level === "moderate" ? "중강도" : "저강도"}
                   </p>
                   <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
-                    successRate >= 85
-                      ? "bg-emerald-50 text-[#2D6A4F]"
-                      : successRate >= 70
-                        ? "bg-amber-50 text-amber-600"
-                        : "bg-red-50 text-red-500"
+                    sessionIntensity.level === "high" ? "bg-red-50 text-red-500"
+                      : sessionIntensity.level === "moderate" ? "bg-amber-50 text-amber-600"
+                      : "bg-blue-50 text-blue-500"
                   }`}>
-                    {successRate >= 85 ? "잘함" : successRate >= 70 ? "보통" : "무리"}
+                    {sessionIntensity.basis === "percent_1rm" && sessionIntensity.avgPercentile1RM
+                      ? `${sessionIntensity.avgPercentile1RM}% 1RM`
+                      : `평균 ${sessionIntensity.avgRepsPerSet}회`}
                   </span>
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
-                  {metrics.totalSets}세트 중 {Math.round(metrics.totalSets * successRate / 100)}세트 성공
+                  이번 주: 고{intensityRec.weekSummary.high} · 중{intensityRec.weekSummary.moderate} · 저{intensityRec.weekSummary.low}
                 </p>
               </div>
 
@@ -680,12 +701,20 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                   <p>예를 들어 <span className="font-bold">1.1배</span>면 체중의 1.1배를 들 수 있다는 뜻이에요.</p>
                   <p>▶ 버튼으로 <span className="font-bold">4대 운동</span>(스쿼트 · 데드리프트 · 벤치프레스 · 오버헤드프레스)의 기록을 넘겨볼 수 있어요.</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">체중 대비 기준 (남성 · 벤치프레스 기준)</p>
-                    <div className="flex gap-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">~0.8배 초급</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">0.8~1.2배 중급</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">1.2배+ 상급</span>
-                    </div>
+                    <p className="text-[11px] font-bold text-gray-500">체중 대비 기준 ({gender === "female" ? "여성" : "남성"} · 벤치프레스 기준)</p>
+                    {gender === "female" ? (
+                      <div className="flex gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">~0.5배 초급</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">0.5~0.8배 중급</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">0.8배+ 상급</span>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">~0.8배 초급</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">0.8~1.2배 중급</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">1.2배+ 상급</span>
+                      </div>
+                    )}
                   </div>
                   <p><span className="font-bold">1RM</span>은 오늘 세트 기록(무게 × 횟수)에서 Epley 공식으로 추정한 값이에요. 실제 1회 최대 시도 없이도 내 근력 수준을 알 수 있어요.</p>
                   <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: NSCA Essentials of S&C (4th ed.), Epley (1985)</p>
@@ -732,22 +761,50 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 </div>
               </>
             )}
-            {helpCard === "targetRate" && (
+            {helpCard === "intensity" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">타깃 적중률</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">운동 강도</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>AI가 정해준 목표 횟수를 <span className="font-bold text-[#1B4332]">실제로 얼마나 잘 채웠는지</span> 보여주는 거예요.</p>
-                  <p>예를 들어 <span className="font-bold">84%</span>라면, 전체 세트 중 84%를 목표대로 성공했다는 뜻이에요.</p>
+                  <p>오늘 운동이 <span className="font-bold text-[#1B4332]">고강도·중강도·저강도</span> 중 어디에 해당하는지 보여줘요.</p>
+                  <p>세트별 사용 중량을 예상 1RM 대비 비율(%1RM)로 환산해서 판정해요. 중량 데이터가 없으면 세트당 평균 반복수로 판정해요.</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">적중률 기준</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">85%+ 잘함</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">70~85% 보통</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">~70% 무리</span>
+                    <p className="text-[11px] font-bold text-gray-500">강도 분류 기준 (ACSM + NSCA)</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded shrink-0">고강도</span>
+                        <span className="text-[10px] text-gray-500">80%+ 1RM · 1-6회 · 최대근력</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded shrink-0">중강도</span>
+                        <span className="text-[10px] text-gray-500">60-79% 1RM · 7-12회 · 근비대</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">저강도</span>
+                        <span className="text-[10px] text-gray-500">60% 미만 1RM · 13회+ · 근지구력</span>
+                      </div>
                     </div>
                   </div>
-                  <p>85% 이상이면 무게를 올릴 타이밍이고, 70% 이하면 무게를 좀 낮추는 게 좋아요.</p>
-                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: NSCA RPE 가이드라인, Helms et al. (2018), ACSM (2009)</p>
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                    <p className="text-[11px] font-bold text-gray-500">주간 권장 배분 ({gender === "female" ? "여성" : "남성"} · 연령별)</p>
+                    {gender === "female" ? (
+                      <div className="space-y-1 text-[10px]">
+                        <div className="flex justify-between"><span className="text-gray-500">20-39세</span><span className="font-bold text-gray-600">고 2회 · 중 2회 · 저 1회</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">40-59세</span><span className="font-bold text-gray-600">고 2회 · 중 2회 · 저 1회 (골밀도)</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">60세+</span><span className="font-bold text-gray-600">고 1회 · 중 2회 · 저 1회</span></div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 text-[10px]">
+                        <div className="flex justify-between"><span className="text-gray-500">20-39세</span><span className="font-bold text-gray-600">고 2회 · 중 2회 · 저 1회</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">40-59세</span><span className="font-bold text-gray-600">고 1회 · 중 3회 · 저 1회</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">60세+</span><span className="font-bold text-gray-600">고 1회 · 중 2회 · 저 1회</span></div>
+                      </div>
+                    )}
+                  </div>
+                  {gender === "female" && (
+                    <p className="text-[11px] text-gray-500"><span className="font-bold text-[#2D6A4F]">여성 참고</span>: 에스트로겐의 항염증 효과로 회복이 ~15% 빠르며, 40대 이후 골밀도 유지를 위해 고강도 비중을 유지하는 것이 권장돼요 (ACSM 폐경 후 가이드라인).</p>
+                  )}
+                  <p>고·중·저를 <span className="font-bold text-[#2D6A4F]">골고루 배분</span>하면 과훈련을 방지하고 성장 효율이 가장 높아요. 이번 주 배분을 확인하고 다음 세션 강도를 조절해보세요.</p>
+                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM Position Stand (2009, PubMed 19204579), NSCA Essentials of S&C 4th ed., WHO Physical Activity Guidelines (2020, PMC 7719906), NSCA DUP 주기화 모델, Schoenfeld et al. (2019, PMC 6303131)</p>
                 </div>
               </>
             )}
@@ -837,12 +894,14 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             </svg>
             공유
           </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-2xl bg-[#1B4332] text-white font-bold text-base shadow-xl shadow-[#1B4332]/20 active:scale-95 transition-all"
-          >
-            완료
-          </button>
+          {!sessionDate && (
+            <button
+              onClick={() => { setCloseAfterShare(true); setShowShare(true); }}
+              className="flex-1 py-3 rounded-2xl bg-[#1B4332] text-white font-bold text-base shadow-xl shadow-[#1B4332]/20 active:scale-95 transition-all"
+            >
+              완료
+            </button>
+          )}
         </div>
       </div>
 
@@ -856,7 +915,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           bodyWeightKg={bodyWeightKg}
           sessionDate={sessionDate}
           recentHistory={recentHistory}
-          onClose={() => setShowShare(false)}
+          onClose={() => { setShowShare(false); if (closeAfterShare) { setCloseAfterShare(false); onClose(); } }}
         />
       )}
     </div>

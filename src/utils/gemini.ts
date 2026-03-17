@@ -1,5 +1,5 @@
 import { UserCondition, WorkoutGoal, WorkoutSessionData, ExerciseLog, WorkoutAnalysis } from "@/constants/workout";
-import { buildWorkoutMetrics } from "@/utils/workoutMetrics";
+import { buildWorkoutMetrics, HistoryTrendSummary } from "@/utils/workoutMetrics";
 import { auth } from "@/lib/firebase";
 
 // Helper: get current user's ID token for authenticated requests
@@ -18,7 +18,14 @@ export const analyzeWorkoutSession = async (
   bodyWeightKg?: number,
   gender?: "male" | "female",
   birthYear?: number,
-  historyStats?: { avgVolume28d: number; sessionCount: number } | null
+  historyStats?: { avgVolume28d: number; sessionCount: number } | null,
+  historyTrend?: HistoryTrendSummary | null,
+  intensityContext?: {
+    sessionIntensity: { level: string; avgPercentile1RM: number | null; avgRepsPerSet: number };
+    weekSummary: { high: number; moderate: number; low: number };
+    target: { high: number; moderate: number; low: number };
+    nextRecommended: string;
+  } | null,
 ): Promise<WorkoutAnalysis | null> => {
   try {
     const token = await getIdToken();
@@ -37,7 +44,9 @@ export const analyzeWorkoutSession = async (
         gender,
         birthYear,
         historyStats,
+        historyTrend,
         metrics,
+        intensityContext,
       }),
     });
 
@@ -58,6 +67,12 @@ export const generateAIWorkoutPlan = async (
   goal: WorkoutGoal,
   dayName: string,
   selectedSessionType?: string,
+  intensityContext?: {
+    recommended: "high" | "moderate" | "low";
+    weekSummary: { high: number; moderate: number; low: number };
+    target: { high: number; moderate: number; low: number };
+    reason: string;
+  } | null,
 ): Promise<WorkoutSessionData | null> => {
   try {
     const token = await getIdToken();
@@ -73,6 +88,7 @@ export const generateAIWorkoutPlan = async (
         goal,
         dayName,
         selectedSessionType,
+        intensityContext,
       }),
     });
 

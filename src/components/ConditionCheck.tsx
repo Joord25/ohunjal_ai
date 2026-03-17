@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { UserCondition, WorkoutGoal } from "@/constants/workout";
+import React, { useState, useEffect } from "react";
+import { UserCondition, WorkoutGoal, WorkoutHistory } from "@/constants/workout";
 import { updateWeight, updateGender, updateBirthYear } from "@/utils/userProfile";
+import { getIntensityRecommendation, type IntensityLevel } from "@/utils/workoutMetrics";
 
 interface ConditionCheckProps {
   onComplete: (condition: UserCondition, goal: WorkoutGoal) => void;
@@ -37,6 +38,36 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
     return "";
   });
 
+  const [showIntensityGuide, setShowIntensityGuide] = useState(false);
+  const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>([]);
+
+  // Load recent history for intensity recommendation
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("alpha_workout_history");
+      if (raw) {
+        const all: WorkoutHistory[] = JSON.parse(raw);
+        const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        setRecentHistory(all.filter(h => new Date(h.date).getTime() > cutoff));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const savedBirthYear = (() => {
+    if (typeof window === "undefined") return undefined;
+    const v = parseInt(localStorage.getItem("alpha_birth_year") || "");
+    return !isNaN(v) && v > 1900 ? v : undefined;
+  })();
+
+  const savedGender = (() => {
+    if (typeof window === "undefined") return undefined;
+    return (localStorage.getItem("alpha_gender") as "male" | "female") || undefined;
+  })();
+
+  const intensityRec = recentHistory.length > 0
+    ? getIntensityRecommendation(recentHistory, savedBirthYear, savedGender)
+    : null;
+
   // 성별/출생연도가 이미 저장되어 있으면 체중만 입력
   const hasProfile = gender !== null && birthYear.trim().length >= 4;
 
@@ -66,7 +97,12 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
       if (!isNaN(byNum) && byNum > 1900) {
         updateBirthYear(byNum);
       }
-      setStep("goal_select");
+      // Show intensity guide popup before goal_select if we have recommendation data
+      if (intensityRec && !showIntensityGuide) {
+        setShowIntensityGuide(true);
+      } else {
+        setStep("goal_select");
+      }
     } else if (step === "goal_select" && selectedGoal) {
       setGoal(selectedGoal);
       const weightNum = parseFloat(bodyWeight);
@@ -237,46 +273,175 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
           </div>
         ) : (
           /* Goal Selection */
-          <div className="flex flex-col gap-3">
-            <ConditionCard
-              selected={goal === "fat_loss"}
-              onClick={() => handleNext(undefined, "fat_loss")}
-              title="체지방 연소"
-              desc="유산소성 근지구력 (15-20+ Reps)"
-              highlight="Burn"
-              delay={0.05}
-            />
-            <ConditionCard
-              selected={goal === "muscle_gain"}
-              onClick={() => handleNext(undefined, "muscle_gain")}
-              title="근육량 증가"
-              desc="근비대 볼륨 타겟 (8-12 Reps)"
-              highlight="Build"
-              delay={0.1}
-            />
-            <ConditionCard
-              selected={goal === "strength"}
-              onClick={() => handleNext(undefined, "strength")}
-              title="최대 근력"
-              desc="고중량 스트렝스 (3-5 Reps)"
-              highlight="Power"
-              delay={0.15}
-            />
-            <ConditionCard
-              selected={goal === "general_fitness"}
-              onClick={() => handleNext(undefined, "general_fitness")}
-              title="기초체력향상"
-              desc="맨몸 + 가벼운 도구 풀바디 서킷 (10-15 Reps)"
-              highlight="Fit"
-              delay={0.2}
-            />
-          </div>
+          <GoalSelection
+            goal={goal}
+            onSelect={(g) => handleNext(undefined, g)}
+            recommendedIntensity={intensityRec?.nextRecommended || null}
+          />
         )}
       </div>
 
       <div className="absolute bottom-8 left-6 right-6">
         {/* Next Button Removed */}
       </div>
+
+      {/* Intensity Recommendation Popup */}
+      {showIntensityGuide && intensityRec && (
+        <div className="absolute inset-0 z-40">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => {
+            setShowIntensityGuide(false);
+            setStep("goal_select");
+          }} />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl z-50" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <h3 className="text-lg font-black text-[#1B4332] mb-1">이번 주 훈련 밸런스</h3>
+            <p className="text-[11px] text-gray-400 font-medium mb-4">ACSM · NSCA 주기화 기반 강도 배분</p>
+
+            {/* Gender-specific intensity examples */}
+            {savedGender && (
+              <div className="bg-gray-50 rounded-xl p-3 mb-4 space-y-1">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{savedGender === "female" ? "여성" : "남성"} 강도 예시</p>
+                {savedGender === "female" ? (
+                  <div className="space-y-0.5 text-[11px] text-gray-600">
+                    <p><span className="font-bold text-red-500">고강도</span> — 스쿼트 체중×0.65~1.0배, 1-6회 (짧은 휴식 가능)</p>
+                    <p><span className="font-bold text-amber-600">중강도</span> — 스쿼트 체중×0.4~0.65배, 8-15회</p>
+                    <p><span className="font-bold text-blue-500">저강도</span> — 맨몸 or 체중×0.3배 이하, 15회+</p>
+                  </div>
+                ) : (
+                  <div className="space-y-0.5 text-[11px] text-gray-600">
+                    <p><span className="font-bold text-red-500">고강도</span> — 스쿼트 체중×0.8~1.5배, 1-6회</p>
+                    <p><span className="font-bold text-amber-600">중강도</span> — 스쿼트 체중×0.5~0.8배, 7-12회</p>
+                    <p><span className="font-bold text-blue-500">저강도</span> — 맨몸 or 체중×0.3배 이하, 13회+</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Weekly intensity progress */}
+            <div className="space-y-3 mb-5">
+              {([
+                { key: "high" as const, label: "고강도", color: "bg-red-500", desc: "80%+ 1RM · 1-6회" },
+                { key: "moderate" as const, label: "중강도", color: "bg-amber-500", desc: "60-79% 1RM · 7-12회" },
+                { key: "low" as const, label: "저강도", color: "bg-blue-500", desc: "~60% 1RM · 13회+" },
+              ]).map(({ key, label, color, desc }) => {
+                const done = intensityRec.weekSummary[key];
+                const target = intensityRec.target[key];
+                const isFull = done >= target;
+                return (
+                  <div key={key} className="flex items-center gap-3">
+                    <div className="w-14 shrink-0">
+                      <p className="text-[11px] font-bold text-gray-700">{label}</p>
+                      <p className="text-[9px] text-gray-400">{desc}</p>
+                    </div>
+                    <div className="flex-1 flex items-center gap-1.5">
+                      {Array.from({ length: target }).map((_, i) => (
+                        <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${
+                          i < done
+                            ? `${color} border-transparent`
+                            : "bg-gray-100 border-gray-200"
+                        }`}>
+                          {i < done ? (
+                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : null}
+                        </div>
+                      ))}
+                      {isFull && <span className="text-[9px] font-bold text-emerald-600 ml-1">완료</span>}
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-500 shrink-0">{done}/{target}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Recommendation */}
+            <div className={`rounded-2xl p-4 mb-5 ${
+              intensityRec.nextRecommended === "high" ? "bg-red-50 border border-red-100"
+                : intensityRec.nextRecommended === "moderate" ? "bg-amber-50 border border-amber-100"
+                : "bg-blue-50 border border-blue-100"
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-sm font-black ${
+                  intensityRec.nextRecommended === "high" ? "text-red-600"
+                    : intensityRec.nextRecommended === "moderate" ? "text-amber-700"
+                    : "text-blue-600"
+                }`}>
+                  오늘은 {intensityRec.nextRecommended === "high" ? "고강도" : intensityRec.nextRecommended === "moderate" ? "중강도" : "저강도"} 추천!
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium">{intensityRec.reason}</p>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowIntensityGuide(false);
+                setStep("goal_select");
+              }}
+              className="w-full py-3.5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm active:scale-[0.98] transition-all"
+            >
+              확인하고 목표 선택하기
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const INTENSITY_TO_GOAL: Record<string, WorkoutGoal> = {
+  high: "strength",
+  moderate: "muscle_gain",
+  low: "fat_loss",
+};
+
+const GoalSelection = ({
+  goal,
+  onSelect,
+  recommendedIntensity,
+}: {
+  goal: WorkoutGoal | null;
+  onSelect: (g: WorkoutGoal) => void;
+  recommendedIntensity: "high" | "moderate" | "low" | null;
+}) => {
+  const recGoal = recommendedIntensity ? INTENSITY_TO_GOAL[recommendedIntensity] : null;
+  return (
+    <div className="flex flex-col gap-3">
+      <ConditionCard
+        selected={goal === "fat_loss"}
+        onClick={() => onSelect("fat_loss")}
+        title="체지방 연소"
+        desc="유산소성 근지구력 (15-20+ Reps)"
+        highlight="Burn"
+        recommended={recGoal === "fat_loss"}
+        delay={0.05}
+      />
+      <ConditionCard
+        selected={goal === "muscle_gain"}
+        onClick={() => onSelect("muscle_gain")}
+        title="근육량 증가"
+        desc="근비대 볼륨 타겟 (8-12 Reps)"
+        highlight="Build"
+        recommended={recGoal === "muscle_gain"}
+        delay={0.1}
+      />
+      <ConditionCard
+        selected={goal === "strength"}
+        onClick={() => onSelect("strength")}
+        title="최대 근력"
+        desc="고중량 스트렝스 (3-5 Reps)"
+        highlight="Power"
+        recommended={recGoal === "strength"}
+        delay={0.15}
+      />
+      <ConditionCard
+        selected={goal === "general_fitness"}
+        onClick={() => onSelect("general_fitness")}
+        title="기초체력향상"
+        desc="맨몸 + 가벼운 도구 풀바디 서킷 (10-15 Reps)"
+        highlight="Fit"
+        delay={0.2}
+      />
     </div>
   );
 };
@@ -287,6 +452,7 @@ const ConditionCard = ({
   selected,
   onClick,
   highlight,
+  recommended,
   delay = 0
 }: {
   title: string;
@@ -294,6 +460,7 @@ const ConditionCard = ({
   selected: boolean;
   onClick: () => void;
   highlight?: string;
+  recommended?: boolean;
   delay?: number;
 }) => (
   <button
@@ -301,14 +468,21 @@ const ConditionCard = ({
     className={`w-full p-5 rounded-2xl border-2 text-left transition-all duration-200 active:scale-[0.98] animate-card-enter ${
       selected
         ? "border-[#2D6A4F] bg-emerald-50 ring-1 ring-[#2D6A4F]"
-        : "border-gray-100 bg-white hover:border-gray-300"
+        : recommended
+          ? "border-amber-300 bg-amber-50/40 hover:border-amber-400 ring-1 ring-amber-200"
+          : "border-gray-100 bg-white hover:border-gray-300"
     }`}
     style={{ animationDelay: `${delay}s`, animationFillMode: "forwards" }}
   >
     <div className="flex justify-between items-center mb-1">
-      <span className={`text-lg font-bold ${selected ? "text-[#1B4332]" : "text-gray-900"}`}>
-        {title}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className={`text-lg font-bold ${selected ? "text-[#1B4332]" : "text-gray-900"}`}>
+          {title}
+        </span>
+        {recommended && !selected && (
+          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-wider">추천</span>
+        )}
+      </div>
       {selected && (
         <svg className="w-6 h-6 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />

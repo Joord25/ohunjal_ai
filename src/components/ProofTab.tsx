@@ -442,7 +442,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
       <div
         ref={scrollRef}
         className="flex-1 px-4 sm:px-6 sm:pb-6 overflow-y-auto scrollbar-hide pt-2"
-        style={{ paddingBottom: "calc(96px + var(--safe-area-bottom, 0px))" }}
+        style={{ paddingBottom: "calc(8px + var(--safe-area-bottom, 0px))" }}
         onTouchStart={(e) => {
           if (scrollRef.current && scrollRef.current.scrollTop === 0) {
             touchStartY.current = e.touches[0].clientY;
@@ -481,7 +481,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
           <div className="grid grid-cols-7 gap-2">
             {['월', '화', '수', '목', '금', '토', '일'].map((day, i) => (
               <div key={i} className={`text-center text-xs font-bold mb-2 ${
-                i === 6 ? 'text-rose-400' : 'text-gray-400'
+                'text-gray-400'
               }`}>
                 {day}
               </div>
@@ -496,12 +496,11 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             {days.map((day) => {
               const dateObj = new Date(viewYear, viewMonth, day);
               const dateStr = dateObj.toDateString();
-              const dayOfWeek = dateObj.getDay();
 
               const daySessions = history.filter(h => new Date(h.date).toDateString() === dateStr);
               const isCompleted = daySessions.length > 0;
               const isToday = isCurrentMonth && day === today.getDate();
-              const isSunday = dayOfWeek === 0;
+
 
               return (
                 <div
@@ -518,7 +517,6 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   className={`aspect-square rounded-xl flex items-center justify-center text-xs font-bold relative transition-all ${
                     isCompleted
                       ? 'bg-[#2D6A4F] text-white shadow-md shadow-[#2D6A4F]/20 cursor-pointer active:scale-90'
-                      : isSunday ? 'bg-gray-50 text-rose-400'
                       : 'bg-gray-50 text-gray-300'
                   } ${isToday ? 'ring-2 ring-emerald-400 ring-offset-2' : ''}`}
                 >
@@ -695,7 +693,6 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   {weights.map((w, i) => {
                     const xPct = weights.length === 1 ? 50 : (i / (weights.length - 1)) * 100;
                     const yPct = 95 - ((w - minW) / range) * 90;
-                    const isLast = i === weights.length - 1;
                     const isActive = activeWeightDot === i;
                     return (
                       <button type="button" key={i} className="absolute z-10 flex items-center justify-center"
@@ -707,7 +704,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                             {w.toFixed(1)}kg
                           </span>
                         )}
-                        <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
+                        <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} w-2 h-2 bg-white border-2 border-[#2D6A4F]`} />
                       </button>
                     );
                   })}
@@ -801,10 +798,6 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   {graphData.map((d, i) => {
                     const xPct = (i / (graphData.length - 1)) * 100;
                     const yPct = 100 - ((d.loadScore / maxScale) * 80);
-                    const isLast = i === graphData.length - 1;
-                    const isOverload = d.loadScore > loadBand.overload;
-                    const isAboveBand = d.loadScore > loadBand.high && !isOverload;
-                    const isBelowBand = d.loadScore < loadBand.low;
                     const isActive = activeTimelineDot === i;
                     return (
                       <button
@@ -819,14 +812,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                             {d.loadScore.toFixed(1)}
                           </span>
                         )}
-                        <div className={`rounded-full border-2 transition-transform ${isActive ? "scale-150" : ""} ${
-                          isLast
-                            ? isOverload ? "bg-red-500 border-red-500 w-3 h-3"
-                              : isAboveBand ? "bg-amber-500 border-amber-500 w-3 h-3"
-                              : isBelowBand ? "bg-blue-400 border-blue-400 w-3 h-3"
-                              : "bg-[#2D6A4F] border-[#2D6A4F] w-3 h-3"
-                            : "bg-white border-[#2D6A4F] w-2.5 h-2.5"
-                        }`} />
+                        <div className={`rounded-full border-2 transition-transform ${isActive ? "scale-150" : ""} w-2 h-2 bg-white border-[#2D6A4F]`} />
                       </button>
                     );
                   })}
@@ -848,7 +834,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   const isHigh = latest > loadBand.high && !isOverload;
                   const isOptimal = latest >= loadBand.low && latest <= loadBand.high;
                   const label = isOverload ? "과부하" : isHigh ? "높음" : isOptimal ? "적정" : "낮음";
-                  const color = isOverload ? "text-red-500" : isHigh ? "text-amber-500" : isOptimal ? "text-[#2D6A4F]" : "text-blue-400";
+                  const color = "text-gray-500";
                   const comment = isOverload
                     ? "회복이 부족할 수 있어요. 다음 세션은 가볍게 가는 걸 추천해요."
                     : isHigh
@@ -859,7 +845,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   return (
                     <div className="mt-4 pt-4 border-t border-gray-100 text-center">
                       <p className="text-2xl font-black text-[#1B4332]">{latest.toFixed(1)} <span className={`text-base ${color}`}>— {label}</span></p>
-                      <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{comment}</p>
+                      <p className="text-[11px] text-gray-400 mt-1 leading-relaxed pb-2">{comment}</p>
                     </div>
                   );
                 })()}
@@ -987,7 +973,6 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   </svg>
                   {allDots.map((d, i) => {
                     const yPct = getY(d.volume);
-                    const isLast = i === allDots.length - 1;
                     const isActive = activeVolumeDot === i;
                     return (
                       <button type="button" key={i} className="absolute z-10 flex items-center justify-center"
@@ -999,7 +984,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                             {d.volume.toLocaleString()}kg
                           </span>
                         )}
-                        <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} ${isLast ? "w-3 h-3 bg-[#2D6A4F]" : "w-2 h-2 bg-white border-2 border-[#2D6A4F]"}`} />
+                        <div className={`rounded-full transition-transform ${isActive ? "scale-150" : ""} w-2 h-2 bg-white border-2 border-[#2D6A4F]`} />
                       </button>
                     );
                   })}

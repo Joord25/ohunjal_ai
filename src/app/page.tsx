@@ -12,7 +12,7 @@ import { ProofTab } from "@/components/ProofTab";
 import { MyProfileTab } from "@/components/MyProfileTab";
 import { generateAdaptiveWorkout, WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, WorkoutHistory } from "@/constants/workout";
 import { generateAIWorkoutPlan } from "@/utils/gemini";
-import { buildWorkoutMetrics } from "@/utils/workoutMetrics";
+import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { saveWorkoutHistory, updateWorkoutAnalysis, loadWorkoutHistory } from "@/utils/workoutHistory";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
@@ -44,7 +44,7 @@ export default function Home() {
   const [currentGoal, setCurrentGoal] = useState<WorkoutGoal | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<Record<number, ExerciseLog[]>>({});
   const [workoutDurationSec, setWorkoutDurationSec] = useState<number | undefined>(undefined);
-  const [selectedSessionType, setSelectedSessionType] = useState<string | undefined>(undefined);
+  const [recommendedIntensity, setRecommendedIntensity] = useState<"high" | "moderate" | "low" | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -208,7 +208,7 @@ export default function Home() {
     }
   };
 
-  const generatePlan = async (condition: UserCondition, goal: WorkoutGoal, sessionType?: string) => {
+  const generatePlan = async (condition: UserCondition, goal: WorkoutGoal, sessionType?: string, intensityCtx?: { recommended: "high" | "moderate" | "low"; weekSummary: { high: number; moderate: number; low: number }; target: { high: number; moderate: number; low: number }; reason: string } | null, intensityLevel?: "high" | "moderate" | "low" | null) => {
     setIsLoading(true);
     try {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -216,7 +216,7 @@ export default function Home() {
         const dayName = days[dayIndex];
 
         // 1. Try Gemini AI with Day Name and optional Session Type
-        const aiSession = await generateAIWorkoutPlan(condition, goal, dayName, sessionType);
+        const aiSession = await generateAIWorkoutPlan(condition, goal, dayName, sessionType, intensityCtx);
         
         if (aiSession) {
              setCurrentWorkoutSession(aiSession);
@@ -224,7 +224,7 @@ export default function Home() {
             // 2. Fallback to Algorithm if AI fails or returns null
             console.warn("AI generation failed, falling back to algorithm.");
             const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-            const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType);
+            const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel);
             setCurrentWorkoutSession(session);
         }
     } catch (e) {
@@ -232,7 +232,7 @@ export default function Home() {
         // Fallback
         const dayIndex = new Date().getDay();
         const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-        const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType);
+        const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel);
         setCurrentWorkoutSession(session);
     } finally {
         setIsLoading(false);
@@ -255,30 +255,43 @@ export default function Home() {
     setCurrentCondition(condition);
     setCurrentGoal(goal);
 
-    // Map goal → initial session type (goal-first UX)
-    const goalToSessionType: Record<WorkoutGoal, string> = {
-      strength: "Strength",
-      muscle_gain: "Strength",
-      fat_loss: "Strength",
-      general_fitness: "Recommended",
-    };
-    const initialType = goalToSessionType[goal];
-    setSelectedSessionType(initialType);
-    await generatePlan(condition, goal, initialType);
+    // Compute intensity recommendation from recent history
+    let intensityCtx = null;
+    try {
+      const raw = localStorage.getItem("alpha_workout_history");
+      if (raw) {
+        const all: WorkoutHistory[] = JSON.parse(raw);
+        const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        const recent = all.filter(h => new Date(h.date).getTime() > cutoff);
+        if (recent.length > 0) {
+          const rec = getIntensityRecommendation(recent, condition.birthYear, condition.gender);
+          intensityCtx = {
+            recommended: rec.nextRecommended,
+            weekSummary: rec.weekSummary,
+            target: rec.target,
+            reason: rec.reason,
+          };
+          setRecommendedIntensity(rec.nextRecommended);
+        }
+      }
+    } catch { /* ignore */ }
+
+    await generatePlan(condition, goal, undefined, intensityCtx, intensityCtx?.recommended || null);
     incrementPlanCount();
     setView("master_plan_preview");
   };
 
-  const handleRegenerate = async (type: string) => {
-    // Check free usage limit on regenerate too
-    if (subStatus === "free" && getPlanCount() >= FREE_PLAN_LIMIT) {
-      setShowPaywall(true);
-      return;
-    }
+  const handleIntensityChange = (level: "high" | "moderate" | "low") => {
+    setRecommendedIntensity(level);
+  };
+
+  const handleRegenerate = () => {
     if (!currentCondition || !currentGoal) return;
-    setSelectedSessionType(type);
-    await generatePlan(currentCondition, currentGoal, type);
-    incrementPlanCount();
+    // Rule-based regeneration (no AI call needed for intensity adjustments)
+    const dayIndex = new Date().getDay();
+    const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
+    const session = generateAdaptiveWorkout(scheduleIndex, currentCondition, currentGoal, undefined, recommendedIntensity);
+    setCurrentWorkoutSession(session);
   };
 
   const handleLogout = async () => {
@@ -330,7 +343,9 @@ export default function Home() {
             onStart={(modifiedData) => { setCurrentWorkoutSession(modifiedData); setView("workout_session"); }}
             onBack={() => setView("condition_check")}
             onRegenerate={handleRegenerate}
-            initialSessionType={selectedSessionType}
+            onIntensityChange={handleIntensityChange}
+            currentIntensity={recommendedIntensity}
+            recommendedIntensity={recommendedIntensity}
           />
         );
 

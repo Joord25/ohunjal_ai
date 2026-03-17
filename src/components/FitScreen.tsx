@@ -40,7 +40,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 }) => {
   const [showSwapMenu, setShowSwapMenu] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
+  const [swapFilter, setSwapFilter] = useState<string | null>(null);
   const alternatives = onSwapExercise ? getAlternativeExercises(exercise.name) : [];
+
+  const closeSwap = () => { setShowSwapMenu(false); setSwapSearch(""); setSwapFilter(null); };
   const isStrengthType = exercise.type === "strength" || exercise.type === "core";
   const isBodyweight = !exercise.weight || exercise.weight === "Bodyweight"
     || /맨몸|체중|bodyweight/i.test(exercise.weight)
@@ -467,81 +470,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
         </div>
 
-        <div className="flex flex-col items-center gap-3 shrink-0 px-6" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 5rem)" }}>
-          {alternatives.length > 0 && !showSwapMenu && (
+        <div className="flex flex-col items-center gap-3 shrink-0 px-6" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}>
+          {onSwapExercise && (
             <button
               onClick={() => setShowSwapMenu(true)}
               className="w-full py-4 rounded-2xl bg-gray-100 text-[#1B4332] font-bold text-lg active:scale-[0.98] transition-all"
             >
               대체 운동 변경
             </button>
-          )}
-          {showSwapMenu && (
-            <div className="w-full bg-gray-50 rounded-2xl p-4 space-y-2 animate-fade-in">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
-                <button onClick={() => { setShowSwapMenu(false); setSwapSearch(""); }} className="text-[10px] text-gray-400 font-bold">닫기</button>
-              </div>
-              <input
-                type="text"
-                value={swapSearch}
-                onChange={(e) => setSwapSearch(e.target.value)}
-                placeholder="운동 검색..."
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors"
-              />
-              <div className="max-h-[20vh] overflow-y-auto space-y-2">
-                {(() => {
-                  const q = swapSearch.replace(/\s/g, "").toLowerCase();
-                  const isSearching = q.length > 0;
-
-                  if (!isSearching) {
-                    return alternatives.map((alt: string) => {
-                      const altName = alt.split('(')[0].trim();
-                      return (
-                        <button
-                          key={alt}
-                          onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
-                          className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
-                        >
-                          {altName}
-                        </button>
-                      );
-                    });
-                  }
-
-                  // Search: match by group keywords or exercise name
-                  return LABELED_EXERCISE_POOLS
-                    .map((group) => {
-                      const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
-                      const matched = group.exercises
-                        .filter((e: string) => e !== exercise.name)
-                        .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
-                      if (matched.length === 0) return null;
-                      return (
-                        <div key={group.label}>
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
-                          {matched.map((alt: string) => {
-                            const altName = alt.split('(')[0].trim();
-                            const isAlt = alternatives.includes(alt);
-                            return (
-                              <button
-                                key={alt}
-                                onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
-                                className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
-                                  isAlt ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
-                                }`}
-                              >
-                                {altName}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })
-                    .filter(Boolean);
-                })()}
-              </div>
-            </div>
           )}
           <button
             onClick={confirmWeight}
@@ -550,6 +486,89 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             {selectedWeight}kg 으로 시작
           </button>
         </div>
+
+        {/* Swap Exercise Bottom Sheet (weight picker) */}
+        {showSwapMenu && (
+          <div className="absolute inset-0 z-40">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={closeSwap} />
+            <div className="absolute bottom-2 left-2 right-2 bg-white rounded-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
+                <button onClick={closeSwap} className="text-sm text-gray-400 font-bold">닫기</button>
+              </div>
+              <input
+                type="text"
+                value={swapSearch}
+                onChange={(e) => setSwapSearch(e.target.value)}
+                placeholder="운동 검색..."
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
+              />
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
+                <button
+                  onClick={() => setSwapFilter(null)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
+                    swapFilter === null ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
+                  }`}
+                >추천</button>
+                {LABELED_EXERCISE_POOLS.map(p => (
+                  <button
+                    key={p.label}
+                    onClick={() => setSwapFilter(p.label)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
+                      swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >{p.label}</button>
+                ))}
+              </div>
+              <div className="h-[30vh] overflow-y-auto space-y-1.5">
+                {(() => {
+                  const q = swapSearch.replace(/\s/g, "").toLowerCase();
+                  const isSearching = q.length > 0;
+                  if (swapFilter !== null) {
+                    const pool = LABELED_EXERCISE_POOLS.find(p => p.label === swapFilter);
+                    if (!pool) return null;
+                    const list = pool.exercises
+                      .filter(e => e !== exercise.name)
+                      .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
+                    if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>;
+                    return list.map((alt: string) => (
+                      <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
+                        className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all ${
+                          alternatives.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
+                        }`}>{alt.split("(")[0].trim()}</button>
+                    ));
+                  }
+                  if (!isSearching) {
+                    if (alternatives.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭에서 선택해 주세요</p>;
+                    return alternatives.map((alt: string) => (
+                      <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
+                        className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                      >{alt.split("(")[0].trim()}</button>
+                    ));
+                  }
+                  return LABELED_EXERCISE_POOLS.map((group) => {
+                    const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
+                    const matched = group.exercises.filter((e: string) => e !== exercise.name)
+                      .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
+                    if (matched.length === 0) return null;
+                    return (
+                      <div key={group.label}>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                        {matched.map((alt: string) => (
+                          <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
+                            className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
+                              alternatives.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
+                            }`}>{alt.split("(")[0].trim()}</button>
+                        ))}
+                      </div>
+                    );
+                  }).filter(Boolean);
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Exercise Guide Bottom Sheet */}
         {showGuide && (
@@ -943,12 +962,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       {/* Swap Exercise Bottom Sheet (during exercise) */}
       {showSwapMenu && (
         <div className="absolute inset-0 z-40">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => { setShowSwapMenu(false); setSwapSearch(""); }} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={closeSwap} />
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
-              <button onClick={() => { setShowSwapMenu(false); setSwapSearch(""); }} className="text-sm text-gray-400 font-bold">닫기</button>
+              <button onClick={closeSwap} className="text-sm text-gray-400 font-bold">닫기</button>
             </div>
             <input
               type="text"
@@ -957,46 +976,66 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               placeholder="운동 검색..."
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
             />
-            <div className="max-h-[30vh] overflow-y-auto space-y-1.5">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
+              <button
+                onClick={() => setSwapFilter(null)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
+                  swapFilter === null ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
+                }`}
+              >추천</button>
+              {LABELED_EXERCISE_POOLS.map(p => (
+                <button
+                  key={p.label}
+                  onClick={() => setSwapFilter(p.label)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
+                    swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
+                  }`}
+                >{p.label}</button>
+              ))}
+            </div>
+            <div className="h-[30vh] overflow-y-auto space-y-1.5">
               {(() => {
                 const q = swapSearch.replace(/\s/g, "").toLowerCase();
                 const isSearching = q.length > 0;
-                if (!isSearching) {
-                  return alternatives.map((alt: string) => (
-                    <button
-                      key={alt}
-                      onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
-                      className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
-                    >
-                      {alt.split('(')[0].trim()}
-                    </button>
+                if (swapFilter !== null) {
+                  const pool = LABELED_EXERCISE_POOLS.find(p => p.label === swapFilter);
+                  if (!pool) return null;
+                  const list = pool.exercises
+                    .filter(e => e !== exercise.name)
+                    .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
+                  if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>;
+                  return list.map((alt: string) => (
+                    <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
+                      className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all ${
+                        alternatives.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
+                      }`}>{alt.split("(")[0].trim()}</button>
                   ));
                 }
-                return LABELED_EXERCISE_POOLS
-                  .map((group) => {
-                    const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
-                    const matched = group.exercises
-                      .filter((e: string) => e !== exercise.name)
-                      .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
-                    if (matched.length === 0) return null;
-                    return (
-                      <div key={group.label}>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
-                        {matched.map((alt: string) => (
-                          <button
-                            key={alt}
-                            onClick={() => { onSwapExercise?.(alt); setShowSwapMenu(false); setSwapSearch(""); }}
-                            className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
-                              alternatives.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
-                            }`}
-                          >
-                            {alt.split('(')[0].trim()}
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })
-                  .filter(Boolean);
+                if (!isSearching) {
+                  if (alternatives.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭에서 선택해 주세요</p>;
+                  return alternatives.map((alt: string) => (
+                    <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                    >{alt.split("(")[0].trim()}</button>
+                  ));
+                }
+                return LABELED_EXERCISE_POOLS.map((group) => {
+                  const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
+                  const matched = group.exercises.filter((e: string) => e !== exercise.name)
+                    .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
+                  if (matched.length === 0) return null;
+                  return (
+                    <div key={group.label}>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                      {matched.map((alt: string) => (
+                        <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
+                          className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
+                            alternatives.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
+                          }`}>{alt.split("(")[0].trim()}</button>
+                      ))}
+                    </div>
+                  );
+                }).filter(Boolean);
               })()}
             </div>
           </div>
@@ -1088,7 +1127,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </button>
             </div>
             <div className="flex gap-2 flex-wrap justify-center mb-6">
-              {[5, 8, 10, 12, 15, 20].map((r) => (
+              {(() => {
+                const pool = exercise.type === "core" || setInfo.targetReps >= 15
+                  ? [5, 8, 10, 15, 20, 30, 40, 50, 60, 80, 100]
+                  : [3, 5, 8, 10, 12, 15, 20];
+                const target = adjustedReps;
+                const sorted = [...pool].sort((a, b) => Math.abs(a - target) - Math.abs(b - target));
+                return sorted.slice(0, 4).sort((a, b) => a - b);
+              })().map((r) => (
                 <button
                   key={r}
                   onClick={() => setAdjustedReps(r)}

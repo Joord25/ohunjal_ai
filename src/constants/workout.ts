@@ -550,9 +550,28 @@ const ADDITIONAL_CARDIO = {
 };
 
 // --- Weight Guidance (Korean) ---
-const getWeightGuide = (role: "compound" | "accessory" | "isolation" | "light" | "bodyweight", goal: WorkoutGoal): string => {
+const getWeightGuide = (role: "compound" | "accessory" | "isolation" | "light" | "bodyweight", goal: WorkoutGoal, intensityOverride?: "high" | "moderate" | "low"): string => {
   if (role === "bodyweight") return "맨몸";
-  if (role === "light") return "가벼운 무게";
+  if (role === "light") {
+    if (intensityOverride === "high") return "적당한 무게";
+    return "가벼운 무게";
+  }
+
+  // Intensity override takes precedence over goal
+  if (intensityOverride) {
+    switch (intensityOverride) {
+      case "high":
+        if (role === "compound") return "점진적 증량";
+        if (role === "accessory") return "도전적인 무게";
+        return "적당한 무게";
+      case "moderate":
+        if (role === "compound") return "가능한 최대 무게";
+        return "적당한 무게";
+      case "low":
+        if (role === "compound") return "중간 무게";
+        return "가벼운~중간 무게";
+    }
+  }
 
   switch (goal) {
     case "strength":
@@ -580,8 +599,16 @@ const formatTimeKo = (minutes: number, label?: string): string => {
   return `${minutes}분${label ? ` ${label}` : ""}`;
 };
 
-// --- Korean Reps for Goal ---
-const getRepsForGoalKo = (goal: WorkoutGoal): string => {
+// --- Korean Reps for Goal (with optional intensity override) ---
+const getRepsForGoalKo = (goal: WorkoutGoal, intensityOverride?: "high" | "moderate" | "low"): string => {
+  // If intensity override differs from goal's default, adjust reps
+  if (intensityOverride) {
+    switch (intensityOverride) {
+      case "high": return "3-6회";
+      case "moderate": return "8-12회";
+      case "low": return "15-20회";
+    }
+  }
   switch (goal) {
     case "fat_loss": return "15-20회";
     case "muscle_gain": return "8-12회";
@@ -711,7 +738,8 @@ export const generateAdaptiveWorkout = (
   dayIndex: number, // 0(Mon) - 6(Sun)
   condition: UserCondition,
   goal: WorkoutGoal,
-  selectedSessionType?: string
+  selectedSessionType?: string,
+  intensityOverride?: "high" | "moderate" | "low" | null
 ): WorkoutSessionData => {
   const generalFitnessSchedule: WorkoutType[] = [
     "full_body_circuit", "hiit_cardio", "lower_core",
@@ -735,9 +763,15 @@ export const generateAdaptiveWorkout = (
     workoutType = schedule[dayIndex];
   }
   const exercises: ExerciseStep[] = [];
-  const sets = adjustVolume(3, condition, goal);
-  const repsKo = getRepsForGoalKo(goal);
+  const baseSets = adjustVolume(3, condition, goal);
+  // Intensity override adjusts sets: high → +1, low → -1
+  const sets = intensityOverride === "high" ? Math.min(baseSets + 1, 5) : intensityOverride === "low" ? Math.max(baseSets - 1, 2) : baseSets;
+  const repsKo = getRepsForGoalKo(goal, intensityOverride || undefined);
   const repsVal = parseInt(repsKo) || 12;
+  // Isolation/accessory reps also scale with intensity
+  const isoRepsKo = intensityOverride === "high" ? "8-10회" : intensityOverride === "low" ? "20회" : "12-15회";
+  const isoRepsVal = parseInt(isoRepsKo) || 15;
+  const wg = (role: "compound" | "accessory" | "isolation" | "light" | "bodyweight") => getWeightGuide(role, goal, intensityOverride || undefined);
 
   // ====== 1. WARM-UP (3-5 exercises, 5 min total) ======
   const isRunType = workoutType.startsWith("run");
@@ -778,11 +812,11 @@ export const generateAdaptiveWorkout = (
         ? ["덤벨 벤치 프레스 (Dumbbell Bench Press)", "케틀벨 플로어 프레스 (Kettlebell Floor Press)", "푸쉬업 (Push-up)"]
         : PUSH_EXERCISES.mainCompound;
       exercises.push(
-        { type: "strength", name: pick(pushCompoundPool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("compound", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(PUSH_EXERCISES.verticalPress), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("compound", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(PUSH_EXERCISES.accessory), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("accessory", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(PUSH_EXERCISES.isoShoulder), count: formatCountKo(sets, "15회"), weight: getWeightGuide("light", goal), sets, reps: 15 },
-        { type: "strength", name: pick(PUSH_EXERCISES.isoTricep), count: formatCountKo(sets, "12-15회"), weight: getWeightGuide("isolation", goal), sets, reps: 15 },
+        { type: "strength", name: pick(pushCompoundPool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(PUSH_EXERCISES.verticalPress), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(PUSH_EXERCISES.accessory), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("accessory"), sets, reps: repsVal },
+        { type: "strength", name: pick(PUSH_EXERCISES.isoShoulder), count: formatCountKo(sets, isoRepsKo), weight: wg("light"), sets, reps: isoRepsVal },
+        { type: "strength", name: pick(PUSH_EXERCISES.isoTricep), count: formatCountKo(sets, isoRepsKo), weight: wg("isolation"), sets, reps: isoRepsVal },
       );
       break;
     }
@@ -791,11 +825,11 @@ export const generateAdaptiveWorkout = (
         ? ["랫 풀다운 (Lat Pulldown)", "케이블 로우 (Cable Row)", "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)"]
         : PULL_EXERCISES.verticalPull;
       exercises.push(
-        { type: "strength", name: pick(pullCompoundPool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("compound", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(PULL_EXERCISES.horizontalPull), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("compound", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(PULL_EXERCISES.unilateral), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("accessory", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(PULL_EXERCISES.rearDelt), count: formatCountKo(sets, "15회"), weight: getWeightGuide("light", goal), sets, reps: 15 },
-        { type: "strength", name: pick(PULL_EXERCISES.bicep), count: formatCountKo(sets, "12회"), weight: getWeightGuide("isolation", goal), sets, reps: 12 },
+        { type: "strength", name: pick(pullCompoundPool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(PULL_EXERCISES.horizontalPull), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(PULL_EXERCISES.unilateral), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("accessory"), sets, reps: repsVal },
+        { type: "strength", name: pick(PULL_EXERCISES.rearDelt), count: formatCountKo(sets, isoRepsKo), weight: wg("light"), sets, reps: isoRepsVal },
+        { type: "strength", name: pick(PULL_EXERCISES.bicep), count: formatCountKo(sets, isoRepsKo), weight: wg("isolation"), sets, reps: isoRepsVal },
       );
       break;
     }
@@ -807,11 +841,11 @@ export const generateAdaptiveWorkout = (
         ? ["케틀벨 스윙 (Kettlebell Swing)", "케틀벨 데드리프트 (Kettlebell Deadlift)"]
         : LEG_EXERCISES.hinge;
       exercises.push(
-        { type: "strength", name: pick(legCompoundPool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("compound", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(legHingePool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || getWeightGuide("compound", goal), sets, reps: repsVal },
-        { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, "12회 양측"), weight: fatigueWeightOverride || getWeightGuide("accessory", goal), sets, reps: 12 },
-        { type: "strength", name: pick(LEG_EXERCISES.isolation), count: formatCountKo(sets, "15회"), weight: fatigueWeightOverride || getWeightGuide("isolation", goal), sets, reps: 15 },
-        { type: "strength", name: pick(LEG_EXERCISES.calf), count: formatCountKo(sets, "20회"), weight: "맨몸", sets, reps: 20 },
+        { type: "strength", name: pick(legCompoundPool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(legHingePool), count: formatCountKo(sets, repsKo), weight: fatigueWeightOverride || wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, `${repsVal}회 양측`), weight: fatigueWeightOverride || wg("accessory"), sets, reps: repsVal },
+        { type: "strength", name: pick(LEG_EXERCISES.isolation), count: formatCountKo(sets, isoRepsKo), weight: fatigueWeightOverride || wg("isolation"), sets, reps: isoRepsVal },
+        { type: "strength", name: pick(LEG_EXERCISES.calf), count: formatCountKo(sets, isoRepsKo), weight: "맨몸", sets, reps: isoRepsVal },
       );
       break;
     }
@@ -872,13 +906,12 @@ export const generateAdaptiveWorkout = (
     }
     // === General Fitness Circuit Types ===
     case "full_body_circuit": {
-      const circuitReps = 12;
       exercises.push(
-        { type: "strength", name: pick(FULL_BODY_EXERCISES.compound), count: formatCountKo(sets, `${circuitReps}회`), weight: "중간 무게", sets, reps: circuitReps },
-        { type: "strength", name: pick(FULL_BODY_EXERCISES.upper), count: formatCountKo(sets, `${circuitReps}회`), weight: "중간 무게", sets, reps: circuitReps },
-        { type: "strength", name: pick(FULL_BODY_EXERCISES.pull), count: formatCountKo(sets, `${circuitReps}회`), weight: "중간 무게", sets, reps: circuitReps },
-        { type: "strength", name: pick(FULL_BODY_EXERCISES.lower), count: formatCountKo(sets, `${circuitReps}회`), weight: "중간 무게", sets, reps: circuitReps },
-        { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, `${circuitReps}회 양측`), weight: "맨몸", sets, reps: circuitReps },
+        { type: "strength", name: pick(FULL_BODY_EXERCISES.compound), count: formatCountKo(sets, repsKo), weight: wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(FULL_BODY_EXERCISES.upper), count: formatCountKo(sets, repsKo), weight: wg("accessory"), sets, reps: repsVal },
+        { type: "strength", name: pick(FULL_BODY_EXERCISES.pull), count: formatCountKo(sets, repsKo), weight: wg("accessory"), sets, reps: repsVal },
+        { type: "strength", name: pick(FULL_BODY_EXERCISES.lower), count: formatCountKo(sets, repsKo), weight: wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, `${repsVal}회 양측`), weight: "맨몸", sets, reps: repsVal },
       );
       break;
     }
@@ -895,30 +928,28 @@ export const generateAdaptiveWorkout = (
       break;
     }
     case "lower_core": {
-      const lcReps = 12;
       exercises.push(
-        { type: "strength", name: pick(LEG_EXERCISES.squat), count: formatCountKo(sets, `${lcReps}회`), weight: "중간 무게", sets, reps: lcReps },
-        { type: "strength", name: pick(LEG_EXERCISES.hinge), count: formatCountKo(sets, `${lcReps}회`), weight: "중간 무게", sets, reps: lcReps },
-        { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, `${lcReps}회 양측`), weight: "맨몸", sets, reps: lcReps },
+        { type: "strength", name: pick(LEG_EXERCISES.squat), count: formatCountKo(sets, repsKo), weight: wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(LEG_EXERCISES.hinge), count: formatCountKo(sets, repsKo), weight: wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(LEG_EXERCISES.unilateral), count: formatCountKo(sets, `${repsVal}회 양측`), weight: "맨몸", sets, reps: repsVal },
         ...(() => {
           const pool = [...CORE_EXERCISES.dynamic];
           const first = pick(pool);
           const remaining = pool.filter(e => e !== first);
           const second = pick(remaining);
           return [
-            { type: "core" as const, name: first, count: formatCountKo(sets, "15회"), sets, reps: 15 },
-            { type: "core" as const, name: second, count: formatCountKo(sets, "12회"), sets, reps: 12 },
+            { type: "core" as const, name: first, count: formatCountKo(sets, isoRepsKo), sets, reps: isoRepsVal },
+            { type: "core" as const, name: second, count: formatCountKo(sets, isoRepsKo), sets, reps: isoRepsVal },
           ];
         })(),
       );
       break;
     }
     case "upper_cardio": {
-      const ucReps = 12;
       exercises.push(
-        { type: "strength", name: pick(PUSH_EXERCISES.mainCompound), count: formatCountKo(sets, `${ucReps}회`), weight: "중간 무게", sets, reps: ucReps },
-        { type: "strength", name: pick(PULL_EXERCISES.unilateral), count: formatCountKo(sets, `${ucReps}회`), weight: "중간 무게", sets, reps: ucReps },
-        { type: "strength", name: pick(PUSH_EXERCISES.isoShoulder), count: formatCountKo(sets, `${ucReps}회`), weight: "가벼운 무게", sets, reps: ucReps },
+        { type: "strength", name: pick(PUSH_EXERCISES.mainCompound), count: formatCountKo(sets, repsKo), weight: wg("compound"), sets, reps: repsVal },
+        { type: "strength", name: pick(PULL_EXERCISES.unilateral), count: formatCountKo(sets, repsKo), weight: wg("accessory"), sets, reps: repsVal },
+        { type: "strength", name: pick(PUSH_EXERCISES.isoShoulder), count: formatCountKo(sets, isoRepsKo), weight: wg("light"), sets, reps: isoRepsVal },
         { type: "cardio", name: pick(["점핑 잭 (Jumping Jacks)", "섀도 복싱 (Shadow Boxing)", "스텝 잭 (Step Jacks)"]), count: "3 × 2분 운동 / 30초 휴식", sets: 3, reps: 1 },
       );
       break;
@@ -944,15 +975,15 @@ export const generateAdaptiveWorkout = (
       const remaining = pool.filter(e => e !== first);
       const second = pick(remaining);
       exercises.push(
-        { type: "core", name: first, count: formatCountKo(3, "15회"), sets: 3, reps: 15 },
-        { type: "core", name: second, count: formatCountKo(3, "12회"), sets: 3, reps: 12 },
+        { type: "core", name: first, count: formatCountKo(3, isoRepsKo), sets: 3, reps: isoRepsVal },
+        { type: "core", name: second, count: formatCountKo(3, isoRepsKo), sets: 3, reps: isoRepsVal },
       );
     } else {
       const corePlank = pick(CORE_EXERCISES.plank);
       const coreDynamic = pick(CORE_EXERCISES.dynamic);
       exercises.push(
         { type: "core", name: corePlank, count: formatCountKo(3, "30-45초 유지"), sets: 3, reps: 1 },
-        { type: "core", name: coreDynamic, count: formatCountKo(3, "12회"), sets: 3, reps: 12 },
+        { type: "core", name: coreDynamic, count: formatCountKo(3, isoRepsKo), sets: 3, reps: isoRepsVal },
       );
     }
   }

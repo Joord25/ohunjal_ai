@@ -646,3 +646,294 @@ export function getBig4FromHistory(
     return { exerciseName: entry.exerciseName, value, weeksAgo, decayed };
   }).sort((a, b) => b.value - a.value);
 }
+
+/**
+ * Summarize recent history (up to 10 sessions) for AI trend analysis.
+ * Returns compact data: per-session stats + computed trends.
+ */
+export interface HistoryTrendSummary {
+  sessionCount: number;
+  sessions: {
+    date: string;
+    totalVolume: number;
+    loadScore: number;
+    bestE1RM: number | null;
+    category: string;
+    exerciseNames: string[];
+  }[];
+  trends: {
+    volumeChange: string | null;
+    e1rmChange: string | null;
+    avgLoadScore: number;
+    totalSessions90d: number;
+  };
+}
+
+export function summarizeHistoryForAI(history: WorkoutHistory[]): HistoryTrendSummary {
+  const sorted = [...history]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+  const chronological = [...sorted].reverse();
+
+  const sessions = chronological.map(h => ({
+    date: new Date(h.date).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }),
+    totalVolume: h.stats.totalVolume || 0,
+    loadScore: h.stats.loadScore || 0,
+    bestE1RM: h.stats.bestE1RM || null,
+    category: h.sessionData?.description?.split("·")[0]?.trim() || "mixed",
+    exerciseNames: (h.sessionData?.exercises || [])
+      .filter(e => e.type === "strength" || e.type === "core")
+      .map(e => e.name.split("(")[0].trim()),
+  }));
+
+  const withVolume = sessions.filter(s => s.totalVolume > 0);
+  let volumeChange: string | null = null;
+  if (withVolume.length >= 2) {
+    const first = withVolume[0].totalVolume;
+    const last = withVolume[withVolume.length - 1].totalVolume;
+    const pct = Math.round(((last - first) / first) * 100);
+    volumeChange = `${pct > 0 ? "+" : ""}${pct}%`;
+  }
+
+  const withE1rm = sessions.filter(s => s.bestE1RM !== null);
+  let e1rmChange: string | null = null;
+  if (withE1rm.length >= 2) {
+    const first = withE1rm[0].bestE1RM!;
+    const last = withE1rm[withE1rm.length - 1].bestE1RM!;
+    const pct = Math.round(((last - first) / first) * 100);
+    e1rmChange = `${pct > 0 ? "+" : ""}${pct}%`;
+  }
+
+  const avgLoadScore = sessions.length > 0
+    ? sessions.reduce((s, h) => s + h.loadScore, 0) / sessions.length
+    : 0;
+
+  return {
+    sessionCount: sessions.length,
+    sessions,
+    trends: {
+      volumeChange,
+      e1rmChange,
+      avgLoadScore: Math.round(avgLoadScore * 10) / 10,
+      totalSessions90d: history.length,
+    },
+  };
+}
+
+// ============================================================
+// Session Intensity Classification (ACSM 2009 + NSCA)
+// ============================================================
+
+export type IntensityLevel = "high" | "moderate" | "low";
+
+export interface SessionIntensity {
+  level: IntensityLevel;
+  avgPercentile1RM: number | null; // average %1RM across strength exercises
+  avgRepsPerSet: number;           // average reps per strength set
+  basis: "percent_1rm" | "reps";   // which method was used
+}
+
+/**
+ * Classify session intensity based on ACSM/NSCA guidelines.
+ * Primary: avg %1RM across strength exercises (weight used / estimated 1RM)
+ * Fallback: avg reps per set (rep-max continuum)
+ *
+ * ACSM (2009) + NSCA Essentials:
+ * - High:     ≥80% 1RM or ≤6 reps (max strength zone)
+ * - Moderate: 60-79% 1RM or 7-12 reps (hypertrophy zone)
+ * - Low:      <60% 1RM or 13+ reps (endurance zone)
+ */
+export function classifySessionIntensity(
+  exercises: ExerciseStep[],
+  logs: Record<number, ExerciseLog[]>,
+): SessionIntensity {
+  const percentages: number[] = [];
+  const allReps: number[] = [];
+
+  exercises.forEach((ex, idx) => {
+    if (ex.type !== "strength" && ex.type !== "core") return;
+    const exLogs = logs[idx] || [];
+    if (exLogs.length === 0) return;
+
+    // Estimate 1RM for this exercise from the best set
+    let best1RM = 0;
+    for (const log of exLogs) {
+      const weightStr = log.weightUsed || ex.weight;
+      if (!weightStr || weightStr === "Bodyweight") continue;
+      const weight = parseFloat(weightStr);
+      const reps = typeof log.repsCompleted === "number" ? log.repsCompleted : parseInt(String(log.repsCompleted)) || 0;
+      if (weight > 0 && reps > 0) {
+        const e1rm = estimate1RM(weight, reps);
+        if (e1rm > best1RM) best1RM = e1rm;
+      }
+    }
+
+    // Calculate %1RM for each set
+    for (const log of exLogs) {
+      const weightStr = log.weightUsed || ex.weight;
+      const reps = typeof log.repsCompleted === "number" ? log.repsCompleted : parseInt(String(log.repsCompleted)) || 0;
+      if (reps > 0) allReps.push(reps);
+
+      if (!weightStr || weightStr === "Bodyweight" || best1RM === 0) continue;
+      const weight = parseFloat(weightStr);
+      if (weight > 0 && best1RM > 0) {
+        percentages.push((weight / best1RM) * 100);
+      }
+    }
+  });
+
+  // Primary: %1RM based classification
+  if (percentages.length >= 2) {
+    const avg = percentages.reduce((s, p) => s + p, 0) / percentages.length;
+    return {
+      level: avg >= 80 ? "high" : avg >= 60 ? "moderate" : "low",
+      avgPercentile1RM: Math.round(avg),
+      avgRepsPerSet: allReps.length > 0 ? Math.round(allReps.reduce((s, r) => s + r, 0) / allReps.length) : 0,
+      basis: "percent_1rm",
+    };
+  }
+
+  // Fallback: rep-based classification
+  if (allReps.length > 0) {
+    const avgReps = allReps.reduce((s, r) => s + r, 0) / allReps.length;
+    return {
+      level: avgReps <= 6 ? "high" : avgReps <= 12 ? "moderate" : "low",
+      avgPercentile1RM: null,
+      avgRepsPerSet: Math.round(avgReps),
+      basis: "reps",
+    };
+  }
+
+  // No strength data → default low (cardio/mobility)
+  return { level: "low", avgPercentile1RM: null, avgRepsPerSet: 0, basis: "reps" };
+}
+
+/**
+ * Weekly intensity recommendation by age group.
+ * Based on ACSM (2009) Position Stand + WHO 2020 Guidelines + NSCA periodization.
+ *
+ * References:
+ * - ACSM Position Stand: Progression Models in RT (2009) — PubMed 19204579
+ * - WHO Guidelines on Physical Activity (2020) — PMC 7719906
+ * - NSCA Essentials of S&C (4th ed.) — DUP periodization model
+ * - Schoenfeld et al. (2019) — PMC 6303131 (volume-response)
+ */
+export interface WeeklyIntensityTarget {
+  high: number;
+  moderate: number;
+  low: number;
+  total: number;
+}
+
+export function getWeeklyIntensityTarget(birthYear?: number, gender?: "male" | "female"): WeeklyIntensityTarget {
+  const age = birthYear ? new Date().getFullYear() - birthYear : 30;
+  // 여성은 회복이 빨라 고강도 빈도를 남성과 동일 or +1 가능 (Hakkinen et al. 1990, Hunter 2014)
+  // 다만 절대 중량은 낮으므로 부상 위험이 낮고 고강도 배분을 유지해도 안전
+  const isFemale = gender === "female";
+
+  if (age >= 60) {
+    return { high: 1, moderate: 2, low: 1, total: 4 };
+  } else if (age >= 40) {
+    // 여성 40대+: 골밀도 유지를 위해 중강도 대신 고강도 1회 추가 권장 (ACSM 폐경 후 가이드라인)
+    return isFemale
+      ? { high: 2, moderate: 2, low: 1, total: 5 }
+      : { high: 1, moderate: 3, low: 1, total: 5 };
+  } else {
+    return { high: 2, moderate: 2, low: 1, total: 5 };
+  }
+}
+
+/**
+ * Analyze this week's intensity distribution and recommend next session.
+ * Uses DUP (Daily Undulating Periodization) principle from NSCA.
+ */
+export interface IntensityRecommendation {
+  weekSummary: { high: number; moderate: number; low: number };
+  target: WeeklyIntensityTarget;
+  nextRecommended: IntensityLevel;
+  reason: string;
+  recoveryHours: number;
+}
+
+export function getIntensityRecommendation(
+  history: WorkoutHistory[],
+  birthYear?: number,
+  gender?: "male" | "female",
+): IntensityRecommendation {
+  const target = getWeeklyIntensityTarget(birthYear, gender);
+  const age = birthYear ? new Date().getFullYear() - birthYear : 30;
+
+  // Get this week's sessions (Monday ~ Sunday)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+
+  const thisWeekSessions = history.filter(h => new Date(h.date).getTime() >= monday.getTime());
+
+  // Classify each session's intensity
+  const weekSummary = { high: 0, moderate: 0, low: 0 };
+
+  for (const h of thisWeekSessions) {
+    const intensity = classifySessionIntensity(
+      h.sessionData?.exercises || [],
+      h.logs || {},
+    );
+    weekSummary[intensity.level]++;
+  }
+
+  // Hours since last session (all history)
+  let hoursSinceLast = 999;
+  if (history.length > 0) {
+    const sorted = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    hoursSinceLast = Math.round((Date.now() - new Date(sorted[0].date).getTime()) / (1000 * 60 * 60));
+  }
+
+  // Recovery time factor by age + gender (MPS-based: ACSM recovery guidelines)
+  // 여성은 에스트로겐의 항염증 효과로 회복이 ~15% 빠름 (Hunter 2014, Hakkinen et al.)
+  const isFemale = gender === "female";
+  const baseAgeFactor = age >= 50 ? 1.3 : age >= 40 ? 1.2 : 1.0;
+  const ageFactor = isFemale ? baseAgeFactor * 0.85 : baseAgeFactor;
+
+  // Determine what's most needed this week
+  const highDeficit = target.high - weekSummary.high;
+  const modDeficit = target.moderate - weekSummary.moderate;
+  const lowDeficit = target.low - weekSummary.low;
+
+  let nextRecommended: IntensityLevel;
+  let reason: string;
+
+  // If just did session and recovery is short, recommend low/moderate
+  const needsRecovery = hoursSinceLast < 48 * ageFactor;
+
+  if (needsRecovery && hoursSinceLast < 24 * ageFactor) {
+    nextRecommended = "low";
+    reason = "최근 세션 후 충분한 회복이 필요해요 (24시간 미만)";
+  } else if (highDeficit > 0 && !needsRecovery) {
+    nextRecommended = "high";
+    reason = `이번 주 고강도 ${weekSummary.high}/${target.high}회 — 고강도가 필요해요`;
+  } else if (modDeficit > 0) {
+    nextRecommended = "moderate";
+    reason = `이번 주 중강도 ${weekSummary.moderate}/${target.moderate}회 — 중강도가 필요해요`;
+  } else if (lowDeficit > 0) {
+    nextRecommended = "low";
+    reason = `이번 주 저강도 ${weekSummary.low}/${target.low}회 — 회복 세션이 필요해요`;
+  } else {
+    nextRecommended = "low";
+    reason = "이번 주 목표를 모두 달성했어요! 가벼운 회복 운동을 추천해요";
+  }
+
+  // Recovery hours based on recommended intensity + age
+  const baseRecovery = nextRecommended === "high" ? 72 : nextRecommended === "moderate" ? 48 : 24;
+  const recoveryHours = Math.round(baseRecovery * ageFactor);
+
+  return {
+    weekSummary,
+    target,
+    nextRecommended,
+    reason,
+    recoveryHours,
+  };
+}
