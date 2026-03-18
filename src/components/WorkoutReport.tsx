@@ -157,9 +157,11 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const loadBand = getOptimalLoadBand(avgGraphLoad, historyGraphData.length, trainingLevel, birthYear);
 
   // 부하 판정: loadScore vs loadBand 직접 비교 (비율 왜곡 방지)
-  const bandLowRatio = avgGraphLoad > 0 ? loadBand.low / avgGraphLoad : 0.5;
-  const bandHighRatio = avgGraphLoad > 0 ? loadBand.high / avgGraphLoad : 1.8;
-  const bandOverloadRatio = avgGraphLoad > 0 ? loadBand.overload / avgGraphLoad : 2.3;
+  // 강도별 기대 밴드 조정: 저강도는 낮은 볼륨이 정상, 고강도는 높아야 정상
+  const intensityMod = sessionIntensity.level === "low" ? 0.4 : sessionIntensity.level === "high" ? 1.15 : 1.0;
+  const bandLowRatio = avgGraphLoad > 0 ? (loadBand.low / avgGraphLoad) * intensityMod : 0.5;
+  const bandHighRatio = avgGraphLoad > 0 ? (loadBand.high / avgGraphLoad) * (sessionIntensity.level === "low" ? 0.7 : 1.0) : 1.8;
+  const bandOverloadRatio = avgGraphLoad > 0 ? (loadBand.overload / avgGraphLoad) * (sessionIntensity.level === "low" ? 0.7 : 1.0) : 2.3;
 
   // loadRatio: today's loadScore vs historical average loadScore
   const loadRatio = avgGraphLoad > 0 ? loadScore / avgGraphLoad : null;
@@ -177,7 +179,15 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           </svg>
         </button>
         <span className="text-[11px] font-serif font-medium tracking-[0.25em] text-gray-400 uppercase">Session Report</span>
-        <div className="w-9" />
+        {sessionDate ? (
+          <button onClick={() => setShowShare(true)} className="p-2 -mr-2 active:scale-95 transition-all">
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+        ) : (
+          <div className="w-9" />
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-5 scrollbar-hide" style={{ paddingBottom: "calc(96px + var(--safe-area-bottom, 0px))" }}>
@@ -319,7 +329,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 <div className="flex items-baseline gap-1.5">
                   <p className={`text-2xl font-black leading-none ${
                     loadRatio !== null && loadRatio > bandHighRatio ? "text-amber-600"
-                      : loadRatio !== null && loadRatio < bandLowRatio ? "text-blue-500"
+                      : loadRatio !== null && loadRatio < bandLowRatio
+                        ? (sessionIntensity.level === "low" ? "text-[#1B4332]" : "text-blue-500")
                       : "text-[#1B4332]"
                   }`}>
                     {loadRatio !== null
@@ -332,17 +343,24 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                       : loadRatio !== null && loadRatio > bandHighRatio
                         ? "bg-amber-50 text-amber-600"
                         : loadRatio !== null && loadRatio < bandLowRatio
-                          ? "bg-blue-50 text-blue-500"
+                          ? (sessionIntensity.level === "low" ? "bg-emerald-50 text-[#2D6A4F]" : "bg-blue-50 text-blue-500")
                           : "bg-gray-50 text-gray-400"
                   }`}>
                     {loadRatio !== null
-                      ? (loadRatio >= bandLowRatio && loadRatio <= bandHighRatio ? "성장 구간" : loadRatio > bandOverloadRatio ? "과부하" : loadRatio > bandHighRatio ? "고부하" : "볼륨 부족")
+                      ? (loadRatio >= bandLowRatio && loadRatio <= bandHighRatio
+                          ? (sessionIntensity.level === "low" ? "저강도 적정" : sessionIntensity.level === "high" ? "고강도 성장" : "성장 구간")
+                          : loadRatio > bandOverloadRatio ? "과부하" : loadRatio > bandHighRatio ? "고부하"
+                          : (sessionIntensity.level === "low" ? "회복 세션" : "볼륨 부족"))
                       : "첫 세션"}
                   </span>
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
                   {loadRatio !== null
-                    ? (loadRatio > bandOverloadRatio ? "상한 초과 · 다음엔 줄여보세요" : loadRatio > bandHighRatio ? "적정보다 많아요 · 조절해보세요" : loadRatio < bandLowRatio ? "적정보다 적어요 · 늘려보세요" : "성장 구간 · 좋은 페이스예요")
+                    ? (loadRatio > bandOverloadRatio ? "상한 초과 · 다음엔 줄여보세요"
+                      : loadRatio > bandHighRatio ? "적정보다 많아요 · 조절해보세요"
+                      : loadRatio < bandLowRatio
+                        ? (sessionIntensity.level === "low" ? "저강도 회복 · 계획대로 진행 중" : "적정보다 적어요 · 늘려보세요")
+                        : (sessionIntensity.level === "low" ? "저강도 적정 · 회복에 집중" : sessionIntensity.level === "high" ? "고강도 적정 · 좋은 페이스예요" : "성장 구간 · 좋은 페이스예요"))
                     : (historyStats ? `${levelLabel} · ACSM 기준` : `${levelLabel} · 기록 누적 중`)}
                 </p>
               </div>
@@ -896,36 +914,36 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
         </div>
       )}
 
-      {/* Footer Button */}
-      <div className={`absolute bottom-0 left-0 right-0 px-5 bg-gradient-to-t from-[#FAFAFA] via-[#FAFAFA] to-transparent pt-10 z-20 ${showShare ? "hidden" : ""}`} style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)" }}>
-        <div className="flex gap-2">
-          {onRestart && (
+      {/* Footer Button — only for current session (not history view) */}
+      {!sessionDate && (
+        <div className={`absolute bottom-0 left-0 right-0 px-5 bg-gradient-to-t from-[#FAFAFA] via-[#FAFAFA] to-transparent pt-10 z-20 ${showShare ? "hidden" : ""}`} style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)" }}>
+          <div className="flex gap-2">
+            {onRestart && (
+              <button
+                onClick={onRestart}
+                className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-gray-500 font-bold text-sm active:scale-95 transition-all"
+              >
+                Restart
+              </button>
+            )}
             <button
-              onClick={onRestart}
-              className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-gray-500 font-bold text-sm active:scale-95 transition-all"
+              onClick={() => setShowShare(true)}
+              className="py-3 px-4 rounded-2xl bg-white border border-gray-200 text-[#1B4332] font-bold text-sm active:scale-95 transition-all flex items-center gap-1.5"
             >
-              Restart
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              공유
             </button>
-          )}
-          <button
-            onClick={() => setShowShare(true)}
-            className="py-3 px-4 rounded-2xl bg-white border border-gray-200 text-[#1B4332] font-bold text-sm active:scale-95 transition-all flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            공유
-          </button>
-          {!sessionDate && (
             <button
               onClick={() => { setCloseAfterShare(true); setShowShare(true); }}
               className="flex-1 py-3 rounded-2xl bg-[#1B4332] text-white font-bold text-base shadow-xl shadow-[#1B4332]/20 active:scale-95 transition-all"
             >
               완료
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Share Card Modal */}
       {showShare && (

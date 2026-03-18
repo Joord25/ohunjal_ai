@@ -73,9 +73,11 @@ export const ShareCard: React.FC<ShareCardProps> = ({
   const isStrength = sessionCategory === "strength" || sessionCategory === "mixed";
 
   const formatDuration = (sec: number) => {
-    if (sec >= 3600) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
-    if (sec >= 60) return `${Math.floor(sec / 60)}m ${sec % 60 > 0 ? `${sec % 60}s` : ""}`.trim();
-    return `${sec}s`;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    return `${m}:${String(s).padStart(2, "0")}`;
   };
 
   // 메인 운동 목록 (warmup, core, mobility 제외 — 오직 strength만)
@@ -165,7 +167,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
 
   // Brand footer (shared)
   const BrandFooter = () => (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: -8 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
       <img src="/share.logo.png" alt="오운잘 AI" style={{ height: 100 }} />
     </div>
   );
@@ -183,19 +185,19 @@ export const ShareCard: React.FC<ShareCardProps> = ({
 
       {/* Card preview */}
       <div
-        className="relative w-[300px] h-[480px] rounded-2xl overflow-hidden max-w-[90vw] max-h-[60vh]"
+        className="relative w-[300px] h-[533px] rounded-2xl overflow-hidden max-w-[90vw] max-h-[60vh]"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         style={mode === "transparent" ? {
-          aspectRatio: "300/480",
+          aspectRatio: "9/16",
           backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%)",
           backgroundSize: "16px 16px",
           backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
-        } : { aspectRatio: "300/480" }}
+        } : { aspectRatio: "9/16" }}
       >
         <div
           ref={cardRef}
-          className="w-[300px] h-[480px] flex flex-col justify-center items-center p-7"
+          className="w-[300px] h-[533px] flex flex-col justify-center items-center p-7"
           style={{
             background: mode === "filled" ? "linear-gradient(135deg, #0a1a14 0%, #1B4332 50%, #2D6A4F 100%)" : "transparent",
             fontFamily: "system-ui, -apple-system, sans-serif",
