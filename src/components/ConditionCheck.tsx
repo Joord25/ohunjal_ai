@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { UserCondition, WorkoutGoal, WorkoutHistory, SessionMode, TargetMuscle, RunType } from "@/constants/workout";
 import { updateWeight, updateGender, updateBirthYear } from "@/utils/userProfile";
 import { getIntensityRecommendation, type IntensityLevel } from "@/utils/workoutMetrics";
+import { CoachTooltip } from "./Tutorial";
 
 export interface SessionSelection {
   goal: WorkoutGoal;
@@ -15,11 +16,13 @@ export interface SessionSelection {
 interface ConditionCheckProps {
   onComplete: (condition: UserCondition, goal: WorkoutGoal, session?: SessionSelection) => void;
   onBack?: () => void;
+  userName?: string;
 }
 
 type Step = "body_check" | "weight_input" | "goal_select";
 
-export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBack }) => {
+export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBack, userName }) => {
+  const displayName = userName || "회원";
   const [step, setStep] = useState<Step>("body_check");
 
   // State
@@ -52,17 +55,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
     }
     return true;
   });
-  const [showGoalTip, setShowGoalTip] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !localStorage.getItem("alpha_tip_goal");
-    }
-    return true;
-  });
-  const firstCardRef = useRef<HTMLDivElement>(null);
-  const goalSectionRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [cardPos, setCardPos] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
-  const [goalPos, setGoalPos] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   // Load recent history for intensity recommendation
   useEffect(() => {
@@ -91,85 +84,14 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
     ? getIntensityRecommendation(recentHistory, savedBirthYear, savedGender)
     : null;
 
-  // 코치 한마디 생성 (히스토리 기반)
-  const coachMessage = (() => {
-    const isFirstTime = recentHistory.length === 0;
-    if (isFirstTime) {
-      return {
-        greeting: "반가워요! 함께 할 수 있어 기쁘네요 :)",
-        message: "ACSM 국제 스포츠의학 기관, 한국체육대학교, 그리고 건강운동관리사 가이드라인과 현직 10년 이상의 트레이닝 노하우, 최근 5년 내 500건 이상의 SCI급 연구 논문들을 학습한 제가 하나하나 도와드릴테니 믿고 따라와주세요!\n\n오늘의 컨디션은 어떠신가요?",
-      };
-    }
-    const lastSession = recentHistory[0];
-    const daysSinceLast = Math.floor((Date.now() - new Date(lastSession.date).getTime()) / (1000 * 60 * 60 * 24));
-    const nextIntensity = intensityRec?.nextRecommended === "high" ? "고강도" : intensityRec?.nextRecommended === "moderate" ? "중강도" : "저강도";
 
-    if (daysSinceLast === 0) {
-      return { greeting: "오늘 또 운동오셨군요!", message: "이미 오늘 운동하셨는데 부족했나보네요. 그것도 좋아요. 몸 상태부터 체크할게요." };
-    } else if (daysSinceLast === 1) {
-      return { greeting: "이틀 연속이네요! 잘한다! 잘한다! 잘한다!", message: `오늘은 ${nextIntensity} 세션을 추천드려요. 몸 상태부터 확인할게요.` };
-    } else if (daysSinceLast <= 3) {
-      return { greeting: "다시 오셨네요!", message: `${daysSinceLast}일 만이에요. 오늘 ${nextIntensity} 세션 어떠세요?` };
-    } else {
-      return { greeting: `${daysSinceLast}일 만이에요!`, message: "충분히 쉬셨으니 가볍게 시작해볼까요? 몸 상태부터 알려주세요." };
-    }
-  })();
-
-  // 튜토리얼 카드 위치 계산
-  useEffect(() => {
-    if (!showCoachTip || !firstCardRef.current || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const cardRect = firstCardRef.current.getBoundingClientRect();
-    setCardPos({
-      top: cardRect.top - containerRect.top,
-      left: cardRect.left - containerRect.left,
-      width: cardRect.width,
-      height: cardRect.height,
-    });
-  }, [showCoachTip, step]);
 
   const dismissCoachTip = () => {
     setShowCoachTip(false);
     localStorage.setItem("alpha_tip_condition", "1");
   };
 
-  // Goal 튜토리얼 위치 계산
-  useEffect(() => {
-    if (!showGoalTip || step !== "goal_select" || !goalSectionRef.current || !containerRef.current) return;
-    const timer = setTimeout(() => {
-      const containerRect = containerRef.current!.getBoundingClientRect();
-      const goalRect = goalSectionRef.current!.getBoundingClientRect();
-      setGoalPos({
-        top: goalRect.top - containerRect.top,
-        left: goalRect.left - containerRect.left,
-        width: goalRect.width,
-        height: goalRect.height,
-      });
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [showGoalTip, step]);
 
-  const dismissGoalTip = () => {
-    setShowGoalTip(false);
-    localStorage.setItem("alpha_tip_goal", "1");
-  };
-
-  // Goal 튜토리얼 메시지
-  const goalTipMessage = (() => {
-    const hasHistory = recentHistory.length > 0;
-    if (hasHistory && intensityRec) {
-      const { weekSummary, target, nextRecommended, reason } = intensityRec;
-      const recLabel = nextRecommended === "high" ? "고강도" : nextRecommended === "moderate" ? "중강도" : "저강도";
-      return {
-        title: `오늘은 ${recLabel}를 추천드려요`,
-        message: `이번 주 강도 밸런스:\n고강도 ${weekSummary.high}/${target.high}회 · 중강도 ${weekSummary.moderate}/${target.moderate}회 · 저강도 ${weekSummary.low}/${target.low}회\n\n${reason}\n\n추천을 따르면 세트·횟수·무게까지\n자동으로 최적화됩니다!`,
-      };
-    }
-    return {
-      title: "원하시는 목표로 시작하세요!",
-      message: "체지방 연소 → 고반복 경량\n근비대 → 중량 볼륨\n최대근력 → 고중량 저반복\n\n다음 운동부터는 주간 강도 밸런스,\n회복 시간, 나이·성별까지 분석해서\n제가 오늘의 목표를 추천해드려요!",
-    };
-  })();
 
   // 이전에 이미 프로필을 저장한 적이 있으면 체중만 표시 (현재 입력값이 아닌 저장된 값 기준)
   const [hasProfile] = useState(() => {
@@ -223,12 +145,16 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
 
   return (
     <div ref={containerRef} className="flex flex-col h-full p-6 animate-fade-in relative">
-      {/* Progress Bar */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gray-100">
-        <div
-          className="h-full bg-[#2D6A4F] transition-all duration-500"
-          style={{ width: step === "body_check" ? "33%" : step === "weight_input" ? "66%" : "100%" }}
-        />
+      {/* Progress Dots */}
+      <div className="flex justify-center gap-2 pt-2 pb-1">
+        {["body_check", "weight_input", "goal_select"].map((s, i) => (
+          <div
+            key={s}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              s === step ? "w-6 bg-[#2D6A4F]" : i < ["body_check", "weight_input", "goal_select"].indexOf(step) ? "w-2 bg-[#2D6A4F]" : "w-2 bg-gray-200"
+            }`}
+          />
+        ))}
       </div>
 
       <div key={step} className="flex-1 flex flex-col gap-6 overflow-y-auto pb-24 scrollbar-hide">
@@ -248,8 +174,8 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
               AI 분석 • 단계 {step === "body_check" ? "1" : step === "weight_input" ? "2" : "3"}
             </span>
           </div>
-          <h1 className="text-3xl font-black mt-2 leading-tight text-[#5C795E]">
-            {step === "body_check" ? "오늘 몸 상태는\n어떠신가요?" : step === "weight_input" ? (hasProfile ? "오늘 체중을\n입력해주세요" : "기본 정보를\n입력해주세요") : "오늘의 운동\n목표는 무엇인가요?"}
+          <h1 className="text-3xl font-black mt-2 leading-tight text-[#5C795E] whitespace-pre-line">
+            {step === "body_check" ? `${displayName}님,\n오늘 몸 상태는 어때요?` : step === "weight_input" ? (hasProfile ? `${displayName}님,\n오늘 체중을 알려주세요` : "기본 정보를 입력해주세요") : `${displayName}님,\n오늘은 무슨 운동 할까요?`}
           </h1>
         </div>
         {step === "body_check" ? (
@@ -257,15 +183,13 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
             {/* Coach tip placeholder — overlay rendered below */}
             {/* Body Condition Selection */}
             <div className="flex flex-col gap-3">
-              <div ref={firstCardRef}>
-                <ConditionCard
-                  selected={bodyPart === "upper_stiff"}
-                  onClick={() => handleNext("upper_stiff")}
-                  title="상체가 굳어있음"
-                  desc="목, 어깨, 등, 날개뼈 주위가 뻐근함"
-                  delay={0.05}
-                />
-              </div>
+              <ConditionCard
+                selected={bodyPart === "upper_stiff"}
+                onClick={() => handleNext("upper_stiff")}
+                title="상체가 굳어있음"
+                desc="목, 어깨, 등, 날개뼈 주위가 뻐근함"
+                delay={0.05}
+              />
               <ConditionCard
                 selected={bodyPart === "lower_heavy"}
                 onClick={() => handleNext("lower_heavy")}
@@ -379,7 +303,6 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
             goal={goal}
             onSelect={(g, session) => handleNext(undefined, g, session)}
             recommendedIntensity={intensityRec?.nextRecommended || null}
-            goalSectionRef={goalSectionRef}
           />
         )}
       </div>
@@ -388,55 +311,10 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
         {/* Next Button Removed */}
       </div>
 
-      {/* Coach Tutorial Overlay — spotlight on first condition card */}
-      {showCoachTip && step === "body_check" && cardPos && (
-        <div className="absolute inset-0 z-[60] animate-fade-in" onClick={dismissCoachTip}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-          {/* Spotlight on first card */}
-          <div
-            className="absolute rounded-2xl border-2 border-white/70 bg-white/10"
-            style={{ top: cardPos.top - 4, left: cardPos.left - 4, width: cardPos.width + 8, height: cardPos.height + 8 }}
-          />
-          {/* Tooltip below first card */}
-          <div
-            className="absolute px-4"
-            style={{ top: cardPos.top + cardPos.height + 14, left: 0, right: 0 }}
-          >
-            <div className="bg-white rounded-2xl px-5 py-5 shadow-2xl mx-2 relative">
-              <div className="absolute -top-2 left-8 w-4 h-4 bg-white rotate-45 rounded-sm" />
-              <p className="text-emerald-600 text-[11px] font-bold tracking-wider uppercase mb-2">오운잘 코치</p>
-              <p className="text-[15px] font-black text-[#1B4332] leading-snug">{coachMessage.greeting}</p>
-              <p className="text-[12.5px] text-gray-600 leading-relaxed mt-1.5 whitespace-pre-line">{coachMessage.message}</p>
-              <p className="text-[10px] text-gray-400 mt-3 font-medium">탭하여 닫기</p>
-            </div>
-          </div>
-        </div>
+      {showCoachTip && step === "body_check" && (
+        <CoachTooltip recentHistory={recentHistory} intensityRec={intensityRec} onDismiss={dismissCoachTip} />
       )}
 
-      {/* Goal Tutorial Overlay — spotlight on goal cards */}
-      {showGoalTip && step === "goal_select" && goalPos && (
-        <div className="absolute inset-0 z-[60] animate-fade-in" onClick={dismissGoalTip}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-          {/* Spotlight on strength card */}
-          <div
-            className="absolute rounded-2xl border-2 border-white/70 bg-white/10"
-            style={{ top: goalPos.top - 4, left: goalPos.left - 4, width: goalPos.width + 8, height: goalPos.height + 8 }}
-          />
-          {/* Tooltip above strength card */}
-          <div
-            className="absolute px-4"
-            style={{ bottom: `calc(100% - ${goalPos.top}px + 14px)`, left: 0, right: 0 }}
-          >
-            <div className="bg-white rounded-2xl px-5 py-5 shadow-2xl mx-2 relative">
-              <p className="text-emerald-600 text-[11px] font-bold tracking-wider uppercase mb-2">오운잘 코치</p>
-              <p className="text-[15px] font-black text-[#1B4332] leading-snug">{goalTipMessage.title}</p>
-              <p className="text-[12.5px] text-gray-600 leading-relaxed mt-1.5 whitespace-pre-line">{goalTipMessage.message}</p>
-              <p className="text-[10px] text-gray-400 mt-3 font-medium">탭하여 닫기</p>
-              <div className="absolute -bottom-2 left-8 w-4 h-4 bg-white rotate-45 rounded-sm" />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -451,12 +329,10 @@ const GoalSelection = ({
   goal,
   onSelect,
   recommendedIntensity,
-  goalSectionRef,
 }: {
   goal: WorkoutGoal | null;
   onSelect: (g: WorkoutGoal, session?: SessionSelection) => void;
   recommendedIntensity: "high" | "moderate" | "low" | null;
-  goalSectionRef: React.RefObject<HTMLDivElement | null>;
 }) => {
   const [subView, setSubView] = useState<"split" | "running" | null>(null);
   const recGoal = recommendedIntensity ? INTENSITY_TO_GOAL[recommendedIntensity] : null;
@@ -536,8 +412,9 @@ const GoalSelection = ({
         selected={goal === "fat_loss"}
         onClick={() => onSelect("fat_loss", { goal: "fat_loss", sessionMode: "balanced" })}
         title="살 빼기"
-        desc="유산소 + 근지구력 위주 운동"
-        highlight="Burn"
+        desc="다이어트, 미용"
+        badge="저강도"
+        badgeColor="text-emerald-600 bg-emerald-50"
         recommended={recGoal === "fat_loss"}
         delay={0.05}
       />
@@ -545,47 +422,40 @@ const GoalSelection = ({
         selected={goal === "muscle_gain"}
         onClick={() => onSelect("muscle_gain", { goal: "muscle_gain", sessionMode: "balanced" })}
         title="근육 키우기"
-        desc="근육량 증가에 집중하는 운동"
-        highlight="Build"
+        desc="근비대, 몸 만들기"
+        badge="중강도"
+        badgeColor="text-amber-600 bg-amber-50"
         recommended={recGoal === "muscle_gain"}
         delay={0.1}
       />
-      <div ref={goalSectionRef}>
-        <ConditionCard
-          selected={goal === "strength"}
-          onClick={() => onSelect("strength", { goal: "strength", sessionMode: "balanced" })}
-          title="힘 세지기"
-          desc="무거운 무게로 힘을 키우는 운동"
-          highlight="Power"
-          recommended={recGoal === "strength"}
-          delay={0.15}
-        />
-      </div>
+      <ConditionCard
+        selected={goal === "strength"}
+        onClick={() => onSelect("strength", { goal: "strength", sessionMode: "balanced" })}
+        title="힘 세지기"
+        desc="3대 500 목표"
+        badge="고강도"
+        badgeColor="text-red-500 bg-red-50"
+        recommended={recGoal === "strength"}
+        delay={0.15}
+      />
 
-      {/* 다른 운동 */}
-      <div className="flex flex-col gap-3">
-          <ConditionCard
-            selected={false}
-            onClick={() => setSubView("split")}
-            title="부위별 운동"
-            desc="가슴, 등, 어깨, 팔, 하체 중 선택"
-            delay={0.2}
-          />
-          <ConditionCard
-            selected={false}
-            onClick={() => setSubView("running")}
-            title="러닝 훈련"
-            desc="인터벌, 이지런, 장거리 중 선택"
-            delay={0.25}
-          />
-          <ConditionCard
-            selected={false}
-            onClick={() => onSelect("general_fitness", { goal: "general_fitness", sessionMode: "home_training" })}
-            title="기초체력 강화"
-            desc="맨몸 + 덤벨, 집에서도 가능한 전신 운동"
-            highlight="Fit"
-            delay={0.3}
-          />
+      {/* 하단 특수 훈련 칩 버튼 */}
+      <div className="flex gap-2 mt-2">
+        {[
+          { label: "기초체력", sub: "초보 홈트용", onClick: () => onSelect("general_fitness", { goal: "general_fitness", sessionMode: "home_training" }) },
+          { label: "부위별", sub: "상급자용", onClick: () => setSubView("split") },
+          { label: "러닝", sub: "러너용", onClick: () => setSubView("running") },
+        ].map((item, i) => (
+          <button
+            key={item.label}
+            onClick={item.onClick}
+            className="flex-1 py-3 rounded-xl border border-gray-200 bg-white hover:border-[#2D6A4F]/30 hover:bg-emerald-50/30 transition-all duration-200 active:scale-[0.97] animate-card-enter"
+            style={{ animationDelay: `${0.2 + i * 0.05}s`, animationFillMode: "forwards" }}
+          >
+            <p className="text-[13px] font-bold text-gray-800">{item.label}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{item.sub}</p>
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -596,7 +466,8 @@ const ConditionCard = ({
   desc,
   selected,
   onClick,
-  highlight,
+  badge,
+  badgeColor,
   recommended,
   delay = 0
 }: {
@@ -604,7 +475,8 @@ const ConditionCard = ({
   desc: string;
   selected: boolean;
   onClick: () => void;
-  highlight?: string;
+  badge?: string;
+  badgeColor?: string;
   recommended?: boolean;
   delay?: number;
 }) => (
@@ -628,11 +500,18 @@ const ConditionCard = ({
           <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-wider">추천</span>
         )}
       </div>
-      {selected && (
-        <svg className="w-6 h-6 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-        </svg>
-      )}
+      <div className="flex items-center gap-2">
+        {badge && (
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor || "text-gray-500 bg-gray-100"}`}>
+            {badge}
+          </span>
+        )}
+        {selected && (
+          <svg className="w-6 h-6 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </div>
     </div>
     <p className={`text-xs font-medium ${selected ? "text-[#2D6A4F]" : "text-gray-500"}`}>
       {desc}

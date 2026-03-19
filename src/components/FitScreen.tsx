@@ -91,53 +91,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [repsStopwatch, setRepsStopwatch] = useState(0);
   const [repsStopwatchRunning, setRepsStopwatchRunning] = useState(false);
 
-  // --- Warmup Tutorial (ConditionCheck/MasterPlanPreview 동일 패턴) ---
-  const [showGuideTip, setShowGuideTip] = useState(() => {
-    if (typeof window !== "undefined") return !localStorage.getItem("alpha_tip_fit_warmup");
-    return true;
-  });
-  const [showPlayTip, setShowPlayTip] = useState(() => {
-    if (typeof window !== "undefined") return !localStorage.getItem("alpha_tip_fit_warmup");
-    return true;
-  });
-  const [showSkipTip, setShowSkipTip] = useState(() => {
-    if (typeof window !== "undefined") return !localStorage.getItem("alpha_tip_fit_warmup");
-    return true;
-  });
-
-  const dismissGuideTip = () => {
-    setShowGuideTip(false);
-    localStorage.setItem("alpha_tip_fit_warmup", "1");
-  };
-  const dismissPlayTip = () => { setShowPlayTip(false); };
-  const dismissSkipTip = () => { setShowSkipTip(false); };
-
-  const guideRef = useRef<HTMLButtonElement>(null);
-  const playRef = useRef<HTMLButtonElement>(null);
-  const skipRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const [guidePos, setGuidePos] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
-  const [playPos, setPlayPos] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
-  const [skipPos, setSkipPos] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const cr = containerRef.current.getBoundingClientRect();
-
-    if (showGuideTip && guideRef.current) {
-      const r = guideRef.current.getBoundingClientRect();
-      setGuidePos({ top: r.top - cr.top, left: r.left - cr.left, width: r.width, height: r.height });
-    }
-    if (!showGuideTip && showPlayTip && playRef.current) {
-      const r = playRef.current.getBoundingClientRect();
-      setPlayPos({ top: r.top - cr.top, left: r.left - cr.left, width: r.width, height: r.height });
-    }
-    if (!showGuideTip && !showPlayTip && showSkipTip && skipRef.current) {
-      const r = skipRef.current.getBoundingClientRect();
-      setSkipPos({ top: r.top - cr.top, left: r.left - cr.left, width: r.width, height: r.height });
-    }
-  }, [showGuideTip, showPlayTip, showSkipTip]);
 
   // Sync reps from parent (adaptive logic) — render-time sync pattern (React-recommended)
   const [prevTargetReps, setPrevTargetReps] = useState(setInfo.targetReps);
@@ -575,6 +529,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       return;
     }
     setRepsStopwatchRunning(false);
+    playAlarmSound("start");
     setView("feedback");
     setFeedbackGiven(false);
     setLocalRestSec(75); // default rest, will be active immediately
@@ -585,7 +540,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   const submitFeedback = (feedback: FeedbackType, reps: number) => {
     setFeedbackGiven(true);
-    playAlarmSound("start");
     // If timer already done, advance immediately
     if (localRestSec <= 0) {
       pendingFeedbackRef.current = null;
@@ -630,26 +584,34 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
           <div className="flex flex-col items-center gap-1">
-            <h1 className="text-4xl font-black text-[#1B4332] tracking-tight">{mainTitle}</h1>
+            <h1 className="text-4xl font-black text-[#1B4332] tracking-tight leading-tight break-keep text-center">{mainTitle}</h1>
             {subTitle && <p className="text-lg text-gray-400 font-medium">{subTitle}</p>}
-            <button
-              onClick={() => {
-                const parts = exercise.name.split('(');
-                const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
-                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
-              }}
-              className="mt-2 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-gray-100 shadow-sm active:scale-95 transition-all"
-            >
-              <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
-              <span className="text-[11px] font-bold text-gray-600 tracking-wide">자세 가이드</span>
-            </button>
-            {exercise.tempoGuide && (
-              <span className="mt-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700">
-                {exercise.tempoGuide}
-              </span>
-            )}
+            <div className="mt-2 flex items-center gap-2 flex-wrap justify-center">
+              <button
+                onClick={() => {
+                  const parts = exercise.name.split('(');
+                  const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
+                  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
+                }}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-gray-100 shadow-sm active:scale-95 transition-all"
+              >
+                <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                <span className="text-[11px] font-bold text-gray-600 tracking-wide">자세 가이드</span>
+              </button>
+              {alternatives.length > 0 && (
+                <button
+                  onClick={() => setShowSwapMenu(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gray-100 border border-gray-200 text-gray-500 active:scale-95 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="text-xs font-bold tracking-wide">운동 변경</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -851,7 +813,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         {/* Skip Button for Timer Mode */}
         {isTimerMode && (
             <button
-              ref={skipRef}
               onClick={() => onSetComplete(0, "easy")}
               className="absolute right-6 z-10 text-xs font-black text-gray-400 tracking-widest hover:text-gray-600 transition-colors bg-gray-100 px-3 py-1.5 rounded-full"
             >
@@ -883,9 +844,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     {subTitle}
                   </p>
                 )}
-                <div className="mt-3 flex items-center gap-2.5">
+                <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
                   <button
-                    ref={guideRef}
                     onClick={() => {
                       const parts = exercise.name.split('(');
                       const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
@@ -898,23 +858,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     </svg>
                     <span className="text-xs font-bold text-gray-600 tracking-wide">자세 가이드</span>
                   </button>
-                  {alternatives.length > 0 && (
-                    <button
-                      onClick={() => setShowSwapMenu(true)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gray-100 border border-gray-200 text-gray-500 active:scale-95 transition-all"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span className="text-xs font-bold tracking-wide">운동 변경</span>
-                    </button>
+                  {exercise.tempoGuide && (
+                    <span className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700">
+                      {exercise.tempoGuide}
+                    </span>
                   )}
                 </div>
-                {exercise.tempoGuide && (
-                  <span className="mt-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700">
-                    {exercise.tempoGuide}
-                  </span>
-                )}
               </>
             );
           })()}
@@ -1022,7 +971,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 ) : !isPlaying && elapsedTime === 0 && !timerCompleted ? (
                   /* Initial state — show play button */
                   <button
-                    ref={playRef}
                     onClick={() => { playAlarmSound("start"); setIsPlaying(true); }}
                     className="w-28 h-28 rounded-full flex items-center justify-center bg-[#2D6A4F] text-white shadow-xl active:scale-95 transition-all hover:bg-[#1B4332]"
                   >
@@ -1294,74 +1242,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         </div>
       )}
 
-      {/* Warmup Tutorial — 자세 가이드 */}
-      {showGuideTip && guidePos && isTimerMode && (
-        <div className="absolute inset-0 z-[60] animate-fade-in" onClick={dismissGuideTip}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-          <div
-            className="absolute rounded-full border-2 border-white/80 bg-white/10"
-            style={{ top: guidePos.top - 4, left: guidePos.left - 4, width: guidePos.width + 8, height: guidePos.height + 8 }}
-          />
-          <div
-            className="absolute px-4"
-            style={{ top: guidePos.top + guidePos.height + 14, left: 0, right: 0 }}
-          >
-            <div className="bg-white rounded-2xl px-5 py-4 shadow-2xl mx-2 relative">
-              <div className="absolute -top-2 w-4 h-4 bg-white rotate-45 rounded-sm" style={{ left: guidePos.left + guidePos.width / 2 - 8 }} />
-              <p className="text-sm font-bold text-[#1B4332] leading-relaxed">
-                운동을 모르면 여기서<br/>자세를 확인할 수 있어요
-              </p>
-              <p className="text-[11px] text-gray-400 mt-2 font-medium">탭하여 닫기</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Warmup Tutorial — 재생 버튼 */}
-      {!showGuideTip && showPlayTip && playPos && isTimerMode && (
-        <div className="absolute inset-0 z-[60] animate-fade-in" onClick={dismissPlayTip}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-          <div
-            className="absolute rounded-full border-2 border-white/80 bg-white/10"
-            style={{ top: playPos.top - 4, left: playPos.left - 4, width: playPos.width + 8, height: playPos.height + 8 }}
-          />
-          <div
-            className="absolute px-4"
-            style={{ top: playPos.top - 90, left: 0, right: 0 }}
-          >
-            <div className="bg-white rounded-2xl px-5 py-4 shadow-2xl mx-2 relative">
-              <p className="text-sm font-bold text-[#1B4332] leading-relaxed">
-                재생 버튼을 눌러<br/>운동을 시작하세요
-              </p>
-              <p className="text-[11px] text-gray-400 mt-2 font-medium">탭하여 닫기</p>
-              <div className="absolute -bottom-2 w-4 h-4 bg-white rotate-45 rounded-sm" style={{ left: playPos.left + playPos.width / 2 - 8 }} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Warmup Tutorial — SKIP 버튼 */}
-      {!showGuideTip && !showPlayTip && showSkipTip && skipPos && isTimerMode && (
-        <div className="absolute inset-0 z-[60] animate-fade-in" onClick={dismissSkipTip}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-          <div
-            className="absolute rounded-full border-2 border-white/80 bg-white/10"
-            style={{ top: skipPos.top - 4, left: skipPos.left - 4, width: skipPos.width + 8, height: skipPos.height + 8 }}
-          />
-          <div
-            className="absolute px-4"
-            style={{ top: skipPos.top + skipPos.height + 14, left: 0, right: 0 }}
-          >
-            <div className="bg-white rounded-2xl px-5 py-4 shadow-2xl mx-2 relative">
-              <div className="absolute -top-2 w-4 h-4 bg-white rotate-45 rounded-sm" style={{ left: skipPos.left + skipPos.width / 2 - 8 }} />
-              <p className="text-sm font-bold text-[#1B4332] leading-relaxed">
-                넘기고 싶으면 SKIP을 눌러주세요
-              </p>
-              <p className="text-[11px] text-gray-400 mt-2 font-medium">탭하여 닫기</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Feedback + Rest Bottom Sheet */}
       {view === "feedback" && (

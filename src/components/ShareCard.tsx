@@ -208,15 +208,8 @@ export const ShareCard: React.FC<ShareCardProps> = ({
             <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center", textAlign: "center", width: "100%" }}>
               {/* Training Type */}
               <div>
-                <p style={{ color: labelColor, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", marginBottom: 4 }}>
+                <p style={{ color: labelColor, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em" }}>
                   {dateStr}
-                </p>
-                <p style={{ color: "white", fontSize: 20, fontWeight: 900, lineHeight: 1.3, textShadow: shadow }}>
-                  {/* "근력 훈련 • 전반적 피로감 회복 • 3세트" → "근력 훈련" */}
-                  {(() => {
-                    const raw = (sessionData.description || sessionData.title).replace(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|[월화수목금토일]요일)[:\s]*/i, "");
-                    return raw.includes("•") ? raw.split("•")[0].trim() : raw.split(" - ")[0].trim();
-                  })()}
                 </p>
               </div>
 

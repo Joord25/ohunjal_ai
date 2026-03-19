@@ -67,6 +67,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   const [swapExercise, setSwapExercise] = useState<{ exercise: ExerciseStep; index: number; sameGroup: string[] } | null>(null);
   const [swapSearch, setSwapSearch] = useState("");
   const [swapFilter, setSwapFilter] = useState<string | null>(null); // null = 추천(같은부위), or muscle group label
+  const [addToPhase, setAddToPhase] = useState<string | null>(null); // phase key for "add exercise" mode
   const [showIntroTip, setShowIntroTip] = useState(() => {
     if (typeof window !== "undefined") {
       return !localStorage.getItem("alpha_tip_intro");
@@ -166,6 +167,45 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
     setSwapExercise({ exercise: ex, index: globalIdx, sameGroup: alts });
     setSwapSearch("");
     setSwapFilter(null);
+    setAddToPhase(null);
+  };
+
+  const openAddSheet = (phaseKey: string) => {
+    setAddToPhase(phaseKey);
+    setSwapSearch("");
+    setSwapFilter(null);
+    setSwapExercise(null);
+  };
+
+  const handleAddExercise = (name: string) => {
+    if (!addToPhase) return;
+    const phaseMap: Record<string, { type: ExerciseStep["type"]; phase: ExerciseStep["phase"] }> = {
+      warmup: { type: "warmup", phase: "warmup" },
+      main: { type: "strength", phase: "main" },
+      core: { type: "core", phase: "core" },
+      cardio: { type: "cardio", phase: "cardio" },
+    };
+    const info = phaseMap[addToPhase] || { type: "strength", phase: "main" };
+    const newEx: ExerciseStep = {
+      type: info.type,
+      phase: info.phase,
+      name,
+      count: info.type === "warmup" ? "1세트" : "3 x 12",
+      sets: info.type === "warmup" ? 1 : 3,
+      reps: info.type === "warmup" ? 1 : 12,
+    };
+    newEx.count = rebuildCount(newEx);
+
+    // Insert after last exercise of the target phase
+    setLocalExercises(prev => {
+      const lastIdx = prev.reduce((acc, ex, i) => {
+        const exPhase = ex.phase || (ex.type === "warmup" ? "warmup" : ex.type === "core" || ex.type === "mobility" ? "core" : ex.type === "cardio" ? "cardio" : "main");
+        return exPhase === addToPhase ? i : acc;
+      }, -1);
+      const insertAt = lastIdx >= 0 ? lastIdx + 1 : prev.length;
+      return [...prev.slice(0, insertAt), newEx, ...prev.slice(insertAt)];
+    });
+    setAddToPhase(null);
   };
 
 
@@ -362,6 +402,17 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                   </div>
                   );
                 })}
+
+                {/* Add Exercise Button */}
+                <button
+                  onClick={() => openAddSheet(phase.key)}
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-500 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+                  </svg>
+                  <span className="text-[11px] font-bold">운동 추가</span>
+                </button>
               </div>
             </div>
           ))}
@@ -442,11 +493,110 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                 다른 구성으로 다시 생성
               </button>
             )}
+
+            {/* Back to Condition Check */}
+            <button
+              onClick={() => { onBack(); setIsEditing(false); }}
+              className="w-full py-3.5 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-400 font-bold text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-gray-100 mt-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              </svg>
+              처음부터 다시
+            </button>
           </div>
         </div>
       )}
 
       {/* Exercise Swap Bottom Sheet */}
+      {/* Add Exercise Bottom Sheet */}
+      {addToPhase && (
+        <div className="absolute inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setAddToPhase(null)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">운동 추가</p>
+              <button onClick={() => setAddToPhase(null)} className="text-sm text-gray-400 font-bold">닫기</button>
+            </div>
+
+            <input
+              type="text"
+              value={swapSearch}
+              onChange={(e) => setSwapSearch(e.target.value)}
+              placeholder="운동 검색..."
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
+            />
+
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
+              {LABELED_EXERCISE_POOLS.map(p => (
+                <button
+                  key={p.label}
+                  onClick={() => setSwapFilter(prev => prev === p.label ? null : p.label)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
+                    swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-[30vh] overflow-y-auto space-y-1.5">
+              {(() => {
+                const q = swapSearch.replace(/\s/g, "").toLowerCase();
+                const isSearching = q.length > 0;
+                const existingNames = new Set(localExercises.map(e => e.name));
+
+                if (swapFilter !== null) {
+                  const pool = LABELED_EXERCISE_POOLS.find(p => p.label === swapFilter);
+                  if (!pool) return null;
+                  const list = pool.exercises
+                    .filter(e => !existingNames.has(e))
+                    .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
+                  if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>;
+                  return list.map((name: string) => (
+                    <button
+                      key={name}
+                      onClick={() => handleAddExercise(name)}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-gray-600 active:scale-[0.98] transition-all"
+                    >
+                      {name.split("(")[0].trim()}
+                    </button>
+                  ));
+                }
+
+                if (!isSearching) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭을 선택하거나 검색해 주세요</p>;
+
+                return LABELED_EXERCISE_POOLS
+                  .map((group) => {
+                    const keywordMatch = group.keywords.some((kw: string) => kw.includes(q) || q.includes(kw));
+                    const matched = group.exercises
+                      .filter((e: string) => !existingNames.has(e))
+                      .filter((e: string) => keywordMatch || e.replace(/\s/g, "").toLowerCase().includes(q));
+                    if (matched.length === 0) return null;
+                    return (
+                      <div key={group.label}>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                        {matched.map((name: string) => (
+                          <button
+                            key={name}
+                            onClick={() => handleAddExercise(name)}
+                            className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-gray-600 active:scale-[0.98] transition-all mb-1.5"
+                          >
+                            {name.split("(")[0].trim()}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })
+                  .filter(Boolean);
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {swapExercise && (
         <div className="absolute inset-0 z-50">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSwapExercise(null)} />

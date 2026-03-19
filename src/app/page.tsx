@@ -17,12 +17,13 @@ import { saveWorkoutHistory, updateWorkoutAnalysis, loadWorkoutHistory } from "@
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/SubscriptionScreen";
+import { PlanLoadingOverlay } from "@/components/PlanLoadingOverlay";
 import { loadUserProfile } from "@/utils/userProfile";
 import { useSafeArea } from "@/hooks/useSafeArea";
 
 const lazyGenerateWorkout = async (...args: Parameters<typeof import("@/constants/workout").generateAdaptiveWorkout>) => {
   const { generateAdaptiveWorkout } = await import("@/constants/workout");
-  return await lazyGenerateWorkout(...args);
+  return generateAdaptiveWorkout(...args);
 };
 
 type ViewState =
@@ -40,6 +41,7 @@ export default function Home() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // AI Loading State
+  const pendingSessionRef = useRef<WorkoutSessionData | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   // App State
@@ -221,13 +223,12 @@ export default function Home() {
         const dayIndex = new Date().getDay();
         const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
 
-        // If sessionMode is set (new UI), use algorithm with min 1.5s loading UX
+        // If sessionMode is set (new UI), generate instantly but wait for loading animation
         if (sessionSel?.sessionMode) {
-            const [session] = await Promise.all([
-                Promise.resolve(await lazyGenerateWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel, sessionSel.sessionMode, sessionSel.targetMuscle, sessionSel.runType)),
-                new Promise(r => setTimeout(r, 2000)),
-            ]);
-            setCurrentWorkoutSession(session);
+            const session = await lazyGenerateWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel, sessionSel.sessionMode, sessionSel.targetMuscle, sessionSel.runType);
+            pendingSessionRef.current = session;
+            // isLoading stays true — PlanLoadingOverlay.onComplete will clear it
+            return;
         } else {
             // Legacy path: try Gemini AI first
             const dayName = days[dayIndex];
@@ -247,7 +248,10 @@ export default function Home() {
         const session = await lazyGenerateWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel, sessionSel?.sessionMode, sessionSel?.targetMuscle, sessionSel?.runType);
         setCurrentWorkoutSession(session);
     } finally {
-        setIsLoading(false);
+        // sessionMode path: onComplete callback handles isLoading
+        if (!pendingSessionRef.current) {
+          setIsLoading(false);
+        }
     }
   };
 
@@ -308,7 +312,10 @@ export default function Home() {
 
     await generatePlan(condition, goal, undefined, intensityCtx, resolvedIntensity, session);
     incrementPlanCount();
-    setView("master_plan_preview");
+    // sessionMode path: view transition handled by onComplete callback
+    if (!session?.sessionMode) {
+      setView("master_plan_preview");
+    }
   };
 
   const handleIntensityChange = async (level: "high" | "moderate" | "low") => {
@@ -372,6 +379,7 @@ export default function Home() {
           <ConditionCheck
             onComplete={handleConditionComplete}
             onBack={() => setShowExitConfirm(true)}
+            userName={user?.displayName?.split(" ")[0] || undefined}
           />
         );
 
@@ -500,6 +508,7 @@ export default function Home() {
              <ConditionCheck
                onComplete={handleConditionComplete}
                onBack={() => setShowExitConfirm(true)}
+               userName={user?.displayName?.split(" ")[0] || undefined}
              />
            );
         }
@@ -539,15 +548,21 @@ export default function Home() {
 
         {/* Loading Overlay */}
         {isLoading && (
-          <div className="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center animate-fade-in backdrop-blur-sm">
-             <div className="w-12 h-12 border-4 border-emerald-100 border-t-[#5C795E] rounded-full animate-spin mb-4" />
-             <p className="text-lg font-bold text-gray-800 animate-pulse">
-               오운잘 AI가 알려주신 정보들을 기반으로
-             </p>
-             <p className="text-sm text-gray-500 mt-2">
-               맞춤 마스터 플랜을 생성하고 있습니다
-             </p>
-          </div>
+          <PlanLoadingOverlay
+            userName={user?.displayName?.split(" ")[0] || "회원"}
+            bodyPart={currentCondition?.bodyPart}
+            goal={currentGoal}
+            sessionMode={currentSession?.sessionMode}
+            targetMuscle={currentSession?.targetMuscle}
+            onComplete={() => {
+              if (pendingSessionRef.current) {
+                setCurrentWorkoutSession(pendingSessionRef.current);
+                pendingSessionRef.current = null;
+              }
+              setIsLoading(false);
+              setView("master_plan_preview");
+            }}
+          />
         )}
 
         {isLoggedIn && view !== "login" && view !== "workout_session" && (
