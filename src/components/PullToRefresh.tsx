@@ -5,7 +5,7 @@ import React, { useRef, useState, useCallback, useEffect } from "react";
 const THRESHOLD = 80;
 const MAX_PULL = 120;
 
-export const PullToRefresh: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const PullToRefresh: React.FC<{ children: React.ReactNode; enabled?: boolean }> = ({ children, enabled = true }) => {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -74,7 +74,7 @@ export const PullToRefresh: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [pullDistance]);
 
   useEffect(() => {
-    if (!isStandalone) return;
+    if (!isStandalone || !enabled) return;
     const el = containerRef.current;
     if (!el) return;
     el.addEventListener("touchstart", handleTouchStart, { passive: true });
@@ -85,7 +85,7 @@ export const PullToRefresh: React.FC<{ children: React.ReactNode }> = ({ childre
       el.removeEventListener("touchmove", handleTouchMove);
       el.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isStandalone, handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [isStandalone, enabled, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   const progress = Math.min(pullDistance / THRESHOLD, 1);
 

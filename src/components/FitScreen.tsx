@@ -85,7 +85,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [localRestSec, setLocalRestSec] = useState(0);
   const pendingFeedbackRef = useRef<{ feedback: FeedbackType; reps: number } | null>(null);
-  const [showGuide, setShowGuide] = useState(false);
   const [timerCompleted, setTimerCompleted] = useState(false);
   const [showRepsEdit, setShowRepsEdit] = useState(false);
   const [adjustedReps, setAdjustedReps] = useState(setInfo.targetReps);
@@ -454,13 +453,17 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             <h1 className="text-4xl font-black text-[#1B4332] tracking-tight">{mainTitle}</h1>
             {subTitle && <p className="text-lg text-gray-400 font-medium">{subTitle}</p>}
             <button
-              onClick={() => setShowGuide(true)}
-              className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[#2D6A4F] active:scale-95 transition-all"
+              onClick={() => {
+                const parts = exercise.name.split('(');
+                const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
+                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
+              }}
+              className="mt-2 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-gray-100 shadow-sm active:scale-95 transition-all"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
               </svg>
-              <span className="text-[11px] font-bold tracking-wide">자세 가이드</span>
+              <span className="text-[11px] font-bold text-gray-600 tracking-wide">자세 가이드</span>
             </button>
           </div>
 
@@ -619,53 +622,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           </div>
         )}
 
-        {/* Exercise Guide Bottom Sheet */}
-        {showGuide && (
-          <div className="absolute inset-0 z-40">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowGuide(false)} />
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
-              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-              <div className="mb-5">
-                <h3 className="text-xl font-black text-[#1B4332] tracking-tight">{mainTitle}</h3>
-                {subTitle && <p className="text-sm text-gray-400 mt-1">{subTitle}</p>}
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Type</p>
-                  <p className="text-sm font-black text-gray-900 uppercase">{exercise.type}</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Sets</p>
-                  <p className="text-sm font-black text-gray-900">{setInfo.total}</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Reps</p>
-                  <p className="text-sm font-black text-gray-900">{setInfo.targetReps}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  const searchTerm = subTitle || mainTitle;
-                  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
-                }}
-                className="w-full p-4 rounded-2xl bg-[#1B4332] text-white flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="#FF0000" />
-                  <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="white" />
-                </svg>
-                <span className="font-black text-sm tracking-wide">YouTube에서 자세 가이드 보기</span>
-              </button>
-
-              <button
-                onClick={() => setShowGuide(false)}
-                className="w-full p-3 mt-2 rounded-xl text-gray-400 font-bold text-sm active:scale-[0.98] transition-all"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -745,13 +701,17 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <div className="mt-3 flex items-center gap-2.5">
                   <button
                     ref={guideRef}
-                    onClick={() => setShowGuide(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-[#2D6A4F] active:scale-95 transition-all"
+                    onClick={() => {
+                      const parts = exercise.name.split('(');
+                      const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
+                      window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-100 shadow-sm active:scale-95 transition-all"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                    <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                     </svg>
-                    <span className="text-xs font-bold tracking-wide">자세 가이드</span>
+                    <span className="text-xs font-bold text-gray-600 tracking-wide">자세 가이드</span>
                   </button>
                   {alternatives.length > 0 && (
                     <button
@@ -943,73 +903,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         </div>
       )}
 
-      {/* Exercise Guide Bottom Sheet */}
-      {showGuide && (
-        <div className="absolute inset-0 z-40">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowGuide(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-
-            <div className="mb-5">
-              {(() => {
-                const parts = exercise.name.split('(');
-                const korean = parts[0].trim();
-                const english = parts.length > 1 ? parts[1].replace(')', '').trim() : "";
-                return (
-                  <>
-                    <h3 className="text-xl font-black text-[#1B4332] tracking-tight">{korean}</h3>
-                    {english && <p className="text-sm text-gray-400 mt-1">{english}</p>}
-                  </>
-                );
-              })()}
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Type</p>
-                <p className="text-sm font-black text-gray-900 uppercase">{exercise.type}</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Sets</p>
-                <p className="text-sm font-black text-gray-900">{setInfo.total}</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Reps</p>
-                <p className="text-sm font-black text-gray-900">{setInfo.targetReps}</p>
-              </div>
-            </div>
-
-            {exercise.weight && exercise.weight !== "Bodyweight" && (
-              <div className="bg-emerald-50 rounded-xl p-3 mb-6 border border-emerald-100 text-center">
-                <p className="text-[9px] font-black text-[#2D6A4F] uppercase tracking-widest mb-0.5">Weight</p>
-                <p className="text-sm font-black text-[#1B4332]">{exercise.weight}</p>
-              </div>
-            )}
-
-            <button
-              onClick={() => {
-                const parts = exercise.name.split('(');
-                const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
-                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
-              }}
-              className="w-full p-4 rounded-2xl bg-[#1B4332] text-white flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg hover:bg-[#2D6A4F]"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="#FF0000" />
-                <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="white" />
-              </svg>
-              <span className="font-black text-sm tracking-wide">YouTube에서 자세 가이드 보기</span>
-            </button>
-
-            <button
-              onClick={() => setShowGuide(false)}
-              className="w-full p-3 mt-2 rounded-xl text-gray-400 font-bold text-sm active:scale-[0.98] transition-all"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Swap Exercise Bottom Sheet (during exercise) */}
       {showSwapMenu && (

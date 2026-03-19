@@ -6,9 +6,10 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface PhoneFrameProps {
   children: React.ReactNode;
+  pullToRefresh?: boolean;
 }
 
-export const PhoneFrame: React.FC<PhoneFrameProps> = ({ children }) => {
+export const PhoneFrame: React.FC<PhoneFrameProps> = ({ children, pullToRefresh = true }) => {
   return (
     <div className="flex items-center justify-center h-[100dvh] sm:min-h-screen bg-[#FAFBF9] sm:bg-gray-100">
       {/* Content Container (Responsive: Full on mobile, Fixed on desktop) */}
@@ -22,7 +23,7 @@ export const PhoneFrame: React.FC<PhoneFrameProps> = ({ children }) => {
         <main
           className="relative w-full h-full flex flex-col animate-fade-in overflow-hidden"
         >
-          <PullToRefresh>
+          <PullToRefresh enabled={pullToRefresh}>
             {children}
           </PullToRefresh>
         </main>
