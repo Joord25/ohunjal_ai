@@ -29,6 +29,8 @@ body {
   font-optical-sizing: auto;
   overflow: hidden; /* Prevent scrolling outside the frame */
   overscroll-behavior-y: contain; /* Prevent pull-to-refresh in PWA */
+  touch-action: pan-x pan-y; /* Prevent pinch-zoom on mobile */
+  -webkit-text-size-adjust: 100%; /* Prevent text size adjustment on orientation change */
 }
 
 /* Windows font rendering fix */
