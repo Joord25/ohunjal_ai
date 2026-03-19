@@ -169,17 +169,11 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   };
 
 
-  const warmups = localExercises.filter(e => e.type === "warmup");
-  const main = localExercises.filter(e => {
-    if (e.type === "strength") return true;
-    if (e.type === "cardio") return !e.name.includes("추가") && !e.name.includes("Additional");
-    return false;
-  });
-  const core = localExercises.filter(e => e.type === "core" || e.type === "mobility");
-  const additionalCardio = localExercises.filter(e => {
-    if (e.type === "cardio") return e.name.includes("추가") || e.name.includes("Additional");
-    return false;
-  });
+  // Phase-based filtering (phase tag takes priority, fallback to type for backward compat)
+  const warmups = localExercises.filter(e => e.phase === "warmup" || (!e.phase && e.type === "warmup"));
+  const main = localExercises.filter(e => e.phase === "main" || (!e.phase && (e.type === "strength" || (e.type === "cardio" && !e.name.includes("추가") && !e.name.includes("Additional")))));
+  const core = localExercises.filter(e => e.phase === "core" || (!e.phase && (e.type === "core" || e.type === "mobility")));
+  const additionalCardio = localExercises.filter(e => e.phase === "cardio" || (!e.phase && e.type === "cardio" && (e.name.includes("추가") || e.name.includes("Additional"))));
 
   const phases = [
     { ...PHASE_CONFIG[0], exercises: warmups },

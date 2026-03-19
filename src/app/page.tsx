@@ -5,7 +5,7 @@ import { PhoneFrame } from "@/components/PhoneFrame";
 import { BottomTabs, TabId } from "@/components/BottomTabs";
 import { LoginScreen } from "@/components/LoginScreen";
 import { MasterPlanPreview } from "@/components/MasterPlanPreview";
-import { ConditionCheck } from "@/components/ConditionCheck";
+import { ConditionCheck, SessionSelection } from "@/components/ConditionCheck";
 import { WorkoutReport } from "@/components/WorkoutReport";
 import { WorkoutSession } from "@/components/WorkoutSession";
 import { ProofTab } from "@/components/ProofTab";
@@ -42,6 +42,7 @@ export default function Home() {
   const [currentWorkoutSession, setCurrentWorkoutSession] = useState<WorkoutSessionData | null>(null);
   const [currentCondition, setCurrentCondition] = useState<UserCondition | null>(null);
   const [currentGoal, setCurrentGoal] = useState<WorkoutGoal | null>(null);
+  const [currentSession, setCurrentSession] = useState<SessionSelection | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<Record<number, ExerciseLog[]>>({});
   const [workoutDurationSec, setWorkoutDurationSec] = useState<number | undefined>(undefined);
   const [recommendedIntensity, setRecommendedIntensity] = useState<"high" | "moderate" | "low" | null>(null);
@@ -208,31 +209,34 @@ export default function Home() {
     }
   };
 
-  const generatePlan = async (condition: UserCondition, goal: WorkoutGoal, sessionType?: string, intensityCtx?: { recommended: "high" | "moderate" | "low"; weekSummary: { high: number; moderate: number; low: number }; target: { high: number; moderate: number; low: number }; reason: string } | null, intensityLevel?: "high" | "moderate" | "low" | null) => {
+  const generatePlan = async (condition: UserCondition, goal: WorkoutGoal, sessionType?: string, intensityCtx?: { recommended: "high" | "moderate" | "low"; weekSummary: { high: number; moderate: number; low: number }; target: { high: number; moderate: number; low: number }; reason: string } | null, intensityLevel?: "high" | "moderate" | "low" | null, sessionSel?: SessionSelection | null) => {
     setIsLoading(true);
     try {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayIndex = new Date().getDay();
-        const dayName = days[dayIndex];
+        const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
 
-        // 1. Try Gemini AI with Day Name and optional Session Type
-        const aiSession = await generateAIWorkoutPlan(condition, goal, dayName, sessionType, intensityCtx);
-        
-        if (aiSession) {
-             setCurrentWorkoutSession(aiSession);
-        } else {
-            // 2. Fallback to Algorithm if AI fails or returns null
-            console.warn("AI generation failed, falling back to algorithm.");
-            const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-            const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel);
+        // If sessionMode is set (new UI), use algorithm directly (instant, free)
+        if (sessionSel?.sessionMode) {
+            const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel, sessionSel.sessionMode, sessionSel.targetMuscle, sessionSel.runType);
             setCurrentWorkoutSession(session);
+        } else {
+            // Legacy path: try Gemini AI first
+            const dayName = days[dayIndex];
+            const aiSession = await generateAIWorkoutPlan(condition, goal, dayName, sessionType, intensityCtx);
+            if (aiSession) {
+                setCurrentWorkoutSession(aiSession);
+            } else {
+                console.warn("AI generation failed, falling back to algorithm.");
+                const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel);
+                setCurrentWorkoutSession(session);
+            }
         }
     } catch (e) {
         console.error("Error generating workout:", e);
-        // Fallback
         const dayIndex = new Date().getDay();
         const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-        const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel);
+        const session = generateAdaptiveWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel, sessionSel?.sessionMode, sessionSel?.targetMuscle, sessionSel?.runType);
         setCurrentWorkoutSession(session);
     } finally {
         setIsLoading(false);
@@ -245,7 +249,7 @@ export default function Home() {
     localStorage.setItem("alpha_plan_count", count.toString());
   };
 
-  const handleConditionComplete = async (condition: UserCondition, goal: WorkoutGoal) => {
+  const handleConditionComplete = async (condition: UserCondition, goal: WorkoutGoal, session?: SessionSelection) => {
     // Check free usage limit
     if (subStatus === "free" && getPlanCount() >= FREE_PLAN_LIMIT) {
       setShowPaywall(true);
@@ -254,6 +258,7 @@ export default function Home() {
 
     setCurrentCondition(condition);
     setCurrentGoal(goal);
+    setCurrentSession(session || null);
 
     // Compute intensity recommendation from recent history
     let intensityCtx = null;
@@ -293,18 +298,17 @@ export default function Home() {
       }
     } catch { /* ignore */ }
 
-    await generatePlan(condition, goal, undefined, intensityCtx, resolvedIntensity);
+    await generatePlan(condition, goal, undefined, intensityCtx, resolvedIntensity, session);
     incrementPlanCount();
     setView("master_plan_preview");
   };
 
   const handleIntensityChange = (level: "high" | "moderate" | "low") => {
     setRecommendedIntensity(level);
-    // Immediately regenerate plan with new intensity
     if (!currentCondition || !currentGoal) return;
     const dayIndex = new Date().getDay();
     const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-    const session = generateAdaptiveWorkout(scheduleIndex, currentCondition, currentGoal, undefined, level);
+    const session = generateAdaptiveWorkout(scheduleIndex, currentCondition, currentGoal, undefined, level, currentSession?.sessionMode, currentSession?.targetMuscle, currentSession?.runType);
     setCurrentWorkoutSession(session);
   };
 
@@ -312,7 +316,7 @@ export default function Home() {
     if (!currentCondition || !currentGoal) return;
     const dayIndex = new Date().getDay();
     const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-    const session = generateAdaptiveWorkout(scheduleIndex, currentCondition, currentGoal, undefined, recommendedIntensity);
+    const session = generateAdaptiveWorkout(scheduleIndex, currentCondition, currentGoal, undefined, recommendedIntensity, currentSession?.sessionMode, currentSession?.targetMuscle, currentSession?.runType);
     setCurrentWorkoutSession(session);
   };
 

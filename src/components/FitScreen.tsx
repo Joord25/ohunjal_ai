@@ -80,7 +80,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   const [view, setView] = useState<"active" | "feedback">("active");
   const [failedReps, setFailedReps] = useState(Math.max(0, setInfo.targetReps - 1));
-  const [easyExtraReps, setEasyExtraReps] = useState(2);
+  const [easyExtraReps, setEasyExtraReps] = useState(4);
   const [isDoneAnimating, setIsDoneAnimating] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [localRestSec, setLocalRestSec] = useState(0);
@@ -645,6 +645,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </svg>
               <span className="text-[11px] font-bold text-gray-600 tracking-wide">자세 가이드</span>
             </button>
+            {exercise.tempoGuide && (
+              <span className="mt-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700">
+                {exercise.tempoGuide}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -905,6 +910,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     </button>
                   )}
                 </div>
+                {exercise.tempoGuide && (
+                  <span className="mt-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-700">
+                    {exercise.tempoGuide}
+                  </span>
+                )}
               </>
             );
           })()}
@@ -1400,7 +1410,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                             <input type="number" value={easyExtraReps} onChange={(e) => setEasyExtraReps(Math.max(1, Number(e.target.value)))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-white" />
                             <button onClick={() => setEasyExtraReps(easyExtraReps + 1)} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">+</button>
                         </div>
-                        <button onClick={() => submitFeedback(easyExtraReps > 3 ? "too_easy" : "easy", adjustedReps + easyExtraReps)} className="bg-emerald-400 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm">
+                        <button onClick={() => submitFeedback(easyExtraReps > 5 ? "too_easy" : "easy", adjustedReps + easyExtraReps)} className="bg-emerald-400 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         </button>
                       </div>

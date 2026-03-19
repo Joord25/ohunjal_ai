@@ -844,7 +844,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                     <p className="text-[11px] text-gray-500"><span className="font-bold text-[#2D6A4F]">여성 참고</span>: 에스트로겐의 항염증 효과로 회복이 ~15% 빠르며, 40대 이후 골밀도 유지를 위해 고강도 비중을 유지하는 것이 권장돼요 (ACSM 폐경 후 가이드라인).</p>
                   )}
                   <p>고·중·저를 <span className="font-bold text-[#2D6A4F]">골고루 배분</span>하면 과훈련을 방지하고 성장 효율이 가장 높아요. 이번 주 배분을 확인하고 다음 세션 강도를 조절해보세요.</p>
-                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM Position Stand (2009, PubMed 19204579), NSCA Essentials of S&C 4th ed., WHO Physical Activity Guidelines (2020, PMC 7719906), NSCA DUP 주기화 모델, Schoenfeld et al. (2019, PMC 6303131)</p>
+                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM Resistance Exercise Guidelines (2025), WHO Physical Activity Guidelines (2020, PMC 7719906), Schoenfeld et al. (2019, PMC 6303131)</p>
                 </div>
               </>
             )}

@@ -144,7 +144,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
           exercise.weight = `${Math.max(0, currentWeight - reduction)}kg`;
         }
       }
-      // "target" (RIR ~1): maintain (no change)
+      // "target" (RIR 2-3): maintain (no change)
 
       // Persist adapted weight to localStorage so FitScreen picks it up
       if (exercise.weight) {
@@ -164,8 +164,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       } else {
         setIsResting(true);
         const baseRest = feedback === "fail" ? 90
-          : feedback === "target" ? 75
-          : 60;
+          : feedback === "target" ? 60
+          : 45;
         // Women: -10s (faster recovery). Age 50+: +15s, 60+: +30s
         const sexAdj = isFemale ? -10 : 0;
         const ageAdj = age >= 60 ? 30 : age >= 50 ? 15 : 0;

@@ -1,12 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { UserCondition, WorkoutGoal, WorkoutHistory } from "@/constants/workout";
+import { UserCondition, WorkoutGoal, WorkoutHistory, SessionMode, TargetMuscle, RunType } from "@/constants/workout";
 import { updateWeight, updateGender, updateBirthYear } from "@/utils/userProfile";
 import { getIntensityRecommendation, type IntensityLevel } from "@/utils/workoutMetrics";
 
+export interface SessionSelection {
+  goal: WorkoutGoal;
+  sessionMode: SessionMode;
+  targetMuscle?: TargetMuscle;
+  runType?: RunType;
+}
+
 interface ConditionCheckProps {
-  onComplete: (condition: UserCondition, goal: WorkoutGoal) => void;
+  onComplete: (condition: UserCondition, goal: WorkoutGoal, session?: SessionSelection) => void;
   onBack?: () => void;
 }
 
@@ -182,7 +189,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
     }
   };
 
-  const handleNext = (selectedBodyPart?: UserCondition["bodyPart"], selectedGoal?: WorkoutGoal) => {
+  const handleNext = (selectedBodyPart?: UserCondition["bodyPart"], selectedGoal?: WorkoutGoal, session?: SessionSelection) => {
     if (step === "body_check" && selectedBodyPart) {
       setBodyPart(selectedBodyPart);
       setStep("weight_input");
@@ -210,7 +217,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
         bodyWeightKg: !isNaN(weightNum) && weightNum > 0 ? weightNum : undefined,
         gender: gender || undefined,
         birthYear: !isNaN(birthYearNum) && birthYearNum > 1900 ? birthYearNum : undefined,
-      }, selectedGoal);
+      }, selectedGoal, session);
     }
   };
 
@@ -370,7 +377,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
           /* Goal Selection */
           <GoalSelection
             goal={goal}
-            onSelect={(g) => handleNext(undefined, g)}
+            onSelect={(g, session) => handleNext(undefined, g, session)}
             recommendedIntensity={intensityRec?.nextRecommended || null}
             goalSectionRef={goalSectionRef}
           />
@@ -447,27 +454,99 @@ const GoalSelection = ({
   goalSectionRef,
 }: {
   goal: WorkoutGoal | null;
-  onSelect: (g: WorkoutGoal) => void;
+  onSelect: (g: WorkoutGoal, session?: SessionSelection) => void;
   recommendedIntensity: "high" | "moderate" | "low" | null;
   goalSectionRef: React.RefObject<HTMLDivElement | null>;
 }) => {
+  const [showMore, setShowMore] = useState(false);
+  const [subView, setSubView] = useState<"split" | "running" | null>(null);
   const recGoal = recommendedIntensity ? INTENSITY_TO_GOAL[recommendedIntensity] : null;
+
+  // 부위별 운동 서브뷰
+  if (subView === "split") {
+    const muscles: { key: TargetMuscle; label: string; desc: string }[] = [
+      { key: "chest", label: "가슴", desc: "벤치프레스, 인클라인, 플라이 등" },
+      { key: "back", label: "등", desc: "풀업, 로우, 페이스풀 등" },
+      { key: "shoulders", label: "어깨", desc: "프레스, 레터럴레이즈, 리어델트 등" },
+      { key: "arms", label: "팔", desc: "바벨컬, 해머컬, 트라이셉 등" },
+      { key: "legs", label: "하체", desc: "스쿼트, 런지, 레그컬 등" },
+    ];
+    return (
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={() => setSubView(null)}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1 self-start"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+          뒤로
+        </button>
+        <p className="text-sm font-bold text-[#2D6A4F] mb-1">어떤 부위를 집중할까요?</p>
+        {muscles.map((m, i) => (
+          <ConditionCard
+            key={m.key}
+            selected={false}
+            onClick={() => onSelect("muscle_gain", { goal: "muscle_gain", sessionMode: "split", targetMuscle: m.key })}
+            title={m.label}
+            desc={m.desc}
+            delay={0.05 * (i + 1)}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // 러닝 종류 서브뷰
+  if (subView === "running") {
+    const runs: { key: RunType; label: string; desc: string }[] = [
+      { key: "interval", label: "인터벌 달리기", desc: "빠르게/느리게 반복, 심폐 능력 향상" },
+      { key: "easy", label: "이지런 (가벼운 조깅)", desc: "편하게 30-40분, 체지방 연소" },
+      { key: "long", label: "장거리 달리기", desc: "60분 이상, 지구력 훈련" },
+    ];
+    return (
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={() => setSubView(null)}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1 self-start"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+          뒤로
+        </button>
+        <p className="text-sm font-bold text-[#2D6A4F] mb-1">어떤 달리기를 할까요?</p>
+        {runs.map((r, i) => (
+          <ConditionCard
+            key={r.key}
+            selected={false}
+            onClick={() => onSelect("general_fitness", { goal: "general_fitness", sessionMode: "running", runType: r.key })}
+            title={r.label}
+            desc={r.desc}
+            delay={0.05 * (i + 1)}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
+      {/* 메인 3개 목표 */}
       <ConditionCard
         selected={goal === "fat_loss"}
-        onClick={() => onSelect("fat_loss")}
-        title="체지방 연소"
-        desc="유산소성 근지구력 (15-20+ Reps)"
+        onClick={() => onSelect("fat_loss", { goal: "fat_loss", sessionMode: "balanced" })}
+        title="살 빼기"
+        desc="유산소 + 근지구력 위주 운동"
         highlight="Burn"
         recommended={recGoal === "fat_loss"}
         delay={0.05}
       />
       <ConditionCard
         selected={goal === "muscle_gain"}
-        onClick={() => onSelect("muscle_gain")}
-        title="근육량 증가"
-        desc="근비대 볼륨 타겟 (8-12 Reps)"
+        onClick={() => onSelect("muscle_gain", { goal: "muscle_gain", sessionMode: "balanced" })}
+        title="근육 키우기"
+        desc="근육량 증가에 집중하는 운동"
         highlight="Build"
         recommended={recGoal === "muscle_gain"}
         delay={0.1}
@@ -475,22 +554,55 @@ const GoalSelection = ({
       <div ref={goalSectionRef}>
         <ConditionCard
           selected={goal === "strength"}
-          onClick={() => onSelect("strength")}
-          title="최대 근력"
-          desc="고중량 스트렝스 (3-5 Reps)"
+          onClick={() => onSelect("strength", { goal: "strength", sessionMode: "balanced" })}
+          title="힘 세지기"
+          desc="무거운 무게로 힘을 키우는 운동"
           highlight="Power"
           recommended={recGoal === "strength"}
           delay={0.15}
         />
       </div>
-      <ConditionCard
-        selected={goal === "general_fitness"}
-        onClick={() => onSelect("general_fitness")}
-        title="기초체력향상"
-        desc="맨몸 + 가벼운 도구 풀바디 서킷 (10-15 Reps)"
-        highlight="Fit"
-        delay={0.2}
-      />
+
+      {/* 다른 운동 접기/펼치기 */}
+      <button
+        onClick={() => setShowMore(!showMore)}
+        className="flex items-center justify-center gap-1.5 py-3 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+      >
+        다른 운동
+        <svg
+          className={`w-4 h-4 transition-transform duration-200 ${showMore ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {showMore && (
+        <div className="flex flex-col gap-3 animate-fade-in">
+          <ConditionCard
+            selected={false}
+            onClick={() => setSubView("split")}
+            title="부위별 운동"
+            desc="가슴, 등, 어깨, 팔, 하체 중 선택"
+            delay={0.05}
+          />
+          <ConditionCard
+            selected={false}
+            onClick={() => setSubView("running")}
+            title="러닝 훈련"
+            desc="인터벌, 이지런, 장거리 중 선택"
+            delay={0.1}
+          />
+          <ConditionCard
+            selected={false}
+            onClick={() => onSelect("general_fitness", { goal: "general_fitness", sessionMode: "home_training" })}
+            title="기초체력 강화"
+            desc="맨몸 + 덤벨, 집에서도 가능한 전신 운동"
+            highlight="Fit"
+            delay={0.15}
+          />
+        </div>
+      )}
     </div>
   );
 };
