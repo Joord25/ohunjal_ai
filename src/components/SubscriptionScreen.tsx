@@ -645,6 +645,13 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               </div>
             )}
 
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
+              <span className="text-amber-500 text-base">⚠️</span>
+              <p className="text-xs text-amber-700 font-medium leading-snug">
+                현재 테스트 모드입니다. 결제 시 <span className="font-bold">실제 금액이 청구되지 않습니다.</span>
+              </p>
+            </div>
+
             <button
               onClick={handleSubscribe}
               disabled={isProcessing}

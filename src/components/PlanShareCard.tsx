@@ -132,7 +132,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center animate-fade-in" style={{ padding: "env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) 0" }}>
+    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center animate-fade-in" style={{ padding: "max(1rem, env(safe-area-inset-top, 0px)) 0 max(1rem, env(safe-area-inset-bottom, 0px)) 0" }}>
       {/* Close */}
       <button onClick={onClose} className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center" style={{ top: "max(1rem, env(safe-area-inset-top, 0px))" }}>
         <svg className="w-6 h-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -140,10 +140,10 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
         </svg>
       </button>
 
-      <p className="text-white/60 text-xs font-bold mb-4 tracking-wider uppercase">플랜 공유</p>
+      <p className="text-white/60 text-xs font-bold mb-3 mt-10 tracking-wider uppercase shrink-0">플랜 공유</p>
 
-      {/* Card Preview — auto height, fixed width */}
-      <div ref={scrollRef} className="relative w-[270px] rounded-2xl overflow-y-auto max-w-[85vw] max-h-[70vh]">
+      {/* Card Preview — auto height, fixed width, scrollable */}
+      <div ref={scrollRef} className="relative w-[270px] rounded-2xl overflow-y-auto max-w-[85vw] flex-1 min-h-0">
         <div
           ref={cardRef}
           className="w-[270px] flex flex-col p-6"
@@ -240,7 +240,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
       </div>
 
       {/* Mode Toggle + Actions */}
-      <div className="flex items-center gap-4 mt-5">
+      <div className="flex items-center gap-6 mt-4 shrink-0">
         {/* Mode toggle */}
         <div className="flex items-center gap-2">
           <button
@@ -258,10 +258,11 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
             style={{ background: "linear-gradient(135deg, #FAFBF9, #ECFDF5)" }}
           />
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-5 mt-5">
+        <div className="w-px h-5 bg-white/20" />
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-5">
         <button onClick={handleDownload} disabled={isCapturing} className="flex flex-col items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
           <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -278,6 +279,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
           </div>
           <span className="text-white/50 text-[10px] font-bold">공유</span>
         </button>
+        </div>
       </div>
 
       {isCapturing && (
