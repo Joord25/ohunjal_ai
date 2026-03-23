@@ -376,7 +376,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       const response = await window.PortOne.requestIssueBillingKey({
         storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID || "",
         channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY || "",
-        billingKeyMethod: "CARD",
+        billingKeyMethod: "EASY_PAY",
         issueName: "오운잘 AI 월간 구독",
         customer: {
           customerId: user.uid,
@@ -390,13 +390,14 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         if (response.code === "FAILURE_TYPE_PG") {
           setError("결제가 취소되었습니다.");
         } else {
-          setError(response.message || "빌링키 발급에 실패했습니다.");
+          setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+          console.error("[PortOne]", response.code, response.message);
         }
         return;
       }
 
       if (!response.billingKey) {
-        setError("빌링키 발급에 실패했습니다.");
+        setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         return;
       }
 
@@ -422,7 +423,8 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       setStatus("active");
       await checkSubscription();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "구독 처리 중 오류가 발생했습니다.");
+      console.error("[Subscribe]", err);
+      setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsProcessing(false);
     }
