@@ -85,6 +85,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-BVD88DPW9E" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BVD88DPW9E');`,
+          }}
+        />
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
         <meta name="theme-color" content="#1B4332" />
         <meta name="mobile-web-app-capable" content="yes" />
