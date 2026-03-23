@@ -222,7 +222,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout }) =>
             {user?.email || ""}
           </p>
           <p className="text-[10px] font-bold mt-1" style={{ color: tierInfo.tier.color }}>
-            {seasonLabel}
+            {seasonLabel} - {tierInfo.tier.name}
           </p>
         </div>
       </div>

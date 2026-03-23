@@ -90,6 +90,68 @@ body {
   animation: card-enter 0.35s ease-out forwards;
 }
 
+/* Quest encounter animations (Pokémon-style) */
+@keyframes quest-flash {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  20% { opacity: 0; }
+  30% { opacity: 1; }
+  40% { opacity: 0.3; }
+  50% { opacity: 1; }
+  60% { opacity: 0; }
+  70% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+@keyframes quest-bg-in {
+  0% { opacity: 0; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes quest-card-slam {
+  0% { transform: scale(0) rotate(-8deg); opacity: 0; }
+  50% { transform: scale(0) rotate(-8deg); opacity: 0; }
+  65% { transform: scale(1.15) rotate(2deg); opacity: 1; }
+  78% { transform: scale(0.95) rotate(-1deg); }
+  88% { transform: scale(1.03) rotate(0.5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes quest-shake {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-6px); }
+  20% { transform: translateX(6px); }
+  30% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  50% { transform: translateX(-2px); }
+  60% { transform: translateX(2px); }
+}
+
+@keyframes quest-bar-fill {
+  0% { width: 0%; }
+}
+
+@keyframes quest-line-in {
+  0% { transform: translateX(-20px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes quest-glow-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(52, 211, 153, 0.3), inset 0 0 10px rgba(52, 211, 153, 0.05); }
+  50% { box-shadow: 0 0 25px rgba(52, 211, 153, 0.6), inset 0 0 20px rgba(52, 211, 153, 0.1); }
+}
+
+@keyframes quest-text-glow {
+  0%, 100% { text-shadow: 0 0 4px rgba(251, 191, 36, 0.5); }
+  50% { text-shadow: 0 0 16px rgba(251, 191, 36, 1), 0 0 30px rgba(251, 191, 36, 0.5); }
+}
+
+@keyframes quest-scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
 /* Report entrance animations */
 @keyframes report-pop {
   0% { transform: scale(0.8); opacity: 0; }

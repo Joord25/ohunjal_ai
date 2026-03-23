@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { UserCondition, WorkoutGoal, WorkoutHistory, SessionMode, TargetMuscle, RunType } from "@/constants/workout";
 import { updateWeight, updateGender, updateBirthYear } from "@/utils/userProfile";
 import { getIntensityRecommendation, type IntensityLevel } from "@/utils/workoutMetrics";
+import { getOrCreateWeeklyQuests, type QuestDefinition, type WeeklyQuestState } from "@/utils/questSystem";
 import { CoachTooltip } from "./Tutorial";
 
 export interface SessionSelection {
@@ -83,6 +84,16 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
   const intensityRec = recentHistory.length > 0
     ? getIntensityRecommendation(recentHistory, savedBirthYear, savedGender)
     : null;
+
+  // Load weekly quest progress for intensity recommendation
+  const questData = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("alpha_workout_history");
+      const all: WorkoutHistory[] = raw ? JSON.parse(raw) : [];
+      return getOrCreateWeeklyQuests(all, savedBirthYear, savedGender);
+    } catch { return null; }
+  })();
 
 
 
@@ -303,6 +314,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
             goal={goal}
             onSelect={(g, session) => handleNext(undefined, g, session)}
             recommendedIntensity={intensityRec?.nextRecommended || null}
+            questData={questData}
           />
         )}
       </div>
@@ -329,13 +341,43 @@ const GoalSelection = ({
   goal,
   onSelect,
   recommendedIntensity,
+  questData,
 }: {
   goal: WorkoutGoal | null;
   onSelect: (g: WorkoutGoal, session?: SessionSelection) => void;
   recommendedIntensity: "high" | "moderate" | "low" | null;
+  questData: { questDefs: QuestDefinition[]; questState: WeeklyQuestState } | null;
 }) => {
   const [subView, setSubView] = useState<"split" | "running" | null>(null);
-  const recGoal = recommendedIntensity ? INTENSITY_TO_GOAL[recommendedIntensity] : null;
+  const [showQuestTip, setShowQuestTip] = useState(true);
+  // Quest-based intensity recommendation
+  const questRecommendation = (() => {
+    if (!questData) return null;
+    const { questDefs, questState } = questData;
+    const progress = questDefs.map(q => {
+      const p = questState.quests.find(qp => qp.questId === q.id);
+      return { def: q, current: p?.current ?? 0, completed: p?.completed ?? false };
+    });
+
+    // Find the intensity quest with most remaining for recommendation
+    const intensityIncomplete = progress.filter(p => !p.completed && p.def.type.startsWith("intensity_"));
+    let recommended: string | null = null;
+    let recommendedType: string | null = null;
+    if (intensityIncomplete.length > 0) {
+      const priority = ["intensity_high", "intensity_moderate", "intensity_low"];
+      const best = intensityIncomplete.sort((a, b) => priority.indexOf(a.def.type) - priority.indexOf(b.def.type))[0];
+      const labelMap: Record<string, string> = { intensity_high: "고강도", intensity_moderate: "중강도", intensity_low: "저강도" };
+      recommended = labelMap[best.def.type] ?? null;
+      recommendedType = best.def.type;
+    }
+    return { progress, recommended, recommendedType };
+  })();
+
+  // 퀘스트 기반 추천 → 카드 뱃지에도 반영 (기존 히스토리 기반 폴백)
+  const questIntensityMap: Record<string, string> = { intensity_high: "strength", intensity_moderate: "muscle_gain", intensity_low: "fat_loss" };
+  const recGoal = questRecommendation?.recommendedType
+    ? questIntensityMap[questRecommendation.recommendedType]
+    : (recommendedIntensity ? INTENSITY_TO_GOAL[recommendedIntensity] : null);
 
   // 부위별 운동 서브뷰
   if (subView === "split") {
@@ -407,6 +449,96 @@ const GoalSelection = ({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* 주간 퀘스트 — 포켓몬 인카운터 스타일 */}
+      {questRecommendation && showQuestTip && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center" onClick={() => setShowQuestTip(false)}>
+          {/* 화면 번쩍 플래시 */}
+          <div className="absolute inset-0 bg-white pointer-events-none" style={{ animation: "quest-flash 0.8s ease-out forwards" }} />
+          {/* 다크 배경 (플래시 후 페이드인) */}
+          <div className="absolute inset-0 bg-black/80" style={{ animation: "quest-bg-in 0.8s ease-out forwards" }} />
+
+          {/* 카드 쾅 등장 + 흔들림 */}
+          <div
+            className="relative z-10 mx-5 w-full max-w-xs"
+            style={{
+              fontFamily: "'Neo둥근모', 'NeoDunggeunmo', monospace",
+              animation: "quest-card-slam 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards, quest-shake 0.4s ease-in-out 0.9s, quest-glow-pulse 2s ease-in-out 1.3s infinite",
+            }}
+          >
+            <div className="bg-[#0a1f15] rounded-2xl border-2 border-[#34d399]/60 overflow-hidden relative">
+              {/* 스캔라인 오버레이 */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.07]">
+                <div className="w-full h-8 bg-gradient-to-b from-transparent via-white to-transparent" style={{ animation: "quest-scanline 3s linear infinite" }} />
+              </div>
+
+              {/* 헤더 */}
+              <div className="px-5 pt-4 pb-2.5 border-b border-[#34d399]/20 bg-gradient-to-r from-[#34d399]/10 to-transparent">
+                <p className="text-[11px] text-[#a7f3d0]/50 tracking-widest uppercase mb-1" style={{ animation: "quest-line-in 0.3s ease-out 0.6s both" }}>
+                  ! 퀘스트 발견 !
+                </p>
+                <p className="text-[15px] text-[#34d399] font-bold tracking-wider" style={{ animation: "quest-line-in 0.3s ease-out 0.7s both" }}>
+                  ⚔ 주간 퀘스트
+                </p>
+              </div>
+
+              {/* 퀘스트 목록 */}
+              <div className="px-5 py-4 flex flex-col gap-3">
+                {questRecommendation.progress.map((p, i) => {
+                  const colorMap: Record<string, string> = {
+                    intensity_high: "#f87171", intensity_moderate: "#fbbf24", intensity_low: "#34d399",
+                    consistency: "#60a5fa", bonus_streak: "#c084fc", bonus_new_exercise: "#f472b6",
+                  };
+                  const color = colorMap[p.def.type] ?? "#a7f3d0";
+                  const barWidth = p.def.target > 0 ? Math.round((p.current / p.def.target) * 100) : 0;
+                  const delay = 0.9 + i * 0.15;
+                  const isBonus = p.def.isBonus;
+                  return (
+                    <div key={p.def.id} style={{ animation: `quest-line-in 0.3s ease-out ${delay}s both` }}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[13px] font-bold" style={{ color: p.completed ? "#6b7280" : color }}>
+                          {p.completed ? "✓ " : isBonus ? "☆ " : "▸ "}{p.def.label}
+                        </span>
+                        <span className="text-[12px] font-bold" style={{ color: p.completed ? "#6b7280" : "#a7f3d0" }}>
+                          {p.current}/{p.def.target}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${barWidth}%`,
+                            backgroundColor: p.completed ? "#6b7280" : color,
+                            animation: `quest-bar-fill 0.6s ease-out ${delay + 0.2}s both`,
+                            boxShadow: p.completed ? "none" : `0 0 8px ${color}80`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 추천 */}
+              {questRecommendation.recommended && (
+                <div
+                  className="px-5 py-3 border-t border-[#34d399]/20 bg-gradient-to-r from-[#fbbf24]/5 to-transparent"
+                  style={{ animation: `quest-line-in 0.3s ease-out ${0.9 + questRecommendation.progress.length * 0.15 + 0.1}s both` }}
+                >
+                  <p className="text-[14px] text-white font-bold">
+                    → 오늘은 <span style={{ color: "#fbbf24", animation: "quest-text-glow 1.5s ease-in-out 1.8s infinite" }}>{questRecommendation.recommended}</span> 추천!
+                  </p>
+                </div>
+              )}
+
+              {/* 닫기 */}
+              <div className="px-5 pb-3 pt-1">
+                <p className="text-[10px] text-[#a7f3d0]/30" style={{ animation: `quest-line-in 0.3s ease-out ${0.9 + questRecommendation.progress.length * 0.15 + 0.3}s both` }}>탭하여 닫기</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 메인 3개 목표 */}
       <ConditionCard
         selected={goal === "fat_loss"}

@@ -651,7 +651,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               <p className="text-sm font-bold text-[#1B4332] mb-2">계좌이체로 구독하기</p>
               <p className="text-xs text-gray-600 leading-relaxed mb-3">
                 카드 결제 시스템 준비 중입니다.<br/>
-                아래 계좌로 이체 후 카카오톡으로 알려주시면<br/>
+                아래 계좌로 이체 후 문자나 이메일로 연락주시면<br/>
                 <span className="font-bold">24시간 이내 프리미엄을 활성화</span>해드립니다.
               </p>
               <div className="bg-white rounded-lg p-3 text-sm space-y-1">

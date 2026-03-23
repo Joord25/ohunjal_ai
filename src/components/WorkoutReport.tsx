@@ -1,17 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, BriefingStructured } from "@/constants/workout";
-import { analyzeWorkoutSession } from "@/utils/gemini";
-import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, summarizeHistoryForAI, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
+import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory } from "@/constants/workout";
+import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore } from "@/utils/workoutHistory";
 import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, processWorkoutCompletion, getOrRebuildSeasonExp } from "@/utils/questSystem";
 
 /* === RPG 리절트 카드 === */
-function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, isStrengthSession, seasonExp, prevSeasonExp, expGained, formatDuration, onHelpPress }: {
+function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress }: {
   totalDurationSec: number; totalSets: number; totalVolume: number; successRate: number;
   isStrengthSession: boolean; seasonExp: number; prevSeasonExp: number; expGained: ExpLogEntry[];
+  intensityLevel: "high" | "moderate" | "low";
   formatDuration: (s: number) => string; onHelpPress: () => void;
 }) {
   const [visibleChars, setVisibleChars] = useState<number[]>([]);
@@ -22,12 +22,20 @@ function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, 
   const tierUp = current.tierIdx > prev.tierIdx;
   const totalExpGained = sumExp(expGained);
 
+  const intensityLabel = intensityLevel === "high" ? "고강도" : intensityLevel === "moderate" ? "중강도" : "저강도";
+  const gradeMsg = successRate >= 95 ? "완벽한 세션이었다!"
+    : successRate >= 80 ? "오늘 꽤 잘 싸웠다!"
+    : successRate >= 60 ? "무난하게 해냈다!"
+    : successRate >= 40 ? "조금 아쉽지만 해냈다!"
+    : "힘든 날이었지만 나왔다는게 대단하다!";
+
   const lines: { text: string; bold?: boolean; highlight?: boolean }[] = [
     { text: "운동을 완료했다!", bold: true },
-    { text: `${formatDuration(totalDurationSec)} 동안 싸웠다!` },
+    { text: `${intensityLabel} ${formatDuration(totalDurationSec)} 전투!` },
     { text: `${totalSets}세트를 클리어했다!` },
     ...(isStrengthSession && totalVolume > 0 ? [{ text: `총 ${totalVolume.toLocaleString()}kg 을 들어올렸다!` }] : []),
     { text: `달성률 ${successRate}%!` },
+    { text: gradeMsg, bold: true, highlight: successRate >= 80 },
     // Quest completion lines
     ...expGained
       .filter(e => e.source !== "workout")
@@ -173,8 +181,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   onRestart,
   onAnalysisComplete
 }) => {
-  const [analysis, setAnalysis] = useState<WorkoutAnalysis | null>(initialAnalysis);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analysis = initialAnalysis;
   const [showLogs, setShowLogs] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -210,7 +217,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   };
 
   const historyStats = get28dAvgVolume(recentHistory);
-  const historyTrend = summarizeHistoryForAI(recentHistory);
 
   // Training level estimation from history (근거: NSCA, Rippetoe 2006)
   const trainingLevel = estimateTrainingLevel(recentHistory, bodyWeightKg, gender);
@@ -224,34 +230,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
     loadRecentHistoryFromStore().then(setRecentHistory).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (initialAnalysis) {
-      setAnalysis(initialAnalysis);
-      return;
-    }
-
-    if (Object.keys(logs).length > 0 && !analysis && !isAnalyzing) {
-      const fetchAnalysis = async () => {
-        setIsAnalyzing(true);
-        const result = await analyzeWorkoutSession(
-          sessionData, logs, bodyWeightKg, gender, birthYear, historyStats, historyTrend,
-          {
-            sessionIntensity: { level: sessionIntensity.level, avgPercentile1RM: sessionIntensity.avgPercentile1RM, avgRepsPerSet: sessionIntensity.avgRepsPerSet },
-            weekSummary: intensityRec.weekSummary,
-            target: intensityRec.target,
-            nextRecommended: intensityRec.nextRecommended,
-          }
-        );
-        setAnalysis(result);
-        setIsAnalyzing(false);
-
-        if (result && onAnalysisComplete) {
-          onAnalysisComplete(result);
-        }
-      };
-      fetchAnalysis();
-    }
-  }, [logs, sessionData, initialAnalysis]);
 
   // Build graph data from history (last 28 days load scores)
   const graphData = recentHistory.map(h => ({
@@ -345,62 +323,13 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               seasonExp={currentExp}
               prevSeasonExp={prevExp}
               expGained={expGained}
+              intensityLevel={sessionIntensity.level}
               formatDuration={formatDuration}
               onHelpPress={() => setHelpCard("levelSystem")}
             />
           );
         })()}
 
-        {/* === AI Trend Analysis === */}
-        <div className="mb-5">
-          {isAnalyzing ? (
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 flex flex-col items-center gap-3 animate-pulse shadow-sm">
-              <div className="w-7 h-7 border-2 border-emerald-200 border-t-[#2D6A4F] rounded-full animate-spin" />
-              <p className="text-xs font-bold text-gray-400">{historyTrend.sessionCount >= 2 ? "AI가 변화 추이를 분석중입니다..." : "AI 코치가 세션을 분석중입니다..."}</p>
-            </div>
-          ) : analysis ? (
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm animate-report-slide" style={{ animationDelay: "0.3s" }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-full bg-[#1B4332] flex items-center justify-center">
-                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    {historyTrend.sessionCount >= 2 ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    )}
-                  </svg>
-                </div>
-                <h2 className="text-sm font-black text-[#1B4332] tracking-tight uppercase">
-                  {historyTrend.sessionCount >= 2 ? "변화 분석" : "코치 브리핑"}
-                </h2>
-                {historyTrend.sessionCount >= 2 && (
-                  <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">최근 {historyTrend.sessionCount}세션 기반</span>
-                )}
-              </div>
-              {typeof analysis.briefing === "object" && analysis.briefing !== null ? (
-                <div className="space-y-3">
-                  <p className="text-[15px] font-black text-[#1B4332]">{(analysis.briefing as BriefingStructured).headline}</p>
-                  <p className="text-[13px] font-medium text-gray-600 leading-relaxed">{(analysis.briefing as BriefingStructured).insight}</p>
-                  <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                    <span>📅</span>
-                    <p className="font-bold">{(analysis.briefing as BriefingStructured).weekProgress}</p>
-                  </div>
-                  <div className="bg-[#f0fdf4] rounded-xl px-4 py-3">
-                    <p className="text-[13px] font-bold text-[#2D6A4F]">{(analysis.briefing as BriefingStructured).action}</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[13px] font-medium text-gray-700 leading-relaxed">
-                  {typeof analysis.briefing === "string" ? analysis.briefing : JSON.stringify(analysis.briefing)}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 text-center shadow-sm">
-              <p className="text-xs text-gray-400">데이터가 부족하여 분석할 수 없습니다.</p>
-            </div>
-          )}
-        </div>
 
         {/* === 상세 분석 (펼쳐보기) === */}
         <div className="mb-5">
@@ -660,20 +589,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           </div>
         )}
 
-        {/* === Next Session Plan === */}
-        {analysis && analysis.nextSessionAdvice && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-5 shadow-sm">
-            <p className="text-[10px] font-serif font-medium text-gray-400 uppercase tracking-[0.15em] mb-3">Next Session Plan</p>
-            <ul className="space-y-2">
-              {analysis.nextSessionAdvice.split('\n').filter(a => a.trim()).map((advice: string, i: number) => (
-                <li key={i} className="flex items-start gap-2.5 text-[13px] font-medium text-gray-700 leading-snug">
-                  <span className="text-[#2D6A4F] font-bold mt-0.5 shrink-0">·</span>
-                  {advice.trim()}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         {/* === Summary Stats Row === */}
         <div className="flex gap-2 mb-5 animate-report-slide" style={{ animationDelay: "0.9s" }}>

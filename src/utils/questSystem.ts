@@ -509,10 +509,19 @@ export function getOrCreateWeeklyQuests(
   const saved = loadWeeklyQuestState();
 
   const questDefs = generateWeeklyQuests(birthYear, gender);
+  const weekSessions = getWeekSessions(history, currentMonday);
 
-  // If saved state is from a different week, create fresh
+  // 주가 다르거나, 세션 수 불일치면 다시 계산
   if (!saved || saved.weekStart !== currentMondayStr) {
-    const weekSessions = getWeekSessions(history, currentMonday);
+    const questState = evaluateQuestProgress(questDefs, weekSessions, history, currentMonday);
+    saveWeeklyQuestState(questState);
+    return { questDefs, questState };
+  }
+
+  // 캐시된 진행도의 consistency(운동일수) vs 실제 이번주 세션 수 비교
+  const consistencyQuest = saved.quests.find(q => q.questId.startsWith("consistency_"));
+  const actualDays = new Set(weekSessions.map(h => new Date(h.date).toDateString())).size;
+  if (consistencyQuest && consistencyQuest.current !== Math.min(actualDays, questDefs.find(q => q.type === "consistency")?.target ?? 99)) {
     const questState = evaluateQuestProgress(questDefs, weekSessions, history, currentMonday);
     saveWeeklyQuestState(questState);
     return { questDefs, questState };
@@ -532,16 +541,21 @@ export function getOrRebuildSeasonExp(
   const seasonKey = getSeasonKey();
   const saved = loadSeasonExp(seasonKey);
 
-  // If we have saved data for this season, use it
-  if (saved.totalExp > 0 || saved.expLog.length > 0) {
+  // 캐시된 workout 횟수 vs 실제 히스토리 비교 → 불일치면 리빌드
+  const season = getCurrentSeason();
+  const seasonSessionCount = history.filter(h => {
+    const d = new Date(h.date);
+    return d >= new Date(season.startDate) && d <= new Date(season.endDate);
+  }).length;
+  const cachedWorkoutCount = saved.expLog.filter(e => e.source === "workout").length;
+
+  if (saved.totalExp > 0 && cachedWorkoutCount === seasonSessionCount) {
     return saved;
   }
 
-  // Rebuild from history
+  // Rebuild from history (캐시 없거나, 세션 삭제/추가로 불일치)
   const rebuilt = rebuildFromHistory(history, birthYear, gender);
-  if (rebuilt.totalExp > 0) {
-    saveSeasonExp(rebuilt);
-  }
+  saveSeasonExp(rebuilt);
   return rebuilt;
 }
 

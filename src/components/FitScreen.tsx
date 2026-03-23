@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { THEME } from "@/constants/theme";
 import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
+import { getVideoEmbedUrl, getYoutubeSearchUrl, getExerciseKoreanName } from "@/constants/exerciseVideos";
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
 
@@ -41,6 +42,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [showSwapMenu, setShowSwapMenu] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
   const [swapFilter, setSwapFilter] = useState<string | null>(null);
+  const [showVideoGuide, setShowVideoGuide] = useState(false);
   const alternatives = onSwapExercise ? getAlternativeExercises(exercise.name) : [];
 
 
@@ -333,20 +335,41 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   // Long-press support for +/- buttons
   const longPressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const longPressTriggered = useRef(false);
+  const longPressDirection = useRef<"up" | "down">("up");
   const startLongPress = (direction: "up" | "down") => {
+    longPressTriggered.current = false;
+    longPressDirection.current = direction;
     const step = direction === "up" ? 0.5 : -0.5;
     longPressRef.current = setInterval(() => {
+      longPressTriggered.current = true;
       setSelectedWeight(prev => {
         const next = parseFloat((prev + step).toFixed(1));
         return Math.max(0.5, next);
       });
-    }, 80);
+    }, 120);
   };
   const stopLongPress = () => {
     if (longPressRef.current) {
       clearInterval(longPressRef.current);
       longPressRef.current = null;
     }
+    // short tap: interval이 한 번도 안 돌았으면 한 번만 적용
+    if (!longPressTriggered.current) {
+      const step = longPressDirection.current === "up" ? 0.5 : -0.5;
+      setSelectedWeight(prev => {
+        const next = parseFloat((prev + step).toFixed(1));
+        return Math.max(0.5, next);
+      });
+    }
+    longPressTriggered.current = false;
+  };
+  const cancelLongPress = () => {
+    if (longPressRef.current) {
+      clearInterval(longPressRef.current);
+      longPressRef.current = null;
+    }
+    longPressTriggered.current = false;
   };
 
   const confirmWeight = () => {
@@ -582,46 +605,68 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="w-10" />
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
-          <div className="flex flex-col items-center gap-1">
-            <h1 className="text-4xl font-black text-[#1B4332] tracking-tight leading-tight break-keep text-center">{mainTitle}</h1>
-            {subTitle && <p className="text-lg text-gray-400 font-medium">{subTitle}</p>}
-            <div className="mt-2 flex items-center gap-2 flex-wrap justify-center">
-              <button
-                onClick={() => {
-                  const parts = exercise.name.split('(');
-                  const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
-                  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
-                }}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-gray-100 shadow-sm active:scale-95 transition-all"
-              >
-                <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-                <span className="text-[11px] font-bold text-gray-600 tracking-wide">자세 가이드</span>
-              </button>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 gap-4 overflow-hidden">
+          <div className="flex flex-col items-center gap-0 shrink-0">
+            <div className="flex items-center gap-2 justify-center">
+              <h1 className="text-3xl font-black text-[#1B4332] tracking-tight leading-tight break-keep text-center">{mainTitle}</h1>
               {alternatives.length > 0 && (
                 <button
                   onClick={() => setShowSwapMenu(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gray-100 border border-gray-200 text-gray-500 active:scale-95 transition-all"
+                  className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 active:scale-90 transition-all shrink-0"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <span className="text-xs font-bold tracking-wide">운동 변경</span>
                 </button>
               )}
             </div>
+            {subTitle && <p className="text-sm text-gray-400 font-medium">{subTitle}</p>}
           </div>
+
+          {/* 자세 가이드 미리보기 */}
+          {(() => {
+            const embedUrl = getVideoEmbedUrl(exercise.name);
+            if (embedUrl) {
+              return (
+                <button onClick={() => setShowVideoGuide(true)} className="w-48 aspect-[9/13] max-h-[35vh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all shrink-0">
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full pointer-events-none"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    tabIndex={-1}
+                    title="자세 미리보기"
+                  />
+                  <div className="absolute inset-0 flex items-end justify-end p-2">
+                    <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm flex items-center gap-1">
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                      <span className="text-[9px] font-bold text-white">크게 보기</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            }
+            return (
+              <button
+                onClick={() => window.open(getYoutubeSearchUrl(exercise.name), "_blank")}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gray-50 border border-gray-100 active:scale-[0.97] transition-all"
+              >
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <span className="text-xs font-bold text-gray-500">자세 보기</span>
+              </button>
+            );
+          })()}
 
           <div className="flex flex-col items-center gap-2">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">사용 무게</p>
             <div className="flex items-center justify-center gap-4 w-full">
               <button
-                onClick={() => setSelectedWeight(Math.max(0.5, parseFloat((selectedWeight - 0.5).toFixed(1))))}
                 onPointerDown={() => startLongPress("down")}
-                onPointerUp={stopLongPress}
-                onPointerLeave={stopLongPress}
+                onPointerUp={() => stopLongPress()}
+                onPointerLeave={() => cancelLongPress()}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
               >
                 -
@@ -631,10 +676,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <span className="text-xl font-bold text-gray-400 ml-1">kg</span>
               </div>
               <button
-                onClick={() => setSelectedWeight(parseFloat((selectedWeight + 0.5).toFixed(1)))}
                 onPointerDown={() => startLongPress("up")}
-                onPointerUp={stopLongPress}
-                onPointerLeave={stopLongPress}
+                onPointerUp={() => stopLongPress()}
+                onPointerLeave={() => cancelLongPress()}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
               >
                 +
@@ -669,15 +713,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
         </div>
 
-        <div className="flex flex-col items-center gap-3 shrink-0 px-6" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}>
-          {onSwapExercise && (
-            <button
-              onClick={() => setShowSwapMenu(true)}
-              className="w-full py-4 rounded-2xl bg-gray-100 text-[#1B4332] font-bold text-lg active:scale-[0.98] transition-all"
-            >
-              대체 운동 변경
-            </button>
-          )}
+        <div className="flex flex-col items-center gap-3 shrink-0 px-6 pb-3">
           <button
             onClick={confirmWeight}
             className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
@@ -685,6 +721,63 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             {selectedWeight}kg 으로 시작
           </button>
         </div>
+
+        {/* Video Guide Bottom Sheet (weight picker) */}
+        {showVideoGuide && (
+          <div className="absolute inset-0 z-[60]">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowVideoGuide(false)} />
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] animate-slide-up shadow-2xl flex flex-col" style={{ height: "78vh", paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
+              <div className="shrink-0 pt-4 px-6">
+                <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <p className="text-sm font-black text-[#1B4332]">{getExerciseKoreanName(exercise.name)} 자세 가이드</p>
+                  </div>
+                  <button onClick={() => setShowVideoGuide(false)} className="text-sm text-gray-400 font-bold active:scale-95 transition-all">닫기</button>
+                </div>
+              </div>
+              <div className="flex-1 px-4 pb-4 min-h-0">
+                {(() => {
+                  const embedUrl = getVideoEmbedUrl(exercise.name);
+                  if (embedUrl) {
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        className="w-full h-full rounded-2xl bg-black"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={`${getExerciseKoreanName(exercise.name)} 자세 가이드`}
+                      />
+                    );
+                  }
+                  return (
+                    <div className="w-full h-full flex flex-col gap-3">
+                      <iframe
+                        src={getYoutubeSearchUrl(exercise.name)}
+                        className="w-full flex-1 rounded-2xl bg-gray-50 border border-gray-100"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={`${getExerciseKoreanName(exercise.name)} 검색 결과`}
+                      />
+                      <button
+                        onClick={() => window.open(getYoutubeSearchUrl(exercise.name), "_blank")}
+                        className="shrink-0 flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 active:scale-[0.98] transition-all"
+                      >
+                        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span className="text-xs font-bold text-gray-600">유튜브에서 더 보기</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Swap Exercise Bottom Sheet (weight picker) */}
         {showSwapMenu && (
@@ -824,8 +917,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6 overflow-y-auto">
-        <div className="flex flex-col items-center gap-2">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3 overflow-hidden">
+        <div className="flex flex-col items-center gap-1 shrink-0">
           {(() => {
             const parts = exercise.name.split('(');
             const mainTitle = parts[0].trim();
@@ -833,55 +926,86 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
             return (
               <>
-                <h1
-                  className={`${titleSizeClass} font-black leading-tight break-keep`}
-                  style={{ color: THEME.textMain }}
-                >
-                  {mainTitle}
-                </h1>
+                <div className="flex items-center gap-2 justify-center">
+                  <h1
+                    className={`${titleSizeClass} font-black leading-tight break-keep`}
+                    style={{ color: THEME.textMain }}
+                  >
+                    {mainTitle}
+                  </h1>
+                  {onSwapExercise && (
+                    <button
+                      onClick={() => setShowSwapMenu(true)}
+                      className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 active:scale-90 transition-all shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {subTitle && (
-                  <p className="text-xl text-gray-400 font-medium font-english tracking-tight mt-1">
+                  <p className="text-lg text-gray-400 font-medium font-english tracking-tight">
                     {subTitle}
                   </p>
                 )}
-                <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
-                  <button
-                    onClick={() => {
-                      const parts = exercise.name.split('(');
-                      const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
-                      window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-100 shadow-sm active:scale-95 transition-all"
-                  >
-                    <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                    </svg>
-                    <span className="text-xs font-bold text-gray-600 tracking-wide">자세 가이드</span>
-                  </button>
-                  {exercise.tempoGuide && (
-                    <span className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700">
-                      {exercise.tempoGuide}
-                    </span>
-                  )}
-                </div>
+                {/* 자세 가이드 미리보기 */}
+                {(() => {
+                  const embedUrl = getVideoEmbedUrl(exercise.name);
+                  if (embedUrl) {
+                    return (
+                      <button onClick={() => setShowVideoGuide(true)} className="mt-2 w-48 aspect-[9/13] max-h-[35vh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all">
+                        <iframe
+                          src={embedUrl}
+                          className="w-full h-full pointer-events-none"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          tabIndex={-1}
+                          title="자세 미리보기"
+                        />
+                        <div className="absolute inset-0 flex items-end justify-end p-2">
+                          <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm flex items-center gap-1">
+                            <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            <span className="text-[9px] font-bold text-white">크게 보기</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
+                  return (
+                    <button
+                      onClick={() => window.open(getYoutubeSearchUrl(exercise.name), "_blank")}
+                      className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gray-50 border border-gray-100 active:scale-[0.97] transition-all"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                      </div>
+                      <span className="text-xs font-bold text-gray-500">자세 보기</span>
+                      <svg className="w-3.5 h-3.5 text-gray-300 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                  );
+                })()}
               </>
             );
           })()}
         </div>
 
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 shrink-0">
           {isTimerMode ? (
              <div className="flex flex-col items-center">
                 {timerCompleted && !isDistanceMode ? (
-                  <div className="flex flex-col items-center animate-fade-in mt-16">
+                  <div className="flex flex-col items-center animate-fade-in">
                     <p className="text-5xl font-black text-[#2D6A4F]">완료</p>
                   </div>
                 ) : (
                   <>
-                    <p className="text-6xl sm:text-8xl font-black tracking-tighter tabular-nums" style={{ color: THEME.textMain }}>
+                    <p className="text-5xl font-black tracking-tighter tabular-nums" style={{ color: THEME.textMain }}>
                       {formatTime(elapsedTime)}
                     </p>
-                    <p className="text-xl sm:text-2xl font-bold text-[#2D6A4F] mt-2">
+                    <p className="text-base font-bold text-[#2D6A4F] mt-1">
                         {isDistanceMode ? `${exercise.count}` : (
                             exercise.count.includes('회') || exercise.count.toLowerCase().includes('reps')
                             ? `Goal: ${exercise.count}`
@@ -893,39 +1017,40 @@ export const FitScreen: React.FC<FitScreenProps> = ({
              </div>
           ) : (
             <>
-              {/* Reps */}
-              <button
-                onClick={() => setShowRepsEdit(true)}
-                className="flex items-baseline gap-2 active:opacity-60 transition-all"
-              >
-                <span className="text-6xl sm:text-7xl font-black" style={{ color: THEME.textMain }}>{adjustedReps}</span>
-                <span className="text-xl sm:text-2xl font-bold text-gray-400">REPS</span>
-              </button>
+              {/* Weight + Reps 한 라인 */}
+              <div className="flex items-baseline gap-4 justify-center">
+                {hasWeight && (
+                  <button
+                    onClick={() => setShowWeightEdit(true)}
+                    className="flex items-baseline gap-1 active:opacity-60 transition-all"
+                  >
+                    <span className="text-6xl font-black text-[#2D6A4F]">{selectedWeight}</span>
+                    <span className="text-xl font-bold text-gray-400">kg</span>
+                  </button>
+                )}
+                {!hasWeight && exercise.weight && (
+                  <span className={`font-black text-[#2D6A4F] ${isBodyweight ? "text-5xl" : "text-3xl"}`}>
+                    {isBodyweight ? "맨몸" : setInfo.targetWeight}
+                  </span>
+                )}
 
-              {/* Weight */}
-              {hasWeight && (
                 <button
-                  onClick={() => setShowWeightEdit(true)}
-                  className="flex items-baseline gap-1.5 active:opacity-60 transition-all mt-1"
+                  onClick={() => setShowRepsEdit(true)}
+                  className="flex items-baseline gap-1 active:opacity-60 transition-all"
                 >
-                  <span className="text-5xl font-black text-[#2D6A4F]">{selectedWeight}</span>
-                  <span className="text-xl font-bold text-gray-400">kg</span>
+                  <span className="text-6xl font-black" style={{ color: THEME.textMain }}>{adjustedReps}</span>
+                  <span className="text-xl font-bold text-gray-400">REPS</span>
                 </button>
-              )}
-              {!hasWeight && exercise.weight && (
-                <span className="text-4xl font-bold text-[#2D6A4F] mt-1">
-                  {setInfo.targetWeight}
-                </span>
-              )}
+              </div>
 
               {/* Stopwatch */}
-              <div className="flex flex-col items-center mt-6 h-28">
+              <div className="flex flex-col items-center mt-2">
                 <span className="text-7xl font-black tabular-nums tracking-tighter" style={{ color: THEME.textMain }}>
                   {formatTime(repsStopwatch)}
                 </span>
                 <button
                   onClick={() => setRepsStopwatch(0)}
-                  className={`mt-2 text-[10px] font-bold text-gray-300 uppercase tracking-widest hover:text-gray-500 transition-colors ${
+                  className={`mt-1 text-[10px] font-bold text-gray-300 uppercase tracking-widest hover:text-gray-500 transition-colors ${
                     repsStopwatch > 0 && !repsStopwatchRunning ? "visible" : "invisible"
                   }`}
                 >
@@ -938,92 +1063,85 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main CTA */}
-      <div className="flex flex-col items-center gap-4 shrink-0 mt-auto" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 1.5rem)" }}>
+      <div className="flex flex-col items-center shrink-0 pb-3">
         {isTimerMode ? (
-            <div className="flex flex-col items-center gap-4 h-40 justify-center">
+            <div className="flex flex-col items-center justify-center">
                 {timerCompleted ? (
-                  /* Timer completed — show prominent DONE button with pulse */
                   <button
                     onClick={handleDoneClick}
-                    className="w-28 h-28 rounded-full flex flex-col items-center justify-center bg-[#1B4332] text-white shadow-2xl active:scale-95 transition-all animate-pulse"
+                    className="w-20 h-20 rounded-full flex flex-col items-center justify-center bg-[#1B4332] text-white shadow-2xl active:scale-95 transition-all animate-pulse"
                   >
-                    <svg className="w-10 h-10 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-7 h-7 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="font-bold text-lg tracking-wider">DONE</span>
+                    <span className="font-bold text-xs tracking-wider">DONE</span>
                   </button>
                 ) : !isPlaying && elapsedTime > 0 ? (
-                  /* Paused mid-timer — show resume + done */
-                  <div className="flex items-center gap-8">
+                  <div className="flex items-center gap-6">
                       <button
                         onClick={() => { playAlarmSound("start"); setIsPlaying(true); }}
-                        className="w-28 h-28 rounded-full flex items-center justify-center bg-[#2D6A4F] text-white shadow-xl active:scale-95 transition-all hover:bg-[#1B4332]"
+                        className="w-20 h-20 rounded-full flex items-center justify-center bg-[#2D6A4F] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <svg className="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                       </button>
                       <button
                         onClick={handleDoneClick}
-                        className="w-28 h-28 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all hover:bg-[#2D6A4F]"
+                        className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <span className="font-bold text-lg tracking-wider">DONE</span>
+                        <span className="font-bold text-xs tracking-wider">DONE</span>
                       </button>
                   </div>
                 ) : !isPlaying && elapsedTime === 0 && !timerCompleted ? (
-                  /* Initial state — show play button */
                   <button
                     onClick={() => { playAlarmSound("start"); setIsPlaying(true); }}
-                    className="w-28 h-28 rounded-full flex items-center justify-center bg-[#2D6A4F] text-white shadow-xl active:scale-95 transition-all hover:bg-[#1B4332]"
+                    className="w-20 h-20 rounded-full flex items-center justify-center bg-[#2D6A4F] text-white shadow-xl active:scale-95 transition-all"
                   >
-                      <svg className="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   </button>
                 ) : (
-                  /* Playing — show pause + done */
-                  <div className="flex items-center gap-8">
+                  <div className="flex items-center gap-6">
                       <button
                         onClick={() => setIsPlaying(false)}
-                        className="w-28 h-28 rounded-full flex items-center justify-center bg-amber-500 text-white shadow-xl active:scale-95 transition-all hover:bg-amber-400"
+                        className="w-20 h-20 rounded-full flex items-center justify-center bg-amber-500 text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                       </button>
                       <button
                         onClick={handleDoneClick}
-                        className="w-28 h-28 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all hover:bg-[#2D6A4F]"
+                        className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <span className="font-bold text-lg tracking-wider">DONE</span>
+                        <span className="font-bold text-xs tracking-wider">DONE</span>
                       </button>
                   </div>
                 )}
             </div>
         ) : (
-            <div className="flex items-center gap-8">
-              {/* Play/Pause stopwatch button */}
+            <div className="flex items-center gap-6">
               <button
                 onClick={() => setRepsStopwatchRunning(!repsStopwatchRunning)}
-                className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-all ${
-                  repsStopwatchRunning ? "bg-amber-500 hover:bg-amber-400" : "bg-[#2D6A4F] hover:bg-[#1B4332]"
+                className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-all ${
+                  repsStopwatchRunning ? "bg-amber-500" : "bg-[#2D6A4F]"
                 }`}
               >
                 {repsStopwatchRunning ? (
-                  <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 ) : (
-                  <svg className="w-10 h-10 ml-1 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  <svg className="w-8 h-8 ml-1 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 )}
               </button>
-
-              {/* DONE button */}
               <button
                 onClick={handleDoneClick}
                 disabled={isDoneAnimating || view === "feedback"}
-                className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 shadow-xl bg-[#2D6A4F] hover:bg-[#1B4332] ${
+                className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 shadow-xl bg-[#2D6A4F] ${
                   isDoneAnimating ? "scale-105" : ""
                 }`}
               >
                 {isDoneAnimating ? (
-                  <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <span className="text-white text-lg font-bold tracking-widest uppercase">
+                  <span className="text-white text-xs font-bold tracking-widest uppercase">
                     Done
                   </span>
                 )}
@@ -1134,10 +1252,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center mb-4">무게 변경</p>
             <div className="flex items-center justify-center gap-4 mb-6">
               <button
-                onClick={() => setSelectedWeight(Math.max(0.5, parseFloat((selectedWeight - 0.5).toFixed(1))))}
                 onPointerDown={() => startLongPress("down")}
-                onPointerUp={stopLongPress}
-                onPointerLeave={stopLongPress}
+                onPointerUp={() => stopLongPress()}
+                onPointerLeave={() => cancelLongPress()}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 shrink-0"
               >
                 -
@@ -1147,10 +1264,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <span className="text-lg text-gray-400 ml-1">kg</span>
               </div>
               <button
-                onClick={() => setSelectedWeight(parseFloat((selectedWeight + 0.5).toFixed(1)))}
                 onPointerDown={() => startLongPress("up")}
-                onPointerUp={stopLongPress}
-                onPointerLeave={stopLongPress}
+                onPointerUp={() => stopLongPress()}
+                onPointerLeave={() => cancelLongPress()}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 shrink-0"
               >
                 +
@@ -1243,6 +1359,65 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       )}
 
 
+      {/* Video Guide Bottom Sheet */}
+      {showVideoGuide && (
+        <div className="absolute inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowVideoGuide(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] animate-slide-up shadow-2xl flex flex-col" style={{ height: "78vh", paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
+            <div className="shrink-0 pt-4 px-6">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  <p className="text-sm font-black text-[#1B4332]">{getExerciseKoreanName(exercise.name)} 자세 가이드</p>
+                </div>
+                <button onClick={() => setShowVideoGuide(false)} className="text-sm text-gray-400 font-bold active:scale-95 transition-all">닫기</button>
+              </div>
+            </div>
+            <div className="flex-1 px-4 pb-4 min-h-0">
+              {(() => {
+                const embedUrl = getVideoEmbedUrl(exercise.name);
+                if (embedUrl) {
+                  // 매핑된 쇼츠 영상 — 직접 embed
+                  return (
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full rounded-2xl bg-black"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={`${getExerciseKoreanName(exercise.name)} 자세 가이드`}
+                    />
+                  );
+                }
+                // 폴백: 유튜브 검색 결과
+                return (
+                  <div className="w-full h-full flex flex-col gap-3">
+                    <iframe
+                      src={getYoutubeSearchUrl(exercise.name)}
+                      className="w-full flex-1 rounded-2xl bg-gray-50 border border-gray-100"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={`${getExerciseKoreanName(exercise.name)} 검색 결과`}
+                    />
+                    <button
+                      onClick={() => window.open(getYoutubeSearchUrl(exercise.name), "_blank")}
+                      className="shrink-0 flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 active:scale-[0.98] transition-all"
+                    >
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      <span className="text-xs font-bold text-gray-600">유튜브에서 더 보기</span>
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Feedback + Rest Bottom Sheet */}
       {view === "feedback" && (
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -1333,12 +1508,21 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 <svg className="w-10 h-10 text-[#2D6A4F] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                 <p className="text-sm font-bold text-[#1B4332]">피드백 완료</p>
                 <p className="text-xs text-gray-400 mt-1">타이머 종료 후 다음 세트로 이동해요</p>
-                <button
-                  onClick={() => { setFeedbackGiven(false); pendingFeedbackRef.current = null; }}
-                  className="mt-3 px-4 py-2 rounded-full bg-gray-100 text-xs font-bold text-gray-500 active:scale-95 transition-all"
-                >
-                  다시 선택
-                </button>
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={() => setShowVideoGuide(true)}
+                    className="px-4 py-2 rounded-full bg-red-50 text-xs font-bold text-red-500 active:scale-95 transition-all flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    자세 다시보기
+                  </button>
+                  <button
+                    onClick={() => { setFeedbackGiven(false); pendingFeedbackRef.current = null; }}
+                    className="px-4 py-2 rounded-full bg-gray-100 text-xs font-bold text-gray-500 active:scale-95 transition-all"
+                  >
+                    다시 선택
+                  </button>
+                </div>
               </div>
             )}
           </div>
