@@ -628,7 +628,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             const embedUrl = getVideoEmbedUrl(exercise.name);
             if (embedUrl) {
               return (
-                <button onClick={() => setShowVideoGuide(true)} className="w-48 aspect-[9/13] max-h-[28vh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all shrink-0">
+                <button onClick={() => setShowVideoGuide(true)} className="w-48 aspect-[9/13] max-h-[28dvh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all shrink-0">
                   <iframe
                     src={embedUrl}
                     className="w-full h-full pointer-events-none"
@@ -954,7 +954,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   const embedUrl = getVideoEmbedUrl(exercise.name);
                   if (embedUrl) {
                     return (
-                      <button onClick={() => setShowVideoGuide(true)} className="mt-2 w-48 aspect-[9/13] max-h-[28vh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all">
+                      <button onClick={() => setShowVideoGuide(true)} className="mt-2 w-48 aspect-[9/13] max-h-[28dvh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all">
                         <iframe
                           src={embedUrl}
                           className="w-full h-full pointer-events-none"
