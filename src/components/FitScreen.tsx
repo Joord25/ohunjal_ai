@@ -917,7 +917,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-2 overflow-hidden">
+      <div className="flex-1 flex flex-col items-center px-6 text-center gap-2 overflow-hidden">
+        <div className="flex-[0.3]" />
         <div className="flex flex-col items-center gap-1 shrink-0">
           {(() => {
             const parts = exercise.name.split('(');
