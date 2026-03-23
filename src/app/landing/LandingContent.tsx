@@ -15,44 +15,47 @@ function useBodyScroll() {
 const FEATURES = [
   {
     pain: "헬스장 가서 뭐하지?",
-    title: "딸깍! 운동 전문가 AI가 오늘의 운동을 정해줍니다",
-    desc: "컨디션과 원하는 목표만 선택하면\nAI가 그날에 딱 맞는 운동 루틴을 자동으로 짜드립니다.\n더 이상 고민할 필요 없어요.",
+    title: "AI가 오늘의 운동 루틴을 자동 생성",
+    desc: "헬린이도 걱정 없어요.\n컨디션과 목표만 선택하면 AI 운동 플래너가\n개인화된 운동 계획을 자동으로 짜드립니다.\n웨이트, 맨몸운동, 러닝까지 맞춤 운동 프로그램을\nAI가 매일 새롭게 추천해요.",
     video: "/feature-1.mp4",
   },
   {
     pain: "이거 내가 제대로 하고 있는 건가?",
-    title: "운동과학이 검증한 AI 코칭",
-    desc: "ACSM(미국스포츠의학회) 가이드라인과 \n최근 5년간 200건 이상의 SCI급 논문을 기반으로\n운동을 분석합니다. 감이 아닌 근거로 피드백하니까,\n내가 하는 운동에 확신을 가질 수 있어요.",
+    title: "AI 운동 코칭 + 운동 기록 자동 저장",
+    desc: "운동 일지를 자동으로 기록하고,\nACSM 가이드라인과 SCI급 논문을 학습한 AI가\n내 운동을 분석해 피드백합니다.\n헬스 기구 사용법부터 세트·무게 조절까지\nAI가 코칭하는 운동 기록 앱.",
     video: "/is-it-right.mp4",
   },
   {
     pain: "귀찮아, 쉽고 빠르게 하고 싶어",
-    title: "터치 3번, 15초면 바로 운동 시작",
-    desc: "복잡한 설정 없이\n컨디션 → 목표 → 시작\n운동 끝나면 AI가 분석 리포트까지\n자동으로 만들어줍니다.",
+    title: "터치 3번이면 오운완 달성",
+    desc: "복잡한 설정 없이\n컨디션 → 목표 → 운동 시작\nAI가 운동 루틴 생성부터 운동 분석 리포트까지\n전부 자동. 오운완 인증샷도 한 번에.",
     video: "/easy-to-use.mp4",
   },
   {
     pain: "PT는 너무 비싸...",
-    title: "월 9,900원으로 매일 PT처럼",
-    desc: "한국체육대학 석사 출신 전문가가 설계한 AI가\n매일 맞춤 운동을 처방합니다.\nPT의 약 70배 더 저렴한 가격에 전문성은 더 Up!",
+    title: "월 6,900원, PT 대체 AI 트레이너",
+    desc: "한국체육대학 석사 출신 전문가가 설계한\nAI 운동 플래너가 매일 맞춤 운동을 처방합니다.\n개인 운동 기록, 헬스 루틴 생성, 운동 분석까지\nPT의 약 95배 저렴한 가격에 전문성은 더 Up!",
     video: "",
     priceCard: true,
   },
 ];
 
 const STEPS = [
-  { num: "01", title: "오늘 컨디션 선택", desc: "상체 뻐근? 하체 무거움? 컨디션 좋음? 터치 한 번이면 끝." },
-  { num: "02", title: "운동 목표 설정", desc: "근육증가, 다이어트, 기초체력향상 등 원하는 목표를 선택하세요." },
-  { num: "03", title: "AI가 플랜 생성", desc: "한국체육대학 및 공인 건강운동전문가 및 SCI논문을 기반으로 학습한 Gemini AI가 맞춤형 운동 루틴을 즉시 만들어드립니다." },
-  { num: "04", title: "운동 시작!", desc: "타이머와 세트 카운터로 운동하고, 디테일한 운동 검증 AI 분석까지 받으세요." },
+  { num: "01", title: "오늘 컨디션 선택", desc: "상체 뻐근? 하체 무거움? 컨디션 좋음? 터치 한 번이면 끝. 헬린이도 쉽게." },
+  { num: "02", title: "운동 목표 설정", desc: "근육증가, 다이어트, 체력향상 등 목표를 선택하면 개인화된 운동 계획이 시작됩니다." },
+  { num: "03", title: "AI 운동 루틴 자동 생성", desc: "운동과학 기반 AI가 맞춤형 헬스 루틴을 즉시 생성. 헬스 기구 사용법과 무게 가이드까지 제공합니다." },
+  { num: "04", title: "오운완 + AI 운동 분석", desc: "타이머와 세트 카운터로 운동 기록을 자동 저장하고, AI가 운동 일지를 분석해 리포트를 제공합니다." },
 ];
 
 const FAQS = [
-  { q: "무료로 사용할 수 있나요?", a: "네, 무료 플랜으로 하루 3회 AI 운동 플랜을 생성할 수 있습니다. 무제한 사용은 프리미엄 구독이 필요합니다." },
-  { q: "어떤 운동을 지원하나요?", a: "스쿼트, 벤치프레스, 데드리프트 등 웨이트 트레이닝과 맨몸운동, 러닝, 모빌리티까지 100가지 이상 지원합니다." },
-  { q: "운동 초보자도 사용할 수 있나요?", a: "물론입니다. AI가 체력 수준에 맞춰 무게와 횟수를 자동으로 조절해줍니다." },
-  { q: "앱 설치가 필요한가요?", a: "별도 앱 설치 없이 웹에서 바로 사용 가능하며, 홈화면에 추가하면 앱처럼 사용할 수 있습니다." },
-  { q: "구독은 어떻게 해지하나요?", a: "설정 > 구독 관리에서 언제든지 해지할 수 있으며, 해지해도 결제 기간까지 이용 가능합니다." },
+  { q: "무료로 사용할 수 있나요?", a: "네, 무료 플랜으로 3회 AI 운동 루틴 자동 생성이 가능합니다. 무제한 맞춤 운동 프로그램 생성과 AI 운동 분석 리포트는 프리미엄 구독이 필요합니다." },
+  { q: "헬린이(운동 초보)도 사용할 수 있나요?", a: "물론입니다. 헬스장 개인 운동이 처음이어도 걱정 없어요. AI 운동 플래너가 체력 수준에 맞춰 헬스 기구 사용법, 무게, 횟수, 세트 수를 자동으로 조절합니다. 운동 초보자부터 상급자까지 개인화된 운동 계획을 받을 수 있어요." },
+  { q: "어떤 운동을 지원하나요?", a: "스쿼트, 벤치프레스, 데드리프트 등 웨이트 트레이닝은 물론 맨몸운동, 러닝, 모빌리티까지 100가지 이상의 운동을 AI가 자동으로 조합해 헬스 루틴을 생성합니다." },
+  { q: "다른 운동 어플과 뭐가 다른가요?", a: "기존 운동 기록 앱은 직접 운동을 골라 기록해야 하지만, 오운잘 AI는 컨디션만 선택하면 AI가 운동 루틴을 자동 생성하고, 운동 일지 저장부터 AI 운동 코칭, 분석 리포트까지 제공합니다. PT 대체 서비스로 헬스 루틴 생성부터 오운완 인증까지 올인원." },
+  { q: "운동 기록은 어떻게 저장되나요?", a: "운동 중 세트별 무게·횟수가 자동으로 기록됩니다. 운동 일지가 자동 저장되고, 운동 볼륨 추적 그래프와 체중 변화 그래프로 개인 운동 기록을 한눈에 확인할 수 있어요." },
+  { q: "오운완 인증은 어떻게 하나요?", a: "운동 완료 후 자동으로 생성되는 운동 기록 카드를 카카오톡, 인스타그램 등으로 바로 공유할 수 있습니다. 오운완 인증샷을 예쁘게 만들어드려요." },
+  { q: "앱 설치가 필요한가요?", a: "별도 앱 설치 없이 웹에서 바로 사용 가능합니다. 홈화면에 추가하면 운동 어플처럼 사용할 수 있는 PWA 방식이에요." },
+  { q: "구독은 어떻게 해지하나요?", a: "프로필 > 구독 관리에서 언제든지 해지할 수 있으며, 해지해도 결제 기간까지 이용 가능합니다." },
 ];
 
 function useScrollReveal() {
@@ -165,14 +168,14 @@ export default function LandingContent() {
         <div className="relative max-w-5xl mx-auto px-6 pt-16 sm:pt-24 pb-24 sm:pb-32 text-center">
           <RevealSection>
             <p className="text-lg sm:text-xl text-[#a7f3d0] font-medium mb-4 tracking-wide">
-              운동 뭐할지 매번 고민이었다면,
+              AI 운동 루틴 자동 생성 · 운동 기록 앱 · PT 대체 서비스
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
-              딸깍! <span className="text-[#34d399]">3번</span> 으로<br />끝내보세요.
+              딸깍! <span className="text-[#34d399]">3번</span> 으로<br />오늘 운동 끝.
             </h1>
             <p className="mt-8 text-base sm:text-lg text-gray-400 max-w-lg mx-auto leading-relaxed">
-              그날의 <span className="text-white font-semibold">컨디션 선택</span> → <span className="text-white font-semibold">운동 목표</span> → <span className="text-white font-semibold">운동 시작</span><br />
-              3번이면 끝!
+              <span className="text-white font-semibold">컨디션 선택</span> → <span className="text-white font-semibold">운동 목표</span> → <span className="text-white font-semibold">AI가 맞춤 운동 추천</span><br />
+              운동 루틴 고민, AI 운동 플래너에게 맡기세요.
             </p>
             <div className="mt-10">
               <a
@@ -254,6 +257,7 @@ export default function LandingContent() {
         <div className="max-w-5xl mx-auto px-6">
           <RevealSection>
             <div className="text-center mb-10 sm:mb-16">
+              <p className="text-sm font-bold text-[#059669] mb-2">AI 맞춤 운동 프로그램</p>
               <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332]">
                 이런 고민, 있지 않으셨나요?
               </h2>
@@ -281,9 +285,9 @@ export default function LandingContent() {
                             <svg width="24" height="24" viewBox="0 0 20 20" fill="none"><path d="M4 10L8.5 14.5L16 6" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </div>
                           <p className="text-xs text-[#059669] font-bold mb-1">오운잘 AI (월)</p>
-                          <p className="text-2xl sm:text-3xl font-black text-[#1B4332]">₩9,900</p>
+                          <p className="text-2xl sm:text-3xl font-black text-[#1B4332]">₩6,900</p>
                           <div className="mt-3 px-2 py-1 bg-[#059669] rounded-full inline-block">
-                            <span className="text-xs font-bold text-white">약 70배 저렴</span>
+                            <span className="text-xs font-bold text-white">약 95배 저렴</span>
                           </div>
                         </div>
                       </div>
@@ -439,51 +443,89 @@ export default function LandingContent() {
             <div className="text-center mb-8 sm:mb-12">
               <p className="text-sm font-bold text-[#059669] mb-2">WHY 오운잘?</p>
               <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332]">
-                딸깍 한 번이면 끝
+                헬스 루틴 생성, 딸깍 한 번이면 끝
               </h2>
-              <p className="text-sm sm:text-base text-gray-500 mt-3">복잡한 설정 없이, 빠르고 쉽게</p>
+              <p className="text-sm sm:text-base text-gray-500 mt-3">복잡한 설정 없이, AI가 운동 루틴을 자동 생성</p>
             </div>
           </RevealSection>
-          <RevealSection>
-            <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
-              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white min-w-[480px] sm:min-w-0">
-                <table className="w-full text-xs sm:text-sm">
-                  <thead>
-                    <tr className="bg-[#1B4332] text-white">
-                      <th className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold w-1/5">항목</th>
-                      <th className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold w-2/5">기존 피트니스 앱</th>
-                      <th className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold w-2/5 text-[#34d399]">오운잘 AI</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    <tr>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 font-bold text-[#1B4332] text-center">월 비용</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center text-gray-500">₩15,000~30,000</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold text-[#059669]">₩9,900</td>
-                    </tr>
-                    <tr className="bg-gray-50/50">
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 font-bold text-[#1B4332] text-center">플랜 생성</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center text-gray-500">직접 운동 골라서 조합</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold text-[#059669]">10초 컨디션 체크 → 자동 생성</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 font-bold text-[#1B4332] text-center">난이도 조절</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center text-gray-500">정해진 프로그램 그대로 수행</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold text-[#059669]">매 세트 &ldquo;쉬움/적당/힘듦&rdquo; → 자동 조절</td>
-                    </tr>
-                    <tr className="bg-gray-50/50">
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 font-bold text-[#1B4332] text-center">운동 분석</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center text-gray-500">기록만 저장</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold text-[#059669]">AI가 분석하고 다음 운동까지 코칭</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 font-bold text-[#1B4332] text-center">사용 난이도</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center text-gray-500">설정 복잡, 입력내용 많음</td>
-                      <td className="py-3 sm:py-4 px-2 sm:px-4 text-center font-bold text-[#059669]">쉬운 버튼 조작, 터치 한번에 끝</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          {/* Mobile: 세로 카드형 비교 */}
+          <div className="sm:hidden space-y-4">
+            {[
+              { label: "월 비용", other: "₩15,000~30,000", ours: "₩6,900" },
+              { label: "플랜 생성", other: "직접 운동 골라서 조합", ours: "AI가 운동 루틴 자동 생성" },
+              { label: "난이도 조절", other: "정해진 프로그램 그대로 수행", ours: "매 세트 쉬움/적당/힘듦 → 자동 조절" },
+              { label: "운동 분석", other: "운동 일지 기록만 저장", ours: "AI 운동 코칭 + 분석 리포트" },
+              { label: "사용 난이도", other: "설정 복잡, 입력내용 많음", ours: "쉬운 버튼 조작, 터치 한번에 끝" },
+            ].map((item, i) => (
+              <RevealSection key={i}>
+                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                  <div className="bg-[#1B4332] px-4 py-2.5">
+                    <p className="text-white font-bold text-sm text-center">{item.label}</p>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    <div className="px-4 py-3.5 flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M6 6L14 14M14 6L6 14" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 mb-0.5">기존 운동 어플</p>
+                        <p className="text-sm text-gray-500">{item.other}</p>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3.5 flex items-center gap-3 bg-[#f0fdf4]">
+                      <div className="w-5 h-5 rounded-full bg-[#d1fae5] flex items-center justify-center shrink-0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4 10L8.5 14.5L16 6" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#059669] mb-0.5">오운잘 AI</p>
+                        <p className="text-sm font-bold text-[#1B4332]">{item.ours}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </RevealSection>
+            ))}
+          </div>
+
+          {/* Desktop: 테이블 비교 */}
+          <RevealSection className="hidden sm:block">
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#1B4332] text-white">
+                    <th className="py-4 px-4 text-center font-bold w-1/5">항목</th>
+                    <th className="py-4 px-4 text-center font-bold w-2/5">기존 운동 어플</th>
+                    <th className="py-4 px-4 text-center font-bold w-2/5 text-[#34d399]">오운잘 AI</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr>
+                    <td className="py-4 px-4 font-bold text-[#1B4332] text-center">월 비용</td>
+                    <td className="py-4 px-4 text-center text-gray-500">₩15,000~30,000</td>
+                    <td className="py-4 px-4 text-center font-bold text-[#059669]">₩6,900</td>
+                  </tr>
+                  <tr className="bg-gray-50/50">
+                    <td className="py-4 px-4 font-bold text-[#1B4332] text-center">플랜 생성</td>
+                    <td className="py-4 px-4 text-center text-gray-500">직접 운동 골라서 조합</td>
+                    <td className="py-4 px-4 text-center font-bold text-[#059669]">AI가 운동 루틴 자동 생성</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 font-bold text-[#1B4332] text-center">난이도 조절</td>
+                    <td className="py-4 px-4 text-center text-gray-500">정해진 프로그램 그대로 수행</td>
+                    <td className="py-4 px-4 text-center font-bold text-[#059669]">매 세트 &ldquo;쉬움/적당/힘듦&rdquo; → 자동 조절</td>
+                  </tr>
+                  <tr className="bg-gray-50/50">
+                    <td className="py-4 px-4 font-bold text-[#1B4332] text-center">운동 분석</td>
+                    <td className="py-4 px-4 text-center text-gray-500">운동 일지 기록만 저장</td>
+                    <td className="py-4 px-4 text-center font-bold text-[#059669]">AI 운동 코칭 + 분석 리포트</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 font-bold text-[#1B4332] text-center">사용 난이도</td>
+                    <td className="py-4 px-4 text-center text-gray-500">설정 복잡, 입력내용 많음</td>
+                    <td className="py-4 px-4 text-center font-bold text-[#059669]">쉬운 버튼 조작, 터치 한번에 끝</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </RevealSection>
         </div>
@@ -563,10 +605,10 @@ export default function LandingContent() {
         <div className="max-w-3xl mx-auto px-6 text-center">
           <RevealSection>
             <h2 className="text-3xl sm:text-4xl font-black text-[#1B4332] mb-4">
-              오늘 운동, AI에게 맡기세요
+              오늘 운동 루틴, AI가 자동으로 짜드립니다
             </h2>
             <p className="text-lg text-gray-500 mb-10">
-              지금 바로 무료로 시작하세요.
+              AI 운동 추천부터 헬스 루틴 생성까지, 지금 무료로 시작하세요.
             </p>
             <a
               href="/"

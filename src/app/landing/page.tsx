@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import LandingContent from "./LandingContent";
 
 export const metadata: Metadata = {
-  title: "오운잘 AI - AI가 만드는 오늘의 맞춤 운동",
+  title: "오운잘 AI - AI 운동 루틴 자동 생성 | 운동 기록 앱 | PT 대체 서비스",
   description:
-    "오늘 컨디션만 알려주세요. AI가 당신에게 딱 맞는 운동 루틴을 만들어드립니다. 세트별 무게·횟수 자동 조절, AI 운동 분석 리포트까지.",
+    "AI가 오늘 컨디션에 맞춰 운동 루틴을 자동 생성하는 운동 기록 앱. 헬린이도 쉽게! 웨이트, 맨몸운동, 러닝까지 맞춤 운동 추천. 운동 일지 자동 저장, AI 운동 코칭, 오운완 인증샷까지. 월 6,900원으로 PT 대체.",
   openGraph: {
-    title: "오운잘 AI - AI가 만드는 오늘의 맞춤 운동",
+    title: "오운잘 AI - AI 운동 루틴 자동 생성 | 헬스 루틴 생성 AI",
     description:
-      "컨디션 입력하면 AI가 최적의 운동 루틴을 생성. 세트별 무게·횟수 자동 조절, 운동 분석 리포트까지.",
+      "컨디션만 선택하면 AI가 맞춤 운동 루틴을 자동 생성. 운동 기록, AI 운동 코칭, 분석 리포트까지 올인원 운동 어플.",
     type: "website",
     locale: "ko_KR",
     siteName: "오운잘 AI",
