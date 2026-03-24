@@ -282,8 +282,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
         {/* Description */}
         <p className="text-[#1B4332] leading-relaxed text-sm max-w-[240px]">
-          당신의 컨디션과 목표에 맞춰<br />
-          AI 코치가 맞춤식으로 운동을 지도합니다.
+          당신의 시간을 아끼고<br />
+          성장의 즐거움과 건강을 드립니다.
         </p>
 
         {/* Action Area */}
