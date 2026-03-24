@@ -76,10 +76,11 @@ export const TIERS: readonly TierDef[] = [
   { name: "Bronze",     minExp: 15,  color: "#cd7f32" },
   { name: "Silver",     minExp: 40,  color: "#94b8d0" },
   { name: "Gold",       minExp: 80,  color: "#ffd700" },
-  { name: "Emerald",    minExp: 140, color: "#34d399" },
-  { name: "Diamond",    minExp: 220, color: "#60a5fa" },
-  { name: "Master",     minExp: 320, color: "#a78bfa" },
-  { name: "Challenger", minExp: 450, color: "#f87171" },
+  { name: "Platinum",   minExp: 110, color: "#e5e4e2" },
+  { name: "Emerald",    minExp: 160, color: "#34d399" },
+  { name: "Diamond",    minExp: 240, color: "#60a5fa" },
+  { name: "Master",     minExp: 340, color: "#a78bfa" },
+  { name: "Challenger", minExp: 470, color: "#f87171" },
 ];
 
 const QUEST_EXP = {

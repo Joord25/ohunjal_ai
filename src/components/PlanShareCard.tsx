@@ -132,7 +132,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center animate-fade-in" style={{ padding: "max(1rem, env(safe-area-inset-top, 0px)) 0 max(1rem, env(safe-area-inset-bottom, 0px)) 0" }}>
+    <div className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center animate-fade-in" style={{ padding: "max(1rem, env(safe-area-inset-top, 0px)) 0 max(1rem, env(safe-area-inset-bottom, 0px)) 0" }}>
       {/* Close */}
       <button onClick={onClose} className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center" style={{ top: "max(1rem, env(safe-area-inset-top, 0px))" }}>
         <svg className="w-6 h-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -479,18 +479,15 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
         </div>
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
           <div className="grid grid-cols-7 gap-2">
-            {['월', '화', '수', '목', '금', '토', '일'].map((day, i) => (
+            {['일', '월', '화', '수', '목', '금', '토'].map((day, i) => (
               <div key={i} className={`text-center text-xs font-bold mb-2 ${
-                'text-gray-400'
+                i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'
               }`}>
                 {day}
               </div>
             ))}
-            {/* Empty cells for offset (Monday start) */}
-            {Array.from({ length: (() => {
-              const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-              return firstDay === 0 ? 6 : firstDay - 1;
-            })() }, (_, i) => (
+            {/* Empty cells for offset (Sunday start) */}
+            {Array.from({ length: new Date(viewYear, viewMonth, 1).getDay() }, (_, i) => (
               <div key={`empty-${i}`} />
             ))}
             {days.map((day) => {

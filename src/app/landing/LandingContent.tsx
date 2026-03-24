@@ -22,7 +22,7 @@ const FEATURES = [
   {
     pain: "운동 꾸준히 하기 너무 힘들어...",
     title: "주간 퀘스트 + 시즌 티어로 게임처럼 재밌게!",
-    desc: "매주 강도별 운동 퀘스트를 달성하면\nEXP가 쌓이고 Iron → Gold → Diamond → Challenger까지\n시즌 티어가 올라가요.\n운동과학(ACSM) 기반 미션이라\n게임하듯 즐기면서 성장하면 올바른 운동 습관이 만들어져요.",
+    desc: "매주 강도별 운동 퀘스트를 달성하면\nEXP가 쌓이고 Iron → Gold → Platinum → Diamond → Challenger까지\n시즌 티어가 올라가요.\n운동과학(ACSM) 기반 미션이라\n게임하듯 즐기면서 성장하면 올바른 운동 습관이 만들어져요.",
     video: "",
     questCard: true,
   },
@@ -61,7 +61,7 @@ const FAQS = [
   { q: "다른 운동 어플과 뭐가 다른가요?", a: "기존 운동 기록 앱은 직접 운동을 골라 기록해야 하지만, 오운잘 AI는 컨디션만 선택하면 AI가 운동 루틴을 자동 생성하고, 운동 일지 저장부터 AI 운동 코칭, 분석 리포트까지 제공합니다. PT 대체 서비스로 헬스 루틴 생성부터 오운완 인증까지 올인원." },
   { q: "운동 기록은 어떻게 저장되나요?", a: "운동 중 세트별 무게·횟수가 자동으로 기록됩니다. 운동 일지가 자동 저장되고, 운동 볼륨 추적 그래프와 체중 변화 그래프로 개인 운동 기록을 한눈에 확인할 수 있어요." },
   { q: "오운완 인증은 어떻게 하나요?", a: "운동 완료 후 자동으로 생성되는 운동 기록 카드를 카카오톡, 인스타그램 등으로 바로 공유할 수 있습니다. 오운완 인증샷을 예쁘게 만들어드려요." },
-  { q: "퀘스트와 티어 시스템이 뭔가요?", a: "매주 운동 강도별 퀘스트(고강도·중강도·저강도)가 주어지고, 달성하면 경험치(EXP)를 얻어요. EXP가 쌓이면 Iron → Bronze → Silver → Gold → Emerald → Diamond → Master → Challenger까지 티어가 올라갑니다. 4개월마다 시즌이 리셋되어 새로운 도전이 시작돼요. 운동과학(ACSM) 기반이라 게임처럼 즐기면서 올바른 운동 습관이 만들어져요." },
+  { q: "퀘스트와 티어 시스템이 뭔가요?", a: "매주 운동 강도별 퀘스트(고강도·중강도·저강도)가 주어지고, 달성하면 경험치(EXP)를 얻어요. EXP가 쌓이면 Iron → Bronze → Silver → Gold → Platinum → Emerald → Diamond → Master → Challenger까지 티어가 올라갑니다. 4개월마다 시즌이 리셋되어 새로운 도전이 시작돼요. 운동과학(ACSM) 기반이라 게임처럼 즐기면서 올바른 운동 습관이 만들어져요." },
   { q: "앱 설치가 필요한가요?", a: "별도 앱 설치 없이 웹에서 바로 사용 가능합니다. 홈화면에 추가하면 운동 어플처럼 사용할 수 있는 PWA 방식이에요." },
   { q: "구독은 어떻게 해지하나요?", a: "프로필 > 구독 관리에서 언제든지 해지할 수 있으며, 해지해도 결제 기간까지 이용 가능합니다." },
 ];
@@ -658,14 +658,13 @@ export default function LandingContent() {
             <p>주드(Joord) · 대표 임주용</p>
             <p>사업자등록번호 | 623-36-01460</p>
             <p>서울특별시 관악구 은천로35길 40-6, 404호</p>
-            <p>Tel 010-4042-2820 | ounjal.ai.app@gmail.com</p>
+            <p>Tel 010-4824-2869 | ounjal.ai.app@gmail.com</p>
           </div>
 
           {/* 링크 */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm mb-8">
-            <a href="/" className="hover:text-white transition-colors">서비스 바로가기</a>
-            <a href="/privacy" className="hover:text-white transition-colors">개인정보처리방침</a>
             <a href="/terms" className="hover:text-white transition-colors">이용약관</a>
+            <a href="/privacy" className="hover:text-white transition-colors">개인정보처리방침</a>
           </div>
 
           {/* 카피라이트 */}
