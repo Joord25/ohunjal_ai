@@ -2,10 +2,11 @@ import { db, auth } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 
 export interface FitnessProfileData {
+  gender: "male" | "female";
+  birthYear: number;
+  bodyWeight: number;
   weeklyFrequency: number;
   sessionMinutes: number;
-  place: "gym" | "home" | "both";
-  equipment: ("barbell" | "dumbbell" | "machine" | "bodyweight")[];
   goal: "fat_loss" | "muscle_gain" | "endurance" | "health";
 }
 

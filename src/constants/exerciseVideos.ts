@@ -89,7 +89,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "원 암 시티드 로우 머신": "",
   "백익스텐션 머신": "9V2BlUDBn1s",
   "슈퍼맨 동작": "",
-  "T-W 레이즈": "",
+  "T-W 레이즈": "HvdLRWBprws",
 
   // ── 후면 어깨 (PULL - Rear Delt) ──
   "케이블 페이스 풀": "",
@@ -113,7 +113,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "바벨 백 스쿼트": "Ak1iHbEeeY8",
   "프론트 스쿼트": "",
   "고블렛 스쿼트": "IbJdK_cH6kk",
-  "더블 케틀벨 프론트 스쿼트": "",
+  "더블 케틀벨 프론트 스쿼트": "e7y8jEUbQiQ",
   "케틀벨 고블릿 스쿼트": "IbJdK_cH6kk",
 
   // ── 하체 (LEG - Hinge) ──
@@ -124,9 +124,10 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "케틀벨 데드리프트": "foy5yzE4_DA",
 
   // ── 하체 (LEG - Unilateral) ──
-  "워킹 런지": "",
+  "런지": "dG89n0jQSto",
+  "워킹 런지": "dG89n0jQSto",
   "불가리안 스플릿 스쿼트": "uBSoEWZu07k",
-  "리버스 런지": "",
+  "리버스 런지": "i3TNJmnInI0",
   "케틀벨 워킹 런지": "hzYUKP0nETA",
 
   // ── 하체 (LEG - Isolation) ──
@@ -242,7 +243,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "고블렛 스쿼트 프라잉": "e_3peYN8O9o",
   "동적 고관절 굴곡근 스트레칭": "2l73nQdZU0I",
   "내전근 동적 스트레칭": "gfHNePiCjvU",
-  "동적 런지": "D-IYqUE92PI",
+  "동적 런지": "dG89n0jQSto",
   "동적 다리 스윙": "tjrvwbynPWE",
   "에어 스쿼트": "",
   "글루트 브릿지": "iOrJXNUH3to",
@@ -270,7 +271,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "암 서클 전/후방": "",
   "동적 팔 스윙": "",
   "팔 흔들기": "XTbPqeswd-Y",
-  "스파이더맨 런지": "",
+  "스파이더맨 런지": "cNkYSkeyONY",
   "폼롤러 흉추 스트레칭": "H4u3J3Spcvw",
   "폼롤러 흉추/광배근 마사지": "H4u3J3Spcvw",
   "폼롤러 등 마사지": "",

@@ -1,20 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { saveUserProfile } from "@/utils/userProfile";
+import { saveUserProfile, updateGender, updateBirthYear, updateWeight } from "@/utils/userProfile";
 
 /* ─── types ─── */
 export interface FitnessProfile {
+  gender: "male" | "female";
+  birthYear: number;
+  bodyWeight: number;
   weeklyFrequency: number;       // 주 몇 회
   sessionMinutes: number;        // 1회 운동 시간(분)
-  place: "gym" | "home" | "both";
-  equipment: ("barbell" | "dumbbell" | "machine" | "bodyweight")[];
   goal: "fat_loss" | "muscle_gain" | "endurance" | "health";
 }
 
 interface Props {
   userName: string;
   onComplete: (profile: FitnessProfile) => void;
+  onPremium?: () => void;
 }
 
 /* ─── constants ─── */
@@ -39,58 +41,109 @@ const GOAL_OPTIONS: { value: FitnessProfile["goal"]; label: string }[] = [
   { value: "health", label: "건강 유지" },
 ];
 
-/* ─── 목표별 예측 항목 ─── */
+/* ─── 목표별 + 레벨별 예측 항목 ─── */
+type UserLevel = "beginner" | "advanced";
+
 interface PredictionItem {
   label: string;
 }
 
-const PREDICTIONS_BY_GOAL: Record<string, { title: string; items: PredictionItem[] }> = {
+interface GoalPrediction {
+  title: string;
+  beginner: PredictionItem[];
+  advanced: PredictionItem[];
+}
+
+const PREDICTIONS_BY_GOAL: Record<string, GoalPrediction> = {
   fat_loss: {
     title: "체지방 감량",
-    items: [
-      { label: "목표 체중 도달 예상 기간" },
-      { label: "주간 예상 칼로리 소모량" },
-      { label: "내 또래 평균 체지방률 비교" },
+    beginner: [
+      { label: "5kg / 10kg 감량 도달 기간" },
+      { label: "옷 핏 달라지는 시점" },
+      { label: "다이어트 정체기 예상 시점" },
+    ],
+    advanced: [
+      { label: "5kg / 10kg 감량 도달 기간" },
+      { label: "린매스 유지 커팅 기간 예측" },
+      { label: "다이어트 정체기 예상 시점" },
     ],
   },
   muscle_gain: {
     title: "근력 증가",
-    items: [
-      { label: "주요 운동 중량 성장 예측" },
-      { label: "내 또래 평균 근력 도달까지" },
-      { label: "주간 목표 볼륨 가이드" },
+    beginner: [
+      { label: "벤치프레스 예상 중량 변화" },
+      { label: "체중 1배 벤치 도달 시점" },
+      { label: "골격근량 1kg 증가 예상 기간" },
+    ],
+    advanced: [
+      { label: "3대 운동 합계 목표 도달 시점" },
+      { label: "체중 대비 2배 스쿼트 도달 시점" },
+      { label: "3대 운동 중량 등급 예측" },
     ],
   },
   endurance: {
     title: "기초 체력",
-    items: [
-      { label: "심폐 능력 향상 예측" },
-      { label: "내 또래 체력 수준 비교" },
-      { label: "주간 목표 운동량 가이드" },
+    beginner: [
+      { label: "5km 완주 가능 시점" },
+      { label: "계단 3층 안 헐떡이는 시점" },
+      { label: "턱걸이 1개 달성 예상 기간" },
+    ],
+    advanced: [
+      { label: "10km 기록 단축 예측" },
+      { label: "VO2max 향상 곡선" },
+      { label: "심폐 회복 속도 변화 예측" },
     ],
   },
   health: {
     title: "건강 유지",
-    items: [
-      { label: "건강 위험도 감소 예측" },
-      { label: "주간 최소 운동량 달성률" },
-      { label: "내 또래 활동량 비교" },
+    beginner: [
+      { label: "내 건강 나이 vs 실제 나이" },
+      { label: "당뇨·심혈관 위험도 감소 예측" },
+      { label: "근감소증 예방 시작 시점" },
+    ],
+    advanced: [
+      { label: "생물학적 나이 역전 시점" },
+      { label: "주요 건강 지표 최적화 기간" },
+      { label: "운동 습관별 건강 나이 변화" },
     ],
   },
 };
 
+/* ─── helpers ─── */
+function weeksToLabel(weeks: number): string {
+  if (weeks <= 4) return `약 ${weeks}주`;
+  if (weeks < 12) return `약 ${Math.round(weeks / 4)}개월`;
+  if (weeks < 52) return `약 ${Math.round(weeks / 4)}개월`;
+  const y = Math.floor(weeks / 52);
+  const m = Math.round((weeks % 52) / 4);
+  return m > 0 ? `약 ${y}년 ${m}개월` : `약 ${y}년`;
+}
+
+function weeksToTargetDate(weeks: number): string {
+  const target = new Date();
+  target.setDate(target.getDate() + weeks * 7);
+  return `${String(target.getFullYear()).slice(2)}년 ${target.getMonth() + 1}월`;
+}
+
 /* ─── reading results (논문 기반) ─── */
+interface FreePeekData {
+  stat: string;       // 현재 상태 (예: "추정 체지방률: 약 24%")
+  timeline: string;   // 목표 도달 시점 (예: "복근 라인 도달: 약 4개월 (2026년 7월)")
+  condition: string;  // 조건 설명 (예: "하루 60분, 주 3회 기준")
+}
+
 interface ReadingResult {
   typeName: string;
   typeEmoji: string;
   message: string;
   growthStars: number;
-  freePeek: string;
+  freePeek: FreePeekData;
 }
 
 function computeReading(p: FitnessProfile): ReadingResult {
   // 주간 총 운동 시간(분)
   const weeklyMin = p.weeklyFrequency * p.sessionMinutes;
+  const age = new Date().getFullYear() - p.birthYear;
 
   // ACSM 권고: 주 150분 moderate or 75분 vigorous
   const acsmPct = Math.round((weeklyMin / 150) * 100);
@@ -101,7 +154,8 @@ function computeReading(p: FitnessProfile): ReadingResult {
   else if (p.weeklyFrequency >= 4 && p.sessionMinutes >= 60) stars = 5;
   else if (p.weeklyFrequency >= 3 && p.sessionMinutes >= 45) stars = 4;
   else if (p.weeklyFrequency <= 2 && p.sessionMinutes <= 30) stars = 2;
-
+  // 나이 보정: 20대 +0, 30대 +0, 40대+ -0.5 (소수점 버림)
+  if (age >= 40) stars = Math.max(1, stars - 1);
 
   // 타입 결정
   let typeName: string;
@@ -120,7 +174,7 @@ function computeReading(p: FitnessProfile): ReadingResult {
     typeEmoji = "🌿";
   }
 
-  // 메시지
+  // 메시지 (체중/나이 반영)
   const message =
     p.weeklyFrequency === 0
       ? "처음이라면 지금이 가장 좋은 시작입니다\n초보자일수록 성장 속도가 빠릅니다"
@@ -130,26 +184,99 @@ function computeReading(p: FitnessProfile): ReadingResult {
           ? "당신의 조건은\n변화를 만들기에 충분합니다"
           : "작은 시작이\n가장 큰 변화를 만듭니다";
 
-  // 무료 공개 한 줄 (논문 기반 팩트)
-  const freePeek =
-    p.goal === "fat_loss"
-      ? `주 ${p.weeklyFrequency}회 × ${p.sessionMinutes}분 운동 시\n주당 약 ${Math.round(p.weeklyFrequency * p.sessionMinutes * 5.5)}kcal 소모 예상`
-      : p.goal === "muscle_gain"
-        ? `초보자의 첫 12주간\n근력 평균 40% 증가가 보고되었습니다`
-        : p.goal === "endurance"
-          ? `주 ${p.weeklyFrequency}회 유산소 훈련 시\n4주 내 심폐 능력 향상이 보고되었습니다`
-          : `규칙적 운동은\n모든 원인 사망률을 31% 감소시킵니다`;
+  // 무료 공개: 목표별 구체 수치 예측 (논문 기반 계산)
+  const isBeginner = p.weeklyFrequency <= 2;
+
+  // 주간 칼로리 소모 (운동 + 식이 보정)
+  // 운동 칼로리: MET 간이 계산
+  const exCalPerSession = Math.round(p.sessionMinutes * (p.bodyWeight / 13));
+  // 총 적자 = 운동 칼로리 + 식이 적자 가정 (하루 300kcal 식이 조절)
+  const weeklyDeficit = (p.weeklyFrequency * exCalPerSession) + (300 * 7);
+  // 체지방 1kg ≈ 7700kcal — 5kg/10kg 단위 감량 기간 예측
+  const weeksFor5kg = weeklyDeficit > 0 ? Math.ceil((5 * 7700) / weeklyDeficit) : 0;
+  const weeksFor10kg = weeklyDeficit > 0 ? Math.ceil((10 * 7700) / weeklyDeficit) : 0;
+
+  const conditionStr = p.weeklyFrequency === 0
+    ? "운동 시작 후 측정"
+    : `하루 ${p.sessionMinutes}분, 주 ${p.weeklyFrequency}회 기준`;
+
+  let freePeek: FreePeekData;
+  if (p.goal === "fat_loss") {
+    if (p.weeklyFrequency === 0) {
+      freePeek = {
+        stat: "5kg 감량 목표",
+        timeline: "운동 시작 후 측정 가능",
+        condition: conditionStr,
+      };
+    } else {
+      freePeek = {
+        stat: `5kg 감량: ${weeksToLabel(weeksFor5kg)} (${weeksToTargetDate(weeksFor5kg)})`,
+        timeline: `10kg 감량: ${weeksToLabel(weeksFor10kg)} (${weeksToTargetDate(weeksFor10kg)})`,
+        condition: conditionStr,
+      };
+    }
+  } else if (p.goal === "muscle_gain") {
+    const startBench = Math.round(p.bodyWeight * (isBeginner ? 0.4 : 0.8));
+    const weeklyGainPct = isBeginner ? 2.5 : 1.5;
+    if (isBeginner) {
+      const targetBench = p.bodyWeight;
+      const pctNeeded = ((targetBench - startBench) / startBench) * 100;
+      const weeks = Math.ceil(pctNeeded / weeklyGainPct);
+      freePeek = {
+        stat: `벤치프레스 예상: ${startBench}kg → ${targetBench}kg`,
+        timeline: `체중 1배 도달: ${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})`,
+        condition: conditionStr,
+      };
+    } else {
+      const target15x = Math.round(p.bodyWeight * 1.5);
+      const weeks = Math.ceil(((target15x - startBench) / startBench * 100) / weeklyGainPct);
+      freePeek = {
+        stat: `현재 추정 벤치프레스: 약 ${startBench}kg`,
+        timeline: `${target15x}kg(1.5배) 도달: ${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})`,
+        condition: conditionStr,
+      };
+    }
+  } else if (p.goal === "endurance") {
+    if (isBeginner) {
+      const weeksTo5k = p.weeklyFrequency === 0 ? 8 : p.weeklyFrequency >= 2 ? 4 : 6;
+      freePeek = {
+        stat: "5km 완주 목표",
+        timeline: `달성 예상: ${weeksToLabel(weeksTo5k)} (${weeksToTargetDate(weeksTo5k)})`,
+        condition: p.weeklyFrequency === 0 ? "Couch to 5K 프로그램 기준" : conditionStr,
+      };
+    } else {
+      freePeek = {
+        stat: "5km 완주: 이미 가능 수준",
+        timeline: `10km 기록 단축: 약 2~3개월`,
+        condition: conditionStr,
+      };
+    }
+  } else {
+    const healthAge = p.weeklyFrequency === 0
+      ? age + 5
+      : p.weeklyFrequency >= 3 ? age - 3 : age;
+    const diff = healthAge - age;
+    const diffStr = diff > 0 ? `+${diff}세 (개선 필요)` : diff < 0 ? `${diff}세 (더 젊음!)` : "동일";
+    freePeek = {
+      stat: `건강 나이: ${healthAge}세 (실제 ${age}세)`,
+      timeline: `차이: ${diffStr}`,
+      condition: p.weeklyFrequency === 0 ? "규칙적 운동 시작 시 개선 가능" : conditionStr,
+    };
+  }
 
   return { typeName, typeEmoji, message, growthStars: stars, freePeek };
 }
 
 /* ─── step type ─── */
-type Step = "welcome" | "frequency" | "time" | "place" | "equipment" | "goal" | "analyzing" | "result";
+type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "analyzing" | "result";
 
 /* ─── Component ─── */
-export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
+export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium }) => {
   const [step, setStep] = useState<Step>("welcome");
   const [profile, setProfile] = useState<Partial<FitnessProfile>>({});
+  const [gender, setGender] = useState<"male" | "female" | null>(null);
+  const [birthYear, setBirthYear] = useState("");
+  const [bodyWeight, setBodyWeight] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [resultReady, setResultReady] = useState(false);
@@ -157,7 +284,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
   const displayName = userName || "회원";
 
   /* ─── back navigation ─── */
-  const stepOrder: Step[] = ["welcome", "frequency", "time", "goal"];
+  const stepOrder: Step[] = ["welcome", "profile", "frequency", "time", "goal"];
   const handleBack = () => {
     const currentIdx = stepOrder.indexOf(step);
     if (currentIdx <= 0) return;
@@ -165,6 +292,21 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
   };
 
   /* ─── step transitions ─── */
+  const handleProfileNext = () => {
+    if (!gender) return;
+    const byNum = parseInt(birthYear.trim());
+    const wNum = parseFloat(bodyWeight.trim());
+    if (isNaN(byNum) || byNum < 1900) return;
+    if (isNaN(wNum) || wNum <= 0) return;
+
+    // Save profile data
+    setProfile((p) => ({ ...p, gender, birthYear: byNum, bodyWeight: wNum }));
+    updateGender(gender);
+    updateBirthYear(byNum);
+    updateWeight(wNum);
+    setStep("frequency");
+  };
+
   const handleFrequency = (v: number) => {
     setProfile((p) => ({ ...p, weeklyFrequency: v }));
     setStep("time");
@@ -174,8 +316,6 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
     setProfile((p) => ({ ...p, sessionMinutes: v }));
     setStep("goal");
   };
-
-  /* place 제거 — time에서 바로 goal로 */
 
   const handleGoal = (v: FitnessProfile["goal"]) => {
     const complete = { ...profile, goal: v } as FitnessProfile;
@@ -232,7 +372,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
 
   /* ─── render helpers ─── */
   const renderStepIndicator = () => {
-    const steps: Step[] = ["frequency", "time", "goal"];
+    const steps: Step[] = ["profile", "frequency", "time", "goal"];
     const currentIdx = steps.indexOf(step);
     if (currentIdx < 0) return null;
     return (
@@ -286,6 +426,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
 
   const [welcomeVisible, setWelcomeVisible] = useState(false);
   const [showMLTooltip, setShowMLTooltip] = useState(false);
+  const [showOtherGoals, setShowOtherGoals] = useState(false);
 
   useEffect(() => {
     if (step === "welcome") {
@@ -333,7 +474,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
                 오운잘 AI는 미래 예측 모델인
               </p>
               <p className="text-[#6B7280] text-sm leading-loose">
-                <button onClick={() => setShowMLTooltip(true)} className="text-[#1B4332] font-semibold underline decoration-dotted underline-offset-2">회귀분석 기반 머신러닝</button> 기술로
+                <button onClick={() => setShowMLTooltip(true)} className="text-[#1B4332] font-semibold underline decoration-dotted underline-offset-2"> 회귀분석 기반 머신러닝</button> 기술로
               </p>
               <p className="text-[#6B7280] text-sm leading-loose mt-2">
                 당신의 <span className="text-[#1B4332] font-semibold">운동 패턴을 분석</span>하고
@@ -345,7 +486,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
 
             {/* CTA */}
             <button
-              onClick={() => setStep("frequency")}
+              onClick={() => setStep("profile")}
               className={`w-full py-4 rounded-2xl font-bold text-white bg-[#2D6A4F] active:scale-95 transition-all duration-700 delay-800 ${
                 welcomeVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
@@ -353,6 +494,83 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
               준비되었습니다
             </button>
 
+          </div>
+        </div>
+      )}
+
+      {/* Profile Step */}
+      {step === "profile" && (
+        <div className="flex-1 flex flex-col px-6 pt-6">
+          {backButton()}
+          {renderStepIndicator()}
+          {questionTitle("기본 정보를 알려주세요")}
+          <div className="w-full space-y-4">
+            {/* Gender */}
+            <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">성별</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setGender("male")}
+                  className={`flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] ${
+                    gender === "male" ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  남성
+                </button>
+                <button
+                  onClick={() => setGender("female")}
+                  className={`flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] ${
+                    gender === "female" ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  여성
+                </button>
+              </div>
+            </div>
+
+            {/* Birth Year */}
+            <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">출생연도</p>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
+                placeholder="1995"
+                className="w-full text-center text-3xl font-black text-[#5C795E] bg-transparent border-b-2 border-[#2D6A4F] outline-none pb-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
+            {/* Body Weight */}
+            <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">체중</p>
+              <div className="flex items-end justify-center gap-1">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={bodyWeight}
+                  onChange={(e) => setBodyWeight(e.target.value)}
+                  placeholder="70"
+                  className="w-full text-center text-3xl font-black text-[#5C795E] bg-transparent border-b-2 border-[#2D6A4F] outline-none pb-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="text-sm font-bold text-gray-400 pb-2">kg</span>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-gray-500 text-center font-medium mt-4">
+            성별·연령·체중 기반 예측 모델에 활용됩니다
+          </p>
+
+          {/* Fixed CTA */}
+          <div className="absolute bottom-0 left-0 right-0 bg-white px-6 pb-6 pt-3 border-t border-gray-100">
+            <button
+              onClick={handleProfileNext}
+              disabled={!gender || !birthYear.trim() || !bodyWeight.trim()}
+              className="w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] bg-[#2D6A4F] text-white hover:bg-[#1B4332] disabled:opacity-30 disabled:active:scale-100"
+            >
+              다음
+            </button>
           </div>
         </div>
       )}
@@ -469,13 +687,15 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
         const goalKey = (profile as FitnessProfile).goal;
         const allGoals = Object.entries(PREDICTIONS_BY_GOAL);
         const myGoal = allGoals.find(([k]) => k === goalKey);
-        const otherGoals = allGoals.filter(([k]) => k !== goalKey);
-        const freqLabel = profile.weeklyFrequency === 0 ? "입문" : `주 ${profile.weeklyFrequency}회`;
+        const fp = profile as FitnessProfile;
+        const freqLabel = fp.weeklyFrequency === 0 ? "입문" : `주 ${fp.weeklyFrequency}회`;
+        const age = new Date().getFullYear() - fp.birthYear;
+        const genderLabel = fp.gender === "male" ? "남" : "여";
 
         return (
-          <div className="flex-1 flex flex-col bg-[#FAFBF9]">
-            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24">
-              {/* Title */}
+          <div className="flex-1 flex flex-col bg-[#FAFBF9] min-h-0">
+            {/* Fixed Header */}
+            <div className="shrink-0 px-6 pt-6 pb-3 bg-[#FAFBF9]">
               <h1
                 className={`text-[#1B4332] text-xl font-bold mb-2 transition-all duration-700 ${
                   showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
@@ -484,12 +704,14 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
                 {displayName}님의 성장 예측
               </h1>
               <p
-                className={`text-[#6B7280] text-sm mb-6 transition-all duration-700 delay-100 ${
+                className={`text-[#6B7280] text-sm transition-all duration-700 delay-100 ${
                   showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
               >
-                {freqLabel} · {profile.sessionMinutes}분
+                {genderLabel} · {age}세 · {fp.bodyWeight}kg · {freqLabel} · {fp.sessionMinutes}분
               </p>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
 
               {/* Message + Stars */}
               <div
@@ -518,65 +740,72 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
                 </div>
               </div>
 
-              {/* My goal predictions */}
-              {myGoal && (
-                <div
-                  className={`w-full bg-white rounded-2xl p-5 mb-4 border-2 border-[#2D6A4F]/20 shadow-sm transition-all duration-700 delay-400 ${
-                    showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-                    <span className="text-[#1B4332] text-sm font-bold">내 목표: {myGoal[1].title}</span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {myGoal[1].items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <span className="text-[#1B4332] text-sm">{item.label}</span>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full w-3/4 bg-gray-200 rounded-full" style={{ filter: "blur(3px)" }} />
-                          </div>
-                          <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* My goal predictions — my level */}
+              {myGoal && (() => {
+                const myLevel: UserLevel = fp.weeklyFrequency <= 2 ? "beginner" : "advanced";
+                const otherLevel: UserLevel = myLevel === "beginner" ? "advanced" : "beginner";
+                const myItems = myGoal[1][myLevel];
+                const levelLabel = myLevel === "beginner" ? "입문자" : "상급자";
+                const otherLevelLabel = otherLevel === "beginner" ? "입문자" : "상급자";
 
-              {/* Other goal predictions */}
-              {otherGoals.map(([key, goalData], idx) => (
-                <div
-                  key={key}
-                  className={`w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm transition-all duration-700 ${
-                    showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                  }`}
-                  style={{ transitionDelay: `${600 + idx * 150}ms` }}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-gray-300" />
-                    <span className="text-[#6B7280] text-sm font-bold">이런 목표라면: {goalData.title}</span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {goalData.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <span className="text-[#6B7280] text-sm">{item.label}</span>
-                        <svg className="w-3.5 h-3.5 text-gray-200" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
+                return (
+                  <>
+                    {/* My level card */}
+                    <div
+                      className={`w-full bg-white rounded-2xl p-5 mb-4 border-2 border-[#2D6A4F]/20 shadow-sm transition-all duration-700 delay-400 ${
+                        showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+                        <span className="text-[#1B4332] text-sm font-bold">내 목표: {myGoal[1].title}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#2D6A4F]/10 text-[#2D6A4F]">{levelLabel}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                      <div className="space-y-2.5">
+                        {myItems.map((item: PredictionItem, i: number) => (
+                          <div key={i}>
+                            {i === 0 ? (
+                              <div className="bg-[#FAFBF9] rounded-xl p-3 -mx-1">
+                                <p className="text-[#6B7280] text-xs mb-1.5">{item.label}</p>
+                                <p className="text-[#1B4332] text-base font-black text-right">{reading.freePeek.stat}</p>
+                                <p className="text-[#2D6A4F] text-sm font-bold mt-1 text-right">{reading.freePeek.timeline}</p>
+                                <p className="text-[#6B7280] text-[11px] mt-1.5 text-right">{reading.freePeek.condition}</p>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <span className="text-[#1B4332] text-sm">{item.label}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full w-3/4 bg-gray-200 rounded-full" style={{ filter: "blur(3px)" }} />
+                                  </div>
+                                  <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Other goals button */}
+                    <button
+                      onClick={() => setShowOtherGoals(true)}
+                      className={`w-full py-3 text-[#6B7280] text-sm font-medium transition-all duration-700 delay-500 ${
+                        showResult ? "opacity-100" : "opacity-0"
+                      }`}
+                    >
+                      {otherLevelLabel}라면? · 다른 목표도 궁금하신가요?
+                    </button>
+                  </>
+                );
+              })()}
 
             </div>
 
             {/* Fixed CTA */}
-            <div className="absolute bottom-0 left-0 right-0 bg-[#FAFBF9] px-6 pb-6 pt-3 border-t border-gray-100">
+            <div className="shrink-0 bg-[#FAFBF9] px-6 pb-6 pt-3 border-t border-gray-100">
               <p className="text-[#6B7280] text-xs text-center mb-3">
                 운동 데이터 수집 후 예측 리포트가 열립니다
               </p>
@@ -590,6 +819,50 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
           </div>
         );
       })()}
+
+      {/* Premium Popup (tooltip style) */}
+      {showOtherGoals && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center animate-fade-in" onClick={() => setShowOtherGoals(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+          <div className="bg-white rounded-2xl px-5 py-5 shadow-2xl mx-6 relative z-10" onClick={(e) => e.stopPropagation()}>
+            <p className="text-emerald-600 text-[11px] font-bold tracking-wider uppercase mb-2">PREMIUM</p>
+            <p className="text-[15px] font-black text-[#1B4332] leading-snug mb-1">전체 예측 리포트를 열어보세요</p>
+            <p className="text-[12.5px] text-gray-600 leading-relaxed mt-1.5">
+              AI 예측 모델이 분석한 모든 목표의{"\n"}성장 예측과 레벨별 상세 리포트를 확인하세요
+            </p>
+
+            <div className="mt-4 space-y-2">
+              {Object.entries(PREDICTIONS_BY_GOAL).filter(([k]) => k !== (profile as FitnessProfile).goal).map(([key, goalData]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-[#1B4332] text-[13px] font-medium">{goalData.title} 예측</span>
+                  <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              ))}
+              <div className="flex items-center justify-between">
+                <span className="text-[#1B4332] text-[13px] font-medium">
+                  {(profile as FitnessProfile).weeklyFrequency <= 2 ? "상급자" : "입문자"} 레벨 분석
+                </span>
+                <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowOtherGoals(false);
+                onPremium?.();
+              }}
+              className="w-full mt-5 py-3.5 rounded-2xl font-black text-sm text-amber-300 bg-[#1B4332] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(251,191,36,0.15)]"
+            >
+              프리미엄 구독하기
+            </button>
+            <p className="text-[10px] text-gray-400 mt-3 font-medium text-center">탭하여 닫기</p>
+          </div>
+        </div>
+      )}
 
       {/* ML Tooltip (CoachTooltip style) */}
       {showMLTooltip && (
@@ -610,7 +883,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete }) => {
             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
               <p className="text-[11px] text-gray-400">· 볼륨-칼로리 상관관계 r=0.89 — Haddock & Wilkin, 2006</p>
               <p className="text-[11px] text-gray-400">· 초보자 근력 성장 메타분석 — Rhea et al., 2003</p>
-              <p className="text-[11px] text-gray-400">· ACSM 운동 처방 가이드라인</p>
+              <p className="text-[11px] text-gray-400">· ACSM 운동 처방 가이드라인, 2026</p>
             </div>
             <p className="text-[10px] text-gray-400 mt-3 font-medium">탭하여 닫기</p>
           </div>

@@ -104,12 +104,10 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
 
 
 
-  // 이전에 이미 프로필을 저장한 적이 있으면 체중만 표시 (현재 입력값이 아닌 저장된 값 기준)
+  // FitnessReading 온보딩에서 프로필을 이미 수집했으므로 항상 true
   const [hasProfile] = useState(() => {
     if (typeof window === "undefined") return false;
-    const savedG = localStorage.getItem("alpha_gender");
-    const savedBY = localStorage.getItem("alpha_birth_year");
-    return !!savedG && !!savedBY && savedBY.length >= 4;
+    return !!localStorage.getItem("alpha_fitness_reading_done");
   });
 
   const handleBack = () => {

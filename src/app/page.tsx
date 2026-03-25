@@ -383,6 +383,7 @@ export default function Home() {
           <FitnessReading
             userName={user?.displayName?.split(" ")[0] || "회원"}
             onComplete={() => setView("condition_check")}
+            onPremium={() => setShowPaywall(true)}
           />
         );
 

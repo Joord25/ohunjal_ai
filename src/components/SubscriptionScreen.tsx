@@ -21,7 +21,7 @@ async function getIdToken(): Promise<string> {
 const FAQ_ITEMS: { q: string; a: string | null; key?: string }[] = [
   {
     q: "무료 플랜과 프리미엄의 차이는?",
-    a: "무료 플랜은 AI 운동 플랜 생성이 3회로 제한됩니다. 프리미엄 구독 시 AI 맞춤 운동 플랜 무제한 생성, 세션별 AI 분석 리포트, 운동 히스토리 무제한 저장 등 모든 기능을 이용하실 수 있습니다.",
+    a: "무료 플랜은 AI 운동 플랜 생성이 4회로 제한되며, 성장 예측 리포트는 내 목표 1개만 열람 가능합니다. 프리미엄 구독 시 AI 맞춤 운동 플랜 무제한 생성, 전체 목표 성장 예측 리포트, 레벨별 상세 분석, 세션별 AI 분석 리포트 등 모든 기능을 이용하실 수 있습니다.",
   },
   {
     q: "결제는 어떻게 처리되나요?",
@@ -565,7 +565,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             <div className="bg-gray-50 rounded-2xl p-5">
               <h3 className="text-sm font-bold text-gray-900 mb-3">포함된 기능</h3>
               <div className="flex flex-col gap-2">
-                {["AI 맞춤 운동 플랜 무제한", "운동 분석 리포트", "체중 변화 추적", "운동 히스토리 관리"].map((feature) => (
+                {["AI 맞춤 운동 플랜 무제한", "전체 목표 성장 예측 리포트", "운동 분석 리포트", "체중 변화 추적"].map((feature) => (
                   <div key={feature} className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -630,7 +630,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                 </div>
               </div>
               <div className="flex flex-col gap-2.5 text-left">
-                {["AI 운동 플랜 무제한", "세션별 AI 분석 리포트", "체중 변화 그래프 추적", "운동 히스토리 무제한 저장", "적응형 운동 세션"].map((feature) => (
+                {["AI 운동 플랜 무제한", "전체 목표 성장 예측 리포트", "레벨별 상세 성장 분석", "세션별 AI 분석 리포트", "적응형 운동 세션"].map((feature) => (
                   <div key={feature} className="flex items-center gap-2">
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
                       <path d="M4 9L7.5 12.5L14 6" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -820,7 +820,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 mb-6">
                 <h3 className="text-sm font-bold text-amber-800 mb-3">취소하면 잃게 되는 혜택</h3>
                 <div className="flex flex-col gap-2">
-                  {["AI 맞춤 운동 플랜 무제한 생성", "세션별 AI 분석 리포트", "운동 히스토리 무제한 저장", "체중 변화 그래프 추적"].map((feature) => (
+                  {["AI 맞춤 운동 플랜 무제한 생성", "전체 목표 성장 예측 리포트", "레벨별 상세 성장 분석", "세션별 AI 분석 리포트"].map((feature) => (
                     <div key={feature} className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

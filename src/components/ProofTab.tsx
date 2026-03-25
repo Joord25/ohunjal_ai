@@ -101,6 +101,8 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
     return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
   });
   const [reportReturnView, setReportReturnView] = useState<"dashboard" | "list">("list");
+  const [dayPickerSessions, setDayPickerSessions] = useState<{ sessions: WorkoutHistoryType[]; day: number } | null>(null);
+  const [proofView, setProofView] = useState<"calendar" | "quest">("calendar");
 
   const handleSessionClick = (session: WorkoutHistoryType, returnTo: "dashboard" | "list" = "list") => {
     setSelectedHistory(session);
@@ -478,6 +480,27 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             style={{ opacity: pullDistance > 20 || isRefreshing ? 1 : pullDistance / 20, transform: `rotate(${pullDistance * 3}deg)` }}
           />
         </div>
+        {/* Calendar / Quest Toggle */}
+        <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-4">
+          <button
+            onClick={() => setProofView("calendar")}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+              proofView === "calendar" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
+            }`}
+          >
+            캘린더
+          </button>
+          <button
+            onClick={() => setProofView("quest")}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+              proofView === "quest" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
+            }`}
+          >
+            퀘스트
+          </button>
+        </div>
+
+        {proofView === "calendar" ? (
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
           <div className="grid grid-cols-7 gap-2">
             {['일', '월', '화', '수', '목', '금', '토'].map((day, i) => (
@@ -507,9 +530,8 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                     if (daySessions.length === 1) {
                       handleSessionClick(daySessions[0], "dashboard");
                     } else if (daySessions.length > 1) {
-                      // Multiple sessions on same day — show the most recent one
                       const sorted = [...daySessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                      handleSessionClick(sorted[0], "dashboard");
+                      setDayPickerSessions({ sessions: sorted, day });
                     }
                   }}
                   className={`aspect-square rounded-xl flex items-center justify-center text-xs font-bold relative transition-all ${
@@ -529,6 +551,79 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             })}
           </div>
         </div>
+        ) : (
+          /* === Weekly Quest Card (toggle view) === */
+          (() => {
+            const bYear = !isNaN(savedBirthYear) ? savedBirthYear : undefined;
+            const { questDefs, questState: qs } = getOrCreateWeeklyQuests(history, bYear, savedGender);
+            const coreQs = questDefs.filter(q => !q.isBonus);
+            const bonusQs = questDefs.filter(q => q.isBonus);
+            const doneCount = qs.quests.filter(q => q.completed).length;
+            const coreDone = coreQs.every(cq => qs.quests.find(p => p.questId === cq.id)?.completed);
+            const prog = (qDef: QuestDefinition): QuestProgress =>
+              qs.quests.find(p => p.questId === qDef.id) || { questId: qDef.id, current: 0, completed: false };
+
+            return (
+              <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-black text-[#1B4332]">이번 주 퀘스트</h3>
+                  <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{doneCount}/{questDefs.length} 완료</span>
+                </div>
+                <div className="space-y-3">
+                  {coreQs.map(q => {
+                    const p = prog(q);
+                    const pct = Math.min(p.current / q.target, 1);
+                    return (
+                      <div key={q.id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-700"}`}>
+                            {p.completed ? "✓ " : ""}{q.label}
+                          </span>
+                          <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct * 100}%`, backgroundColor: p.completed ? "#2D6A4F" : "#a7f3d0" }} />
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400 min-w-[32px] text-right">{p.current}/{q.target}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {bonusQs.length > 0 && (
+                    <div className="pt-2 border-t border-gray-100 space-y-3">
+                      {bonusQs.map(q => {
+                        const p = prog(q);
+                        const pct = Math.min(p.current / q.target, 1);
+                        return (
+                          <div key={q.id} className="opacity-60">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-500"}`}>
+                                {p.completed ? "✓ " : "☆ "}{q.label}
+                              </span>
+                              <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct * 100}%`, backgroundColor: p.completed ? "#2D6A4F" : "#d1d5db" }} />
+                              </div>
+                              <span className="text-[10px] font-bold text-gray-400 min-w-[32px] text-right">{p.current}/{q.target}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {coreDone && !qs.weeklyBonusClaimed && (
+                    <div className="mt-2 p-3 bg-[#2D6A4F]/10 rounded-xl text-center">
+                      <span className="text-[12px] font-black text-[#2D6A4F]">올클리어 보너스 +5 EXP!</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()
+        )}
 
         <div className="mt-6 flex flex-col gap-3">
           {/* === Season Tier Card === */}
@@ -550,13 +645,13 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                   style={{ background: `linear-gradient(135deg, ${tierResult.tier.color}20, ${tierResult.tier.color}08)` }}
                   onClick={() => setExpLogOpen(v => !v)}
                 >
-                  <p className="text-[10px] font-bold text-gray-400 mb-1">{seasonInfo.label}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-black" style={{ color: tierResult.tier.color }}>{tierResult.tier.name}</span>
-                    <button onClick={(e) => { e.stopPropagation(); setHelpCard("tierSystem"); }} className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center">
+                    <p className="text-[10px] font-bold text-gray-400 mb-1">{seasonInfo.label}</p>
+                    <button onClick={(e) => { e.stopPropagation(); setHelpCard("tierSystem"); }} className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center -mt-1 -mr-1">
                       <span className="text-[10px] font-black text-gray-400">?</span>
                     </button>
                   </div>
+                  <span className="text-2xl font-black" style={{ color: tierResult.tier.color }}>{tierResult.tier.name}</span>
                   <div className="mt-3">
                     <div className="w-full h-2.5 bg-black/5 rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-700" style={{ width: `${tierResult.progress * 100}%`, backgroundColor: tierResult.tier.color }} />
@@ -595,84 +690,6 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* === Weekly Quest Card === */}
-          {(() => {
-            const bYear = !isNaN(savedBirthYear) ? savedBirthYear : undefined;
-            const { questDefs, questState } = getOrCreateWeeklyQuests(history, bYear, savedGender);
-
-            const coreQuests = questDefs.filter(q => !q.isBonus);
-            const bonusQuests = questDefs.filter(q => q.isBonus);
-            const completedCount = questState.quests.filter(q => q.completed).length;
-            const coreCompleted = coreQuests.every(cq => questState.quests.find(p => p.questId === cq.id)?.completed);
-
-            const getProgress = (qDef: QuestDefinition): QuestProgress => {
-              return questState.quests.find(p => p.questId === qDef.id) || { questId: qDef.id, current: 0, completed: false };
-            };
-
-            return (
-              <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-black text-[#1B4332]">이번 주 퀘스트</h3>
-                  <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{completedCount}/{questDefs.length} 완료</span>
-                </div>
-
-                <div className="space-y-3">
-                  {coreQuests.map(q => {
-                    const p = getProgress(q);
-                    const pct = Math.min(p.current / q.target, 1);
-                    return (
-                      <div key={q.id}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-700"}`}>
-                            {p.completed ? "✓ " : ""}{q.label}
-                          </span>
-                          <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct * 100}%`, backgroundColor: p.completed ? "#2D6A4F" : "#a7f3d0" }} />
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-400 min-w-[32px] text-right">{p.current}/{q.target}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {bonusQuests.length > 0 && (
-                    <div className="pt-2 border-t border-gray-100 space-y-3">
-                      {bonusQuests.map(q => {
-                        const p = getProgress(q);
-                        const pct = Math.min(p.current / q.target, 1);
-                        return (
-                          <div key={q.id} className="opacity-60">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-500"}`}>
-                                {p.completed ? "✓ " : "☆ "}{q.label}
-                              </span>
-                              <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct * 100}%`, backgroundColor: p.completed ? "#2D6A4F" : "#d1d5db" }} />
-                              </div>
-                              <span className="text-[10px] font-bold text-gray-400 min-w-[32px] text-right">{p.current}/{q.target}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {coreCompleted && !questState.weeklyBonusClaimed && (
-                    <div className="mt-2 p-3 bg-[#2D6A4F]/10 rounded-xl text-center">
-                      <span className="text-[12px] font-black text-[#2D6A4F]">올클리어 보너스 +5 EXP!</span>
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -1306,6 +1323,45 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             >
               확인
             </button>
+          </div>
+        </div>
+      )}
+      {/* Day Picker Bottom Sheet — multiple sessions on same day */}
+      {dayPickerSessions && (
+        <div className="absolute inset-0 z-50 flex items-end animate-fade-in" onClick={() => setDayPickerSessions(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <div
+            className="relative z-10 w-full bg-white rounded-t-[2rem] px-6 pt-5 pb-8 animate-slide-in-bottom"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <h3 className="text-[#1B4332] text-base font-bold mb-4">
+              {viewMonth + 1}월 {dayPickerSessions.day}일 운동 기록
+            </h3>
+            <div className="flex flex-col gap-2">
+              {dayPickerSessions.sessions.map((session, idx) => {
+                const d = new Date(session.date);
+                const timeStr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                return (
+                  <button
+                    key={session.id || idx}
+                    onClick={() => {
+                      setDayPickerSessions(null);
+                      handleSessionClick(session, "dashboard");
+                    }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#FAFBF9] border border-gray-100 active:scale-[0.98] transition-all"
+                  >
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-[#1B4332]">{session.sessionData.title}</p>
+                      <p className="text-xs text-[#6B7280] mt-0.5">
+                        {session.stats.totalSets}세트 · {session.stats.totalVolume.toLocaleString()}kg
+                      </p>
+                    </div>
+                    <span className="text-xs font-medium text-[#6B7280]">{timeStr}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
