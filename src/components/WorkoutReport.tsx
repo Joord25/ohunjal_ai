@@ -120,9 +120,9 @@ function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, 
         {showExp && (
           <div className="mt-4 pt-3 border-t border-[#1B4332] animate-fade-in">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px]" style={{ color: current.tier.color }}>{current.tier.name}</span>
+              <span className="text-[12px] font-bold" style={{ color: current.tier.color }}>{seasonExp} EXP</span>
               <span className="text-[12px] text-[#a7f3d0]/60">
-                {current.nextTier ? `${seasonExp - current.tier.minExp}/${current.nextTier.minExp - current.tier.minExp} EXP` : "MAX"}
+                {current.nextTier ? `${current.nextTier.name}까지 ${current.remaining} EXP` : "최고 티어!"}
               </span>
             </div>
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">

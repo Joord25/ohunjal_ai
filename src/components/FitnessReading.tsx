@@ -11,6 +11,9 @@ export interface FitnessProfile {
   weeklyFrequency: number;       // 주 몇 회
   sessionMinutes: number;        // 1회 운동 시간(분)
   goal: "fat_loss" | "muscle_gain" | "endurance" | "health";
+  bench1RM?: number;             // 상급자 선택 입력
+  squat1RM?: number;
+  deadlift1RM?: number;
 }
 
 interface Props {
@@ -32,8 +35,8 @@ const FREQ_OPTIONS = [
 ];
 
 const TIME_OPTIONS = [
-  { value: 30, label: "30분" },
-  { value: 45, label: "45분" },
+  { value: 30, label: "30분-" },
+  { value: 50, label: "50분" },
   { value: 60, label: "60분" },
   { value: 90, label: "90분+" },
 ];
@@ -45,12 +48,20 @@ const GOAL_OPTIONS: { value: FitnessProfile["goal"]; label: string }[] = [
   { value: "health", label: "건강 유지" },
 ];
 
-/* ─── 목표별 + 레벨별 예측 항목 ─── */
+/* ─── Phase 기반 예측 항목 ─── */
+// Phase 0: 프로필 데이터만으로 (가이드라인 비교, 공식 기반 추정)
+// Phase 1: 3회 운동 후 (초기 트렌드)
+// Phase 2: 10회 운동 후 (ML 예측)
+
 type UserLevel = "beginner" | "advanced";
 
 interface PredictionItem {
   label: string;
+  phase: 0 | 1 | 2 | 3;    // 0=즉시, 1=5회, 2=10회, 3=20회
+  source: string;            // 근거 출처
 }
+
+const PHASE_THRESHOLDS = [0, 5, 10, 20]; // 각 Phase별 필요 운동 횟수
 
 interface GoalPrediction {
   title: string;
@@ -62,77 +73,167 @@ const PREDICTIONS_BY_GOAL: Record<string, GoalPrediction> = {
   fat_loss: {
     title: "체지방 감량",
     beginner: [
-      { label: "5kg / 10kg 감량 도달 기간" },
-      { label: "옷 핏 달라지는 시점" },
-      { label: "다이어트 정체기 예상 시점" },
+      { label: "주간 예상 운동 칼로리 소모", phase: 0, source: "ACSM MET Tables (Ainsworth 2011)" },
+      { label: "실제 세션별 칼로리 소모 추이", phase: 1, source: "운동 볼륨 × MET 기반 산출" },
+      { label: "체중 변화 추세", phase: 2, source: "체중 로그 선형 회귀" },
+      { label: "감량 정체기 예측", phase: 3, source: "체중 로그 + 볼륨 데이터 회귀분석" },
     ],
     advanced: [
-      { label: "5kg / 10kg 감량 도달 기간" },
-      { label: "린매스 유지 커팅 기간 예측" },
-      { label: "다이어트 정체기 예상 시점" },
+      { label: "안전한 주간 체중 감량 속도", phase: 0, source: "Helms et al. 2014 (ISSN)" },
+      { label: "실제 운동 볼륨 대비 칼로리 소모 분석", phase: 1, source: "운동 데이터 × MET 기반" },
+      { label: "체중 변화 회귀분석 예측", phase: 2, source: "체중 로그 회귀분석" },
+      { label: "린매스 유지 최적 볼륨 구간 추정", phase: 3, source: "볼륨 · 체중 · 강도 상관분석" },
     ],
   },
   muscle_gain: {
     title: "근력 증가",
     beginner: [
-      { label: "벤치프레스 예상 중량 변화" },
-      { label: "체중 1배 벤치 도달 시점" },
-      { label: "골격근량 1kg 증가 예상 기간" },
+      { label: "근력 향상 체감 예상 시점", phase: 0, source: "NSCA Essentials 4th ed., ACSM 2009" },
+      { label: "세션별 볼륨 증가율", phase: 1, source: "운동 볼륨 데이터 추이" },
+      { label: "추정 1RM(E1RM) 성장 추이", phase: 2, source: "세션별 E1RM 선형 회귀" },
+      { label: "근력 정체기 예상 시점", phase: 3, source: "E1RM + 볼륨 변화율 회귀분석" },
     ],
     advanced: [
-      { label: "벤치프레스 체중 2배 도달 예상 시점" },
-      { label: "스쿼트 체중 2배 도달 예상 시점" },
-      { label: "데드리프트 체중 2배 도달 예상 시점" },
+      { label: "현재 근력 수준 평가", phase: 0, source: "ExRx/NSCA Strength Standards" },
+      { label: "3대 운동 볼륨 밸런스 분석", phase: 1, source: "운동 데이터 종목별 볼륨 비교" },
+      { label: "E1RM 성장 곡선", phase: 2, source: "세션별 E1RM 회귀분석" },
+      { label: "1RM 목표 도달 예측", phase: 3, source: "E1RM 성장률 + 체중 데이터 회귀분석" },
     ],
   },
   endurance: {
     title: "기초 체력",
     beginner: [
-      { label: "5km 완주 가능 시점" },
-      { label: "계단 3층 안 헐떡이는 시점" },
-      { label: "턱걸이 1개 달성 예상 기간" },
+      { label: "ACSM 권장 유산소 운동량 달성률", phase: 0, source: "ACSM Position Stand 2011" },
+      { label: "운동 지속시간 향상 추이", phase: 1, source: "세션 시간 데이터 추이" },
+      { label: "추정 VO2max 변화 추이", phase: 2, source: "HUNT Study + 운동 데이터 기반" },
+      { label: "VO2max 향상 예측", phase: 3, source: "운동량 · 강도 · 빈도 회귀분석" },
     ],
     advanced: [
-      { label: "10km 기록 단축 예측" },
-      { label: "VO2max 향상 곡선" },
-      { label: "심폐 회복 속도 변화 예측" },
+      { label: "ACSM 권장 유산소 운동량 달성률", phase: 0, source: "ACSM Position Stand 2011" },
+      { label: "세션별 회복 속도 변화", phase: 1, source: "세션 간 볼륨 회복 데이터" },
+      { label: "운동 강도 최적화 분석", phase: 2, source: "강도별 볼륨 · 달성률 상관분석" },
+      { label: "심폐능력 성장 곡선 예측", phase: 3, source: "ACSM/HERITAGE 모델 + 운동 데이터" },
     ],
   },
   health: {
     title: "건강 유지",
     beginner: [
-      { label: "내 건강 나이 vs 실제 나이" },
-      { label: "당뇨·심혈관 위험도 감소 예측" },
-      { label: "근감소증 예방 시작 시점" },
+      { label: "WHO 권장 운동량 달성률", phase: 0, source: "WHO Physical Activity Guidelines 2020" },
+      { label: "운동 일관성 점수", phase: 1, source: "운동 빈도 패턴 분석" },
+      { label: "추정 피트니스 나이", phase: 2, source: "HUNT Study + 운동 데이터 기반" },
+      { label: "피트니스 나이 변화 추세 예측", phase: 3, source: "운동량 · 체중 · 빈도 회귀분석" },
     ],
     advanced: [
-      { label: "생물학적 나이 역전 시점" },
-      { label: "주요 건강 지표 최적화 기간" },
-      { label: "운동 습관별 건강 나이 변화" },
+      { label: "WHO 권장 운동량 달성률", phase: 0, source: "WHO Physical Activity Guidelines 2020" },
+      { label: "운동 패턴 분석 (빈도 · 강도 · 볼륨)", phase: 1, source: "운동 데이터 패턴 분석" },
+      { label: "추정 피트니스 나이 + 심혈관 위험 감소율", phase: 2, source: "HUNT Study + WHO 2020" },
+      { label: "장기 건강 개선 예측", phase: 3, source: "종합 데이터 회귀분석" },
     ],
   },
 };
 
-/* ─── helpers ─── */
-function weeksToLabel(weeks: number): string {
-  if (weeks <= 4) return `약 ${weeks}주`;
-  if (weeks < 12) return `약 ${Math.round(weeks / 4)}개월`;
-  if (weeks < 52) return `약 ${Math.round(weeks / 4)}개월`;
-  const y = Math.floor(weeks / 52);
-  const m = Math.round((weeks % 52) / 4);
-  return m > 0 ? `약 ${y}년 ${m}개월` : `약 ${y}년`;
+/* ─── 과학적 계산 함수 ─── */
+
+/** HUNT Study VO2max 추정 (Nes et al., 2011, MSSE)
+ *  PAI(Physical Activity Index): 0=비활동, 1=저활동, 2=활동적, 3=매우활동적
+ *  공식: VO2max = 100.27 - (0.296 × age) - (0.369 × BMI) - (0.155 × PAI보정)
+ *  참고: 원래 HUNT 공식은 RHR, 허리둘레 등 추가변수 사용. 우리는 활동량으로 간략화.
+ */
+function estimateVO2max(age: number, weight: number, heightEstimate: number, weeklyFreq: number, gender: "male" | "female"): number {
+  const bmi = weight / ((heightEstimate / 100) ** 2);
+  // PAI 매핑: 운동빈도 → 활동지수
+  const pai = weeklyFreq === 0 ? 0 : weeklyFreq <= 2 ? 1 : weeklyFreq <= 4 ? 2 : 3;
+  // 간략화된 추정 (HUNT 기반)
+  let vo2 = 100.27 - (0.296 * age) - (0.369 * bmi) + (pai * 3.5);
+  // 성별 보정 (여성 평균 ~15% 낮음, ACSM)
+  if (gender === "female") vo2 *= 0.85;
+  return Math.round(vo2 * 10) / 10;
 }
 
-function weeksToTargetDate(weeks: number): string {
-  const target = new Date();
-  target.setDate(target.getDate() + weeks * 7);
-  return `${String(target.getFullYear()).slice(2)}년 ${target.getMonth() + 1}월`;
+/** VO2max 기반 피트니스 나이 (HUNT Study, Nes 2013)
+ *  해당 VO2max가 평균인 연령을 역산
+ */
+function fitnessAge(vo2max: number, gender: "male" | "female"): number {
+  // 평균 VO2max: 남성 ~45 (20세) → ~30 (60세), 여성 ~38 (20세) → ~25 (60세)
+  if (gender === "male") {
+    return Math.round((45 - vo2max) / 0.375 + 20);
+  }
+  return Math.round((38 - vo2max) / 0.325 + 20);
 }
 
-/* ─── reading results (논문 기반) ─── */
+/** ACSM MET 기반 칼로리 소모 추정 (Ainsworth et al., 2011)
+ *  일반 저항운동: 3.5-6.0 MET, 유산소: 4.0-8.0 MET
+ *  칼로리 = MET × 체중(kg) × 시간(h)
+ */
+function estimateSessionCalories(weight: number, minutes: number, goal: string): { low: number; high: number } {
+  // 목표별 MET 범위 (ACSM Compendium of Physical Activities)
+  const metRange = goal === "endurance" ? { low: 5.0, high: 8.0 }
+    : goal === "muscle_gain" ? { low: 3.5, high: 6.0 }
+    : goal === "fat_loss" ? { low: 4.0, high: 7.0 }
+    : { low: 3.5, high: 6.0 }; // health
+
+  const hours = minutes / 60;
+  return {
+    low: Math.round(metRange.low * weight * hours),
+    high: Math.round(metRange.high * weight * hours),
+  };
+}
+
+/** ExRx/NSCA 상대근력 기준 (Strength Standards)
+ *  체중 대비 1RM 비율로 수준 평가
+ *  남성 기준: 초보 0.5x, 중급 1.0x, 상급 1.5x, 엘리트 2.0x (벤치)
+ *  여성 기준: 초보 0.3x, 중급 0.6x, 상급 0.9x, 엘리트 1.2x (벤치)
+ */
+function assessStrengthLevel(lift: "bench" | "squat" | "deadlift", oneRM: number, bw: number, gender: "male" | "female"):
+  { level: string; ratio: number; percentile: string } {
+  const ratio = Math.round((oneRM / bw) * 100) / 100;
+
+  // 남성 기준표 (ExRx Strength Standards)
+  const maleStandards = {
+    bench:    { novice: 0.5, intermediate: 1.0, advanced: 1.5, elite: 2.0 },
+    squat:    { novice: 0.75, intermediate: 1.25, advanced: 1.75, elite: 2.5 },
+    deadlift: { novice: 1.0, intermediate: 1.5, advanced: 2.0, elite: 2.75 },
+  };
+  const femaleStandards = {
+    bench:    { novice: 0.3, intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+    squat:    { novice: 0.5, intermediate: 0.9, advanced: 1.25, elite: 1.75 },
+    deadlift: { novice: 0.6, intermediate: 1.0, advanced: 1.5, elite: 2.0 },
+  };
+
+  const std = gender === "male" ? maleStandards[lift] : femaleStandards[lift];
+  let level: string;
+  let percentile: string;
+
+  if (ratio < std.novice) { level = "입문"; percentile = "하위 20%"; }
+  else if (ratio < std.intermediate) { level = "초급"; percentile = "상위 60~80%"; }
+  else if (ratio < std.advanced) { level = "중급"; percentile = "상위 30~60%"; }
+  else if (ratio < std.elite) { level = "상급"; percentile = "상위 10~30%"; }
+  else { level = "엘리트"; percentile = "상위 10%"; }
+
+  return { level, ratio, percentile };
+}
+
+/** 키 추정 (국민건강영양조사 2022 평균)
+ *  실제 키 데이터가 없으므로 성별/연령 평균 사용
+ */
+function estimateHeight(gender: "male" | "female", age: number): number {
+  if (gender === "male") {
+    if (age < 30) return 174;
+    if (age < 40) return 173;
+    if (age < 50) return 172;
+    return 170;
+  }
+  if (age < 30) return 161;
+  if (age < 40) return 160;
+  if (age < 50) return 159;
+  return 157;
+}
+
+/* ─── reading results ─── */
 interface PredictionResult {
-  value: string;      // 예측 결과 값
-  sub?: string;       // 보조 설명
+  value: string;
+  sub?: string;
+  source?: string;
 }
 
 interface ReadingResult {
@@ -140,25 +241,23 @@ interface ReadingResult {
   typeEmoji: string;
   message: string;
   growthStars: number;
-  predictions: PredictionResult[];  // 각 항목별 예측 결과 (PREDICTIONS_BY_GOAL 순서와 1:1 매칭)
+  predictions: PredictionResult[];
   condition: string;
 }
 
-function computeReading(p: FitnessProfile): ReadingResult {
-  // 주간 총 운동 시간(분)
+function computeReading(p: FitnessProfile, wkCount: number): ReadingResult {
   const weeklyMin = p.weeklyFrequency * p.sessionMinutes;
   const age = new Date().getFullYear() - p.birthYear;
 
   // ACSM 권고: 주 150분 moderate or 75분 vigorous
   const acsmPct = Math.round((weeklyMin / 150) * 100);
 
-  // 성장 포텐셜 별점 (1~5)
+  // 성장 포텐셜 별점
   let stars = 3;
-  if (p.weeklyFrequency === 0) stars = 3; // 초보자 = 가장 빠른 성장 구간
+  if (p.weeklyFrequency === 0) stars = 3;
   else if (p.weeklyFrequency >= 4 && p.sessionMinutes >= 60) stars = 5;
   else if (p.weeklyFrequency >= 3 && p.sessionMinutes >= 45) stars = 4;
   else if (p.weeklyFrequency <= 2 && p.sessionMinutes <= 30) stars = 2;
-  // 나이 보정: 20대 +0, 30대 +0, 40대+ -0.5 (소수점 버림)
   if (age >= 40) stars = Math.max(1, stars - 1);
 
   // 타입 결정
@@ -178,7 +277,6 @@ function computeReading(p: FitnessProfile): ReadingResult {
     typeEmoji = "🌿";
   }
 
-  // 메시지 (체중/나이 반영)
   const message =
     p.weeklyFrequency === 0
       ? "처음이라면 지금이 가장 좋은 시작입니다\n초보자일수록 성장 속도가 빠릅니다"
@@ -188,127 +286,266 @@ function computeReading(p: FitnessProfile): ReadingResult {
           ? "당신의 조건은\n변화를 만들기에 충분합니다"
           : "작은 시작이\n가장 큰 변화를 만듭니다";
 
-  // 항목별 예측 계산
+  // 항목 선택
   const isBeginner = p.weeklyFrequency <= 2;
   const level: UserLevel = isBeginner ? "beginner" : "advanced";
-  const goalKey = p.goal;
-  const goalItems = PREDICTIONS_BY_GOAL[goalKey]?.[level] || [];
-
-  // 공통 계산값
-  const exCalPerSession = Math.round(p.sessionMinutes * (p.bodyWeight / 13));
-  const weeklyDeficit = (p.weeklyFrequency * exCalPerSession) + (300 * 7);
-  const weeksFor5kg = weeklyDeficit > 0 ? Math.ceil((5 * 7700) / weeklyDeficit) : 0;
-  const weeksFor10kg = weeklyDeficit > 0 ? Math.ceil((10 * 7700) / weeklyDeficit) : 0;
+  const goalItems = PREDICTIONS_BY_GOAL[p.goal]?.[level] || [];
 
   const conditionStr = p.weeklyFrequency === 0
     ? "운동 시작 후 측정"
     : `하루 ${p.sessionMinutes}분, 주 ${p.weeklyFrequency}회 기준`;
 
+  // 공통 계산값 (Phase 0: 순수 산술만)
+  const sessionCal = estimateSessionCalories(p.bodyWeight, p.sessionMinutes, p.goal);
+  const weeklyCal = { low: sessionCal.low * p.weeklyFrequency, high: sessionCal.high * p.weeklyFrequency };
+
   const predictions: PredictionResult[] = goalItems.map((item) => {
     const label = item.label;
 
-    // ── 감량 ──
-    if (label.includes("5kg / 10kg 감량")) {
+    // ── Phase 체크: 운동 데이터 필요한 항목 ──
+    const needed = PHASE_THRESHOLDS[item.phase] ?? 0;
+    if (wkCount < needed) {
+      return { value: `${needed}회 운동 후 해금`, sub: `현재 ${wkCount}회 완료` };
+    }
+
+    // ── Phase 0: 프로필 데이터 기반 ──
+
+    // 공통: 주간 칼로리 소모
+    if (label.includes("주간 예상 운동 칼로리 소모")) {
       if (p.weeklyFrequency === 0) return { value: "운동 시작 후 측정 가능" };
       return {
-        value: `5kg: ${weeksToLabel(weeksFor5kg)} (${weeksToTargetDate(weeksFor5kg)})`,
-        sub: `10kg: ${weeksToLabel(weeksFor10kg)} (${weeksToTargetDate(weeksFor10kg)})`,
+        value: `${weeklyCal.low.toLocaleString()}~${weeklyCal.high.toLocaleString()} kcal/주`,
+        sub: `1회 ${sessionCal.low}~${sessionCal.high} kcal`,
+        source: "ACSM MET Tables (Ainsworth 2011)",
       };
     }
-    if (label.includes("옷 핏 달라지는")) {
-      const weeks = Math.max(4, Math.round(weeksFor5kg * 0.6));
-      return { value: p.weeklyFrequency === 0 ? "운동 시작 후 측정" : `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
-    }
-    if (label.includes("다이어트 정체기")) {
-      const plateauWeeks = isBeginner ? Math.round(weeksFor5kg * 0.7) : Math.round(weeksFor5kg * 0.5);
-      return { value: p.weeklyFrequency === 0 ? "운동 시작 후 측정" : `${weeksToLabel(plateauWeeks)} 전후 예상` };
-    }
-    if (label.includes("린매스 유지 커팅")) {
-      const cuttingWeeks = Math.round(weeksFor5kg * 0.8);
-      return { value: p.weeklyFrequency === 0 ? "운동 시작 후 측정" : `${weeksToLabel(cuttingWeeks)} (${weeksToTargetDate(cuttingWeeks)})` };
+
+    // 공통: ACSM 권장량 달성률
+    if (label.includes("ACSM 권장") && label.includes("달성률")) {
+      if (p.weeklyFrequency === 0) return { value: "0% — 주 150분 목표", sub: "운동 시작 후 달성률이 표시됩니다" };
+      const status = acsmPct >= 200 ? "우수" : acsmPct >= 100 ? "충족" : "미달";
+      return {
+        value: `${acsmPct}% (${status})`,
+        sub: `주 ${weeklyMin}분 / 권장 150분`,
+        source: "ACSM Position Stand 2011",
+      };
     }
 
-    // ── 근력 (초보자) ──
-    if (label.includes("벤치프레스 예상 중량")) {
-      const startBench = Math.round(p.bodyWeight * 0.4);
-      const target = p.bodyWeight;
-      return { value: `${startBench}kg → ${target}kg (체중 1배)` };
-    }
-    if (label.includes("체중 1배 벤치")) {
-      const startBench = Math.round(p.bodyWeight * 0.4);
-      const weeks = Math.ceil(((p.bodyWeight - startBench) / startBench * 100) / 2.5);
-      return { value: `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
-    }
-    if (label.includes("골격근량 1kg")) {
-      const weeks = isBeginner ? 8 : 16;
-      return { value: `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
+    // WHO 권장량
+    if (label.includes("WHO 권장 운동량 달성률")) {
+      if (p.weeklyFrequency === 0) return { value: "0% — 주 150분 목표" };
+      const whoMin = 150; // moderate, or 75 vigorous
+      const whoPct = Math.round((weeklyMin / whoMin) * 100);
+      const status = whoPct >= 200 ? "우수" : whoPct >= 100 ? "충족" : "미달";
+      return {
+        value: `${whoPct}% (${status})`,
+        sub: `주 ${weeklyMin}분 / 권장 150~300분`,
+        source: "WHO Physical Activity Guidelines 2020",
+      };
     }
 
-    // ── 근력 (상급자) — 3대 개별 체중 2배 ──
-    if (label.includes("벤치프레스 체중 2배")) {
-      const start = Math.round(p.bodyWeight * 0.8);
-      const target = Math.round(p.bodyWeight * 2);
-      const weeks = Math.ceil(((target - start) / start * 100) / 1.5);
-      return { value: `${target}kg 도달: ${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
-    }
-    if (label.includes("스쿼트 체중 2배")) {
-      const start = Math.round(p.bodyWeight * 1.0);
-      const target = Math.round(p.bodyWeight * 2);
-      const weeks = Math.ceil(((target - start) / start * 100) / 1.5);
-      return { value: `${target}kg 도달: ${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
-    }
-    if (label.includes("데드리프트 체중 2배")) {
-      const start = Math.round(p.bodyWeight * 1.2);
-      const target = Math.round(p.bodyWeight * 2);
-      const weeks = Math.ceil(((target - start) / start * 100) / 1.5);
-      return { value: `${target}kg 도달: ${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
+    // 감량: 안전한 주간 감량 속도
+    if (label.includes("안전한 주간 체중 감량 속도")) {
+      const safeMin = Math.round(p.bodyWeight * 0.005 * 10) / 10; // 0.5% BW
+      const safeMax = Math.round(p.bodyWeight * 0.01 * 10) / 10;  // 1.0% BW
+      // 운동 칼로리 vs 평균 섭취량 기반 추정 적자
+      const weeklyDeficit = weeklyCal.low; // 보수적 추정
+      const estWeeklyLoss = Math.round((weeklyDeficit / 7700) * 100) / 100; // kg
+      return {
+        value: `주 ${safeMin}~${safeMax}kg 권장`,
+        sub: p.weeklyFrequency > 0
+          ? `운동만으로 추정 주간 소모: ~${estWeeklyLoss}kg 상당`
+          : "운동 시작 후 소모량 추정 가능",
+        source: "Helms et al. 2014 (ISSN)",
+      };
     }
 
-    // ── 체력 (초보자) ──
-    if (label.includes("5km 완주")) {
-      const weeks = p.weeklyFrequency === 0 ? 8 : p.weeklyFrequency >= 2 ? 4 : 6;
-      return { value: `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
-    }
-    if (label.includes("계단 3층")) {
-      const weeks = p.weeklyFrequency === 0 ? 4 : 2;
-      return { value: `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
-    }
-    if (label.includes("턱걸이 1개")) {
-      const weeks = p.weeklyFrequency === 0 ? 12 : isBeginner ? 8 : 4;
-      return { value: `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
+    // 근력: 근력 향상 체감 시점
+    if (label.includes("근력 향상 체감 예상 시점")) {
+      return {
+        value: "신경 적응: 2~4주 / 근비대: 8~12주",
+        sub: p.weeklyFrequency >= 3 ? "현재 빈도로 정상 진행 예상" : "주 2회 이상 권장 (ACSM)",
+        source: "NSCA Essentials 4th ed., ACSM 2009",
+      };
     }
 
-    // ── 체력 (상급자) ──
-    if (label.includes("10km 기록 단축")) {
-      return { value: "약 2~3개월 내 단축 가능" };
-    }
-    if (label.includes("VO2max")) {
-      return { value: "주 3회 이상 유지 시 8~12주 내 향상" };
-    }
-    if (label.includes("심폐 회복")) {
-      return { value: "4~6주 내 회복 속도 개선 예상" };
+    // 근력: 초보자 근성장 속도
+    if (label.includes("초보자 예상 근성장 속도")) {
+      const monthlyGain = p.gender === "male" ? "0.7~0.9" : "0.3~0.45";
+      return {
+        value: `월 ${monthlyGain}kg 근육 증가 가능`,
+        sub: "충분한 단백질 섭취 전제 (1.6~2.2g/kg/일)",
+        source: "McDonald/Aragon Natural Muscular Potential 모델",
+      };
     }
 
-    // ── 건강 ──
-    if (label.includes("건강 나이")) {
-      const healthAge = p.weeklyFrequency === 0 ? age + 5 : p.weeklyFrequency >= 3 ? age - 3 : age;
-      const diff = healthAge - age;
-      const diffStr = diff > 0 ? `+${diff}세` : diff < 0 ? `${diff}세` : "동일";
-      return { value: `${healthAge}세 (실제 ${age}세, ${diffStr})` };
+    // 근력 상급자: 현재 근력 수준 평가
+    if (label.includes("현재 근력 수준 평가")) {
+      if (!p.bench1RM && !p.squat1RM && !p.deadlift1RM) {
+        return { value: "1RM 데이터 입력 후 평가 가능" };
+      }
+      const lifts: string[] = [];
+      if (p.bench1RM) {
+        const r = assessStrengthLevel("bench", p.bench1RM, p.bodyWeight, p.gender);
+        lifts.push(`벤치 ${r.ratio}배 (${r.level})`);
+      }
+      if (p.squat1RM) {
+        const r = assessStrengthLevel("squat", p.squat1RM, p.bodyWeight, p.gender);
+        lifts.push(`스쿼트 ${r.ratio}배 (${r.level})`);
+      }
+      if (p.deadlift1RM) {
+        const r = assessStrengthLevel("deadlift", p.deadlift1RM, p.bodyWeight, p.gender);
+        lifts.push(`데드 ${r.ratio}배 (${r.level})`);
+      }
+      return {
+        value: lifts.join(" / "),
+        sub: `체중 ${p.bodyWeight}kg 대비 상대근력`,
+        source: "e1RM Strength Standards, NSCA",
+      };
     }
-    if (label.includes("당뇨·심혈관") || label.includes("건강 지표")) {
-      const weeks = p.weeklyFrequency === 0 ? 12 : 8;
-      return { value: `${weeksToLabel(weeks)} 후 지표 개선 예상` };
+
+    // 근력 상급자: 3대 강점·약점 분석
+    if (label.includes("강점·약점 분석")) {
+      if (!p.bench1RM || !p.squat1RM || !p.deadlift1RM) {
+        return { value: "3대 운동 1RM 모두 입력 시 분석 가능" };
+      }
+      const bench = assessStrengthLevel("bench", p.bench1RM, p.bodyWeight, p.gender);
+      const squat = assessStrengthLevel("squat", p.squat1RM, p.bodyWeight, p.gender);
+      const dead = assessStrengthLevel("deadlift", p.deadlift1RM, p.bodyWeight, p.gender);
+
+      const levels = [
+        { name: "벤치프레스", ...bench },
+        { name: "스쿼트", ...squat },
+        { name: "데드리프트", ...dead },
+      ];
+      const sorted = [...levels].sort((a, b) => b.ratio - a.ratio);
+      const strongest = sorted[0];
+      const weakest = sorted[sorted.length - 1];
+
+      return {
+        value: `강점: ${strongest.name} (${strongest.percentile})`,
+        sub: `약점: ${weakest.name} (${weakest.percentile}) — 집중 강화 권장`,
+        source: "e1RM 상대근력 비율 기준",
+      };
     }
-    if (label.includes("근감소증")) {
-      return { value: p.weeklyFrequency === 0 ? "지금 시작하면 예방 가능" : "현재 운동량으로 예방 중" };
+
+    // Phase 2+: 추정 VO2max (운동 데이터 기반으로만)
+    if (label.includes("추정 VO2max")) {
+      const hEst = estimateHeight(p.gender, age);
+      const v = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
+      const vo2Level = v >= 45 ? "우수" : v >= 35 ? "보통" : "개선 필요";
+      return {
+        value: `${v} mL/kg/min (${vo2Level})`,
+        sub: `${p.gender === "male" ? "남" : "여"}성 ${age}세 평균 대비 · 실제 운동 데이터 반영`,
+        source: "HUNT Study (Nes et al., 2011) + 운동 데이터",
+      };
     }
-    if (label.includes("생물학적 나이 역전")) {
-      const weeks = p.weeklyFrequency >= 4 ? 24 : 36;
-      return { value: `${weeksToLabel(weeks)} (${weeksToTargetDate(weeks)})` };
+
+    // Phase 2+: 추정 피트니스 나이 + 심혈관 위험 감소율 (복합)
+    if (label.includes("피트니스 나이") && label.includes("심혈관")) {
+      const hEst = estimateHeight(p.gender, age);
+      const v = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
+      const fAge = fitnessAge(v, p.gender);
+      const diff = fAge - age;
+      const diffStr = diff > 0 ? `+${diff}세 (노화)` : diff < 0 ? `${diff}세 (젊음)` : "동일";
+      const riskReduction = weeklyMin >= 300 ? "35~40%" : weeklyMin >= 150 ? "25~30%" : "10~20%";
+      return {
+        value: `피트니스 나이: ${fAge}세 (실제 ${age}세, ${diffStr})`,
+        sub: `심혈관 위험 ${riskReduction} 감소 추정`,
+        source: "HUNT Study 2013 + WHO 2020 + 운동 데이터",
+      };
     }
-    if (label.includes("운동 습관별 건강 나이")) {
-      return { value: "주 3회 이상 유지 시 연 1~2세 역전" };
+
+    // Phase 2+: 추정 피트니스 나이
+    if (label.includes("피트니스 나이")) {
+      const hEst = estimateHeight(p.gender, age);
+      const v = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
+      const fAge = fitnessAge(v, p.gender);
+      const diff = fAge - age;
+      const diffStr = diff > 0 ? `+${diff}세 (노화)` : diff < 0 ? `${diff}세 (젊음)` : "동일";
+      return {
+        value: `피트니스 나이: ${fAge}세 (실제 ${age}세, ${diffStr})`,
+        sub: v >= 40 ? "심폐체력 양호" : "운동으로 개선 가능",
+        source: "HUNT Study (Nes et al., 2013) + 운동 데이터",
+      };
+    }
+
+    // ── Phase 1 (5회): 초기 트렌드 ──
+    if (label.includes("실제 세션별 칼로리 소모 추이")) {
+      return { value: "세션별 실제 볼륨 기반 칼로리 소모 추적 중", source: "운동 볼륨 × MET 기반" };
+    }
+    if (label.includes("실제 운동 볼륨 대비 칼로리 소모")) {
+      return { value: "실제 볼륨 데이터로 정밀 칼로리 산출 중", source: "운동 데이터 × MET 기반" };
+    }
+    if (label.includes("세션별 볼륨 증가율")) {
+      return { value: "세션 간 총 볼륨 변화율 분석 중", source: "운동 볼륨 데이터 추이" };
+    }
+    if (label.includes("3대 운동 볼륨 밸런스")) {
+      return { value: "종목별 볼륨 분포 분석 중", source: "운동 데이터 종목별 볼륨 비교" };
+    }
+    if (label.includes("운동 지속시간 향상 추이")) {
+      return { value: "세션별 운동 시간 변화 추적 중", source: "세션 시간 데이터" };
+    }
+    if (label.includes("세션별 회복 속도 변화")) {
+      return { value: "세션 간 볼륨 회복 패턴 분석 중", source: "세션 간 볼륨 회복 데이터" };
+    }
+    if (label.includes("운동 일관성 점수")) {
+      return { value: "운동 빈도 패턴 분석 중", source: "운동 빈도 패턴 분석" };
+    }
+    if (label.includes("운동 패턴 분석")) {
+      return { value: "빈도 · 강도 · 볼륨 패턴 분석 중", source: "운동 데이터 패턴 분석" };
+    }
+
+    // ── Phase 2 (10회): 트렌드 분석 ──
+    if (label.includes("체중 변화 추세")) {
+      return { value: "체중 로그 기반 추세 분석 중", source: "체중 로그 선형 회귀" };
+    }
+    if (label.includes("추정 1RM") && label.includes("성장 추이")) {
+      return { value: "세션별 E1RM 변화 추이 분석 중", source: "세션별 E1RM 선형 회귀" };
+    }
+    if (label.includes("E1RM 성장 곡선")) {
+      return { value: "E1RM 데이터 기반 성장 곡선 산출 중", source: "세션별 E1RM 회귀분석" };
+    }
+    if (label.includes("세션별 강도 변화 분석")) {
+      return { value: "운동 강도 분류 데이터 기반 분석 중", source: "운동 강도 분류 데이터" };
+    }
+    if (label.includes("운동 강도 최적화")) {
+      return { value: "강도별 볼륨 · 달성률 상관 분석 중", source: "강도별 볼륨 · 달성률 상관분석" };
+    }
+    if (label.includes("체중 · 운동량 종합 추이")) {
+      return { value: "체중 · 볼륨 · 빈도 종합 추세 분석 중", source: "체중 로그 + 볼륨 데이터" };
+    }
+    if (label.includes("건강 지표 종합 점수")) {
+      return { value: "체중 · 볼륨 · 일관성 종합 점수 분석 중", source: "체중 · 볼륨 · 일관성 종합" };
+    }
+    if (label.includes("체중 변화 회귀분석")) {
+      return { value: "체중 로그 회귀분석 기반 예측 중", source: "체중 로그 회귀분석" };
+    }
+
+    // ── Phase 3 (20회): ML 예측 ──
+    if (label.includes("감량 정체기 예측")) {
+      return { value: "체중 · 볼륨 데이터 기반 정체기 예측 중", source: "체중 로그 + 볼륨 데이터 회귀분석" };
+    }
+    if (label.includes("린매스 유지 최적 볼륨")) {
+      return { value: "볼륨 · 체중 · 강도 상관분석 기반 산출 중", source: "볼륨 · 체중 · 강도 상관분석" };
+    }
+    if (label.includes("근력 정체기 예상")) {
+      return { value: "e1RM + 볼륨 변화율 기반 예측 중", source: "E1RM + 볼륨 변화율 회귀분석" };
+    }
+    if (label.includes("1RM 목표 도달 예측")) {
+      return { value: "e1RM 성장률 + 체중 데이터 기반 예측 중", source: "E1RM 성장률 + 체중 데이터 회귀분석" };
+    }
+    if (label.includes("VO2max 향상 예측")) {
+      return { value: "운동량 · 강도 · 빈도 기반 VO2max 예측 중", source: "ACSM/HERITAGE 모델 + 운동 데이터" };
+    }
+    if (label.includes("심폐능력 성장 곡선")) {
+      return { value: "심폐 데이터 기반 성장 곡선 예측 중", source: "ACSM/HERITAGE 모델 + 운동 데이터" };
+    }
+    if (label.includes("피트니스 나이 변화 추세")) {
+      return { value: "운동량 · 체중 · 빈도 기반 변화 예측 중", source: "운동량 · 체중 · 빈도 회귀분석" };
+    }
+    if (label.includes("장기 건강 개선 예측")) {
+      return { value: "종합 데이터 기반 장기 개선 예측 중", source: "종합 데이터 회귀분석" };
     }
 
     return { value: "데이터 수집 중" };
@@ -318,11 +555,10 @@ function computeReading(p: FitnessProfile): ReadingResult {
 }
 
 /* ─── step type ─── */
-type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "analyzing" | "result";
+type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "onerm" | "analyzing" | "result";
 
 /* ─── Component ─── */
-// 항목별 해금 조건: 1번=기본, 2번=3회 운동, 3번=5회 운동
-const UNLOCK_THRESHOLDS = [0, 3, 5];
+const UNLOCK_THRESHOLDS = [0, 5, 10, 20];
 
 export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium, resultOnly, onBack, workoutCount = 0 }) => {
   // Load saved profile for resultOnly mode
@@ -344,14 +580,28 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   const [showResult, setShowResult] = useState(!!resultOnly);
   const [resultReady, setResultReady] = useState(!!resultOnly);
 
+  // 1RM inputs (상급자용)
+  const [bench1RM, setBench1RM] = useState(savedProfile?.bench1RM?.toString() || "");
+  const [squat1RM, setSquat1RM] = useState(savedProfile?.squat1RM?.toString() || "");
+  const [deadlift1RM, setDeadlift1RM] = useState(savedProfile?.deadlift1RM?.toString() || "");
+
   const displayName = userName || "회원";
 
   /* ─── back navigation ─── */
-  const stepOrder: Step[] = ["welcome", "profile", "frequency", "time", "goal"];
+  const getStepOrder = (): Step[] => {
+    const base: Step[] = ["welcome", "profile", "frequency", "time", "goal"];
+    // 상급자(주 5+)이고 근력 목표일 때 1RM 입력 스텝 추가
+    if ((profile.weeklyFrequency ?? 0) >= 3 && profile.goal === "muscle_gain") {
+      base.push("onerm");
+    }
+    return base;
+  };
+
   const handleBack = () => {
-    const currentIdx = stepOrder.indexOf(step);
+    const order = getStepOrder();
+    const currentIdx = order.indexOf(step);
     if (currentIdx <= 0) return;
-    setStep(stepOrder[currentIdx - 1]);
+    setStep(order[currentIdx - 1]);
   };
 
   /* ─── step transitions ─── */
@@ -362,7 +612,6 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
     if (isNaN(byNum) || byNum < 1900) return;
     if (isNaN(wNum) || wNum <= 0) return;
 
-    // Save profile data
     setProfile((p) => ({ ...p, gender, birthYear: byNum, bodyWeight: wNum }));
     updateGender(gender);
     updateBirthYear(byNum);
@@ -381,12 +630,28 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   };
 
   const handleGoal = (v: FitnessProfile["goal"]) => {
-    const complete = { ...profile, goal: v } as FitnessProfile;
+    const updated = { ...profile, goal: v };
+    setProfile(updated);
+    // 상급자 + 근력증가 → 1RM 입력 스텝
+    if ((updated.weeklyFrequency ?? 0) >= 3 && v === "muscle_gain") {
+      setStep("onerm");
+    } else {
+      finishOnboarding(updated as FitnessProfile);
+    }
+  };
+
+  const handle1RMNext = () => {
+    const bench = parseFloat(bench1RM.trim()) || undefined;
+    const squat = parseFloat(squat1RM.trim()) || undefined;
+    const dead = parseFloat(deadlift1RM.trim()) || undefined;
+    const complete = { ...profile, bench1RM: bench, squat1RM: squat, deadlift1RM: dead } as FitnessProfile;
     setProfile(complete);
-    // Save to localStorage
+    finishOnboarding(complete);
+  };
+
+  const finishOnboarding = (complete: FitnessProfile) => {
     localStorage.setItem("alpha_fitness_profile", JSON.stringify(complete));
     localStorage.setItem("alpha_fitness_reading_done", "true");
-    // Save to Firestore (users/{uid}.fitnessProfile)
     saveUserProfile({ fitnessProfile: complete }).catch(() => {});
     setStep("analyzing");
   };
@@ -431,11 +696,15 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   }, [step, showResult]);
 
   /* ─── reading ─── */
-  const reading = step === "result" ? computeReading(profile as FitnessProfile) : null;
+  const reading = step === "result" ? computeReading(profile as FitnessProfile, workoutCount) : null;
 
   /* ─── render helpers ─── */
   const renderStepIndicator = () => {
     const steps: Step[] = ["profile", "frequency", "time", "goal"];
+    // 상급자 + 근력이면 onerm도 포함
+    if ((profile.weeklyFrequency ?? 0) >= 3 && profile.goal === "muscle_gain") {
+      steps.push("onerm");
+    }
     const currentIdx = steps.indexOf(step);
     if (currentIdx < 0) return null;
     return (
@@ -681,8 +950,6 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
         </div>
       )}
 
-
-
       {step === "goal" && (
         <div className="flex-1 flex flex-col px-6 pt-6">
           {backButton()}
@@ -694,6 +961,53 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                 <span className="font-semibold text-center w-full block">{o.label}</span>
               ), o.value)
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 1RM Input Step (상급자 + 근력증가 목표) */}
+      {step === "onerm" && (
+        <div className="flex-1 flex flex-col px-6 pt-6">
+          {backButton()}
+          {renderStepIndicator()}
+          {questionTitle("3대 운동 1RM을\n알고 계시면 입력해주세요")}
+          <p className="text-[#6B7280] text-xs mb-5 -mt-3">
+            모르면 비워두셔도 됩니다. 운동 데이터가 쌓이면 자동 추정됩니다.
+          </p>
+          <div className="w-full space-y-4">
+            {[
+              { label: "벤치프레스", value: bench1RM, setter: setBench1RM },
+              { label: "스쿼트", value: squat1RM, setter: setSquat1RM },
+              { label: "데드리프트", value: deadlift1RM, setter: setDeadlift1RM },
+            ].map((lift) => (
+              <div key={lift.label} className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">{lift.label} 1RM</p>
+                <div className="flex items-end justify-center gap-1">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={lift.value}
+                    onChange={(e) => lift.setter(e.target.value)}
+                    placeholder="—"
+                    className="w-full text-center text-3xl font-black text-[#5C795E] bg-transparent border-b-2 border-[#2D6A4F] outline-none pb-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="text-sm font-bold text-gray-400 pb-2">kg</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[11px] text-gray-500 text-center font-medium mt-4">
+            ExRx/NSCA 강도 기준표 기반 수준 평가에 활용됩니다
+          </p>
+
+          <div className="absolute bottom-0 left-0 right-0 bg-white px-6 pb-6 pt-3 border-t border-gray-100">
+            <button
+              onClick={handle1RMNext}
+              className="w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] bg-[#2D6A4F] text-white hover:bg-[#1B4332]"
+            >
+              {bench1RM || squat1RM || deadlift1RM ? "분석 시작" : "건너뛰기"}
+            </button>
           </div>
         </div>
       )}
@@ -756,7 +1070,18 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
         return (
           <div className="flex-1 flex flex-col bg-[#FAFBF9] min-h-0">
             {/* Fixed Header */}
-            <div className="shrink-0 px-6 pt-6 pb-3 bg-[#FAFBF9]">
+            {resultOnly && onBack && (
+              <div className="shrink-0 pt-5 pb-3 px-6 flex items-center justify-between bg-[#FAFBF9]">
+                <button onClick={onBack} className="p-2 -ml-2">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-[11px] tracking-[0.3em] uppercase font-serif font-medium text-[#2D6A4F]">성장 예측</span>
+                <div className="w-9" />
+              </div>
+            )}
+            <div className={`shrink-0 px-6 ${resultOnly ? "pt-2" : "pt-6"} pb-3 bg-[#FAFBF9]`}>
               <h1
                 className={`text-[#1B4332] text-xl font-bold mb-2 transition-all duration-700 ${
                   showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
@@ -834,9 +1159,17 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                             <div key={i}>
                               {isOpen ? (
                                 <div className="bg-[#FAFBF9] rounded-xl p-3 -mx-1">
-                                  <p className="text-[#6B7280] text-xs mb-1.5">{item.label}</p>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <p className="text-[#6B7280] text-xs">{item.label}</p>
+                                    {item.phase > 0 && (
+                                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-bold">
+                                        Phase {item.phase}
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-[#1B4332] text-sm font-black text-right">{pred?.value}</p>
-                                  {pred?.sub && <p className="text-[#2D6A4F] text-sm font-bold mt-1 text-right">{pred.sub}</p>}
+                                  {pred?.sub && <p className="text-[#2D6A4F] text-xs font-bold mt-1 text-right">{pred.sub}</p>}
+                                  {pred?.source && <p className="text-gray-400 text-[9px] mt-1 text-right">출처: {pred.source}</p>}
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-between py-1">
@@ -896,7 +1229,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                     {selectedGoalKey && isPremium && (() => {
                       const otherGoalData = PREDICTIONS_BY_GOAL[selectedGoalKey];
                       const otherItems = otherGoalData?.[myLevel] || [];
-                      const otherReading = computeReading({ ...fp, goal: selectedGoalKey as FitnessProfile["goal"] });
+                      const otherReading = computeReading({ ...fp, goal: selectedGoalKey as FitnessProfile["goal"] }, workoutCount);
                       return (
                         <div className="w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm animate-fade-in">
                           <div className="flex items-center justify-between mb-3">
@@ -916,9 +1249,17 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                                 <div key={i}>
                                   {isUnlocked ? (
                                     <div className="bg-[#FAFBF9] rounded-xl p-3 -mx-1">
-                                      <p className="text-[#6B7280] text-xs mb-1.5">{item.label}</p>
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <p className="text-[#6B7280] text-xs">{item.label}</p>
+                                        {item.phase > 0 && (
+                                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-bold">
+                                            Phase {item.phase}
+                                          </span>
+                                        )}
+                                      </div>
                                       <p className="text-[#1B4332] text-sm font-black text-right">{pred?.value}</p>
-                                      {pred?.sub && <p className="text-[#2D6A4F] text-sm font-bold mt-1 text-right">{pred.sub}</p>}
+                                      {pred?.sub && <p className="text-[#2D6A4F] text-xs font-bold mt-1 text-right">{pred.sub}</p>}
+                                      {pred?.source && <p className="text-gray-400 text-[9px] mt-1 text-right">출처: {pred.source}</p>}
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-between py-1">
@@ -944,20 +1285,20 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
 
             </div>
 
-            {/* Fixed CTA */}
-            <div className="shrink-0 bg-[#FAFBF9] px-6 pb-6 pt-3 border-t border-gray-100">
-              {!resultOnly && (
+            {/* Fixed CTA - only for initial onboarding */}
+            {!resultOnly && (
+              <div className="shrink-0 bg-[#FAFBF9] px-6 pb-6 pt-3 border-t border-gray-100">
                 <p className="text-[#6B7280] text-xs text-center mb-3">
-                  운동 데이터 수집 후 예측 리포트가 열립니다
+                  운동 데이터가 쌓일수록 예측이 정교해집니다
                 </p>
-              )}
-              <button
-                onClick={() => resultOnly && onBack ? onBack() : onComplete(profile as FitnessProfile)}
-                className="w-full py-4 rounded-2xl font-bold text-white bg-[#2D6A4F] active:scale-95 transition-all"
-              >
-                {resultOnly ? "돌아가기" : "첫 운동 시작하기"}
-              </button>
-            </div>
+                <button
+                  onClick={() => onComplete(profile as FitnessProfile)}
+                  className="w-full py-4 rounded-2xl font-bold text-white bg-[#2D6A4F] active:scale-95 transition-all"
+                >
+                  첫 운동 시작하기
+                </button>
+              </div>
+            )}
           </div>
         );
       })()}

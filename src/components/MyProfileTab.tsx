@@ -5,7 +5,7 @@ import { User, updateProfile } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage, auth } from "@/lib/firebase";
 import { SubscriptionScreen, TERMS_TEXT, PRIVACY_TEXT, REFUND_TEXT } from "./SubscriptionScreen";
-import { updateGender, updateBirthYear } from "@/utils/userProfile";
+import { updateGender, updateBirthYear, saveUserProfile } from "@/utils/userProfile";
 import { getTierFromExp, getOrRebuildSeasonExp, getCurrentSeason } from "@/utils/questSystem";
 import { loadWorkoutHistory } from "@/utils/workoutHistory";
 
@@ -36,6 +36,30 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onSh
   const [birthYearInput, setBirthYearInput] = useState(birthYear);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
   const [showBodyInfo, setShowBodyInfo] = useState(false);
+
+  // 1RM states
+  const [editing1RM, setEditing1RM] = useState(false);
+  const [bench1RM, setBench1RM] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+      return fp.bench1RM ? String(fp.bench1RM) : "";
+    } catch { return ""; }
+  });
+  const [squat1RM, setSquat1RM] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+      return fp.squat1RM ? String(fp.squat1RM) : "";
+    } catch { return ""; }
+  });
+  const [deadlift1RM, setDeadlift1RM] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+      return fp.deadlift1RM ? String(fp.deadlift1RM) : "";
+    } catch { return ""; }
+  });
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showRefund, setShowRefund] = useState(false);
@@ -89,6 +113,19 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onSh
     setBirthYear(trimmed);
     updateBirthYear(year);
     setIsEditingBirthYear(false);
+  };
+
+  const handle1RMSave = () => {
+    const b = parseFloat(bench1RM.trim()) || undefined;
+    const s = parseFloat(squat1RM.trim()) || undefined;
+    const d = parseFloat(deadlift1RM.trim()) || undefined;
+    try {
+      const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+      const updated = { ...fp, bench1RM: b, squat1RM: s, deadlift1RM: d };
+      localStorage.setItem("alpha_fitness_profile", JSON.stringify(updated));
+      saveUserProfile({ fitnessProfile: updated }).catch(() => {});
+    } catch {}
+    setEditing1RM(false);
   };
 
   const handleLogoutClick = () => {
@@ -323,6 +360,48 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onSh
               </button>
             )}
           </div>
+          <div className="h-px bg-gray-100" />
+
+          {/* 3대 운동 1RM */}
+          <div className="flex justify-between items-center min-h-[32px]">
+            <span className="text-sm font-bold text-gray-500">3대 1RM</span>
+            {editing1RM ? (
+              <button onClick={handle1RMSave} className="text-xs font-bold text-[#2D6A4F] active:opacity-60">저장</button>
+            ) : (
+              <button onClick={() => setEditing1RM(true)} className="flex items-center gap-2 active:opacity-60">
+                <span className="text-sm font-medium text-gray-900">
+                  {bench1RM || squat1RM || deadlift1RM
+                    ? [bench1RM && `B${bench1RM}`, squat1RM && `S${squat1RM}`, deadlift1RM && `D${deadlift1RM}`].filter(Boolean).join(" / ")
+                    : "미설정"}
+                </span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {editing1RM && (
+            <div className="flex gap-2">
+              {[
+                { label: "벤치", value: bench1RM, setter: setBench1RM },
+                { label: "스쿼트", value: squat1RM, setter: setSquat1RM },
+                { label: "데드", value: deadlift1RM, setter: setDeadlift1RM },
+              ].map((lift) => (
+                <div key={lift.label} className="flex-1">
+                  <p className="text-[9px] font-bold text-gray-400 mb-1">{lift.label}</p>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={lift.value}
+                    onChange={(e) => lift.setter(e.target.value)}
+                    placeholder="kg"
+                    className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#2D6A4F] transition-colors text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onKeyDown={(e) => { if (e.key === "Enter") handle1RMSave(); }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         )}
 
