@@ -146,20 +146,32 @@ const PREDICTIONS_BY_GOAL: Record<string, GoalPrediction> = {
 
 /* ─── 과학적 계산 함수 ─── */
 
-/** HUNT Study VO2max 추정 (Nes et al., 2011, MSSE)
- *  PAI(Physical Activity Index): 0=비활동, 1=저활동, 2=활동적, 3=매우활동적
- *  공식: VO2max = 100.27 - (0.296 × age) - (0.369 × BMI) - (0.155 × PAI보정)
- *  참고: 원래 HUNT 공식은 RHR, 허리둘레 등 추가변수 사용. 우리는 활동량으로 간략화.
+/** VO2max 추정 — ACSM 연령/성별 기준표 기반
+ *  HUNT 공식은 RHR·허리둘레 등 미보유 데이터가 필요하여 과대추정 위험이 큼.
+ *  대신 ACSM 연령별 평균 VO2max 표를 기준으로,
+ *  운동 빈도에 따라 ±보정하는 방식을 사용.
+ *
+ *  ACSM 남성 평균 VO2max (mL/kg/min):
+ *    20대: 43, 30대: 40, 40대: 37, 50대: 34, 60대+: 30
+ *  여성: 약 -8 (ACSM)
+ *
+ *  운동 빈도 보정: 비활동 -5, 주1~2회 ±0, 주3~4회 +3, 주5+ +5
+ *  BMI 보정: BMI 25 초과 시 초과분 × -0.5
  */
 function estimateVO2max(age: number, weight: number, heightEstimate: number, weeklyFreq: number, gender: "male" | "female"): number {
+  // ACSM 연령별 평균 (남성)
+  const maleBaseline = age < 30 ? 43 : age < 40 ? 40 : age < 50 ? 37 : age < 60 ? 34 : 30;
+  const baseline = gender === "male" ? maleBaseline : maleBaseline - 8;
+
+  // 운동 빈도 보정
+  const freqAdj = weeklyFreq === 0 ? -5 : weeklyFreq <= 2 ? 0 : weeklyFreq <= 4 ? 3 : 5;
+
+  // BMI 보정 (과체중 패널티)
   const bmi = weight / ((heightEstimate / 100) ** 2);
-  // PAI 매핑: 운동빈도 → 활동지수
-  const pai = weeklyFreq === 0 ? 0 : weeklyFreq <= 2 ? 1 : weeklyFreq <= 4 ? 2 : 3;
-  // 간략화된 추정 (HUNT 기반)
-  let vo2 = 100.27 - (0.296 * age) - (0.369 * bmi) + (pai * 3.5);
-  // 성별 보정 (여성 평균 ~15% 낮음, ACSM)
-  if (gender === "female") vo2 *= 0.85;
-  return Math.round(vo2 * 10) / 10;
+  const bmiAdj = bmi > 25 ? -(bmi - 25) * 0.5 : 0;
+
+  const vo2 = baseline + freqAdj + bmiAdj;
+  return Math.round(Math.max(15, Math.min(65, vo2)) * 10) / 10;
 }
 
 /** VO2max 기반 피트니스 나이 (HUNT Study, Nes 2013)
@@ -167,10 +179,13 @@ function estimateVO2max(age: number, weight: number, heightEstimate: number, wee
  */
 function fitnessAge(vo2max: number, gender: "male" | "female"): number {
   // 평균 VO2max: 남성 ~45 (20세) → ~30 (60세), 여성 ~38 (20세) → ~25 (60세)
+  let age: number;
   if (gender === "male") {
-    return Math.round((45 - vo2max) / 0.375 + 20);
+    age = Math.round((45 - vo2max) / 0.375 + 20);
+  } else {
+    age = Math.round((38 - vo2max) / 0.325 + 20);
   }
-  return Math.round((38 - vo2max) / 0.325 + 20);
+  return Math.max(18, Math.min(80, age));
 }
 
 /** ACSM MET 기반 칼로리 소모 추정 (Ainsworth et al., 2011)
