@@ -16,12 +16,12 @@ interface ShareCardProps {
 }
 
 
-// PR 감지: 오늘 세션의 E1RM이 과거 기록보다 높은지 확인
+// PR 감지: 오늘 세션의 e1RM이 과거 기록보다 높은지 확인
 function detectPRs(
   allE1RMs: { exerciseName: string; value: number }[],
   history: WorkoutHistory[],
 ): { exerciseName: string; value: number; prevBest: number }[] {
-  // 과거 기록에서 각 운동의 최고 E1RM 추출
+  // 과거 기록에서 각 운동의 최고 e1RM 추출
   const historyBestMap = new Map<string, number>();
   for (const h of history) {
     const exercises = h.sessionData?.exercises || [];

@@ -366,10 +366,10 @@ export function calcRecoveryPattern(sessions: WorkoutHistory[]): {
   return { avgRecoveryPct: avg, trend };
 }
 
-/* ─── Phase 2: E1RM 트렌드 ─── */
+/* ─── Phase 2: e1RM 트렌드 ─── */
 
 /**
- * 세션별 best E1RM 트렌드 (선형 회귀)
+ * 세션별 best e1RM 트렌드 (선형 회귀)
  */
 export function calcE1RMTrend(sessions: WorkoutHistory[]): {
   regression: RegressionResult;
@@ -431,7 +431,7 @@ export function calcWeightTrend(weightLog: { date: string; weight: number }[]): 
 /* ─── Phase 3: 정체기 감지 ─── */
 
 /**
- * E1RM 또는 볼륨 정체기 감지
+ * e1RM 또는 볼륨 정체기 감지
  * 최근 N세션의 변화율이 ±2% 이내면 정체기
  */
 export function detectPlateau(

@@ -39,6 +39,7 @@ interface Props {
   workoutCount?: number;
   workoutHistory?: WorkoutHistory[];
   weightLog?: { date: string; weight: number }[];
+  onEdit1RM?: () => void;
 }
 
 /* ─── constants ─── */
@@ -105,14 +106,14 @@ const PREDICTIONS_BY_GOAL: Record<string, GoalPrediction> = {
     beginner: [
       { label: "근력 향상 체감 예상 시점", phase: 0, source: "NSCA Essentials 4th ed., ACSM 2009" },
       { label: "세션별 볼륨 증가율", phase: 1, source: "운동 볼륨 데이터 추이" },
-      { label: "추정 1RM(E1RM) 성장 추이", phase: 2, source: "세션별 E1RM 선형 회귀" },
-      { label: "근력 정체기 예상 시점", phase: 3, source: "E1RM + 볼륨 변화율 회귀분석" },
+      { label: "추정 1RM(e1RM) 성장 추이", phase: 2, source: "세션별 e1RM 선형 회귀" },
+      { label: "근력 정체기 예상 시점", phase: 3, source: "e1RM + 볼륨 변화율 회귀분석" },
     ],
     advanced: [
       { label: "현재 근력 수준 평가", phase: 0, source: "ExRx/NSCA Strength Standards" },
       { label: "3대 운동 볼륨 밸런스 분석", phase: 1, source: "운동 데이터 종목별 볼륨 비교" },
-      { label: "E1RM 성장 곡선", phase: 2, source: "세션별 E1RM 회귀분석" },
-      { label: "1RM 목표 도달 예측", phase: 3, source: "E1RM 성장률 + 체중 데이터 회귀분석" },
+      { label: "e1RM 성장 곡선", phase: 2, source: "세션별 e1RM 회귀분석" },
+      { label: "1RM 목표 도달 예측", phase: 3, source: "e1RM 성장률 + 체중 데이터 회귀분석" },
     ],
   },
   endurance: {
@@ -249,6 +250,7 @@ interface PredictionResult {
   value: string;
   sub?: string;
   source?: string;
+  action?: "edit_1rm";  // 클릭 시 동작
 }
 
 interface ReadingResult {
@@ -402,7 +404,7 @@ function computeReading(
     // 근력 상급자: 현재 근력 수준 평가
     if (label.includes("현재 근력 수준 평가")) {
       if (!p.bench1RM && !p.squat1RM && !p.deadlift1RM) {
-        return { value: "1RM 데이터 입력 후 평가 가능" };
+        return { value: "1RM 데이터 입력 후 평가 가능", action: "edit_1rm" };
       }
       const lifts: string[] = [];
       if (p.bench1RM) {
@@ -427,7 +429,7 @@ function computeReading(
     // 근력 상급자: 3대 강점·약점 분석
     if (label.includes("강점·약점 분석")) {
       if (!p.bench1RM || !p.squat1RM || !p.deadlift1RM) {
-        return { value: "3대 운동 1RM 모두 입력 시 분석 가능" };
+        return { value: "3대 운동 1RM 모두 입력 시 분석 가능", action: "edit_1rm" };
       }
       const bench = assessStrengthLevel("bench", p.bench1RM, p.bodyWeight, p.gender);
       const squat = assessStrengthLevel("squat", p.squat1RM, p.bodyWeight, p.gender);
@@ -606,24 +608,24 @@ function computeReading(
 
     if (label.includes("추정 1RM") && label.includes("성장 추이")) {
       const e1t = calcE1RMTrend(h);
-      if (!e1t) return { value: "E1RM 데이터 수집 중 (3회 이상 필요)", source: "세션별 E1RM 선형 회귀" };
+      if (!e1t) return { value: "e1RM 데이터 수집 중 (3회 이상 필요)", source: "세션별 e1RM 선형 회귀" };
       const emoji = e1t.growthPerWeek > 0 ? "📈" : "➡️";
       const comment = e1t.growthPerWeek > 1 ? " 초보자 평균 이상!" : "";
       return {
-        value: `E1RM ${e1t.growthPerWeek > 0 ? "+" : ""}${e1t.growthPerWeek}kg/주 성장 중 ${emoji}${comment}`,
+        value: `e1RM ${e1t.growthPerWeek > 0 ? "+" : ""}${e1t.growthPerWeek}kg/주 성장 중 ${emoji}${comment}`,
         sub: `${e1t.firstE1RM}kg → ${e1t.lastE1RM}kg (${h.length}세션)`,
-        source: "세션별 E1RM 선형 회귀 (Epley)",
+        source: "세션별 e1RM 선형 회귀 (Epley)",
       };
     }
 
-    if (label.includes("E1RM 성장 곡선")) {
+    if (label.includes("e1RM 성장 곡선")) {
       const e1t = calcE1RMTrend(h);
-      if (!e1t) return { value: "E1RM 데이터 수집 중 (3회 이상 필요)", source: "세션별 E1RM 회귀분석" };
+      if (!e1t) return { value: "e1RM 데이터 수집 중 (3회 이상 필요)", source: "세션별 e1RM 회귀분석" };
       const emoji = e1t.growthPerWeek > 0 ? "🚀" : "➡️";
       return {
-        value: `Best E1RM: ${e1t.firstE1RM} → ${e1t.lastE1RM}kg ${emoji}`,
+        value: `Best e1RM: ${e1t.firstE1RM} → ${e1t.lastE1RM}kg ${emoji}`,
         sub: `주간 성장률 ${e1t.growthPerWeek > 0 ? "+" : ""}${e1t.growthPerWeek}kg (R²=${Math.round(e1t.regression.r2 * 100)}%)`,
-        source: "세션별 E1RM 회귀분석 (Epley)",
+        source: "세션별 e1RM 회귀분석 (Epley)",
       };
     }
 
@@ -676,28 +678,28 @@ function computeReading(
 
     if (label.includes("근력 정체기 예상")) {
       const e1t = calcE1RMTrend(h);
-      if (!e1t) return { value: "E1RM 데이터 더 필요", source: "E1RM + 볼륨 변화율 회귀분석" };
+      if (!e1t) return { value: "e1RM 데이터 더 필요", source: "e1RM + 볼륨 변화율 회귀분석" };
       const plateau = detectPlateau(
         h.filter(s => s.stats.bestE1RM).map(s => ({ date: s.date, value: s.stats.bestE1RM! })),
         5
       );
       if (plateau?.isPlateau) {
         return {
-          value: `⚠️ E1RM 정체 신호 — ${plateau.durationDays}일간 변화 ${plateau.changePct}%`,
+          value: `⚠️ e1RM 정체 신호 — ${plateau.durationDays}일간 변화 ${plateau.changePct}%`,
           sub: "디로드 주간 또는 프로그램 변경 추천 🔄",
-          source: "E1RM 변화율 분석",
+          source: "e1RM 변화율 분석",
         };
       }
       return {
         value: `✅ 성장 지속 중 — 주간 +${e1t.growthPerWeek}kg`,
         sub: e1t.growthPerWeek < 0.5 ? "성장 둔화 구간 — 프로그래밍 점검 추천" : "현재 프로그램 유지 추천",
-        source: "E1RM 선형 회귀 분석",
+        source: "e1RM 선형 회귀 분석",
       };
     }
 
     if (label.includes("1RM 목표 도달 예측")) {
       const e1t = calcE1RMTrend(h);
-      if (!e1t || e1t.growthPerWeek <= 0) return { value: "성장 데이터 수집 중...", source: "E1RM 성장률 + 체중 데이터 회귀분석" };
+      if (!e1t || e1t.growthPerWeek <= 0) return { value: "성장 데이터 수집 중...", source: "e1RM 성장률 + 체중 데이터 회귀분석" };
       // 목표: 체중의 1.5배 벤치, 2배 스쿼트, 2.5배 데드 (중급 기준)
       const targets = [
         { name: "벤치 중급", target: p.bodyWeight * 1.0 },
@@ -708,12 +710,12 @@ function computeReading(
         .map(t => ({ ...t, weeksLeft: Math.max(0, Math.ceil((t.target - e1t.lastE1RM) / e1t.growthPerWeek)) }))
         .filter(t => t.weeksLeft > 0)
         .sort((a, b) => a.weeksLeft - b.weeksLeft);
-      if (closest.length === 0) return { value: "🎉 모든 중급 기준 달성!", source: "ExRx Strength Standards" };
+      if (closest.length === 0) return { value: "🎉 모든 중급 기준 달성!", source: "exRx Strength Standards" };
       const next = closest[0];
       return {
         value: `🎯 ${next.name} (${Math.round(next.target)}kg)까지 약 ${next.weeksLeft}주`,
-        sub: `현재 Best E1RM ${e1t.lastE1RM}kg, 주간 +${e1t.growthPerWeek}kg 기준`,
-        source: "E1RM 성장률 선형 외삽 + ExRx Standards",
+        sub: `현재 Best e1RM ${e1t.lastE1RM}kg, 주간 +${e1t.growthPerWeek}kg 기준`,
+        source: "e1RM 성장률 선형 외삽 + exRx Standards",
       };
     }
 
@@ -784,7 +786,7 @@ type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "onerm" | "a
 /* ─── Component ─── */
 const UNLOCK_THRESHOLDS = [0, 5, 10, 20];
 
-export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium, resultOnly, onBack, workoutCount = 0, workoutHistory, weightLog }) => {
+export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium, resultOnly, onBack, workoutCount = 0, workoutHistory, weightLog, onEdit1RM }) => {
   // Load saved profile for resultOnly mode
   const savedProfile = React.useMemo<FitnessProfile | null>(() => {
     if (!resultOnly) return null;
@@ -1391,7 +1393,13 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-[#1B4332] text-sm font-black text-right">{pred?.value}</p>
+                                  {pred?.action === "edit_1rm" && onEdit1RM ? (
+                                    <button onClick={onEdit1RM} className="text-[#1B4332] text-sm font-black text-right w-full underline decoration-emerald-400 decoration-2 underline-offset-2 active:opacity-60">
+                                      {pred.value} →
+                                    </button>
+                                  ) : (
+                                    <p className="text-[#1B4332] text-sm font-black text-right">{pred?.value}</p>
+                                  )}
                                   {pred?.sub && <p className="text-[#2D6A4F] text-xs font-bold mt-1 text-right">{pred.sub}</p>}
                                   {pred?.source && <p className="text-gray-400 text-[9px] mt-1 text-right">출처: {pred.source}</p>}
                                 </div>

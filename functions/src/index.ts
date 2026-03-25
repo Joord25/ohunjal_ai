@@ -369,7 +369,7 @@ export const analyzeWorkout = onRequest(
       let trendContext = "";
       if (historyTrend && historyTrend.sessionCount >= 2) {
         const sessionsStr = historyTrend.sessions.map((s: { date: string; totalVolume: number; bestE1RM: number | null; loadScore: number; exerciseNames: string[] }) =>
-          `${s.date}: 볼륨 ${s.totalVolume.toLocaleString()}kg, 1RM ${s.bestE1RM ? Math.round(s.bestE1RM) + "kg" : "-"}, 부하 ${s.loadScore}`
+          `${s.date}: 볼륨 ${s.totalVolume.toLocaleString()}kg, e1RM ${s.bestE1RM ? Math.round(s.bestE1RM) + "kg" : "-"}, 부하 ${s.loadScore}`
         ).join("\n      ");
         trendContext = `
       === 최근 ${historyTrend.sessionCount}세션 추이 (최대 10세션, 3개월 이내) ===

@@ -41,6 +41,15 @@ export default function Home() {
   useSafeArea();
   const [activeTab, setActiveTab] = useState<TabId>("today");
   const [view, setView] = useState<ViewState>("login"); // Start with login
+  const [autoEdit1RM, setAutoEdit1RM] = useState(false);
+
+  // autoEdit1RM은 MyTab으로 이동 후 리셋
+  useEffect(() => {
+    if (autoEdit1RM && activeTab === "my") {
+      const t = setTimeout(() => setAutoEdit1RM(false), 500);
+      return () => clearTimeout(t);
+    }
+  }, [autoEdit1RM, activeTab]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // AI Loading State
@@ -86,7 +95,21 @@ export default function Home() {
         }
 
         // Load user profile from Firestore → localStorage
-        loadUserProfile().catch((e) => console.error("Failed to load profile", e));
+        // Firestore 기준으로 fitnessProfile 유무 판단 (localStorage만 믿으면 계정 재가입 시 꼬임)
+        loadUserProfile().then((profile) => {
+          if (profile?.fitnessProfile) {
+            setView("condition_check");
+          } else {
+            // Firestore에 fitnessProfile 없으면 localStorage 플래그 리셋
+            localStorage.removeItem("alpha_fitness_reading_done");
+            setView("fitness_reading");
+          }
+        }).catch((e) => {
+          console.error("Failed to load profile", e);
+          // fallback: localStorage 기준
+          const readingDone = localStorage.getItem("alpha_fitness_reading_done");
+          setView(readingDone ? "condition_check" : "fitness_reading");
+        });
 
         // Load workout data
         const rDone = localStorage.getItem("alpha_completed_rituals");
@@ -108,10 +131,6 @@ export default function Home() {
             });
           }
         }
-
-        // 첫 실행: 피트니스 리딩 → 이후: 바로 컨디션 체크
-        const readingDone = localStorage.getItem("alpha_fitness_reading_done");
-        setView(readingDone ? "condition_check" : "fitness_reading");
       } else {
         setIsLoggedIn(false);
         setSubStatus("free");
@@ -372,7 +391,7 @@ export default function Home() {
     }
 
     if (activeTab === "my") {
-      return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setActiveTab("today"); setView("prediction_report"); }} />;
+      return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setActiveTab("today"); setView("prediction_report"); }} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
     }
 
     switch (view) {
@@ -404,6 +423,7 @@ export default function Home() {
             workoutCount={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]").length; } catch { return 0; } })()}
             workoutHistory={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]"); } catch { return []; } })()}
             weightLog={(() => { try { return JSON.parse(localStorage.getItem("alpha_weight_log") || "[]"); } catch { return []; } })()}
+            onEdit1RM={() => { setAutoEdit1RM(true); setActiveTab("my"); setView("home"); }}
           />
         );
 

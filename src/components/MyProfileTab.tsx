@@ -13,9 +13,10 @@ interface MyProfileTabProps {
   user: User | null;
   onLogout: () => void;
   onShowPrediction?: () => void;
+  autoEdit1RM?: boolean;
 }
 
-export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onShowPrediction }) => {
+export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onShowPrediction, autoEdit1RM }) => {
   const [showSubscription, setShowSubscription] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.displayName || "");
@@ -35,10 +36,10 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onSh
   const [isEditingBirthYear, setIsEditingBirthYear] = useState(false);
   const [birthYearInput, setBirthYearInput] = useState(birthYear);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
-  const [showBodyInfo, setShowBodyInfo] = useState(false);
+  const [showBodyInfo, setShowBodyInfo] = useState(!!autoEdit1RM);
 
   // 1RM states
-  const [editing1RM, setEditing1RM] = useState(false);
+  const [editing1RM, setEditing1RM] = useState(!!autoEdit1RM);
   const [bench1RM, setBench1RM] = useState(() => {
     if (typeof window === "undefined") return "";
     try {
