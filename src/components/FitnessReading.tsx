@@ -2,6 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { saveUserProfile, updateGender, updateBirthYear, updateWeight } from "@/utils/userProfile";
+import { WorkoutHistory } from "@/constants/workout";
+import {
+  calcConsistencyScore,
+  calcVolumeGrowthRate,
+  calcCaloriesTrend,
+  calcBig3VolumeBalance,
+  calcIntensityDistribution,
+  calcDurationTrend,
+  calcRecoveryPattern,
+  calcE1RMTrend,
+  calcWeightTrend,
+  detectPlateau,
+} from "@/utils/predictionUtils";
 
 /* ─── types ─── */
 export interface FitnessProfile {
@@ -24,6 +37,8 @@ interface Props {
   resultOnly?: boolean;
   onBack?: () => void;
   workoutCount?: number;
+  workoutHistory?: WorkoutHistory[];
+  weightLog?: { date: string; weight: number }[];
 }
 
 /* ─── constants ─── */
@@ -245,7 +260,12 @@ interface ReadingResult {
   condition: string;
 }
 
-function computeReading(p: FitnessProfile, wkCount: number): ReadingResult {
+function computeReading(
+  p: FitnessProfile,
+  wkCount: number,
+  history?: WorkoutHistory[],
+  weightLog?: { date: string; weight: number }[]
+): ReadingResult {
   const weeklyMin = p.weeklyFrequency * p.sessionMinutes;
   const age = new Date().getFullYear() - p.birthYear;
 
@@ -470,82 +490,286 @@ function computeReading(p: FitnessProfile, wkCount: number): ReadingResult {
       };
     }
 
-    // ── Phase 1 (5회): 초기 트렌드 ──
+    // ── Phase 1 (5회): 초기 트렌드 (실제 운동 데이터 기반) ──
+    const h = history || [];
+
     if (label.includes("실제 세션별 칼로리 소모 추이")) {
-      return { value: "세션별 실제 볼륨 기반 칼로리 소모 추적 중", source: "운동 볼륨 × MET 기반" };
+      const trend = calcCaloriesTrend(h, p.bodyWeight);
+      if (trend.length < 2) return { value: "데이터 수집 중...", source: "운동 볼륨 × MET 기반" };
+      const first = trend[0].calories;
+      const last = trend[trend.length - 1].calories;
+      const avg = Math.round(trend.reduce((s, t) => s + t.calories, 0) / trend.length);
+      const pct = first > 0 ? Math.round(((last - first) / first) * 100) : 0;
+      return {
+        value: `${h.length}회 평균 ${avg}kcal${pct > 0 ? ` 🔥 +${pct}% 성장!` : ""}`,
+        sub: `최근 ${last}kcal / 첫 세션 ${first}kcal`,
+        source: "ACSM MET Tables × 실제 볼륨",
+      };
     }
+
     if (label.includes("실제 운동 볼륨 대비 칼로리 소모")) {
-      return { value: "실제 볼륨 데이터로 정밀 칼로리 산출 중", source: "운동 데이터 × MET 기반" };
+      const trend = calcCaloriesTrend(h, p.bodyWeight);
+      if (trend.length < 2) return { value: "데이터 수집 중...", source: "운동 데이터 × MET 기반" };
+      const avg = Math.round(trend.reduce((s, t) => s + t.calories, 0) / trend.length);
+      const vg = calcVolumeGrowthRate(h);
+      return {
+        value: `세션 평균 ${avg}kcal 소모`,
+        sub: vg ? `볼륨 ${vg.growthPct > 0 ? "+" : ""}${vg.growthPct}% → 칼로리도 비례 증가` : "볼륨 데이터 수집 중",
+        source: "운동 볼륨 × MET 기반 산출",
+      };
     }
+
     if (label.includes("세션별 볼륨 증가율")) {
-      return { value: "세션 간 총 볼륨 변화율 분석 중", source: "운동 볼륨 데이터 추이" };
+      const vg = calcVolumeGrowthRate(h);
+      if (!vg) return { value: "데이터 수집 중...", source: "운동 볼륨 데이터 추이" };
+      const emoji = vg.trend === "up" ? "📈" : vg.trend === "down" ? "📉" : "➡️";
+      const comment = vg.trend === "up" && vg.growthPct > 20
+        ? " 초보자 골든타임!"
+        : vg.trend === "up" ? " 꾸준히 성장 중!" : "";
+      return {
+        value: `첫 세션 대비 볼륨 ${vg.growthPct > 0 ? "+" : ""}${vg.growthPct}% ${emoji}${comment}`,
+        sub: `${vg.firstVolume.toLocaleString()}kg → ${vg.lastVolume.toLocaleString()}kg`,
+        source: "세션별 총 볼륨 비교",
+      };
     }
+
     if (label.includes("3대 운동 볼륨 밸런스")) {
-      return { value: "종목별 볼륨 분포 분석 중", source: "운동 데이터 종목별 볼륨 비교" };
+      const bal = calcBig3VolumeBalance(h);
+      if (!bal) return { value: "3대 운동 데이터 수집 중...", source: "운동 데이터 종목별 볼륨 비교" };
+      const weakLabel = bal.weakest === "bench" ? "벤치" : bal.weakest === "squat" ? "스쿼트" : "데드";
+      return {
+        value: `스쿼트 ${bal.percentages.squat}% / 벤치 ${bal.percentages.bench}% / 데드 ${bal.percentages.deadlift}%`,
+        sub: bal.weakest ? `💡 ${weakLabel} 보강 추천` : "균형 잡힌 볼륨 분포",
+        source: "세션별 종목 볼륨 비교",
+      };
     }
+
     if (label.includes("운동 지속시간 향상 추이")) {
-      return { value: "세션별 운동 시간 변화 추적 중", source: "세션 시간 데이터" };
+      const dt = calcDurationTrend(h);
+      if (!dt) return { value: "시간 데이터 수집 중...", source: "세션 시간 데이터" };
+      const emoji = dt.changePct > 0 ? "⚡" : "➡️";
+      return {
+        value: `운동 시간: ${dt.firstMin}분 → ${dt.lastMin}분 ${emoji}${dt.changePct > 0 ? ` +${dt.changePct}%` : ""}`,
+        sub: dt.changePct > 10 ? "체력이 느는 중!" : "꾸준한 운동 시간 유지",
+        source: "세션별 운동 시간 추이",
+      };
     }
+
     if (label.includes("세션별 회복 속도 변화")) {
-      return { value: "세션 간 볼륨 회복 패턴 분석 중", source: "세션 간 볼륨 회복 데이터" };
+      const rec = calcRecoveryPattern(h);
+      if (!rec) return { value: "회복 데이터 수집 중...", source: "세션 간 볼륨 회복 데이터" };
+      const trendLabel = rec.trend === "improving" ? "🟢 개선 중" : rec.trend === "declining" ? "🟡 주의 필요" : "🔵 안정적";
+      return {
+        value: `볼륨 회복률 평균 ${rec.avgRecoveryPct}% — ${trendLabel}`,
+        sub: rec.trend === "improving" ? "세션 간 회복이 빨라지고 있어요!" : rec.trend === "declining" ? "휴식이 더 필요할 수 있어요" : "일정한 회복 패턴 유지 중",
+        source: "세션 간 볼륨 변화 분석",
+      };
     }
+
     if (label.includes("운동 일관성 점수")) {
-      return { value: "운동 빈도 패턴 분석 중", source: "운동 빈도 패턴 분석" };
+      const cs = calcConsistencyScore(h, p.weeklyFrequency);
+      if (cs.weeks === 0) return { value: "데이터 수집 중...", source: "운동 빈도 패턴 분석" };
+      const emoji = cs.score >= 80 ? "🎯" : cs.score >= 60 ? "👍" : "💪";
+      return {
+        value: `${cs.score}점! ${emoji}`,
+        sub: `주 ${p.weeklyFrequency}회 목표 중 평균 ${cs.avgWeeklyFreq}회 달성 (${cs.weeks}주간)`,
+        source: "실제 운동 빈도 vs 목표 빈도",
+      };
     }
+
     if (label.includes("운동 패턴 분석")) {
-      return { value: "빈도 · 강도 · 볼륨 패턴 분석 중", source: "운동 데이터 패턴 분석" };
+      const dist = calcIntensityDistribution(h, p.bodyWeight);
+      if (!dist) return { value: "강도 데이터 수집 중...", source: "운동 데이터 패턴 분석" };
+      const balanceEmoji = dist.balance === "good" ? "✅ 균형 잡힘!" : "⚠️ 편중됨";
+      return {
+        value: `강도 분포: High ${dist.high}% / Mod ${dist.moderate}% / Low ${dist.low}%`,
+        sub: balanceEmoji,
+        source: "세션별 %1RM 기반 강도 분류 (ACSM 2009)",
+      };
     }
 
-    // ── Phase 2 (10회): 트렌드 분석 ──
-    if (label.includes("체중 변화 추세")) {
-      return { value: "체중 로그 기반 추세 분석 중", source: "체중 로그 선형 회귀" };
+    // ── Phase 2 (10회): 트렌드 분석 (선형 회귀 기반) ──
+    const wl = weightLog || [];
+
+    if (label.includes("체중 변화 추세") || label.includes("체중 변화 회귀분석")) {
+      const wt = calcWeightTrend(wl);
+      if (!wt) return { value: "체중 기록 3개 이상 필요", source: "체중 로그 선형 회귀" };
+      const dir = wt.weeklyChange < 0 ? "📉" : wt.weeklyChange > 0 ? "📈" : "➡️";
+      const safe = Math.abs(wt.weeklyChange) <= p.bodyWeight * 0.01;
+      const pred4w = wt.predictInWeeks(4);
+      return {
+        value: `주간 ${wt.weeklyChange > 0 ? "+" : ""}${wt.weeklyChange}kg ${dir}${safe ? " 안전 범위" : " ⚠️ 급변"}`,
+        sub: `4주 후 예상: ${pred4w}kg (R²=${Math.round(wt.regression.r2 * 100)}%)`,
+        source: "체중 로그 선형 회귀",
+      };
     }
+
     if (label.includes("추정 1RM") && label.includes("성장 추이")) {
-      return { value: "세션별 E1RM 변화 추이 분석 중", source: "세션별 E1RM 선형 회귀" };
-    }
-    if (label.includes("E1RM 성장 곡선")) {
-      return { value: "E1RM 데이터 기반 성장 곡선 산출 중", source: "세션별 E1RM 회귀분석" };
-    }
-    if (label.includes("세션별 강도 변화 분석")) {
-      return { value: "운동 강도 분류 데이터 기반 분석 중", source: "운동 강도 분류 데이터" };
-    }
-    if (label.includes("운동 강도 최적화")) {
-      return { value: "강도별 볼륨 · 달성률 상관 분석 중", source: "강도별 볼륨 · 달성률 상관분석" };
-    }
-    if (label.includes("체중 · 운동량 종합 추이")) {
-      return { value: "체중 · 볼륨 · 빈도 종합 추세 분석 중", source: "체중 로그 + 볼륨 데이터" };
-    }
-    if (label.includes("건강 지표 종합 점수")) {
-      return { value: "체중 · 볼륨 · 일관성 종합 점수 분석 중", source: "체중 · 볼륨 · 일관성 종합" };
-    }
-    if (label.includes("체중 변화 회귀분석")) {
-      return { value: "체중 로그 회귀분석 기반 예측 중", source: "체중 로그 회귀분석" };
+      const e1t = calcE1RMTrend(h);
+      if (!e1t) return { value: "E1RM 데이터 수집 중 (3회 이상 필요)", source: "세션별 E1RM 선형 회귀" };
+      const emoji = e1t.growthPerWeek > 0 ? "📈" : "➡️";
+      const comment = e1t.growthPerWeek > 1 ? " 초보자 평균 이상!" : "";
+      return {
+        value: `E1RM ${e1t.growthPerWeek > 0 ? "+" : ""}${e1t.growthPerWeek}kg/주 성장 중 ${emoji}${comment}`,
+        sub: `${e1t.firstE1RM}kg → ${e1t.lastE1RM}kg (${h.length}세션)`,
+        source: "세션별 E1RM 선형 회귀 (Epley)",
+      };
     }
 
-    // ── Phase 3 (20회): ML 예측 ──
+    if (label.includes("E1RM 성장 곡선")) {
+      const e1t = calcE1RMTrend(h);
+      if (!e1t) return { value: "E1RM 데이터 수집 중 (3회 이상 필요)", source: "세션별 E1RM 회귀분석" };
+      const emoji = e1t.growthPerWeek > 0 ? "🚀" : "➡️";
+      return {
+        value: `Best E1RM: ${e1t.firstE1RM} → ${e1t.lastE1RM}kg ${emoji}`,
+        sub: `주간 성장률 ${e1t.growthPerWeek > 0 ? "+" : ""}${e1t.growthPerWeek}kg (R²=${Math.round(e1t.regression.r2 * 100)}%)`,
+        source: "세션별 E1RM 회귀분석 (Epley)",
+      };
+    }
+
+    if (label.includes("운동 강도 최적화")) {
+      const dist = calcIntensityDistribution(h, p.bodyWeight);
+      if (!dist) return { value: "강도 데이터 수집 중...", source: "강도별 볼륨 · 달성률 상관분석" };
+      const vg = calcVolumeGrowthRate(h);
+      const volComment = vg && vg.trend === "up" ? `볼륨 ${vg.growthPct > 0 ? "+" : ""}${vg.growthPct}%와 함께 강도도 최적화 중` : "볼륨과 강도 균형 분석 중";
+      return {
+        value: `High ${dist.high}% / Mod ${dist.moderate}% / Low ${dist.low}%`,
+        sub: `${dist.balance === "good" ? "✅ DUP 기준 적절" : "⚠️ 강도 분산 권장"} — ${volComment}`,
+        source: "ACSM/NSCA DUP 기준 + 실제 강도 데이터",
+      };
+    }
+
+    // ── Phase 3 (20회): 정체기 감지 + 장기 예측 ──
+
     if (label.includes("감량 정체기 예측")) {
-      return { value: "체중 · 볼륨 데이터 기반 정체기 예측 중", source: "체중 로그 + 볼륨 데이터 회귀분석" };
+      const wt = calcWeightTrend(wl);
+      if (!wt || wl.length < 5) return { value: "체중 데이터 더 필요 (5개+)", source: "체중 로그 + 볼륨 데이터 회귀분석" };
+      const plateau = detectPlateau(wl.map(w => ({ date: w.date, value: w.weight })), 5);
+      if (plateau?.isPlateau) {
+        return {
+          value: `⚠️ 정체기 감지 — ${plateau.durationDays}일간 변화 ${plateau.changePct}%`,
+          sub: "볼륨 10% 증가 또는 식단 조절 추천",
+          source: "체중 변화율 + 볼륨 상관분석",
+        };
+      }
+      return {
+        value: `✅ 순조로운 진행 중 — 주간 ${wt.weeklyChange > 0 ? "+" : ""}${wt.weeklyChange}kg`,
+        sub: `4주 후 예상: ${wt.predictInWeeks(4)}kg`,
+        source: "체중 로그 회귀분석",
+      };
     }
+
     if (label.includes("린매스 유지 최적 볼륨")) {
-      return { value: "볼륨 · 체중 · 강도 상관분석 기반 산출 중", source: "볼륨 · 체중 · 강도 상관분석" };
+      // Israetel MEV/MAV/MRV 기반
+      const avgSets = h.length > 0 ? Math.round(h.reduce((s, x) => s + x.stats.totalSets, 0) / h.length) : 0;
+      const mev = 10; // 최소 효과 볼륨 (세트/주, Israetel)
+      const mav = 16; // 최대 적응 볼륨
+      const mrv = 22; // 최대 회복 가능 볼륨
+      const weeklySets = avgSets * p.weeklyFrequency;
+      const zone = weeklySets < mev ? "MEV 미달" : weeklySets <= mav ? "MAV 구간 ✅" : weeklySets <= mrv ? "MRV 접근 ⚠️" : "MRV 초과 🔴";
+      return {
+        value: `주간 ${weeklySets}세트 — ${zone}`,
+        sub: `린매스 유지: 주 ${mev}~${mav}세트 권장 (현재 세션 평균 ${avgSets}세트)`,
+        source: "Israetel MEV/MAV/MRV (Renaissance Periodization)",
+      };
     }
+
     if (label.includes("근력 정체기 예상")) {
-      return { value: "e1RM + 볼륨 변화율 기반 예측 중", source: "E1RM + 볼륨 변화율 회귀분석" };
+      const e1t = calcE1RMTrend(h);
+      if (!e1t) return { value: "E1RM 데이터 더 필요", source: "E1RM + 볼륨 변화율 회귀분석" };
+      const plateau = detectPlateau(
+        h.filter(s => s.stats.bestE1RM).map(s => ({ date: s.date, value: s.stats.bestE1RM! })),
+        5
+      );
+      if (plateau?.isPlateau) {
+        return {
+          value: `⚠️ E1RM 정체 신호 — ${plateau.durationDays}일간 변화 ${plateau.changePct}%`,
+          sub: "디로드 주간 또는 프로그램 변경 추천 🔄",
+          source: "E1RM 변화율 분석",
+        };
+      }
+      return {
+        value: `✅ 성장 지속 중 — 주간 +${e1t.growthPerWeek}kg`,
+        sub: e1t.growthPerWeek < 0.5 ? "성장 둔화 구간 — 프로그래밍 점검 추천" : "현재 프로그램 유지 추천",
+        source: "E1RM 선형 회귀 분석",
+      };
     }
+
     if (label.includes("1RM 목표 도달 예측")) {
-      return { value: "e1RM 성장률 + 체중 데이터 기반 예측 중", source: "E1RM 성장률 + 체중 데이터 회귀분석" };
+      const e1t = calcE1RMTrend(h);
+      if (!e1t || e1t.growthPerWeek <= 0) return { value: "성장 데이터 수집 중...", source: "E1RM 성장률 + 체중 데이터 회귀분석" };
+      // 목표: 체중의 1.5배 벤치, 2배 스쿼트, 2.5배 데드 (중급 기준)
+      const targets = [
+        { name: "벤치 중급", target: p.bodyWeight * 1.0 },
+        { name: "스쿼트 중급", target: p.bodyWeight * 1.25 },
+        { name: "데드 중급", target: p.bodyWeight * 1.5 },
+      ];
+      const closest = targets
+        .map(t => ({ ...t, weeksLeft: Math.max(0, Math.ceil((t.target - e1t.lastE1RM) / e1t.growthPerWeek)) }))
+        .filter(t => t.weeksLeft > 0)
+        .sort((a, b) => a.weeksLeft - b.weeksLeft);
+      if (closest.length === 0) return { value: "🎉 모든 중급 기준 달성!", source: "ExRx Strength Standards" };
+      const next = closest[0];
+      return {
+        value: `🎯 ${next.name} (${Math.round(next.target)}kg)까지 약 ${next.weeksLeft}주`,
+        sub: `현재 Best E1RM ${e1t.lastE1RM}kg, 주간 +${e1t.growthPerWeek}kg 기준`,
+        source: "E1RM 성장률 선형 외삽 + ExRx Standards",
+      };
     }
+
     if (label.includes("VO2max 향상 예측")) {
-      return { value: "운동량 · 강도 · 빈도 기반 VO2max 예측 중", source: "ACSM/HERITAGE 모델 + 운동 데이터" };
+      // HERITAGE Study: 20주 트레이닝 → 평균 VO2max +15~20%
+      const hEst = estimateHeight(p.gender, age);
+      const currentVO2 = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
+      const weeksTraining = Math.round(wkCount / Math.max(1, p.weeklyFrequency));
+      // 보수적 HERITAGE 추정: 주당 ~0.75% 향상 (최대 20%)
+      const expectedGainPct = Math.min(20, weeksTraining * 0.75);
+      const predictedVO2 = Math.round(currentVO2 * (1 + expectedGainPct / 100) * 10) / 10;
+      return {
+        value: `현재 추정 ${currentVO2} → 12주 후 ${predictedVO2} mL/kg/min`,
+        sub: `⚡ 약 +${Math.round(expectedGainPct)}% 향상 예상 (HERITAGE 기준)`,
+        source: "HERITAGE Family Study + ACSM",
+      };
     }
+
     if (label.includes("심폐능력 성장 곡선")) {
-      return { value: "심폐 데이터 기반 성장 곡선 예측 중", source: "ACSM/HERITAGE 모델 + 운동 데이터" };
+      const hEst = estimateHeight(p.gender, age);
+      const currentVO2 = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
+      const weeksTraining = Math.round(wkCount / Math.max(1, p.weeklyFrequency));
+      const gain4w = Math.min(20, (weeksTraining + 4) * 0.75);
+      const gain12w = Math.min(20, (weeksTraining + 12) * 0.75);
+      return {
+        value: `4주 후 +${Math.round(gain4w)}% / 12주 후 +${Math.round(gain12w)}% 예상`,
+        sub: `현재 VO2max ${currentVO2} → 잠재 최대 ${Math.round(currentVO2 * 1.2)}`,
+        source: "HERITAGE Study 성장 모델 + ACSM",
+      };
     }
+
     if (label.includes("피트니스 나이 변화 추세")) {
-      return { value: "운동량 · 체중 · 빈도 기반 변화 예측 중", source: "운동량 · 체중 · 빈도 회귀분석" };
+      const hEst = estimateHeight(p.gender, age);
+      const currentVO2 = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
+      const fAge = fitnessAge(currentVO2, p.gender);
+      const weeksTraining = Math.round(wkCount / Math.max(1, p.weeklyFrequency));
+      // 12주 후 예상 VO2max → 피트니스 나이
+      const futureVO2 = currentVO2 * (1 + Math.min(0.2, weeksTraining * 0.0075 + 0.09));
+      const futureFAge = fitnessAge(futureVO2, p.gender);
+      return {
+        value: `피트니스 나이: ${fAge}세 → 12주 후 ${futureFAge}세 예상 🌿`,
+        sub: `매년 약 ${Math.abs(futureFAge - fAge) > 0 ? "0.5~1세" : "유지"} 개선 가능`,
+        source: "HUNT Study 모델 + 운동량 회귀분석",
+      };
     }
+
     if (label.includes("장기 건강 개선 예측")) {
-      return { value: "종합 데이터 기반 장기 개선 예측 중", source: "종합 데이터 회귀분석" };
+      const cs = calcConsistencyScore(h, p.weeklyFrequency);
+      const vg = calcVolumeGrowthRate(h);
+      const healthScore = Math.min(100, cs.score + (vg && vg.trend === "up" ? 10 : 0));
+      const riskReduction = weeklyMin >= 300 ? "35~40%" : weeklyMin >= 150 ? "25~30%" : "10~20%";
+      return {
+        value: `건강 개선 지수: ${healthScore}점 🌿`,
+        sub: `이 패턴 유지 시 심혈관 위험 ${riskReduction} 감소 예상`,
+        source: "WHO 2020 + HUNT Study + 운동 일관성 데이터",
+      };
     }
 
     return { value: "데이터 수집 중" };
@@ -560,7 +784,7 @@ type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "onerm" | "a
 /* ─── Component ─── */
 const UNLOCK_THRESHOLDS = [0, 5, 10, 20];
 
-export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium, resultOnly, onBack, workoutCount = 0 }) => {
+export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium, resultOnly, onBack, workoutCount = 0, workoutHistory, weightLog }) => {
   // Load saved profile for resultOnly mode
   const savedProfile = React.useMemo<FitnessProfile | null>(() => {
     if (!resultOnly) return null;
@@ -696,7 +920,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   }, [step, showResult]);
 
   /* ─── reading ─── */
-  const reading = step === "result" ? computeReading(profile as FitnessProfile, workoutCount) : null;
+  const reading = step === "result" ? computeReading(profile as FitnessProfile, workoutCount, workoutHistory, weightLog) : null;
 
   /* ─── render helpers ─── */
   const renderStepIndicator = () => {
@@ -1229,7 +1453,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                     {selectedGoalKey && isPremium && (() => {
                       const otherGoalData = PREDICTIONS_BY_GOAL[selectedGoalKey];
                       const otherItems = otherGoalData?.[myLevel] || [];
-                      const otherReading = computeReading({ ...fp, goal: selectedGoalKey as FitnessProfile["goal"] }, workoutCount);
+                      const otherReading = computeReading({ ...fp, goal: selectedGoalKey as FitnessProfile["goal"] }, workoutCount, workoutHistory, weightLog);
                       return (
                         <div className="w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm animate-fade-in">
                           <div className="flex items-center justify-between mb-3">

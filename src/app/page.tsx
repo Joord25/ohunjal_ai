@@ -387,6 +387,8 @@ export default function Home() {
             onPremium={() => setShowPaywall(true)}
             isPremium={subStatus === "active"}
             workoutCount={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]").length; } catch { return 0; } })()}
+            workoutHistory={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]"); } catch { return []; } })()}
+            weightLog={(() => { try { return JSON.parse(localStorage.getItem("alpha_weight_log") || "[]"); } catch { return []; } })()}
           />
         );
 
@@ -400,6 +402,8 @@ export default function Home() {
             resultOnly
             onBack={() => { setActiveTab("my"); setView("home"); }}
             workoutCount={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]").length; } catch { return 0; } })()}
+            workoutHistory={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]"); } catch { return []; } })()}
+            weightLog={(() => { try { return JSON.parse(localStorage.getItem("alpha_weight_log") || "[]"); } catch { return []; } })()}
           />
         );
 
