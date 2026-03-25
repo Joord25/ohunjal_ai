@@ -156,6 +156,22 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
     }));
   };
 
+  const handleDeleteExercise = (globalIdx: number) => {
+    setLocalExercises(prev => {
+      // Prevent deleting the last MAIN phase exercise
+      const ex = prev[globalIdx];
+      const exPhase = ex.phase || (ex.type === "warmup" ? "warmup" : ex.type === "core" || ex.type === "mobility" ? "core" : ex.type === "cardio" ? "cardio" : "main");
+      const samePhase = prev.filter((e, i) => {
+        if (i === globalIdx) return false;
+        const p = e.phase || (e.type === "warmup" ? "warmup" : e.type === "core" || e.type === "mobility" ? "core" : e.type === "cardio" ? "cardio" : "main");
+        return p === exPhase;
+      });
+      if (exPhase === "main" && samePhase.length === 0) return prev;
+      return prev.filter((_, i) => i !== globalIdx);
+    });
+    setExpandedCard(null);
+  };
+
   const handleSwapExercise = (globalIdx: number, newName: string) => {
     setLocalExercises(prev => prev.map((ex, i) => {
       if (i !== globalIdx) return ex;
@@ -310,7 +326,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                   <div
                     key={i}
                     ref={phaseIdx === 0 && i === 0 ? firstGuideRef : undefined}
-                    className={`rounded-2xl p-4 transition-all bg-white border-2 active:scale-[0.98] ${
+                    className={`rounded-2xl p-4 pt-3 transition-all bg-white border-2 active:scale-[0.98] relative ${
                       phase.key === "main"
                         ? "border-[#1B4332] shadow-[2px_2px_0px_0px_#1B4332]"
                         : phase.key === "warmup"
@@ -323,6 +339,22 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     }`}
                     onClick={() => setExpandedCard(isExpanded ? null : globalIdx)}
                   >
+                    {/* Delete button — visible only when card is expanded */}
+                    {isExpanded && (() => {
+                      const exPhase = ex.phase || (ex.type === "warmup" ? "warmup" : ex.type === "core" || ex.type === "mobility" ? "core" : ex.type === "cardio" ? "cardio" : "main");
+                      const isLastInPhase = exPhase === "main" && phase.exercises.length <= 1;
+                      if (isLastInPhase) return null;
+                      return (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteExercise(globalIdx); }}
+                          className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center text-white hover:bg-gray-500 transition-colors z-10 shadow-sm animate-fade-in"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      );
+                    })()}
                     <div className="flex justify-between items-center gap-2">
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-bold block leading-snug text-gray-900">

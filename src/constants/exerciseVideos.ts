@@ -168,13 +168,13 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "리버스 크런치": "",
   "마운틴 클라이머": "7W4JEfEKuC4",
   "시저 킥": "",
-  "토 터치 크런치": "",
+  "토 터치 크런치": "WShPlCySyfk",
   "플러터 킥": "",
   "레그 레이즈": "",
   "케이블 크런치": "iRYIqSFN21w",
   "덤벨 사이드 벤드": "44DazvtgpGE",
   "브이 업": "saHkR_MvIdA",
-  "Ab 슬라이드": "",
+  "Ab 슬라이드": "3d-19YON2nQ",
 
   // ══════════════════════════════════
   // ── 모빌리티/스트레칭 (코어) ──
@@ -222,7 +222,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   // ── 모빌리티 (하체) ──
   "90/90 고관절 회전": "",
   "나비 자세 심화": "",
-  "고관절 굴곡근 스트레칭": "TIJu5aWPke0",
+  "고관절 굴곡근 스트레칭": "7lGIfjasuNo",
   "만세 스쿼트 홀드 프라잉": "",
   "고관절 회전": "C4MDREc9ERg",
 
@@ -249,7 +249,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "힙 브릿지": "iOrJXNUH3to",
   "점핑 잭": "",
   "동적 팔 흔들기": "",
-  "밴드 워크": "",
+  "밴드 워크": "N28Hpdezg7Q",
   "클램쉘": "",
   "안벅지 동적 스트레칭": "",
   "앞벅지 스트레치": "",
@@ -299,7 +299,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   // ── 카디오/러닝 ──
   // ══════════════════════════════════
   "추가 유산소: 중강도 러닝": "ppmeLjrx6UE",
-  "추가 유산소: 가벼운 걷기": "",
+  "추가 유산소: 가벼운 걷기": "S3s7E6Nb3AY",
   "추가 유산소: 가벼운 조깅 또는 걷기": "ppmeLjrx6UE",
   "추가 유산소: 인클라인 워킹": "JGzA6FPzZS8",
   "추가 유산소: 조깅": "ppmeLjrx6UE",

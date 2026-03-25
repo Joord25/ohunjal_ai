@@ -1,11 +1,20 @@
 import { db, auth } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 
+export interface FitnessProfileData {
+  weeklyFrequency: number;
+  sessionMinutes: number;
+  place: "gym" | "home" | "both";
+  equipment: ("barbell" | "dumbbell" | "machine" | "bodyweight")[];
+  goal: "fat_loss" | "muscle_gain" | "endurance" | "health";
+}
+
 export interface UserProfile {
   gender: "male" | "female" | null;
   birthYear: number | null;
   bodyWeight: number | null;
   weightLog: { date: string; weight: number }[];
+  fitnessProfile?: FitnessProfileData | null;
   updatedAt?: Date;
 }
 

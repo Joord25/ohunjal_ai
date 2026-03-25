@@ -26,6 +26,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
   const [activeVolumeDot, setActiveVolumeDot] = useState<number | null>(null);
   const [activeWeightDot, setActiveWeightDot] = useState<number | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [expLogOpen, setExpLogOpen] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [showAddWeight, setShowAddWeight] = useState(false);
   const [newWeightDate, setNewWeightDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -540,13 +541,19 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
               return d >= seasonInfo.startDate && d <= seasonInfo.endDate;
             }).length;
 
+            const expLog = [...seasonExp.expLog].sort((a, b) => b.date.localeCompare(a.date));
+
             return (
               <div className="rounded-3xl overflow-hidden border shadow-sm" style={{ borderColor: `${tierResult.tier.color}30` }}>
-                <div className="px-6 py-4" style={{ background: `linear-gradient(135deg, ${tierResult.tier.color}20, ${tierResult.tier.color}08)` }}>
+                <div
+                  className="px-6 py-4 cursor-pointer"
+                  style={{ background: `linear-gradient(135deg, ${tierResult.tier.color}20, ${tierResult.tier.color}08)` }}
+                  onClick={() => setExpLogOpen(v => !v)}
+                >
                   <p className="text-[10px] font-bold text-gray-400 mb-1">{seasonInfo.label}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-black" style={{ color: tierResult.tier.color }}>{tierResult.tier.name}</span>
-                    <button onClick={() => setHelpCard("tierSystem")} className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center">
+                    <button onClick={(e) => { e.stopPropagation(); setHelpCard("tierSystem"); }} className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center">
                       <span className="text-[10px] font-black text-gray-400">?</span>
                     </button>
                   </div>
@@ -561,7 +568,33 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                       </span>
                     </div>
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-2">이번 시즌 {seasonSessions}회 운동</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-[11px] text-gray-400">이번 시즌 {seasonSessions}회 운동</p>
+                    <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${expLogOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </div>
+
+                {/* EXP 내역 아코디언 */}
+                <div className={`overflow-hidden transition-all duration-300 ${expLogOpen ? "max-h-[300px]" : "max-h-0"}`}>
+                  <div className="px-6 py-3 border-t overflow-y-auto max-h-[280px]" style={{ borderColor: `${tierResult.tier.color}15` }}>
+                    {expLog.length === 0 ? (
+                      <p className="text-[11px] text-gray-400 text-center py-2">아직 경험치 내역이 없어요</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {expLog.map((entry, i) => (
+                          <div key={i} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-gray-400 w-12 shrink-0">
+                                {entry.date.slice(5, 10).replace("-", ".")}
+                              </span>
+                              <span className="text-[11px] text-gray-600">{entry.detail}</span>
+                            </div>
+                            <span className="text-[11px] font-bold shrink-0 ml-2" style={{ color: tierResult.tier.color }}>+{entry.amount}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );

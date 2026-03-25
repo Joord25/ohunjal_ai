@@ -18,6 +18,7 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/SubscriptionScreen";
 import { PlanLoadingOverlay } from "@/components/PlanLoadingOverlay";
+import { FitnessReading } from "@/components/FitnessReading";
 import { loadUserProfile } from "@/utils/userProfile";
 import { useSafeArea } from "@/hooks/useSafeArea";
 
@@ -28,7 +29,8 @@ const lazyGenerateWorkout = async (...args: Parameters<typeof import("@/constant
 
 type ViewState =
   | "login"
-  | "home" 
+  | "fitness_reading"
+  | "home"
   | "condition_check"
   | "master_plan_preview"
   | "workout_session"
@@ -57,7 +59,7 @@ export default function Home() {
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
-  const FREE_PLAN_LIMIT = 5;
+  const FREE_PLAN_LIMIT = 4;
 
   // Firebase Auth listener
   useEffect(() => {
@@ -106,7 +108,9 @@ export default function Home() {
           }
         }
 
-        setView("condition_check");
+        // 첫 실행: 피트니스 리딩 → 이후: 바로 컨디션 체크
+        const readingDone = localStorage.getItem("alpha_fitness_reading_done");
+        setView(readingDone ? "condition_check" : "fitness_reading");
       } else {
         setIsLoggedIn(false);
         setSubStatus("free");
@@ -373,6 +377,14 @@ export default function Home() {
     switch (view) {
       case "login":
         return <LoginScreen onLogin={handleLogin} />;
+
+      case "fitness_reading":
+        return (
+          <FitnessReading
+            userName={user?.displayName?.split(" ")[0] || "회원"}
+            onComplete={() => setView("condition_check")}
+          />
+        );
 
       case "condition_check":
         return (
