@@ -384,6 +384,7 @@ export default function Home() {
             userName={user?.displayName?.split(" ")[0] || "회원"}
             onComplete={() => setView("condition_check")}
             onPremium={() => setShowPaywall(true)}
+            isPremium={subStatus === "active"}
           />
         );
 

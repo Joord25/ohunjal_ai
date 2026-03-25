@@ -17,6 +17,7 @@ interface Props {
   userName: string;
   onComplete: (profile: FitnessProfile) => void;
   onPremium?: () => void;
+  isPremium?: boolean;
 }
 
 /* ─── constants ─── */
@@ -271,7 +272,7 @@ function computeReading(p: FitnessProfile): ReadingResult {
 type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "analyzing" | "result";
 
 /* ─── Component ─── */
-export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium }) => {
+export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium }) => {
   const [step, setStep] = useState<Step>("welcome");
   const [profile, setProfile] = useState<Partial<FitnessProfile>>({});
   const [gender, setGender] = useState<"male" | "female" | null>(null);
@@ -771,6 +772,11 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                                 <p className="text-[#2D6A4F] text-sm font-bold mt-1 text-right">{reading.freePeek.timeline}</p>
                                 <p className="text-[#6B7280] text-[11px] mt-1.5 text-right">{reading.freePeek.condition}</p>
                               </div>
+                            ) : isPremium ? (
+                              <div className="flex items-center justify-between">
+                                <span className="text-[#1B4332] text-sm">{item.label}</span>
+                                <span className="text-[#2D6A4F] text-sm font-bold">데이터 수집 중</span>
+                              </div>
                             ) : (
                               <div className="flex items-center justify-between">
                                 <span className="text-[#1B4332] text-sm">{item.label}</span>
@@ -789,15 +795,64 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                       </div>
                     </div>
 
-                    {/* Other goals button */}
-                    <button
-                      onClick={() => setShowOtherGoals(true)}
-                      className={`w-full py-3 text-[#6B7280] text-sm font-medium transition-all duration-700 delay-500 ${
-                        showResult ? "opacity-100" : "opacity-0"
-                      }`}
-                    >
-                      {otherLevelLabel}라면? · 다른 목표도 궁금하신가요?
-                    </button>
+                    {/* Other level card (premium only) */}
+                    {isPremium && (
+                      <div
+                        className={`w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm transition-all duration-700 delay-500 ${
+                          showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-2 h-2 rounded-full bg-gray-400" />
+                          <span className="text-[#1B4332] text-sm font-bold">내 목표: {myGoal[1].title}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{otherLevelLabel}</span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {myGoal[1][otherLevel].map((item: PredictionItem, i: number) => (
+                            <div key={i} className="flex items-center justify-between">
+                              <span className="text-[#1B4332] text-sm">{item.label}</span>
+                              <span className="text-[#2D6A4F] text-sm font-bold">데이터 수집 중</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Other goals cards (premium) or button (free) */}
+                    {isPremium ? (
+                      <>
+                        {Object.entries(PREDICTIONS_BY_GOAL).filter(([k]) => k !== fp.goal).map(([key, goalData]) => (
+                          <div
+                            key={key}
+                            className={`w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm transition-all duration-700 delay-600 ${
+                              showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-2 h-2 rounded-full bg-[#059669]" />
+                              <span className="text-[#1B4332] text-sm font-bold">{goalData.title}</span>
+                            </div>
+                            <div className="space-y-2.5">
+                              {goalData[myLevel].map((item: PredictionItem, i: number) => (
+                                <div key={i} className="flex items-center justify-between">
+                                  <span className="text-[#1B4332] text-sm">{item.label}</span>
+                                  <span className="text-[#2D6A4F] text-sm font-bold">데이터 수집 중</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowOtherGoals(true)}
+                        className={`w-full py-3 text-[#6B7280] text-sm font-medium transition-all duration-700 delay-500 ${
+                          showResult ? "opacity-100" : "opacity-0"
+                        }`}
+                      >
+                        {otherLevelLabel}라면? · 다른 목표도 궁금하신가요?
+                      </button>
+                    )}
                   </>
                 );
               })()}
