@@ -310,7 +310,6 @@ const PULL_EXERCISES = {
     "원 암 시티드 로우 머신 (One Arm Seated Row Machine)",
     "백익스텐션 머신 (Back Extension Machine)",
     "슈퍼맨 동작 (Superman)",
-    "T-W 레이즈 (T-W Raise)",
   ],
   rearDelt: [
     "케이블 페이스 풀 (Cable Face Pulls)",
@@ -470,6 +469,7 @@ const CORE_EXERCISES = {
     "흉추 스트레칭 및 회전 (Thoracic Spine Mobility Flow)",
     "어깨 가동성 드릴 (Shoulder Mobility Drills)",
     "목 주변 근육 이완 (Neck Release)",
+    "T-W 레이즈 (T-W Raise)",
   ],
   mobility_lower: [
     "90/90 고관절 회전 (90/90 Hip Rotation)",
@@ -540,6 +540,7 @@ export const LABELED_EXERCISE_POOLS: { label: string; keywords: string[]; exerci
   { label: "종아리", keywords: ["종아리", "calf", "카프"], exercises: [...LEG_EXERCISES.calf] },
   { label: "전신", keywords: ["전신", "full", "풀바디", "컴파운드"], exercises: [...FULL_BODY_EXERCISES.compound, ...FULL_BODY_EXERCISES.upper, ...FULL_BODY_EXERCISES.pull, ...FULL_BODY_EXERCISES.lower] },
   { label: "코어", keywords: ["코어", "core", "복근", "abs", "플랭크"], exercises: [...CORE_EXERCISES.plank, ...CORE_EXERCISES.dynamic] },
+  { label: "가동성", keywords: ["가동성", "mobility", "스트레칭", "CARs", "회전"], exercises: [...CORE_EXERCISES.mobility_upper, ...CORE_EXERCISES.mobility_lower, ...CORE_EXERCISES.mobility_full, ...CORE_EXERCISES.mobility_core] },
 ];
 
 export function getAlternativeExercises(exerciseName: string): string[] {
