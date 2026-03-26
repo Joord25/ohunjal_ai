@@ -406,7 +406,7 @@ export default function Home() {
         return (
           <ConditionCheck
             onComplete={handleConditionComplete}
-            onBack={() => setShowExitConfirm(true)}
+            onBack={() => { setView("home"); setActiveTab("home"); }}
             userName={user?.displayName?.split(" ")[0] || undefined}
           />
         );
@@ -535,6 +535,7 @@ export default function Home() {
              <HomeScreen
                userName={user?.displayName?.split(" ")[0] || undefined}
                onStartWorkout={() => setView("condition_check")}
+               onShowPrediction={() => setView("prediction_report")}
              />
            );
         }

@@ -164,16 +164,14 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
       <div key={step} className="flex-1 flex flex-col gap-6 overflow-y-auto pb-24 scrollbar-hide">
         <div key={`header-${step}`} className="pt-4 pb-2 animate-fade-in shrink-0">
           <div className="flex items-center gap-2">
-            {step !== "body_check" && (
-              <button
-                onClick={handleBack}
-                className="text-gray-400 hover:text-gray-600 active:scale-90 transition-all -ml-1 p-1"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
+            <button
+              onClick={step === "body_check" ? onBack : handleBack}
+              className="text-gray-400 hover:text-gray-600 active:scale-90 transition-all -ml-1 p-1"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
             <span className="text-[#2D6A4F] font-bold tracking-[0.2em] uppercase text-xs">
               AI 분석 • 단계 {step === "body_check" ? "1" : step === "weight_input" ? "2" : "3"}
             </span>

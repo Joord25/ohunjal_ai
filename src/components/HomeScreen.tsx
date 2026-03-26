@@ -4,10 +4,24 @@ import React, { useState, useEffect, useRef } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
+import { calcCaloriesTrend } from "@/utils/predictionUtils";
 
 interface HomeScreenProps {
   userName?: string;
   onStartWorkout: () => void;
+  onShowPrediction?: () => void;
+}
+
+interface FitnessProfile {
+  gender: "male" | "female";
+  birthYear: number;
+  bodyWeight: number;
+  weeklyFrequency: number;
+  sessionMinutes: number;
+  goal: "fat_loss" | "muscle_gain" | "endurance" | "health";
+  bench1RM?: number;
+  squat1RM?: number;
+  deadlift1RM?: number;
 }
 
 // 오늘의 추천 운동 타입 계산
@@ -51,7 +65,7 @@ const getTodayWorkoutInfo = (goal: WorkoutGoal | null) => {
   };
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout, onShowPrediction }) => {
   const [history, setHistory] = useState<WorkoutHistory[]>([]);
   const [questData, setQuestData] = useState<ReturnType<typeof getOrCreateWeeklyQuests> | null>(null);
   const [savedGoal, setSavedGoal] = useState<WorkoutGoal | null>(null);
@@ -60,6 +74,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   const [typedText, setTypedText] = useState("");
   const [typingDone, setTypingDone] = useState(false);
   const typingStarted = useRef(false);
+  const [profile, setProfile] = useState<FitnessProfile | null>(null);
   const isFirstVisit = history.length === 0;
 
   useEffect(() => {
@@ -83,15 +98,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
         }
       }
 
-      // 저장된 목표 불러오기
-      const profile = localStorage.getItem("alpha_fitness_profile");
-      if (profile) {
-        const p = JSON.parse(profile);
+      // 저장된 프로필 불러오기
+      const profileRaw = localStorage.getItem("alpha_fitness_profile");
+      if (profileRaw) {
+        const p = JSON.parse(profileRaw);
         const goalMap: Record<string, WorkoutGoal> = {
           muscle_gain: "muscle_gain", strength: "strength",
           fat_loss: "fat_loss", health: "general_fitness", endurance: "general_fitness",
         };
         if (p.goal) setSavedGoal(goalMap[p.goal] || "muscle_gain");
+        if (p.bodyWeight && p.weeklyFrequency) setProfile(p as FitnessProfile);
       }
     } catch { /* ignore */ }
   }, []);
@@ -255,6 +271,75 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   } else if (thisWeekCount > 0) {
     subBadges.push(`이번 주 ${thisWeekCount}회`);
   }
+
+    // 성장 예측 프리뷰 (목표별 핵심 수치 하나)
+    const predictionPreview = (() => {
+      if (history.length < 2) return null;
+
+      // 1RM 데이터가 있으면 근력 성장 예측 (프로필 불필요)
+      const e1rms = history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0);
+      if (e1rms.length >= 2) {
+        const first = e1rms[0].stats.bestE1RM!;
+        const last = e1rms[e1rms.length - 1].stats.bestE1RM!;
+        const days = (new Date(e1rms[e1rms.length - 1].date).getTime() - new Date(e1rms[0].date).getTime()) / (24 * 60 * 60 * 1000);
+        if (days >= 7 && last > first) {
+          const weeklyGrowth = ((last - first) / days) * 7;
+          const pred4w = Math.round((last + weeklyGrowth * 4) * 10) / 10;
+          return {
+            current: `${Math.round(last)}kg`,
+            predicted: `${pred4w}kg`,
+            diff: `+${Math.round((pred4w - last) * 10) / 10}kg`,
+            timeline: "현재 성장 속도 유지 시 4주 후 예상",
+            label: "추정 1RM",
+          };
+        }
+      }
+
+      // 프로필이 있고 감량 목표면 체중 예측
+      if (profile && profile.goal === "fat_loss" && profile.bodyWeight > 0 && profile.weeklyFrequency > 0) {
+        const trend = calcCaloriesTrend(history, profile.bodyWeight);
+        if (trend.length >= 2) {
+          const avgCal = Math.round(trend.reduce((s, t) => s + t.calories, 0) / trend.length);
+          const weeklyBurn = avgCal * profile.weeklyFrequency;
+          const weeklyLossKg = Math.round((weeklyBurn / 7700) * 100) / 100;
+          if (weeklyLossKg > 0) {
+            const pred4w = Math.round((profile.bodyWeight - weeklyLossKg * 4) * 10) / 10;
+            const targetWeight = Math.round(profile.bodyWeight * 0.9 * 10) / 10;
+            const weeksToGoal = Math.ceil((profile.bodyWeight - targetWeight) / weeklyLossKg);
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + weeksToGoal * 7);
+            const monthStr = `${targetDate.getMonth() + 1}월`;
+            return {
+              current: `${profile.bodyWeight}kg`,
+              predicted: `${pred4w}kg`,
+              diff: `-${Math.round((profile.bodyWeight - pred4w) * 10) / 10}kg`,
+              timeline: `이 속도면 ${monthStr} 중 목표(${targetWeight}kg) 도달 예상`,
+              label: "4주 후 예상 체중",
+            };
+          }
+        }
+      }
+
+      // 볼륨 성장 폴백 (프로필 불필요 — 누구나 볼 수 있음)
+      const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const firstHalf = sorted.slice(0, Math.floor(sorted.length / 2));
+      const secondHalf = sorted.slice(Math.floor(sorted.length / 2));
+      const avgFirst = firstHalf.reduce((s, h) => s + h.stats.totalVolume, 0) / firstHalf.length;
+      const avgSecond = secondHalf.reduce((s, h) => s + h.stats.totalVolume, 0) / secondHalf.length;
+      if (avgFirst > 0 && avgSecond > avgFirst) {
+        const growthPct = Math.round(((avgSecond - avgFirst) / avgFirst) * 100);
+        const pred4wVol = Math.round(avgSecond * (1 + growthPct / 100));
+        return {
+          current: `${Math.round(avgSecond).toLocaleString()}kg`,
+          predicted: `${pred4wVol.toLocaleString()}kg`,
+          diff: `+${growthPct}%`,
+          timeline: "세션 평균 볼륨 기준 성장 추세",
+          label: "운동 볼륨",
+        };
+      }
+
+      return null;
+    })();
 
   // 예상 소요 시간 (마지막 운동 기준 or 기본 45분)
   const estMinutes = (() => {
@@ -453,6 +538,41 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
         {growthInsight && (
           <div className="rounded-2xl bg-[#2D6A4F]/5 border border-[#2D6A4F]/10 px-4 py-3 mb-4">
             <p className="text-[13px] font-bold text-[#1B4332]">{growthInsight}</p>
+          </div>
+        )}
+
+        {/* AI 성장 예측 프리뷰 */}
+        {predictionPreview && (
+          <div
+            className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 mb-4 cursor-pointer active:scale-[0.99] transition-all"
+            onClick={onShowPrediction}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <img src="/favicon_backup.png" alt="AI" className="w-4 h-4 rounded-full shrink-0" />
+              <span className="text-[11px] font-bold text-gray-400">AI 성장 예측</span>
+            </div>
+            <p className="text-[13px] font-medium text-gray-500 mb-3">지금 페이스대로라면</p>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-center">
+                <p className="text-[10px] font-bold text-gray-400 mb-0.5">현재</p>
+                <p className="text-[20px] font-black text-[#1B4332]">{predictionPreview.current}</p>
+              </div>
+              <div className="flex-1 flex items-center justify-center px-3">
+                <div className="flex-1 h-[2px] bg-gray-200 rounded-full relative">
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[6px] border-l-[#2D6A4F]" />
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-0.5">4주 후</p>
+                <p className="text-[20px] font-black text-[#2D6A4F]">{predictionPreview.predicted}</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 font-medium mb-3">{predictionPreview.timeline}</p>
+            {onShowPrediction && (
+              <p className="text-[12px] font-bold text-[#2D6A4F] text-center pt-2 border-t border-gray-100">
+                전체 리포트 보기 &gt;
+              </p>
+            )}
           </div>
         )}
 
