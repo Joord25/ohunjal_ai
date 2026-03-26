@@ -1004,12 +1004,56 @@ function RegressionChart({ goal, history, weightLog, profile }: {
   // 예측 점선 (마지막 데이터 ~ 미래)
   const predLineEnd = { x: toSvgX(predX), y: toSvgY(predY) };
 
+  const [showHelp, setShowHelp] = React.useState(false);
+
+  const goalHelpMap: Record<string, string> = {
+    fat_loss: "운동 기록에서 소모 칼로리를 추정하고, 체중 변화 추세를 선형 회귀로 분석합니다. 점선은 현재 추세가 유지될 경우 4주 후 예상 체중입니다.",
+    muscle_gain: "매 세션의 Best e1RM(추정 1회 최대 중량)을 추적합니다. 회귀선은 근력 성장 추세이고, 점선은 이 속도로 4주 뒤 도달할 e1RM 예측입니다.",
+    endurance: "주차별 운동 횟수를 집계하여 운동 습관 추세를 보여줍니다. 점선은 WHO 권장 기준 대비 현재 추세의 4주 후 예측입니다.",
+    health: "주차별 운동 횟수를 집계하여 운동 습관 추세를 보여줍니다. 점선은 WHO 권장 기준 대비 현재 추세의 4주 후 예측입니다.",
+  };
+
+  const r2Explain = reg.r2 >= 0.7 ? "높은 신뢰도" : reg.r2 >= 0.4 ? "보통 신뢰도" : "낮은 신뢰도 (데이터 변동 큼)";
+
   return (
     <div className="bg-[#FAFBF9] rounded-xl p-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-bold text-[#1B4332]">회귀분석 예측</p>
-        <p className="text-[9px] text-gray-400">R² = {Math.round(reg.r2 * 100)}%</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs font-bold text-[#1B4332]">회귀분석 예측</p>
+          <button onClick={() => setShowHelp(!showHelp)} className="w-4 h-4 rounded-full bg-[#2D6A4F]/10 flex items-center justify-center">
+            <span className="text-[9px] font-black text-[#2D6A4F]">?</span>
+          </button>
+        </div>
+        <p className="text-[9px] text-gray-400">R² = {Math.round(reg.r2 * 100)}% ({r2Explain})</p>
       </div>
+
+      {showHelp && (
+        <div className="bg-white rounded-lg p-3 mb-3 border border-gray-100 animate-fade-in">
+          <p className="text-[11px] text-[#1B4332] leading-relaxed mb-2">{goalHelpMap[goal] || goalHelpMap.health}</p>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#2D6A4F] inline-block" />
+              <span className="text-[10px] text-gray-600">실제 데이터 (운동 기록)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-0 border-t-2 border-[#2D6A4F]/60 inline-block" />
+              <span className="text-[10px] text-gray-600">회귀선 (추세)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-0 border-t-2 border-dashed border-[#2D6A4F]/40 inline-block" />
+              <span className="text-[10px] text-gray-600">예측선 (4주 후)</span>
+            </div>
+            {targetLine && (
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-0 border-t border-dashed border-emerald-600/50 inline-block" />
+                <span className="text-[10px] text-gray-600">목표 라인</span>
+              </div>
+            )}
+            <p className="text-[9px] text-gray-400 mt-1">R²(결정계수): 회귀선이 데이터를 얼마나 잘 설명하는지 나타냅니다. 100%에 가까울수록 예측 신뢰도가 높습니다.</p>
+          </div>
+        </div>
+      )}
+
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 180 }}>
         {/* Y축 레이블 */}
         <text x={PAD.left - 5} y={PAD.top - 6} textAnchor="end" className="fill-gray-400" fontSize="8">{yLabel}</text>
