@@ -64,6 +64,8 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
 
   const [isEditing, setIsEditing] = useState(false);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+
+
   const [guideExercise, setGuideExercise] = useState<ExerciseStep | null>(null);
   const [swapExercise, setSwapExercise] = useState<{ exercise: ExerciseStep; index: number; sameGroup: string[] } | null>(null);
   const [swapSearch, setSwapSearch] = useState("");
@@ -324,18 +326,18 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                   const hasSwap = getAlternativeExercises(ex.name).length > 0;
                   return (
                   <div
-                    key={i}
+                    key={globalIdx}
                     ref={phaseIdx === 0 && i === 0 ? firstGuideRef : undefined}
-                    className={`rounded-2xl p-4 pt-3 transition-all bg-white border-2 active:scale-[0.98] relative ${
+                    className={`rounded-2xl p-4 pt-3 bg-white border-2 relative transition-all ${
                       phase.key === "main"
-                        ? "border-[#1B4332] shadow-[2px_2px_0px_0px_#1B4332]"
+                        ? "border-[#1B4332] shadow-[2px_2px_0px_0px_#1B4332] active:scale-[0.98]"
                         : phase.key === "warmup"
-                        ? "border-gray-700 shadow-[2px_2px_0px_0px_#374151]"
+                        ? "border-gray-700 shadow-[2px_2px_0px_0px_#374151] active:scale-[0.98]"
                         : phase.key === "core"
-                        ? "border-gray-600 shadow-[2px_2px_0px_0px_#4B5563]"
+                        ? "border-gray-600 shadow-[2px_2px_0px_0px_#4B5563] active:scale-[0.98]"
                         : phase.key === "cardio"
-                        ? "border-emerald-500 shadow-[2px_2px_0px_0px_#10B981]"
-                        : "border-gray-300 shadow-[2px_2px_0px_0px_#D1D5DB]"
+                        ? "border-emerald-500 shadow-[2px_2px_0px_0px_#10B981] active:scale-[0.98]"
+                        : "border-gray-300 shadow-[2px_2px_0px_0px_#D1D5DB] active:scale-[0.98]"
                     }`}
                     onClick={() => setExpandedCard(isExpanded ? null : globalIdx)}
                   >

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { UserCondition, WorkoutGoal, WorkoutHistory, SessionMode, TargetMuscle, RunType } from "@/constants/workout";
 import { updateWeight, updateGender, updateBirthYear } from "@/utils/userProfile";
 import { getIntensityRecommendation, type IntensityLevel } from "@/utils/workoutMetrics";
-import { getOrCreateWeeklyQuests, type QuestDefinition, type WeeklyQuestState } from "@/utils/questSystem";
 import { CoachTooltip } from "./Tutorial";
 
 export interface SessionSelection {
@@ -30,6 +29,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
   const [bodyPart, setBodyPart] = useState<UserCondition["bodyPart"] | null>(null);
   const [energy, setEnergy] = useState<number>(3);
   const [goal, setGoal] = useState<WorkoutGoal | null>(null);
+  const [showWeightEdit, setShowWeightEdit] = useState(false);
   const [bodyWeight, setBodyWeight] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("alpha_body_weight") || "";
@@ -85,15 +85,6 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
     ? getIntensityRecommendation(recentHistory, savedBirthYear, savedGender)
     : null;
 
-  // Load weekly quest progress for intensity recommendation
-  const questData = (() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem("alpha_workout_history");
-      const all: WorkoutHistory[] = raw ? JSON.parse(raw) : [];
-      return getOrCreateWeeklyQuests(all, savedBirthYear, savedGender);
-    } catch { return null; }
-  })();
 
 
 
@@ -104,10 +95,10 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
 
 
 
-  // FitnessReading 온보딩에서 프로필을 이미 수집했으므로 항상 true
+  // 성별+출생연도가 있으면 재방문 유저 (체중만 입력)
   const [hasProfile] = useState(() => {
     if (typeof window === "undefined") return false;
-    return !!localStorage.getItem("alpha_fitness_reading_done");
+    return !!(localStorage.getItem("alpha_gender") && localStorage.getItem("alpha_birth_year"));
   });
 
   const handleBack = () => {
@@ -135,6 +126,10 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
       const byNum = parseInt(birthYear.trim());
       if (!isNaN(byNum) && byNum > 1900) {
         updateBirthYear(byNum);
+      }
+      // 첫 프로필 입력 완료 시 플래그 세팅 (예측모델 등에서 참조)
+      if (!localStorage.getItem("alpha_fitness_reading_done")) {
+        localStorage.setItem("alpha_fitness_reading_done", "1");
       }
       setStep("goal_select");
     } else if (step === "goal_select" && selectedGoal) {
@@ -277,31 +272,45 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
                 </div>
               </>
             ) : (
-              /* 재방문: 체중만 크게 */
-              <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-card-enter" style={{ animationDelay: "0.05s", animationFillMode: "forwards" }}>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">오늘 체중</p>
-                <div className="flex items-end justify-center gap-2">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={bodyWeight}
-                    onChange={(e) => setBodyWeight(e.target.value)}
-                    placeholder="70"
-                    autoFocus
-                    className="w-32 text-center text-4xl font-black text-[#5C795E] bg-transparent border-b-2 border-[#2D6A4F] outline-none pb-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <span className="text-lg font-bold text-gray-400 pb-2">kg</span>
+              /* 재방문: "어제랑 같아요" 원탭 + 변경 옵션 */
+              showWeightEdit ? (
+                <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-card-enter" style={{ animationDelay: "0.05s", animationFillMode: "forwards" }}>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">체중 변경</p>
+                  <div className="flex items-end justify-center gap-2">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={bodyWeight}
+                      onChange={(e) => setBodyWeight(e.target.value)}
+                      placeholder="70"
+                      autoFocus
+                      className="w-32 text-center text-4xl font-black text-[#5C795E] bg-transparent border-b-2 border-[#2D6A4F] outline-none pb-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="text-lg font-bold text-gray-400 pb-2">kg</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <button
+                  onClick={() => handleNext()}
+                  className="w-full bg-white rounded-2xl border-2 border-gray-100 p-6 animate-card-enter active:scale-[0.98] transition-all text-center"
+                  style={{ animationDelay: "0.05s", animationFillMode: "forwards" }}
+                >
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2">이전 체중</p>
+                  <p className="text-4xl font-black text-[#5C795E]">{bodyWeight || "—"}<span className="text-lg font-bold text-gray-400 ml-1">kg</span></p>
+                  <p className="text-sm font-bold text-[#2D6A4F] mt-3">어제랑 같아요</p>
+                </button>
+              )
             )}
 
             <p className="text-[11px] text-gray-500 text-center font-medium">
-              {hasProfile ? "매일 체중을 기록하면 더 정확한 분석이 가능해요" : "성별·연령·체중 기반 백분위 비교 및 AI 코칭에 활용됩니다"}
+              {hasProfile ? (
+                showWeightEdit ? "변경된 체중으로 기록합니다" : <button onClick={() => setShowWeightEdit(true)} className="underline underline-offset-2">체중이 바뀌었어요</button>
+              ) : "성별·연령·체중 기반 백분위 비교 및 AI 코칭에 활용됩니다"}
             </p>
 
             <button
               onClick={() => handleNext()}
-              className="w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] bg-[#5C795E] text-white hover:bg-[#2D6A4F]"
+              className={`w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] bg-[#5C795E] text-white hover:bg-[#2D6A4F] ${hasProfile && !showWeightEdit ? "hidden" : ""}`}
             >
               다음
             </button>
@@ -311,8 +320,6 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
           <GoalSelection
             goal={goal}
             onSelect={(g, session) => handleNext(undefined, g, session)}
-            recommendedIntensity={intensityRec?.nextRecommended || null}
-            questData={questData}
           />
         )}
       </div>
@@ -329,88 +336,14 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
   );
 };
 
-const INTENSITY_TO_GOAL: Record<string, WorkoutGoal> = {
-  high: "strength",
-  moderate: "muscle_gain",
-  low: "fat_loss",
-};
-
 const GoalSelection = ({
   goal,
   onSelect,
-  recommendedIntensity,
-  questData,
 }: {
   goal: WorkoutGoal | null;
   onSelect: (g: WorkoutGoal, session?: SessionSelection) => void;
-  recommendedIntensity: "high" | "moderate" | "low" | null;
-  questData: { questDefs: QuestDefinition[]; questState: WeeklyQuestState } | null;
 }) => {
-  const [subView, setSubView] = useState<"split" | "running" | null>(null);
-  const [showQuestTip, setShowQuestTip] = useState(true);
-  // Quest-based intensity recommendation
-  const questRecommendation = (() => {
-    if (!questData) return null;
-    const { questDefs, questState } = questData;
-    const progress = questDefs.map(q => {
-      const p = questState.quests.find(qp => qp.questId === q.id);
-      return { def: q, current: p?.current ?? 0, completed: p?.completed ?? false };
-    });
-
-    // Find the intensity quest with most remaining for recommendation
-    const intensityIncomplete = progress.filter(p => !p.completed && p.def.type.startsWith("intensity_"));
-    let recommended: string | null = null;
-    let recommendedType: string | null = null;
-    if (intensityIncomplete.length > 0) {
-      const priority = ["intensity_high", "intensity_moderate", "intensity_low"];
-      const best = intensityIncomplete.sort((a, b) => priority.indexOf(a.def.type) - priority.indexOf(b.def.type))[0];
-      const labelMap: Record<string, string> = { intensity_high: "고강도", intensity_moderate: "중강도", intensity_low: "저강도" };
-      recommended = labelMap[best.def.type] ?? null;
-      recommendedType = best.def.type;
-    }
-    return { progress, recommended, recommendedType };
-  })();
-
-  // 퀘스트 기반 추천 → 카드 뱃지에도 반영 (기존 히스토리 기반 폴백)
-  const questIntensityMap: Record<string, string> = { intensity_high: "strength", intensity_moderate: "muscle_gain", intensity_low: "fat_loss" };
-  const recGoal = questRecommendation?.recommendedType
-    ? questIntensityMap[questRecommendation.recommendedType]
-    : (recommendedIntensity ? INTENSITY_TO_GOAL[recommendedIntensity] : null);
-
-  // 부위별 운동 서브뷰
-  if (subView === "split") {
-    const muscles: { key: TargetMuscle; label: string; desc: string }[] = [
-      { key: "chest", label: "가슴", desc: "벤치프레스, 인클라인, 플라이 등" },
-      { key: "back", label: "등", desc: "풀업, 로우, 페이스풀 등" },
-      { key: "shoulders", label: "어깨", desc: "프레스, 레터럴레이즈, 리어델트 등" },
-      { key: "arms", label: "팔", desc: "바벨컬, 해머컬, 트라이셉 등" },
-      { key: "legs", label: "하체", desc: "스쿼트, 런지, 레그컬 등" },
-    ];
-    return (
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={() => setSubView(null)}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1 self-start"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-          </svg>
-          뒤로
-        </button>
-        <p className="text-sm font-bold text-[#2D6A4F] mb-1">어떤 부위를 집중할까요?</p>
-        {muscles.map((m, i) => (
-          <ConditionCard
-            key={m.key}
-            selected={false}
-            onClick={() => onSelect("muscle_gain", { goal: "muscle_gain", sessionMode: "split", targetMuscle: m.key })}
-            title={m.label}
-            desc={m.desc}
-            delay={0.05 * (i + 1)}
-          />
-        ))}
-      </div>
-    );
-  }
+  const [subView, setSubView] = useState<"running" | null>(null);
 
   // 러닝 종류 서브뷰
   if (subView === "running") {
@@ -447,96 +380,6 @@ const GoalSelection = ({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 주간 퀘스트 — 포켓몬 인카운터 스타일 */}
-      {questRecommendation && showQuestTip && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center" onClick={() => setShowQuestTip(false)}>
-          {/* 화면 번쩍 플래시 */}
-          <div className="absolute inset-0 bg-white pointer-events-none" style={{ animation: "quest-flash 0.8s ease-out forwards" }} />
-          {/* 다크 배경 (플래시 후 페이드인) */}
-          <div className="absolute inset-0 bg-black/80" style={{ animation: "quest-bg-in 0.8s ease-out forwards" }} />
-
-          {/* 카드 쾅 등장 + 흔들림 */}
-          <div
-            className="relative z-10 mx-5 w-full max-w-xs"
-            style={{
-              fontFamily: "'Neo둥근모', 'NeoDunggeunmo', monospace",
-              animation: "quest-card-slam 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards, quest-shake 0.4s ease-in-out 0.9s, quest-glow-pulse 2s ease-in-out 1.3s infinite",
-            }}
-          >
-            <div className="bg-[#0a1f15] rounded-2xl border-2 border-[#34d399]/60 overflow-hidden relative">
-              {/* 스캔라인 오버레이 */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.07]">
-                <div className="w-full h-8 bg-gradient-to-b from-transparent via-white to-transparent" style={{ animation: "quest-scanline 3s linear infinite" }} />
-              </div>
-
-              {/* 헤더 */}
-              <div className="px-5 pt-4 pb-2.5 border-b border-[#34d399]/20 bg-gradient-to-r from-[#34d399]/10 to-transparent">
-                <p className="text-[11px] text-[#a7f3d0]/50 tracking-widest uppercase mb-1" style={{ animation: "quest-line-in 0.3s ease-out 0.6s both" }}>
-                  ! 퀘스트 발견 !
-                </p>
-                <p className="text-[15px] text-[#34d399] font-bold tracking-wider" style={{ animation: "quest-line-in 0.3s ease-out 0.7s both" }}>
-                  ⚔ 주간 퀘스트
-                </p>
-              </div>
-
-              {/* 퀘스트 목록 */}
-              <div className="px-5 py-4 flex flex-col gap-3">
-                {questRecommendation.progress.map((p, i) => {
-                  const colorMap: Record<string, string> = {
-                    intensity_high: "#f87171", intensity_moderate: "#fbbf24", intensity_low: "#34d399",
-                    consistency: "#60a5fa", bonus_streak: "#c084fc", bonus_new_exercise: "#f472b6",
-                  };
-                  const color = colorMap[p.def.type] ?? "#a7f3d0";
-                  const barWidth = p.def.target > 0 ? Math.round((p.current / p.def.target) * 100) : 0;
-                  const delay = 0.9 + i * 0.15;
-                  const isBonus = p.def.isBonus;
-                  return (
-                    <div key={p.def.id} style={{ animation: `quest-line-in 0.3s ease-out ${delay}s both` }}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[13px] font-bold" style={{ color: p.completed ? "#6b7280" : color }}>
-                          {p.completed ? "✓ " : isBonus ? "☆ " : "▸ "}{p.def.label}
-                        </span>
-                        <span className="text-[12px] font-bold" style={{ color: p.completed ? "#6b7280" : "#a7f3d0" }}>
-                          {p.current}/{p.def.target}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${barWidth}%`,
-                            backgroundColor: p.completed ? "#6b7280" : color,
-                            animation: `quest-bar-fill 0.6s ease-out ${delay + 0.2}s both`,
-                            boxShadow: p.completed ? "none" : `0 0 8px ${color}80`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* 추천 */}
-              {questRecommendation.recommended && (
-                <div
-                  className="px-5 py-3 border-t border-[#34d399]/20 bg-gradient-to-r from-[#fbbf24]/5 to-transparent"
-                  style={{ animation: `quest-line-in 0.3s ease-out ${0.9 + questRecommendation.progress.length * 0.15 + 0.1}s both` }}
-                >
-                  <p className="text-[14px] text-white font-bold">
-                    → 오늘은 <span style={{ color: "#fbbf24", animation: "quest-text-glow 1.5s ease-in-out 1.8s infinite" }}>{questRecommendation.recommended}</span> 추천!
-                  </p>
-                </div>
-              )}
-
-              {/* 닫기 */}
-              <div className="px-5 pb-3 pt-1">
-                <p className="text-[10px] text-[#a7f3d0]/30" style={{ animation: `quest-line-in 0.3s ease-out ${0.9 + questRecommendation.progress.length * 0.15 + 0.3}s both` }}>탭하여 닫기</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 메인 3개 목표 */}
       <ConditionCard
         selected={goal === "fat_loss"}
@@ -545,7 +388,6 @@ const GoalSelection = ({
         desc="다이어트, 미용"
         badge="저강도"
         badgeColor="text-emerald-600 bg-emerald-50"
-        recommended={recGoal === "fat_loss"}
         delay={0.05}
       />
       <ConditionCard
@@ -555,7 +397,6 @@ const GoalSelection = ({
         desc="근비대, 몸 만들기"
         badge="중강도"
         badgeColor="text-amber-600 bg-amber-50"
-        recommended={recGoal === "muscle_gain"}
         delay={0.1}
       />
       <ConditionCard
@@ -565,22 +406,39 @@ const GoalSelection = ({
         desc="3대 500 목표"
         badge="고강도"
         badgeColor="text-red-500 bg-red-50"
-        recommended={recGoal === "strength"}
         delay={0.15}
       />
 
-      {/* 하단 특수 훈련 칩 버튼 */}
-      <div className="flex gap-2 mt-2">
+      {/* 부위별 운동 칩 — 직접 노출 */}
+      <div className="flex gap-2 mt-2 animate-card-enter" style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}>
+        {[
+          { key: "chest" as TargetMuscle, label: "가슴" },
+          { key: "back" as TargetMuscle, label: "등" },
+          { key: "shoulders" as TargetMuscle, label: "어깨" },
+          { key: "arms" as TargetMuscle, label: "팔" },
+          { key: "legs" as TargetMuscle, label: "하체" },
+        ].map((m) => (
+          <button
+            key={m.key}
+            onClick={() => onSelect("muscle_gain", { goal: "muscle_gain", sessionMode: "split", targetMuscle: m.key })}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-[#2D6A4F]/30 hover:bg-emerald-50/30 transition-all duration-200 active:scale-[0.97] text-[13px] font-bold text-gray-800 text-center"
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 하단 특수 훈련 칩 */}
+      <div className="flex gap-2">
         {[
           { label: "기초체력", sub: "초보 홈트용", onClick: () => onSelect("general_fitness", { goal: "general_fitness", sessionMode: "home_training" }) },
-          { label: "부위별", sub: "상급자용", onClick: () => setSubView("split") },
           { label: "러닝", sub: "러너용", onClick: () => setSubView("running") },
         ].map((item, i) => (
           <button
             key={item.label}
             onClick={item.onClick}
             className="flex-1 py-3 rounded-xl border border-gray-200 bg-white hover:border-[#2D6A4F]/30 hover:bg-emerald-50/30 transition-all duration-200 active:scale-[0.97] animate-card-enter"
-            style={{ animationDelay: `${0.2 + i * 0.05}s`, animationFillMode: "forwards" }}
+            style={{ animationDelay: `${0.25 + i * 0.05}s`, animationFillMode: "forwards" }}
           >
             <p className="text-[13px] font-bold text-gray-800">{item.label}</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{item.sub}</p>
@@ -598,7 +456,6 @@ const ConditionCard = ({
   onClick,
   badge,
   badgeColor,
-  recommended,
   delay = 0
 }: {
   title: string;
@@ -607,7 +464,6 @@ const ConditionCard = ({
   onClick: () => void;
   badge?: string;
   badgeColor?: string;
-  recommended?: boolean;
   delay?: number;
 }) => (
   <button
@@ -615,9 +471,7 @@ const ConditionCard = ({
     className={`w-full p-5 rounded-2xl border-2 text-left transition-all duration-200 active:scale-[0.98] animate-card-enter ${
       selected
         ? "border-[#2D6A4F] bg-emerald-50 ring-1 ring-[#2D6A4F]"
-        : recommended
-          ? "border-amber-300 bg-amber-50/40 hover:border-amber-400 ring-1 ring-amber-200"
-          : "border-gray-100 bg-white hover:border-gray-300"
+        : "border-gray-100 bg-white hover:border-gray-300"
     }`}
     style={{ animationDelay: `${delay}s`, animationFillMode: "forwards" }}
   >
@@ -626,9 +480,6 @@ const ConditionCard = ({
         <span className={`text-lg font-bold ${selected ? "text-[#1B4332]" : "text-gray-900"}`}>
           {title}
         </span>
-        {recommended && !selected && (
-          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-wider">추천</span>
-        )}
       </div>
       <div className="flex items-center gap-2">
         {badge && (

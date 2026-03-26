@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
-import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, LABELED_EXERCISE_POOLS } from "@/constants/workout";
+import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
@@ -39,6 +39,33 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
 
   const currentExercise = exercises[currentExerciseIndex];
   const totalExercises = exercises.length;
+
+  // 지난 세션에서 같은 운동의 기록 조회
+  const lastSessionRecord = React.useMemo(() => {
+    try {
+      const raw = localStorage.getItem("alpha_workout_history");
+      if (!raw) return null;
+      const history: WorkoutHistory[] = JSON.parse(raw);
+      // 최근 기록부터 검색 (오늘 제외)
+      const todayStr = new Date().toDateString();
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (new Date(history[i].date).toDateString() === todayStr) continue;
+        const session = history[i];
+        const exIdx = session.sessionData.exercises.findIndex(
+          (ex) => ex.name === currentExercise.name
+        );
+        if (exIdx >= 0 && session.logs[exIdx]?.length > 0) {
+          const exLogs = session.logs[exIdx];
+          const weights = exLogs.map(l => parseFloat(l.weightUsed || "0")).filter(w => w > 0);
+          const reps = exLogs.map(l => l.repsCompleted);
+          const hadEasy = exLogs.some(l => l.feedback === "easy" || l.feedback === "too_easy");
+          const maxWeight = weights.length > 0 ? Math.max(...weights) : 0;
+          return { weights, reps, maxWeight, hadEasy, date: session.date };
+        }
+      }
+    } catch { /* ignore */ }
+    return null;
+  }, [currentExercise.name]);
 
   // Session elapsed time (ticks every second)
   useEffect(() => {
@@ -86,79 +113,27 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     };
     setLogs(updatedLogs);
 
-    // 2. Evidence-based Adaptive Logic (NSCA/ACSM/NASM guidelines)
-    // Adjusted by sex & age per research:
-    //   - NSCA: Women use smaller absolute load increments (1.25-2.5kg vs 2.5-5kg)
-    //   - ACSM: Adults 50+ progress more conservatively (50-60% slower increments)
-    //   - ACSM: Adults 60+ require longer rest periods (+30s)
-    //   - Häkkinen et al. (2001): Older adults show slower neuromuscular adaptation
-    //   - Hunter (2014): Women recover faster between sets → shorter rest OK
-    //   - NSCA Essentials of Strength Training 4th ed.: age-graded progression tables
+    // 2. Adaptive rep logic — 무게는 세션 내에서 변경하지 않고 렙 수만 조절
+    //    무게 추천은 다음 세션 시작 시 별도로 제공
     if (currentSet < currentExercise.sets) {
       const updatedExercises = exercises.map((ex, i) =>
         i === currentExerciseIndex ? { ...ex } : ex
       );
       const exercise = updatedExercises[currentExerciseIndex];
-      const currentWeight = weightKg || 0;
       const currentReps = exercise.reps || 12;
 
-      // Load sex & age from localStorage
-      const gender = (typeof window !== "undefined" ? localStorage.getItem("alpha_gender") : null) as "male" | "female" | null;
-      const birthYearStr = typeof window !== "undefined" ? localStorage.getItem("alpha_birth_year") : null;
-      const age = birthYearStr ? new Date().getFullYear() - parseInt(birthYearStr) : 30;
-      const isFemale = gender === "female";
-
-      // Age-based progression modifier (ACSM/NSCA guidelines)
-      // <30: aggressive (1.0), 30-49: standard (0.85), 50-59: conservative (0.65), 60+: very conservative (0.5)
-      const ageMod = age >= 60 ? 0.5 : age >= 50 ? 0.65 : age >= 30 ? 0.85 : 1.0;
-
-      // Min weight step: male 5kg, female 2.5kg, male 50+ 2.5kg
-      const minStep = isFemale ? 2.5 : (age >= 50 ? 2.5 : 5);
-      const roundToStep = (v: number) => Math.max(minStep, Math.round(v / minStep) * minStep);
-
       if (feedback === "too_easy") {
-        const extraReps = reps - currentReps;
-        if (currentWeight > 0) {
-          // Extra reps ratio to target: determines how far off the weight is
-          const extraRatio = extraReps / Math.max(1, currentReps);
-          // Tiered %: ratio < 1x → 10%, 1-2x → 20%, 2-3x → 30%, 3x+ → 40%, scaled by age
-          const basePct = extraRatio >= 3 ? 0.40 : extraRatio >= 2 ? 0.30 : extraRatio >= 1 ? 0.20 : 0.10;
-          const pct = basePct * ageMod;
-          const increment = roundToStep(currentWeight * pct);
-          exercise.weight = `${currentWeight + increment}kg`;
-        } else {
-          // Bodyweight: age-scaled rep increase
-          exercise.reps = currentReps + Math.max(1, Math.round(3 * ageMod));
-        }
+        exercise.reps = currentReps + 5;
       } else if (feedback === "easy") {
-        const extraReps = reps - currentReps;
-        const repIncrease = Math.max(1, Math.round(Math.min(extraReps, 2) * ageMod));
-        exercise.reps = currentReps + repIncrease;
+        exercise.reps = currentReps + 2;
       } else if (feedback === "fail") {
         exercise.reps = Math.max(1, reps);
-        if (currentWeight > 0) {
-          const failRatio = reps / currentReps;
-          // Deeper failure → more reduction, age-scaled (older = less aggressive deload)
-          const basePct = failRatio < 0.3 ? 0.15 : failRatio < 0.6 ? 0.10 : 0.05;
-          const reduction = roundToStep(currentWeight * basePct);
-          exercise.weight = `${Math.max(0, currentWeight - reduction)}kg`;
-        }
       }
       // "target" (RIR 2-3): maintain (no change)
-
-      // Persist adapted weight to localStorage so FitScreen picks it up
-      if (exercise.weight) {
-        const parsed = parseFloat(exercise.weight);
-        if (!isNaN(parsed) && parsed > 0) {
-          const storageKey = `alpha_weight_${exercise.name.replace(/[^a-zA-Z가-힣]/g, "_")}`;
-          localStorage.setItem(storageKey, String(parsed));
-        }
-      }
 
       setExercises(updatedExercises);
 
       // Rest duration: sex & age adjusted
-      // ACSM: older adults need longer rest. Hunter (2014): women recover faster.
       if (currentExercise.type === "warmup" || currentExercise.type === "mobility" || currentExercise.type === "cardio") {
         setCurrentSet((prev) => prev + 1);
       } else {
@@ -166,8 +141,10 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         const baseRest = feedback === "fail" ? 90
           : feedback === "target" ? 60
           : 45;
-        // Women: -10s (faster recovery). Age 50+: +15s, 60+: +30s
-        const sexAdj = isFemale ? -10 : 0;
+        const gender = (typeof window !== "undefined" ? localStorage.getItem("alpha_gender") : null) as "male" | "female" | null;
+        const birthYearStr = typeof window !== "undefined" ? localStorage.getItem("alpha_birth_year") : null;
+        const age = birthYearStr ? new Date().getFullYear() - parseInt(birthYearStr) : 30;
+        const sexAdj = gender === "female" ? -10 : 0;
         const ageAdj = age >= 60 ? 30 : age >= 50 ? 15 : 0;
         setRestTimer(Math.max(30, baseRest + sexAdj + ageAdj));
       }
@@ -436,6 +413,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         onSkipRest={skipRest}
         isLastExercise={currentExerciseIndex === totalExercises - 1 && currentSet === (currentExercise.sets || 1)}
         onSwapExercise={currentExercise.type === "strength" || currentExercise.type === "core" ? handleSwapExercise : undefined}
+        nextExerciseName={currentExerciseIndex < totalExercises - 1 ? exercises[currentExerciseIndex + 1].name : undefined}
+        lastSessionRecord={lastSessionRecord}
       />
     </div>
   );

@@ -50,14 +50,15 @@ export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
     : bodyPart === "full_fatigue" ? "좀 피곤하신 날이네요"
     : "컨디션이 좋으시네요";
 
-  const goalText =
-    goal === "fat_loss" ? "체지방 연소에 최적화된"
-    : goal === "muscle_gain" ? "근비대에 집중하는"
-    : goal === "strength" ? "최대근력을 끌어올리는"
-    : sessionMode === "running" ? "러닝에 맞춘"
-    : sessionMode === "home_training" ? "홈트에 맞춘"
-    : sessionMode === "split" ? `${targetMuscle === "chest" ? "가슴" : targetMuscle === "back" ? "등" : targetMuscle === "shoulders" ? "어깨" : targetMuscle === "arms" ? "팔" : "하체"} 집중`
-    : "맞춤";
+    const muscleLabel: Record<string, string> = { chest: "가슴", back: "등", shoulders: "어깨", arms: "팔", legs: "하체" };
+    const goalText =
+      sessionMode === "split" && targetMuscle ? `${muscleLabel[targetMuscle] || "부위별"} 집중`
+      : sessionMode === "running" ? "러닝에 맞춘"
+      : sessionMode === "home_training" ? "홈트에 맞춘"
+      : goal === "fat_loss" ? "체지방 연소에 최적화된"
+      : goal === "muscle_gain" ? "근비대에 집중하는"
+      : goal === "strength" ? "최대근력을 끌어올리는"
+      : "맞춤";
 
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center animate-fade-in">

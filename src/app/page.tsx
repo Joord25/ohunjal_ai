@@ -19,6 +19,7 @@ import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/SubscriptionScreen";
 import { PlanLoadingOverlay } from "@/components/PlanLoadingOverlay";
 import { FitnessReading } from "@/components/FitnessReading";
+import { HomeScreen } from "@/components/HomeScreen";
 import { loadUserProfile } from "@/utils/userProfile";
 import { useSafeArea } from "@/hooks/useSafeArea";
 
@@ -29,7 +30,6 @@ const lazyGenerateWorkout = async (...args: Parameters<typeof import("@/constant
 
 type ViewState =
   | "login"
-  | "fitness_reading"
   | "prediction_report"
   | "home"
   | "condition_check"
@@ -39,7 +39,7 @@ type ViewState =
 
 export default function Home() {
   useSafeArea();
-  const [activeTab, setActiveTab] = useState<TabId>("today");
+  const [activeTab, setActiveTab] = useState<TabId>("home");
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [autoEdit1RM, setAutoEdit1RM] = useState(false);
 
@@ -94,21 +94,11 @@ export default function Home() {
           }).catch(() => setSubStatus("free"));
         }
 
-        // Load user profile from Firestore → localStorage
-        // Firestore 기준으로 fitnessProfile 유무 판단 (localStorage만 믿으면 계정 재가입 시 꼬임)
-        loadUserProfile().then((profile) => {
-          if (profile?.fitnessProfile) {
-            setView("condition_check");
-          } else {
-            // Firestore에 fitnessProfile 없으면 localStorage 플래그 리셋
-            localStorage.removeItem("alpha_fitness_reading_done");
-            setView("fitness_reading");
-          }
-        }).catch((e) => {
+        // Load user profile from Firestore → localStorage, then go to home
+        loadUserProfile().catch((e) => {
           console.error("Failed to load profile", e);
-          // fallback: localStorage 기준
-          const readingDone = localStorage.getItem("alpha_fitness_reading_done");
-          setView(readingDone ? "condition_check" : "fitness_reading");
+        }).finally(() => {
+          setView("home");
         });
 
         // Load workout data
@@ -228,14 +218,12 @@ export default function Home() {
 
   const handleTabChange = (id: TabId) => {
     setActiveTab(id);
-    // Reset view when going back to "today" tab
-    if (id === "today") {
+    // Reset view when going back to "home" tab
+    if (id === "home") {
       if (view === "login") {
         // keep login view
-      } else if (completedRitualIds.includes("workout")) {
-        setView("home");
       } else if (view !== "master_plan_preview" && view !== "workout_session") {
-        setView("condition_check");
+        setView("home");
       }
     }
   };
@@ -375,7 +363,7 @@ export default function Home() {
     setCurrentCondition(null);
     setCurrentGoal(null);
     setWorkoutLogs({});
-    setActiveTab("today");
+    setActiveTab("home");
   };
 
   const renderContent = () => {
@@ -391,25 +379,12 @@ export default function Home() {
     }
 
     if (activeTab === "my") {
-      return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setActiveTab("today"); setView("prediction_report"); }} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
+      return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setActiveTab("home"); setView("prediction_report"); }} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
     }
 
     switch (view) {
       case "login":
         return <LoginScreen onLogin={handleLogin} />;
-
-      case "fitness_reading":
-        return (
-          <FitnessReading
-            userName={user?.displayName?.split(" ")[0] || "회원"}
-            onComplete={() => setView("condition_check")}
-            onPremium={() => setShowPaywall(true)}
-            isPremium={subStatus === "active"}
-            workoutCount={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]").length; } catch { return 0; } })()}
-            workoutHistory={(() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]"); } catch { return []; } })()}
-            weightLog={(() => { try { return JSON.parse(localStorage.getItem("alpha_weight_log") || "[]"); } catch { return []; } })()}
-          />
-        );
 
       case "prediction_report":
         return (
@@ -554,18 +529,16 @@ export default function Home() {
            );
         }
         
-        // If logged in but workout not done, redirect to condition check
-        // This handles the case where user navigates to "Today" tab
+        // 홈 화면: 퀘스트 + 통계 + 운동 시작 버튼
         if (isLoggedIn) {
            return (
-             <ConditionCheck
-               onComplete={handleConditionComplete}
-               onBack={() => setShowExitConfirm(true)}
+             <HomeScreen
                userName={user?.displayName?.split(" ")[0] || undefined}
+               onStartWorkout={() => setView("condition_check")}
              />
            );
         }
-        
+
         return null;
     }
   };

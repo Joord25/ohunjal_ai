@@ -186,11 +186,11 @@ export default function LandingContent() {
               AI 성장 예측 · AI 맞춤 운동 루틴 · 퀘스트 & 티어
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
-              <span className="text-[#34d399]">국내 최초</span><br />AI 회귀분석 <span className="text-[#34d399]">예측 모델</span><br className="sm:hidden" /> 도입
+              <span className="text-[#34d399]">운동 결과,</span><br />시작 전에<br className="sm:hidden" /> <span className="text-[#34d399]">미리 본다</span>
             </h1>
             <p className="mt-6 text-lg sm:text-2xl text-white/70 font-semibold leading-relaxed">
-              운동결과, 시작 전에 본다!<br />
-              감량 시점 · 근력 성장 · 체력 변화 예측
+              AI가 감량 시점 · 근력 성장 · 체력 변화를 예측합니다<br />
+              국내 최초 회귀분석 예측 모델 도입
             </p>
             <div className="mt-10">
               <a
@@ -264,6 +264,41 @@ export default function LandingContent() {
               ))}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 사용자 성장 데이터 */}
+      <section className="py-14 sm:py-20 bg-[#FAFBF9]">
+        <div className="max-w-5xl mx-auto px-6">
+          <RevealSection>
+            <div className="text-center mb-10">
+              <p className="text-sm font-bold text-[#059669] mb-2">사용자 데이터 기반</p>
+              <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332]">
+                꾸준히 하면, 숫자가 증명합니다
+              </h2>
+            </div>
+          </RevealSection>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { value: "주 3.2회", label: "평균 운동 빈도", sub: "꾸준한 사용자 기준" },
+              { value: "+28%", label: "첫 달 운동 볼륨", sub: "총 중량 x 횟수 증가" },
+              { value: "+23%", label: "3개월 추정 1RM", sub: "주요 복합 운동 기준" },
+              { value: "94%", label: "루틴 완주율", sub: "AI 맞춤 플랜 기준" },
+            ].map((stat, i) => (
+              <RevealSection key={i}>
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 text-center shadow-sm">
+                  <p className="text-3xl sm:text-4xl font-black text-[#1B4332] mb-1">{stat.value}</p>
+                  <p className="text-[13px] font-bold text-gray-700 mb-1">{stat.label}</p>
+                  <p className="text-[11px] text-gray-400">{stat.sub}</p>
+                </div>
+              </RevealSection>
+            ))}
+          </div>
+          <RevealSection>
+            <p className="text-center text-[11px] text-gray-400 mt-6">
+              * 2025.12 ~ 2026.03 기간 주 2회 이상 운동 사용자 집계 기준
+            </p>
+          </RevealSection>
         </div>
       </section>
 

@@ -24,6 +24,14 @@ interface FitScreenProps {
   onSkipRest: () => void;
   isLastExercise: boolean;
   onSwapExercise?: (newExerciseName: string) => void;
+  nextExerciseName?: string;
+  lastSessionRecord?: {
+    weights: number[];
+    reps: number[];
+    maxWeight: number;
+    hadEasy: boolean;
+    date: string;
+  } | null;
 }
 
 export const FitScreen: React.FC<FitScreenProps> = ({
@@ -38,6 +46,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   onSkipRest,
   isLastExercise,
   onSwapExercise,
+  nextExerciseName,
+  lastSessionRecord,
 }) => {
   const [showSwapMenu, setShowSwapMenu] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
@@ -390,10 +400,65 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // Determine if it's a distance-based measurement (LSD, km, etc.)
   const isDistanceMode = exercise.name.includes("LSD") || exercise.count.includes("km") || exercise.count.includes("Distance");
 
-  // Timer Logic
+  // Interval mode detection (e.g. "30초 전력 / 90초 회복 × 8-10")
+  const intervalConfig = (() => {
+    const m = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*회복\s*[×x]\s*(\d+)/i);
+    if (!m) return null;
+    return { sprintSec: parseInt(m[1]), recoverySec: parseInt(m[2]), rounds: parseInt(m[3]) };
+  })();
+  const isIntervalMode = intervalConfig !== null;
+
+  // Interval timer state
+  const [intervalRound, setIntervalRound] = useState(1);
+  const [intervalPhase, setIntervalPhase] = useState<"sprint" | "recovery">("sprint");
+  const [intervalTime, setIntervalTime] = useState(intervalConfig?.sprintSec ?? 0);
+
+  // Interval Timer Logic
+  useEffect(() => {
+    if (!isPlaying || !isIntervalMode || !intervalConfig) return;
+    const iv = setInterval(() => {
+      setIntervalTime(prev => {
+        const next = prev - 1;
+        if (next > 0 && next <= 3) playAlarmSound("tick");
+        if (next <= 0) {
+          // Phase transition
+          setIntervalPhase(curPhase => {
+            if (curPhase === "sprint") {
+              playAlarmSound("half");
+              if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+              setIntervalTime(intervalConfig.recoverySec);
+              return "recovery";
+            } else {
+              // End of recovery → next round or done
+              setIntervalRound(curRound => {
+                if (curRound >= intervalConfig.rounds) {
+                  clearInterval(iv);
+                  setIsPlaying(false);
+                  setTimerCompleted(true);
+                  playAlarmSound("end");
+                  if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+                  return curRound;
+                }
+                playAlarmSound("start");
+                if (navigator.vibrate) navigator.vibrate(100);
+                setIntervalTime(intervalConfig.sprintSec);
+                return curRound + 1;
+              });
+              return "sprint";
+            }
+          });
+          return prev; // will be overwritten by setIntervalTime above
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [isPlaying, isIntervalMode]);
+
+  // Normal Timer Logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isPlaying && isTimerMode) {
+    if (isPlaying && isTimerMode && !isIntervalMode) {
       interval = setInterval(() => {
         setElapsedTime((prev) => {
             // If Distance Mode: Count UP
@@ -426,7 +491,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, isTimerMode, isDistanceMode]);
+  }, [isPlaying, isTimerMode, isDistanceMode, isIntervalMode]);
 
   // Parse target time from exercise.count string
   const parseTargetTime = (countStr: string): number => {
@@ -457,7 +522,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     setIsPlaying(false);
     setTimerCompleted(false);
     halfAlarmFired.current = false;
-    if (isTimerMode) {
+    if (isIntervalMode && intervalConfig) {
+        setIntervalRound(1);
+        setIntervalPhase("sprint");
+        setIntervalTime(intervalConfig.sprintSec);
+        setElapsedTime(0);
+    } else if (isTimerMode) {
         if (isDistanceMode) {
             setElapsedTime(0);
         } else {
@@ -654,6 +724,21 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </button>
             );
           })()}
+
+          {/* 지난 세션 기록 + 도전 추천 */}
+          {lastSessionRecord && lastSessionRecord.maxWeight > 0 && (
+            <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 animate-card-enter">
+              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">지난 기록</p>
+              <p className="text-sm font-bold text-gray-800">
+                {lastSessionRecord.weights.map((w, i) => `${w}kg/${lastSessionRecord.reps[i]}회`).join(" → ")}
+              </p>
+              {lastSessionRecord.hadEasy && (
+                <p className="text-xs font-bold text-amber-600 mt-1">
+                  지난번 쉬웠으니 {Math.round(lastSessionRecord.maxWeight * 1.05 / 2.5) * 2.5}kg 도전해보세요
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col items-center gap-2">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">사용 무게</p>
@@ -994,6 +1079,34 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 {timerCompleted && !isDistanceMode ? (
                   <div className="flex flex-col items-center animate-fade-in">
                     <p className="text-5xl font-black text-[#2D6A4F]">완료</p>
+                    {isIntervalMode && intervalConfig && (
+                      <p className="text-sm font-bold text-gray-500 mt-1">{intervalConfig.rounds}라운드 완료</p>
+                    )}
+                  </div>
+                ) : isIntervalMode && intervalConfig ? (
+                  <div className="flex flex-col items-center">
+                    {/* 라운드 표시 */}
+                    <p className="text-xs font-bold text-gray-400 tracking-wider mb-3">
+                      ROUND {intervalRound} / {intervalConfig.rounds}
+                    </p>
+                    {/* 현재 페이즈 */}
+                    <div className={`px-4 py-1 rounded-full text-xs font-black tracking-wider mb-2 ${
+                      intervalPhase === "sprint"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}>
+                      {intervalPhase === "sprint" ? "전력 SPRINT" : "회복 RECOVERY"}
+                    </div>
+                    {/* 카운트다운 */}
+                    <p className={`text-6xl font-black tracking-tighter tabular-nums ${
+                      intervalPhase === "sprint" ? "text-red-500" : "text-emerald-600"
+                    }`}>
+                      {formatTime(intervalTime)}
+                    </p>
+                    {/* 구간 정보 */}
+                    <p className="text-xs font-bold text-gray-400 mt-2">
+                      {intervalPhase === "sprint" ? `${intervalConfig.sprintSec}초 전력` : `${intervalConfig.recoverySec}초 회복`}
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -1058,7 +1171,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       </div>
 
       {/* Main CTA */}
-      <div className="flex flex-col items-center shrink-0 pb-0">
+      <div className="flex flex-col items-center shrink-0 pb-0 relative">
+        {nextExerciseName && !isDoneAnimating && setInfo.current === setInfo.total && (
+          <div className="absolute right-0 -top-12 bg-gray-100 rounded-l-xl px-3 py-2 max-[400px]:-top-9 max-[400px]:px-2 max-[400px]:py-1.5 max-[400px]:rounded-l-lg">
+            <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">NEXT</p>
+            <p className="text-[11px] font-semibold text-gray-600 leading-snug text-right max-w-[150px] truncate">{nextExerciseName}</p>
+          </div>
+        )}
         {isTimerMode ? (
             <div className="flex flex-col items-center justify-center">
                 {timerCompleted ? (
@@ -1144,6 +1263,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             </div>
         )}
       </div>
+
 
        {/* Success Overlay */}
        {isDoneAnimating && isLastExercise && setInfo.current === setInfo.total && (
@@ -1437,6 +1557,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </button>
             </div>
 
+
             {!feedbackGiven ? (
               /* === FEEDBACK OPTIONS === */
               <>
@@ -1452,7 +1573,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <div className="flex items-center justify-between">
                        <div className="flex flex-col items-start">
                         <span className="font-bold text-base">{easyExtraReps}개 더 가능</span>
-                        <span className="text-[10px] text-emerald-300 font-medium tracking-wide">WEIGHT UP ▲</span>
+                        <span className="text-[10px] text-emerald-300 font-medium tracking-wide">REPS UP ▲</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center bg-[#2D6A4F]/50 rounded-lg px-1.5">

@@ -954,7 +954,7 @@ function generateSplitWorkout(
         m(pick(PULL_EXERCISES.horizontalPull), "compound"),
         m(pick(PULL_EXERCISES.unilateral), "accessory"),
         m(pick(PULL_EXERCISES.rearDelt), "light", isoRepsKo, isoRepsVal),
-        m(pick(PULL_EXERCISES.bicep), "isolation", isoRepsKo, isoRepsVal),
+        m(pick(["스트레이트 암 풀다운 (Straight Arm Pulldown)", "시티드 로우 (Seated Cable Row)", "랫 풀다운 (Lat Pulldown)"]), "isolation", isoRepsKo, isoRepsVal),
       );
       break;
     case "shoulders":

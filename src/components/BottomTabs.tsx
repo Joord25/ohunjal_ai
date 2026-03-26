@@ -3,7 +3,7 @@
 import React from "react";
 
 
-export type TabId = "today" | "proof" | "my";
+export type TabId = "home" | "proof" | "my";
 
 interface Tab {
   id: TabId;
@@ -16,7 +16,7 @@ interface BottomTabsProps {
 }
 
 const TABS: Tab[] = [
-  { id: "today", label: "Today" },
+  { id: "home", label: "Home" },
   { id: "proof", label: "Proof" },
   { id: "my", label: "My" },
 ];
