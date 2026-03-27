@@ -423,6 +423,7 @@ export default function Home() {
             onComplete={handleConditionComplete}
             onBack={() => { setView("home"); setActiveTab("home"); }}
             userName={user?.displayName?.split(" ")[0] || undefined}
+            isGuest={!isLoggedIn}
           />
         );
 

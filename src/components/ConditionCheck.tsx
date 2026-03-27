@@ -17,11 +17,12 @@ interface ConditionCheckProps {
   onComplete: (condition: UserCondition, goal: WorkoutGoal, session?: SessionSelection) => void;
   onBack?: () => void;
   userName?: string;
+  isGuest?: boolean;
 }
 
 type Step = "body_check" | "weight_input" | "goal_select";
 
-export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBack, userName }) => {
+export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBack, userName, isGuest }) => {
   const displayName = userName || "회원";
   const [step, setStep] = useState<Step>("body_check");
 
@@ -31,22 +32,16 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
   const [goal, setGoal] = useState<WorkoutGoal | null>(null);
   const [showWeightEdit, setShowWeightEdit] = useState(false);
   const [bodyWeight, setBodyWeight] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("alpha_body_weight") || "";
-    }
-    return "";
+    if (isGuest || typeof window === "undefined") return "";
+    return localStorage.getItem("alpha_body_weight") || "";
   });
   const [gender, setGender] = useState<"male" | "female" | null>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("alpha_gender") as "male" | "female") || null;
-    }
-    return null;
+    if (isGuest || typeof window === "undefined") return null;
+    return (localStorage.getItem("alpha_gender") as "male" | "female") || null;
   });
   const [birthYear, setBirthYear] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("alpha_birth_year") || "";
-    }
-    return "";
+    if (isGuest || typeof window === "undefined") return "";
+    return localStorage.getItem("alpha_birth_year") || "";
   });
 
   const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>([]);
