@@ -198,11 +198,10 @@ export default function LandingContent() {
               AI 성장 예측 · AI 맞춤 운동 루틴 · 퀘스트 & 티어
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
-              <span className="text-[#34d399]">운동 결과,</span><br />시작 전에<br className="sm:hidden" /> <span className="text-[#34d399]">미리 본다</span>
+              <span className="text-[#34d399]">운동 뭐해야할지 몰라</span><br />러닝머신만<br className="sm:hidden" /> <span className="text-[#34d399]">타고 있다면</span>
             </h1>
             <p className="mt-6 text-lg sm:text-2xl text-white/70 font-semibold leading-relaxed">
-              AI가 감량 시점 · 근력 성장 · 체력 변화를 예측합니다<br />
-              국내 최초 회귀분석 예측 모델 도입
+              3초 입력, 오늘 뭐할지 운동전문가 AI가 알려줍니다.
             </p>
             <div className="mt-10">
               <a
