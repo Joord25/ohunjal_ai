@@ -194,12 +194,12 @@ export default function LandingContent() {
 
         <div className="relative max-w-5xl mx-auto px-6 pt-16 sm:pt-24 pb-24 sm:pb-32 text-center">
           <RevealSection>
-            <p className="text-sm sm:text-xl text-[#a7f3d0] font-medium mb-4 tracking-wide">
-              AI 성장 예측 · AI 맞춤 운동 루틴 · 퀘스트 & 티어
-            </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
               <span className="text-[#34d399]">러닝머신만 타는 당신</span><br />3초 입력, <span className="text-[#34d399]">해결하세요!</span>
             </h1>
+            <p className="mt-6 text-sm sm:text-lg text-white/50 font-medium tracking-wide">
+              컨디션 맞춤 운동 루틴 추천, 운동 기록, AI 성장 예측까지
+            </p>
             <div className="mt-10">
               <a
                 href="/app"
