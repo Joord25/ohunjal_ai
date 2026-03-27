@@ -626,7 +626,7 @@ export default function Home() {
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl p-6 mx-6 shadow-xl max-w-[320px] w-full">
               <div className="flex flex-col items-center gap-1 mb-5">
-                <img src="/favicon_backup.png" alt="오운잘" className="w-10 h-10 rounded-xl mb-2" />
+                <img src="/login-logo-kor2.png" alt="오운잘 AI" className="w-32 h-auto mb-2" />
                 <p className="text-center text-gray-800 font-bold text-base">
                   로그인하고 계속하기
                 </p>
