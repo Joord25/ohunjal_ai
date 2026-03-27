@@ -198,10 +198,10 @@ export default function LandingContent() {
               AI 성장 예측 · AI 맞춤 운동 루틴 · 퀘스트 & 티어
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
-              <span className="text-[#34d399]">운동 뭐해야할지 몰라</span><br />러닝머신만<br className="sm:hidden" /> <span className="text-[#34d399]">타고 있다면</span>
+              <span className="text-[#34d399]">러닝머신만 타는</span><br />당신
             </h1>
             <p className="mt-6 text-lg sm:text-2xl text-white/70 font-semibold leading-relaxed">
-              3초 입력, 오늘 뭐할지 운동전문가 AI가 알려줍니다.
+              3초 입력으로 제대로 운동 루틴 만드세요!
             </p>
             <div className="mt-10">
               <a
