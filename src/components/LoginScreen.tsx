@@ -6,6 +6,7 @@ import { signInWithPopup } from "firebase/auth";
 
 interface LoginScreenProps {
   onLogin: () => void;
+  onTryFree?: () => void;
 }
 
 const TERMS_TEXT = `제1조(목적)
@@ -224,7 +225,7 @@ Google LLC: 맞춤형 운동 플랜 및 리포트 생성을 위한 AI 연동(Gem
 부칙
 본 방침은 2026년 3월 1일부터 시행합니다.`;
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
@@ -311,6 +312,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
           {error && (
             <p className="text-xs text-red-500 font-medium text-center">{error}</p>
+          )}
+
+          {onTryFree && (
+            <button
+              onClick={onTryFree}
+              className="w-full py-3.5 rounded-2xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all"
+            >
+              가입 없이 체험하기
+            </button>
           )}
 
           <p className="text-[10px] text-gray-400 font-medium text-center tracking-widest">
