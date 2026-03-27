@@ -198,7 +198,7 @@ export default function LandingContent() {
               AI 성장 예측 · AI 맞춤 운동 루틴 · 퀘스트 & 티어
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
-              <span className="text-[#34d399]">러닝머신만 타는 당신</span><br />3초 입력으로 제대로<br className="sm:hidden" /> <span className="text-[#34d399]">운동 루틴 만드세요!</span>
+              <span className="text-[#34d399]">러닝머신만 타는 당신</span><br /><span className="text-[#34d399]">3초 입력으로 해결하세요!</span>
             </h1>
             <div className="mt-10">
               <a
