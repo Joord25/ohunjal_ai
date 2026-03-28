@@ -32,10 +32,13 @@ export function useSafeArea() {
         );
       } else if (isStandalone) {
         // Android PWA: env() returns 0 but nav bar may overlap
-        // Use a modest fallback — enough to clear the gesture hint bar
+        // Estimate nav bar height from screen vs viewport difference
+        const navBarHeight = window.screen.height - window.innerHeight;
+        // Only apply if reasonable range (16~80px), otherwise small fallback
+        const fallback = navBarHeight > 16 && navBarHeight < 80 ? navBarHeight : 24;
         document.documentElement.style.setProperty(
           "--safe-area-bottom",
-          "12px"
+          `${fallback}px`
         );
       } else {
         // Regular browser: browser chrome provides spacing
@@ -45,12 +48,14 @@ export function useSafeArea() {
 
     update();
 
-    // Re-check on display mode change (e.g. switching to/from fullscreen)
+    // Re-check on display mode change or viewport resize
     const mql = window.matchMedia("(display-mode: standalone)");
     mql.addEventListener("change", update);
+    window.addEventListener("resize", update);
 
     return () => {
       mql.removeEventListener("change", update);
+      window.removeEventListener("resize", update);
     };
   }, []);
 }

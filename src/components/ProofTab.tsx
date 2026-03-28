@@ -192,6 +192,13 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
         savedDurationSec={selectedHistory.stats?.totalDurationSec}
         initialAnalysis={selectedHistory.analysis}
         onClose={() => setView(reportReturnView)}
+        onDelete={() => {
+          const updated = history.filter(h => h.id !== selectedHistory.id);
+          setHistory(updated);
+          localStorage.setItem("alpha_workout_history", JSON.stringify(updated));
+          deleteWorkoutHistory([selectedHistory.id]).catch(() => {});
+          setView(reportReturnView);
+        }}
         onAnalysisComplete={(analysis) => {
             // Update history in localStorage and state
             try {

@@ -162,6 +162,7 @@ interface WorkoutReportProps {
   initialAnalysis?: WorkoutAnalysis | null;
   onClose: () => void;
   onRestart?: () => void;
+  onDelete?: () => void;
   onAnalysisComplete?: (analysis: WorkoutAnalysis) => void;
 }
 
@@ -196,6 +197,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   initialAnalysis = null,
   onClose,
   onRestart,
+  onDelete,
   onAnalysisComplete
 }) => {
   const analysis = initialAnalysis;
@@ -295,11 +297,20 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
         </button>
         <span className="text-[11px] font-serif font-medium tracking-[0.25em] text-gray-400 uppercase">Session Report</span>
         {sessionDate ? (
-          <button onClick={() => setShowShare(true)} className="p-2 -mr-2 active:scale-95 transition-all">
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1 -mr-2">
+            <button onClick={() => setShowShare(true)} className="p-2 active:scale-95 transition-all">
+              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+            {onDelete && (
+              <button onClick={() => { if (confirm("이 운동 기록을 삭제할까요?")) onDelete(); }} className="p-2 active:scale-95 transition-all">
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+          </div>
         ) : (
           <div className="w-9" />
         )}

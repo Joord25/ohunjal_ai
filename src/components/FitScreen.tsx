@@ -670,7 +670,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="w-10" />
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 gap-3 overflow-hidden">
+        <div className="flex-1 flex flex-col items-center px-6 gap-3 overflow-hidden">
           <div className="flex flex-col items-center gap-0 shrink-0">
             <div className="flex items-center gap-2 justify-center">
               <h1 className="text-3xl font-black text-[#1B4332] tracking-tight leading-tight break-keep text-center">{mainTitle}</h1>
@@ -693,10 +693,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             const embedUrl = getVideoEmbedUrl(exercise.name);
             if (embedUrl) {
               return (
-                <button onClick={() => setShowVideoGuide(true)} className="w-48 aspect-[9/13] max-h-[32dvh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all shrink-0">
+                <button onClick={() => setShowVideoGuide(true)} className="h-[35dvh] aspect-[9/16] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all shrink-0">
                   <iframe
                     src={embedUrl}
-                    className="w-full h-full pointer-events-none"
+                    className="w-full h-full pointer-events-none scale-[1.15] origin-center"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     tabIndex={-1}
                     title="자세 미리보기"
@@ -725,23 +725,19 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             );
           })()}
 
-          {/* 지난 세션 기록 + 도전 추천 */}
-          {lastSessionRecord && lastSessionRecord.maxWeight > 0 && (
-            <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 animate-card-enter">
-              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">지난 기록</p>
-              <p className="text-sm font-bold text-gray-800">
-                {lastSessionRecord.weights.map((w, i) => `${w}kg/${lastSessionRecord.reps[i]}회`).join(" → ")}
-              </p>
-              {lastSessionRecord.hadEasy && (
-                <p className="text-xs font-bold text-amber-600 mt-1">
-                  지난번 쉬웠으니 {Math.round(lastSessionRecord.maxWeight * 1.05 / 2.5) * 2.5}kg 도전해보세요
-                </p>
-              )}
-            </div>
-          )}
-
           <div className="flex flex-col items-center gap-2">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">사용 무게</p>
+            {lastSessionRecord && lastSessionRecord.maxWeight > 0 && (() => {
+              const minRep = Math.min(...lastSessionRecord.reps);
+              const maxRep = Math.max(...lastSessionRecord.reps);
+              const repText = minRep === maxRep ? `${minRep}회` : `${minRep}~${maxRep}회`;
+              const challenge = lastSessionRecord.hadEasy ? Math.round(lastSessionRecord.maxWeight * 1.05 / 2.5) * 2.5 : null;
+              return (
+                <p className="text-[11px] text-gray-400 font-medium -mt-1">
+                  이전: {lastSessionRecord.maxWeight}kg × {repText}{challenge ? <span className="text-amber-500 font-bold"> → {challenge}kg 도전!</span> : null}
+                </p>
+              );
+            })()}
             <div className="flex items-center justify-center gap-4 w-full">
               <button
                 onPointerDown={() => startLongPress("down")}
@@ -948,7 +944,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   // Main Active View
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-white animate-fade-in relative">
+    <div ref={containerRef} className="flex flex-col h-full bg-white animate-fade-in relative" style={{ marginBottom: "calc(-80px - var(--safe-area-bottom, 0px))" }}>
       {/* Header with Back Button */}
       <div className="pt-[max(2rem,env(safe-area-inset-top))] pb-1 px-6 flex items-center justify-between relative shrink-0">
         <button
@@ -996,9 +992,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         {!isTimerMode && <div className="w-10" />}
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col px-6 text-center overflow-hidden">
-        {/* 상단: 운동 이름 + 영상 */}
+      {/* Main Content — justify-evenly로 3그룹 균등 배치 */}
+      <div className="flex-1 flex flex-col items-center justify-evenly px-6 text-center overflow-hidden">
+        {/* 그룹1: 운동 이름 + 영상 */}
         <div className="flex flex-col items-center gap-1 shrink-0">
           {(() => {
             const parts = exercise.name.split('(');
@@ -1035,10 +1031,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   const embedUrl = getVideoEmbedUrl(exercise.name);
                   if (embedUrl) {
                     return (
-                      <button onClick={() => setShowVideoGuide(true)} className="mt-2 w-48 aspect-[9/13] max-h-[24dvh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all">
+                      <button onClick={() => setShowVideoGuide(true)} className="mt-1 h-[35dvh] aspect-[9/16] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all">
                         <iframe
                           src={embedUrl}
-                          className="w-full h-full pointer-events-none"
+                          className="w-full h-full pointer-events-none scale-[1.15] origin-center"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           tabIndex={-1}
                           title="자세 미리보기"
@@ -1074,8 +1070,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           })()}
         </div>
 
-        {/* 중앙: 타이머/무게+렙 — 남은 공간에서 가운데 정렬 */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+        {/* 그룹2: 타이머/무게+렙 */}
+        <div className="flex flex-col items-center gap-2 shrink-0">
           {isTimerMode ? (
              <div className="flex flex-col items-center">
                 {timerCompleted && !isDistanceMode ? (
@@ -1170,12 +1166,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             </>
           )}
         </div>
-      </div>
 
-      {/* 하단: NEXT 미리보기 + CTA */}
-      <div className="flex flex-col items-center shrink-0 pb-0 gap-2">
+        {/* 그룹3: NEXT + CTA */}
+        <div className="flex flex-col items-center shrink-0 gap-3 w-full">
         {nextExerciseName && !isDoneAnimating && setInfo.current === setInfo.total && (
-          <div className="self-end bg-gray-100 rounded-l-xl px-3 py-2">
+          <div className="self-end bg-gray-100 rounded-l-xl px-3 py-2 -mr-6">
             <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">NEXT</p>
             <p className="text-[11px] font-semibold text-gray-600 leading-snug text-right max-w-[150px] truncate">{nextExerciseName}</p>
           </div>
@@ -1264,6 +1259,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </button>
             </div>
         )}
+      </div>
       </div>
 
 
