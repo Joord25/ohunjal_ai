@@ -391,10 +391,6 @@ export default function Home() {
       return <ProofTab lockedRuleIds={[]} />;
     }
 
-    if (activeTab === "my") {
-      return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setPredictionReturnTab("my"); setView("prediction_report"); }} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
-    }
-
     switch (view) {
       case "prediction_report":
         return (
@@ -547,6 +543,11 @@ export default function Home() {
                }
              />
            );
+        }
+
+        // My 탭
+        if (activeTab === "my") {
+          return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setPredictionReturnTab("my"); setView("prediction_report"); }} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
         }
 
         // 홈 화면: 로그인/비로그인 모두 진입 가능
