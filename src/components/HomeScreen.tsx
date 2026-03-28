@@ -182,19 +182,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
     const thisMonth = history.filter(h => new Date(h.date) >= thisMonthStart);
-    const lastMonth = history.filter(h => {
-      const d = new Date(h.date);
-      return d >= lastMonthStart && d < thisMonthStart;
-    });
-
-    // 주간 빈도 비교 (기본)
-    const thisMonthWeeks = Math.max(1, (now.getTime() - thisMonthStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-    const lastMonthWeeks = Math.max(1, (thisMonthStart.getTime() - lastMonthStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-    const thisFreq = Math.round((thisMonth.length / thisMonthWeeks) * 10) / 10;
-    const lastFreq = lastMonth.length > 0 ? Math.round((lastMonth.length / lastMonthWeeks) * 10) / 10 : 0;
 
     // 1RM 보너스 (있을 때만)
     const e1rmEntries = history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0);
@@ -207,15 +195,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       }
     }
 
-    // 빈도 기반 (기본)
-    if (lastMonth.length === 0 && thisMonth.length > 0) {
-      return `이번 달 주 ${thisFreq}회 운동 중`;
+    // 이번 주 실제 횟수 기반
+    if (thisWeekCount > 0) {
+      return `이번 주 ${thisWeekCount}회 운동 완료!`;
     }
-    if (lastFreq > 0) {
-      const diff = Math.round((thisFreq - lastFreq) * 10) / 10;
-      if (diff > 0) return `주 평균 ${thisFreq}회 운동 중 (지난달 대비 +${diff}회)`;
-      if (diff < 0) return `주 평균 ${thisFreq}회 운동 중 (지난달 ${lastFreq}회)`;
-      return `주 평균 ${thisFreq}회 꾸준히 운동 중`;
+    if (thisMonth.length > 0) {
+      return `이번 달 ${thisMonth.length}회 운동 완료`;
     }
 
     return null;
