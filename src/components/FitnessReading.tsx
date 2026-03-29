@@ -795,8 +795,12 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
   // 해당 운동의 세션별 e1RM 데이터 추출
   const points: { x: number; y: number; label: string }[] = [];
   const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const BIG3_MATCH: Record<string, string[]> = { bench: ["벤치", "bench"], squat: ["스쿼트", "squat"], deadlift: ["데드", "dead"] };
-  const patterns = BIG3_MATCH[ex.name] || [];
+  const BIG3_MATCH: Record<string, { match: string[]; exclude: string[] }> = {
+    bench: { match: ["벤치", "bench"], exclude: ["덤벨", "dumbbell", "인클라인", "incline", "디클라인", "decline"] },
+    squat: { match: ["스쿼트", "squat"], exclude: ["프론트", "front", "고블릿", "goblet", "덤벨", "dumbbell"] },
+    deadlift: { match: ["데드", "dead"], exclude: ["루마니안", "romanian", "스티프", "stiff", "스모", "sumo", "트랩바", "trap bar", "케틀벨", "kettlebell"] },
+  };
+  const matchInfo = BIG3_MATCH[ex.name] || { match: [], exclude: [] };
   let baseDate = "";
 
   for (const session of sorted) {
@@ -805,7 +809,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
     let best = 0;
     exercises.forEach((e, idx) => {
       const lower = e.name.toLowerCase();
-      if (!patterns.some(p => lower.includes(p))) return;
+      if (!matchInfo.match.some(p => lower.includes(p)) || matchInfo.exclude.some(p => lower.includes(p))) return;
       const exLogs = logs[idx] || [];
       for (const log of exLogs) {
         const w = parseFloat(log.weightUsed || e.weight || "0");
