@@ -825,7 +825,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
     }
   }
 
-  if (points.length < 2) return null;
+  const insufficientData = points.length < 2;
 
   const targetLine = profile.bodyWeight * 1.0;
   const targetLabel = `중급 ${Math.round(targetLine)}kg`;
@@ -875,6 +875,11 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
         </div>
       )}
 
+      {insufficientData ? (
+        <div className="py-6 text-center">
+          <p className="text-xs text-gray-400">{ex.label} 기록이 2회 이상 필요합니다</p>
+        </div>
+      ) : <>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 180 }}>
         <text x={PAD.left - 5} y={PAD.top - 6} textAnchor="end" className="fill-gray-400" fontSize="8">e1RM (kg)</text>
         {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
@@ -910,6 +915,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
       <p className="text-[9px] text-gray-400 mt-1 text-right">
         {ex.growthPerWeek > 0 ? "▲" : ex.growthPerWeek < 0 ? "▼" : "—"} 주간 +{ex.growthPerWeek}kg/주
       </p>
+      </>}
     </div>
   );
 }
