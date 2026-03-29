@@ -924,7 +924,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
     return null;
   }, []);
 
-  const [step, setStep] = useState<Step>(resultOnly && savedProfile ? "result" : "welcome");
+  const [step, setStep] = useState<Step>(resultOnly && savedProfile && savedProfile.height ? "result" : savedProfile && !savedProfile.height ? "profile" : "welcome");
   const [profile, setProfile] = useState<Partial<FitnessProfile>>(savedProfile || {});
   const [gender, setGender] = useState<"male" | "female" | null>(savedProfile?.gender || null);
   const [birthYear, setBirthYear] = useState(savedProfile?.birthYear?.toString() || "");
