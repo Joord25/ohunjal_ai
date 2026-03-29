@@ -412,14 +412,19 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
 
           // 3. Phase 해금 알림
           const totalWorkouts = allHistoryWithCurrent.length;
+          const prevWorkouts = recentHistory.length;
           const phaseThresholds = [5, 10, 20];
-          const nextPhase = phaseThresholds.find(t => totalWorkouts <= t);
-          if (nextPhase && totalWorkouts === nextPhase) {
-            insight.phaseUnlock = `${nextPhase}회 달성! 새로운 예측이 해금되었습니다`;
+          // 이전에는 미달이었지만 이번에 달성한 Phase 찾기
+          const justUnlockedPhase = phaseThresholds.find(t => prevWorkouts < t && totalWorkouts >= t);
+          if (justUnlockedPhase) {
+            insight.phaseUnlock = `${justUnlockedPhase}회 달성! 새로운 예측이 해금되었습니다`;
             insight.phaseJustUnlocked = true;
-          } else if (nextPhase) {
-            const remaining = nextPhase - totalWorkouts;
-            insight.phaseUnlock = `다음 예측 해금까지 ${remaining}회 남음`;
+          } else {
+            const nextPhase = phaseThresholds.find(t => totalWorkouts < t);
+            if (nextPhase) {
+              const remaining = nextPhase - totalWorkouts;
+              insight.phaseUnlock = `다음 예측 해금까지 ${remaining}회 남음`;
+            }
           }
 
           // 4. vs 지난 세션 볼륨 비교

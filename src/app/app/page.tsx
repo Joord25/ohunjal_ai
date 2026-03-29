@@ -72,7 +72,7 @@ export default function Home() {
   const FREE_PLAN_LIMIT = 4;
   const GUEST_TRIAL_LIMIT = 1; // 비로그인 체험 횟수
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [predictionReturnTab, setPredictionReturnTab] = useState<"home" | "my">("home");
+  const [predictionReturnTab, setPredictionReturnTab] = useState<"home" | "proof" | "my">("home");
 
   // Firebase Auth listener
   useEffect(() => {
@@ -486,7 +486,7 @@ export default function Home() {
               setActiveTab("proof");
             }}
             onShowPrediction={() => {
-              setPredictionReturnTab("home");
+              setPredictionReturnTab("my");
               setView("prediction_report");
             }}
             onAnalysisComplete={(analysis) => {
@@ -574,7 +574,7 @@ export default function Home() {
   return (
     <PhoneFrame pullToRefresh={view === "home"}>
       <div className="h-full w-full relative overflow-hidden">
-        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : ""}`} style={view === "login" ? undefined : view === "workout_session" ? { paddingBottom: "40px" } : { paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" }}>
+        <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : ""}`} style={view === "login" || view === "workout_session" ? undefined : { paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" }}>
           {renderContent()}
         </div>
         
