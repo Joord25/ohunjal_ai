@@ -189,34 +189,54 @@ export function calcCalorieBalanceTrend(
 
 /* ─── Phase 1: 세션별 칼로리 추정 (실제 볼륨 기반) ─── */
 
+/** 운동 타입별 MET 값 (ACSM Compendium of Physical Activities) */
+const EXERCISE_TYPE_MET: Record<string, number> = {
+  warmup: 2.5,
+  mobility: 2.5,
+  core: 3.5,
+  strength: 5.0,
+  cardio: 6.5,
+};
+
 /**
- * 실제 운동 볼륨 + MET 기반 칼로리 추정
- * 저항운동 MET ≈ 3.5~6.0 (ACSM), 실제 볼륨으로 보정
+ * 운동별 MET × 시간으로 세션 칼로리 계산
+ * 각 운동의 type과 소요 시간을 기반으로 개별 계산 후 합산
  */
 export function calcSessionCalories(
   session: WorkoutHistory,
   bodyWeightKg: number
 ): number {
-  const durationMin = session.stats.totalDurationSec
-    ? session.stats.totalDurationSec / 60
-    : 45; // 기본 45분
+  const exercises = session.sessionData?.exercises || [];
+  const timings = (session as { exerciseTimings?: { durationSec: number }[] }).exerciseTimings;
+  const totalDurationSec = session.stats.totalDurationSec || 2700; // 기본 45분
 
-  // 세션 카테고리별 MET
-  const desc = session.sessionData?.description?.toLowerCase() || "";
-  let met = 4.0; // 기본
-  if (desc.includes("cardio") || desc.includes("유산소") || desc.includes("러닝") || desc.includes("running")) {
-    met = 6.5;
-  } else if (desc.includes("strength") || desc.includes("근력")) {
-    met = 5.0;
-  } else if (desc.includes("mobility") || desc.includes("모빌리티")) {
-    met = 2.5;
+  // 운동별 타이밍이 있으면 개별 계산
+  if (timings && timings.length === exercises.length) {
+    let totalCal = 0;
+    exercises.forEach((ex, i) => {
+      const met = EXERCISE_TYPE_MET[ex.type] || 4.0;
+      const durationHours = (timings[i].durationSec || 0) / 3600;
+      totalCal += met * bodyWeightKg * durationHours;
+    });
+    return Math.round(totalCal);
   }
 
-  // 볼륨 보정: 평균 이상 볼륨이면 MET 약간 상향
-  if (session.stats.totalVolume > 5000) met += 0.5;
-  if (session.stats.totalVolume > 10000) met += 0.5;
+  // 타이밍 없으면 운동 타입 비율로 시간 배분
+  const typeCounts: Record<string, number> = {};
+  exercises.forEach(ex => {
+    typeCounts[ex.type] = (typeCounts[ex.type] || 0) + 1;
+  });
+  const totalExercises = exercises.length || 1;
+  const totalHours = totalDurationSec / 3600;
 
-  return Math.round(met * bodyWeightKg * (durationMin / 60));
+  let totalCal = 0;
+  for (const [type, count] of Object.entries(typeCounts)) {
+    const met = EXERCISE_TYPE_MET[type] || 4.0;
+    const proportion = count / totalExercises;
+    totalCal += met * bodyWeightKg * totalHours * proportion;
+  }
+
+  return Math.round(totalCal);
 }
 
 /**
