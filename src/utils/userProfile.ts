@@ -4,6 +4,7 @@ import { doc, setDoc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 export interface FitnessProfileData {
   gender: "male" | "female";
   birthYear: number;
+  height: number; // cm
   bodyWeight: number;
   weeklyFrequency: number;
   sessionMinutes: number;

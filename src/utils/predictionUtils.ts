@@ -126,6 +126,67 @@ export function calcVolumeGrowthRate(sessions: WorkoutHistory[]): {
   };
 }
 
+/* ─── 해리스-베네딕트 기초대사량 (BMR) ─── */
+
+export function calcBMR(gender: "male" | "female", weightKg: number, heightCm: number, age: number): number {
+  if (gender === "male") {
+    return Math.round(88.362 + (13.397 * weightKg) + (4.799 * heightCm) - (5.677 * age));
+  }
+  return Math.round(447.593 + (9.247 * weightKg) + (3.098 * heightCm) - (4.330 * age));
+}
+
+/** 다이어트 가정 섭취 칼로리 (한국영양학회 권장 - 감량분 적용) */
+export function getDietIntake(gender: "male" | "female", age: number): number {
+  if (gender === "male") {
+    if (age < 30) return 2000;
+    if (age < 50) return 1900;
+    return 1800;
+  }
+  if (age < 30) return 1700;
+  if (age < 50) return 1600;
+  return 1500;
+}
+
+/** 세션별 칼로리 밸런스 계산 (섭취 - BMR - 운동소모) */
+export function calcCalorieBalance(
+  session: WorkoutHistory,
+  gender: "male" | "female",
+  weightKg: number,
+  heightCm: number,
+  age: number
+): number {
+  const intake = getDietIntake(gender, age);
+  const bmr = calcBMR(gender, weightKg, heightCm, age);
+  const exerciseCal = calcSessionCalories(session, weightKg);
+  return intake - bmr - exerciseCal;
+}
+
+/** 칼로리 밸런스 트렌드 (회귀분석용) */
+export function calcCalorieBalanceTrend(
+  sessions: WorkoutHistory[],
+  gender: "male" | "female",
+  weightKg: number,
+  heightCm: number,
+  age: number
+): { points: { x: number; y: number; label: string }[]; cumulative: number } | null {
+  const sorted = [...sessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  if (sorted.length < 2) return null;
+
+  const baseDate = sorted[0].date;
+  let cumulative = 0;
+  const points = sorted.map(s => {
+    const balance = calcCalorieBalance(s, gender, weightKg, heightCm, age);
+    cumulative += balance;
+    return {
+      x: dateToDayIndex(s.date, baseDate),
+      y: Math.round(cumulative),
+      label: `${Math.round(cumulative)}kcal`,
+    };
+  });
+
+  return { points, cumulative };
+}
+
 /* ─── Phase 1: 세션별 칼로리 추정 (실제 볼륨 기반) ─── */
 
 /**

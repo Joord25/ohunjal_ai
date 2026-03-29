@@ -6,6 +6,7 @@ import { WorkoutHistory } from "@/constants/workout";
 import {
   calcConsistencyScore,
   calcCaloriesTrend,
+  calcCalorieBalanceTrend,
   calcE1RMTrendByExercise,
   calcWeightTrend,
   calcBig3VolumeBalance,
@@ -17,6 +18,7 @@ import {
 export interface FitnessProfile {
   gender: "male" | "female";
   birthYear: number;
+  height: number;                // cm
   bodyWeight: number;
   weeklyFrequency: number;       // 주 몇 회
   sessionMinutes: number;        // 1회 운동 시간(분)
@@ -572,19 +574,18 @@ function RegressionChart({ goal, history, weightLog, profile }: {
     const baseDate = sorted[0].date;
 
     if (goal === "fat_loss") {
-      // 체중 변화 또는 칼로리 추이
-      if (weightLog.length >= 2) {
-        const sortedW = [...weightLog].sort((a, b) => a.date.localeCompare(b.date));
-        const wBase = sortedW[0].date;
-        points = sortedW.map(w => ({ x: dateToDayIndex(w.date, wBase), y: Math.round(w.weight * 10) / 10, label: `${Math.round(w.weight * 10) / 10}kg` }));
-        yLabel = "체중 (kg)";
-        targetLine = Math.round(profile.bodyWeight * 0.9 * 10) / 10;
-        targetLabel = `목표 ${targetLine}kg`;
+      // 칼로리 밸런스 누적 추이 (섭취 - BMR - 운동소모)
+      const age = new Date().getFullYear() - profile.birthYear;
+      const h = profile.height || 170;
+      const balanceTrend = calcCalorieBalanceTrend(sorted, profile.gender, profile.bodyWeight, h, age);
+      if (balanceTrend && balanceTrend.points.length >= 2) {
+        points = balanceTrend.points;
+        yLabel = "누적 칼로리 밸런스 (kcal)";
+        // 7700kcal 적자 = -1kg, 목표 -5kg = -38500kcal
+        targetLine = -38500;
+        targetLabel = "-5kg 감량 라인";
       } else {
-        const trend = calcCaloriesTrend(sorted, profile.bodyWeight);
-        if (trend.length < 2) return null;
-        points = trend.map((t, i) => ({ x: i, y: Math.round(t.calories), label: `${Math.round(t.calories)}kcal` }));
-        yLabel = "세션 칼로리 (kcal)";
+        return null;
       }
     } else if (goal === "muscle_gain") {
       // 운동별 e1RM — 선택된 종목 데이터만 사용
@@ -659,7 +660,7 @@ function RegressionChart({ goal, history, weightLog, profile }: {
   const [showHelp, setShowHelp] = React.useState(false);
 
   const goalHelpMap: Record<string, string> = {
-    fat_loss: "운동 기록에서 소모 칼로리를 추정하고, 체중 변화 추세를 선형 회귀로 분석합니다. 점선은 현재 추세가 유지될 경우 4주 후 예상 체중입니다.",
+    fat_loss: "매 운동의 칼로리 소모를 추정하고, 섭취 칼로리(다이어트 기준)에서 기초대사량과 운동 소모를 뺀 누적 밸런스를 추적합니다. 점선은 현재 추세가 유지될 경우 4주 후 예상 누적 적자입니다. 7,700kcal 적자 ≈ 1kg 감량.",
     muscle_gain: "매 세션의 Best e1RM(추정 1회 최대 중량)을 추적합니다. 회귀선은 근력 성장 추세이고, 점선은 이 속도로 4주 뒤 도달할 e1RM 예측입니다.",
     endurance: "주차별 운동 횟수를 집계하여 운동 습관 추세를 보여줍니다. 점선은 WHO 권장 기준 대비 현재 추세의 4주 후 예측입니다.",
     health: "주차별 운동 횟수를 집계하여 운동 습관 추세를 보여줍니다. 점선은 WHO 권장 기준 대비 현재 추세의 4주 후 예측입니다.",
@@ -900,6 +901,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   const [profile, setProfile] = useState<Partial<FitnessProfile>>(savedProfile || {});
   const [gender, setGender] = useState<"male" | "female" | null>(savedProfile?.gender || null);
   const [birthYear, setBirthYear] = useState(savedProfile?.birthYear?.toString() || "");
+  const [height, setHeight] = useState(savedProfile?.height?.toString() || "");
   const [bodyWeight, setBodyWeight] = useState(savedProfile?.bodyWeight?.toString() || "");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showResult, setShowResult] = useState(!!resultOnly);
@@ -933,11 +935,13 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   const handleProfileNext = () => {
     if (!gender) return;
     const byNum = parseInt(birthYear.trim());
+    const hNum = parseFloat(height.trim());
     const wNum = parseFloat(bodyWeight.trim());
     if (isNaN(byNum) || byNum < 1900) return;
+    if (isNaN(hNum) || hNum <= 0) return;
     if (isNaN(wNum) || wNum <= 0) return;
 
-    setProfile((p) => ({ ...p, gender, birthYear: byNum, bodyWeight: wNum }));
+    setProfile((p) => ({ ...p, gender, birthYear: byNum, height: hNum, bodyWeight: wNum }));
     updateGender(gender);
     updateBirthYear(byNum);
     updateWeight(wNum);
@@ -1200,6 +1204,22 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
               />
             </div>
 
+            {/* Height */}
+            <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">키</p>
+              <div className="flex items-end justify-center gap-1">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="175"
+                  className="w-full text-center text-3xl font-black text-[#5C795E] bg-transparent border-b-2 border-[#2D6A4F] outline-none pb-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="text-sm font-bold text-gray-400 pb-2">cm</span>
+              </div>
+            </div>
+
             {/* Body Weight */}
             <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">체중</p>
@@ -1218,14 +1238,14 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
           </div>
 
           <p className="text-[11px] text-gray-500 text-center font-medium mt-4">
-            성별·연령·체중 기반 예측 모델에 활용됩니다
+            성별·연령·키·체중 기반 예측 모델에 활용됩니다
           </p>
 
           {/* Fixed CTA */}
           <div className="absolute bottom-0 left-0 right-0 bg-white px-6 pb-6 pt-3 border-t border-gray-100">
             <button
               onClick={handleProfileNext}
-              disabled={!gender || !birthYear.trim() || !bodyWeight.trim()}
+              disabled={!gender || !birthYear.trim() || !height.trim() || !bodyWeight.trim()}
               className="w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] bg-[#2D6A4F] text-white hover:bg-[#1B4332] disabled:opacity-30 disabled:active:scale-100"
             >
               다음
