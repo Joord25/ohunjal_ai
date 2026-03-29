@@ -20,7 +20,7 @@ export interface FitnessTestResult {
   overallGrade: number;
 }
 
-type TestPhase = "intro" | "ready" | "testing" | "rest" | "result";
+type TestPhase = "intro" | "ready" | "testing" | "input" | "rest" | "result";
 type Exercise = "pushups" | "crunches" | "squats";
 
 const EXERCISES: { key: Exercise; label: string; icon: string }[] = [
@@ -131,8 +131,7 @@ export const FitnessTest: React.FC<FitnessTestProps> = ({ gender, birthYear, onC
       return () => { if (timerRef.current) clearTimeout(timerRef.current); };
     }
     if (phase === "testing" && timer === 0) {
-      // 시간 종료
-      handleExerciseDone();
+      setPhase("input");
     }
   }, [phase, timer]);
 
@@ -265,60 +264,68 @@ export const FitnessTest: React.FC<FitnessTestProps> = ({ gender, birthYear, onC
     );
   }
 
-  // 테스트 진행
+  // 테스트 진행 — 타이머만 표시
   if (phase === "testing") {
     const progress = 1 - timer / TEST_DURATION;
     const isUrgent = timer <= 10;
     return (
       <div className="flex flex-col h-full bg-white animate-fade-in">
-        <div className="flex-1 flex flex-col items-center justify-evenly px-6 text-center">
-          {/* 상단: 종목 + 타이머 */}
-          <div className="flex flex-col items-center shrink-0">
-            <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-1">
-              종목 {exerciseIdx + 1} / {EXERCISES.length}
-            </p>
-            <p className="text-lg font-bold text-[#1B4332] mb-3">{currentExercise.label}</p>
-            <p className={`text-6xl font-black tabular-nums tracking-tighter ${isUrgent ? "text-red-500 animate-pulse" : "text-[#1B4332]"}`}>
-              {formatTime(timer)}
-            </p>
-            {/* 프로그레스 바 */}
-            <div className="w-48 h-1.5 bg-gray-100 rounded-full mt-3 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-1000 ${isUrgent ? "bg-red-500" : "bg-[#2D6A4F]"}`}
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-1">
+            종목 {exerciseIdx + 1} / {EXERCISES.length}
+          </p>
+          <p className="text-xl font-bold text-[#1B4332] mb-6">{currentExercise.label}</p>
+          <p className={`text-7xl font-black tabular-nums tracking-tighter mb-4 ${isUrgent ? "text-red-500 animate-pulse" : "text-[#1B4332]"}`}>
+            {formatTime(timer)}
+          </p>
+          <div className="w-56 h-2 bg-gray-100 rounded-full overflow-hidden mb-6">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${isUrgent ? "bg-red-500" : "bg-[#2D6A4F]"}`}
+              style={{ width: `${progress * 100}%` }}
+            />
           </div>
+          <p className="text-sm text-gray-400 mb-8">최대 횟수를 수행하세요</p>
+          <button
+            onClick={() => setPhase("input")}
+            className="px-8 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold active:scale-95 transition-all"
+          >
+            조기 종료
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-          {/* 중앙: 카운트 */}
-          <div className="flex flex-col items-center shrink-0">
-            <p className="text-8xl font-black text-[#2D6A4F] tabular-nums">{count}</p>
-            <p className="text-sm font-bold text-gray-400 mt-1">회</p>
-          </div>
-
-          {/* 하단: 카운트 버튼 + 완료 */}
-          <div className="flex flex-col items-center gap-4 shrink-0">
+  // 횟수 입력
+  if (phase === "input") {
+    return (
+      <div className="flex flex-col h-full bg-white animate-fade-in">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <p className="text-[10px] font-bold text-[#2D6A4F] tracking-widest mb-2">
+            {currentExercise.label} 완료
+          </p>
+          <p className="text-lg font-bold text-[#1B4332] mb-8">몇 회 하셨나요?</p>
+          <div className="flex items-center gap-6 mb-8">
+            <button
+              onClick={() => setCount(c => Math.max(0, c - 1))}
+              className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-2xl active:scale-95 transition-all"
+            >
+              -
+            </button>
+            <span className="text-7xl font-black text-[#1B4332] tabular-nums w-32 text-center">{count}</span>
             <button
               onClick={() => setCount(c => c + 1)}
-              className="w-32 h-32 rounded-full bg-[#2D6A4F] text-white shadow-2xl active:scale-90 transition-all flex items-center justify-center"
+              className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-2xl active:scale-95 transition-all"
             >
-              <span className="text-2xl font-black">+1</span>
+              +
             </button>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCount(c => Math.max(0, c - 1))}
-                className="px-4 py-2 rounded-xl bg-gray-100 text-gray-500 text-sm font-bold active:scale-95"
-              >
-                -1
-              </button>
-              <button
-                onClick={handleExerciseDone}
-                className="px-4 py-2 rounded-xl bg-[#1B4332] text-white text-sm font-bold active:scale-95"
-              >
-                완료
-              </button>
-            </div>
           </div>
+          <button
+            onClick={handleExerciseDone}
+            className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg active:scale-[0.98] transition-all"
+          >
+            {isLastExercise ? "결과 보기" : "다음 종목"}
+          </button>
         </div>
       </div>
     );
