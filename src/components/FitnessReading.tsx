@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { saveUserProfile, updateGender, updateBirthYear, updateWeight } from "@/utils/userProfile";
 import { WorkoutHistory } from "@/constants/workout";
+import { FitnessTest } from "./FitnessTest";
 import {
   calcConsistencyScore,
   calcCaloriesTrend,
@@ -250,7 +251,7 @@ interface PredictionResult {
   value: string;
   sub?: string;
   source?: string;
-  action?: "edit_1rm";
+  action?: "edit_1rm" | "fitness_test";
   strengthBars?: StrengthBar[];  // 근력 수준 바 데이터
 }
 
@@ -586,7 +587,19 @@ function computeReading(
 
     // ── 기초 체력: 체력 테스트 기반 등급 ──
     if (label.includes("현재 기초체력 등급")) {
-      return { value: "체력 테스트를 완료하면 등급이 표시됩니다", sub: "푸쉬업 · 크런치 · 맨몸 스쿼트 (각 2분)" };
+      try {
+        const testHistory = JSON.parse(localStorage.getItem("alpha_fitness_test_history") || "[]");
+        if (testHistory.length > 0) {
+          const latest = testHistory[testHistory.length - 1];
+          const gradeLabels = ["", "최우수", "우수", "양호", "보통", "미흡"];
+          return {
+            value: `종합 ${gradeLabels[latest.overallGrade]}`,
+            sub: `푸쉬업 ${latest.pushups}회(${gradeLabels[latest.pushupGrade]}) · 크런치 ${latest.crunches}회(${gradeLabels[latest.crunchGrade]}) · 스쿼트 ${latest.squats}회(${gradeLabels[latest.squatGrade]})`,
+            action: "fitness_test",
+          };
+        }
+      } catch { /* ignore */ }
+      return { value: "체력 테스트를 완료하면 등급이 표시됩니다", sub: "푸쉬업 · 크런치 · 맨몸 스쿼트 (각 2분)", action: "fitness_test" };
     }
     if (label.includes("다음 등급 도달 예상 기간") || label.includes("2단계 상위 등급 도달 예상 기간") || label.includes("최고 등급 도달 예상 기간")) {
       return { value: "체력 테스트 2회 이상 필요", sub: "테스트를 반복하면 성장 추세를 예측합니다" };
@@ -1164,6 +1177,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   const [showOtherGoals, setShowOtherGoals] = useState(false);
   const [selectedGoalKey, setSelectedGoalKey] = useState<string | null>(null);
   const [showChart, setShowChart] = useState(false);
+  const [showFitnessTest, setShowFitnessTest] = useState(false);
 
   useEffect(() => {
     if (step === "welcome") {
@@ -1173,6 +1187,18 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   }, [step]);
 
   /* ─── RENDER ─── */
+  if (showFitnessTest) {
+    const fp = profile as FitnessProfile;
+    return (
+      <FitnessTest
+        gender={fp?.gender || "male"}
+        birthYear={fp?.birthYear || 1990}
+        onComplete={() => setShowFitnessTest(false)}
+        onBack={() => setShowFitnessTest(false)}
+      />
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-white relative">
       {/* Welcome Screen */}
@@ -1606,6 +1632,10 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                                     </div>
                                   ) : pred?.action === "edit_1rm" && onEdit1RM ? (
                                     <button onClick={onEdit1RM} className="text-[#1B4332] text-sm font-black text-right w-full underline decoration-emerald-400 decoration-2 underline-offset-2 active:opacity-60">
+                                      {easyValue} →
+                                    </button>
+                                  ) : pred?.action === "fitness_test" ? (
+                                    <button onClick={() => setShowFitnessTest(true)} className="text-[#1B4332] text-sm font-black text-right w-full underline decoration-emerald-400 decoration-2 underline-offset-2 active:opacity-60">
                                       {easyValue} →
                                     </button>
                                   ) : (
