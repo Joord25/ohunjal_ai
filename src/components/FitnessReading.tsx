@@ -394,9 +394,9 @@ function computeReading(
         deadlift: { mid: 1.5, adv: 2.0 },
       };
       const items: string[] = [];
-      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${Math.round(benchRM)}kg ${r >= standards.bench.adv ? "상급" : r >= standards.bench.mid ? "중급" : "초급"}`); }
-      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${Math.round(squatRM)}kg ${r >= standards.squat.adv ? "상급" : r >= standards.squat.mid ? "중급" : "초급"}`); }
-      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${Math.round(deadRM)}kg ${r >= standards.deadlift.adv ? "상급" : r >= standards.deadlift.mid ? "중급" : "초급"}`); }
+      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${Math.round(benchRM)}kg → ${r >= standards.bench.adv ? "상급" : r >= standards.bench.mid ? "중급" : "초급"}`); }
+      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${Math.round(squatRM)}kg → ${r >= standards.squat.adv ? "상급" : r >= standards.squat.mid ? "중급" : "초급"}`); }
+      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${Math.round(deadRM)}kg → ${r >= standards.deadlift.adv ? "상급" : r >= standards.deadlift.mid ? "중급" : "초급"}`); }
       return { value: items.join("\n"), sub: `체중 ${p.bodyWeight}kg 기준` };
     }
 
