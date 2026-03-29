@@ -396,8 +396,10 @@ export function calcE1RMTrendByExercise(sessions: WorkoutHistory[]): {
   firstE1RM: number;
   lastE1RM: number;
   growthPerWeek: number;
+  points: { x: number; y: number; label: string }[];
+  baseDate: string;
 }[] {
-  const results: { name: string; label: string; regression: RegressionResult; firstE1RM: number; lastE1RM: number; growthPerWeek: number }[] = [];
+  const results: { name: string; label: string; regression: RegressionResult; firstE1RM: number; lastE1RM: number; growthPerWeek: number; points: { x: number; y: number; label: string }[]; baseDate: string }[] = [];
 
   for (const pattern of BIG3_LIFT_PATTERNS) {
     // 해당 운동의 세션별 최고 e1RM 추출
@@ -433,6 +435,7 @@ export function calcE1RMTrendByExercise(sessions: WorkoutHistory[]): {
     const reg = linearRegression(regPoints);
     if (!reg) continue;
 
+    const chartPoints = regPoints.map(p => ({ x: p.x, y: Math.round(p.y * 10) / 10, label: `${Math.round(p.y * 10) / 10}kg` }));
     results.push({
       name: pattern.name,
       label: pattern.label,
@@ -440,6 +443,8 @@ export function calcE1RMTrendByExercise(sessions: WorkoutHistory[]): {
       firstE1RM: Math.round(sorted[0].e1rm),
       lastE1RM: Math.round(sorted[sorted.length - 1].e1rm),
       growthPerWeek: Math.round(reg.slope * 7 * 10) / 10,
+      points: chartPoints,
+      baseDate,
     });
   }
 

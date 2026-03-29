@@ -790,42 +790,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
   }
 
   const ex = byEx[activeIdx % byEx.length];
-  const { regression: reg } = ex;
-
-  // 해당 운동의 세션별 e1RM 데이터 추출
-  const points: { x: number; y: number; label: string }[] = [];
-  const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const BIG3_MATCH: Record<string, { match: string[]; exclude: string[] }> = {
-    bench: { match: ["벤치", "bench"], exclude: ["덤벨", "dumbbell", "인클라인", "incline", "디클라인", "decline"] },
-    squat: { match: ["스쿼트", "squat"], exclude: ["프론트", "front", "고블릿", "goblet", "덤벨", "dumbbell"] },
-    deadlift: { match: ["데드", "dead"], exclude: ["루마니안", "romanian", "스티프", "stiff", "스모", "sumo", "트랩바", "trap bar", "케틀벨", "kettlebell"] },
-  };
-  const matchInfo = BIG3_MATCH[ex.name] || { match: [], exclude: [] };
-  let baseDate = "";
-
-  for (const session of sorted) {
-    const exercises = session.sessionData?.exercises || [];
-    const logs = session.logs || {};
-    let best = 0;
-    exercises.forEach((e, idx) => {
-      const lower = e.name.toLowerCase();
-      if (!matchInfo.match.some(p => lower.includes(p)) || matchInfo.exclude.some(p => lower.includes(p))) return;
-      const exLogs = logs[idx] || [];
-      for (const log of exLogs) {
-        const w = parseFloat(log.weightUsed || e.weight || "0");
-        if (!isNaN(w) && w > 0 && log.repsCompleted > 0) {
-          const e1rm = w * (1 + log.repsCompleted / 30);
-          if (e1rm > best) best = e1rm;
-        }
-      }
-    });
-    if (best > 0) {
-      if (!baseDate) baseDate = session.date;
-      points.push({ x: dateToDayIndex(session.date, baseDate), y: Math.round(best * 10) / 10, label: `${Math.round(best * 10) / 10}kg` });
-    }
-  }
-
-  const insufficientData = points.length < 2;
+  const { regression: reg, points } = ex;
 
   const targetLine = profile.bodyWeight * 1.0;
   const targetLabel = `중급 ${Math.round(targetLine)}kg`;
@@ -875,11 +840,6 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
         </div>
       )}
 
-      {insufficientData ? (
-        <div className="py-6 text-center">
-          <p className="text-xs text-gray-400">{ex.label} 기록이 2회 이상 필요합니다</p>
-        </div>
-      ) : <>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 180 }}>
         <text x={PAD.left - 5} y={PAD.top - 6} textAnchor="end" className="fill-gray-400" fontSize="8">e1RM (kg)</text>
         {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
@@ -915,7 +875,6 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
       <p className="text-[9px] text-gray-400 mt-1 text-right">
         {ex.growthPerWeek > 0 ? "▲" : ex.growthPerWeek < 0 ? "▼" : "—"} 주간 +{ex.growthPerWeek}kg/주
       </p>
-      </>}
     </div>
   );
 }
