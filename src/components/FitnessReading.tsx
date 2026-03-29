@@ -1393,7 +1393,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                       <div className="space-y-2.5">
                         {myItems.map((item: PredictionItem, i: number) => {
                           const pred = reading.predictions[i];
-                          const threshold = UNLOCK_THRESHOLDS[i] ?? 999;
+                          const threshold = UNLOCK_THRESHOLDS[item.phase] ?? 999;
                           const isUnlocked = workoutCount >= threshold;
                           const isOpen = isUnlocked && (i === 0 || isPremium);
                           const easyLabel = item.label.replace(/e1RM/g, "최대 중량").replace(/1RM/g, "최대 중량");
@@ -1525,7 +1525,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                           <div className="space-y-2.5">
                             {otherItems.map((item: PredictionItem, i: number) => {
                               const pred = otherReading.predictions[i];
-                              const threshold = UNLOCK_THRESHOLDS[i] ?? 999;
+                              const threshold = UNLOCK_THRESHOLDS[item.phase] ?? 999;
                               const isUnlocked = workoutCount >= threshold;
                               return (
                                 <div key={i}>
