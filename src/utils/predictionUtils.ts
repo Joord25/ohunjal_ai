@@ -371,33 +371,92 @@ export function calcRecoveryPattern(sessions: WorkoutHistory[]): {
 /**
  * 세션별 best e1RM 트렌드 (선형 회귀)
  */
+/** 3대 운동 패턴 (벤치/스쿼트/데드) */
+const BIG3_LIFT_PATTERNS: { name: string; label: string; match: string[]; exclude: string[] }[] = [
+  { name: "bench", label: "벤치프레스", match: ["벤치 프레스", "벤치프레스", "bench press", "flat bench"], exclude: ["덤벨", "dumbbell", "인클라인", "incline", "디클라인", "decline"] },
+  { name: "squat", label: "스쿼트", match: ["스쿼트", "squat", "백 스쿼트", "백스쿼트"], exclude: ["프론트", "front", "고블릿", "goblet", "덤벨", "dumbbell"] },
+  { name: "deadlift", label: "데드리프트", match: ["데드리프트", "deadlift"], exclude: ["루마니안", "romanian", "스티프", "stiff", "스모", "sumo", "트랩바", "trap bar"] },
+];
+
+function matchBig3Lift(exerciseName: string): string | null {
+  const lower = exerciseName.toLowerCase();
+  for (const p of BIG3_LIFT_PATTERNS) {
+    if (p.match.some(m => lower.includes(m.toLowerCase())) && !p.exclude.some(ex => lower.includes(ex.toLowerCase()))) {
+      return p.name;
+    }
+  }
+  return null;
+}
+
+/** 운동별 e1RM 트렌드 (3대 운동 각각 회귀분석) */
+export function calcE1RMTrendByExercise(sessions: WorkoutHistory[]): {
+  name: string; // bench | squat | deadlift
+  label: string; // 벤치프레스 | 스쿼트 | 데드리프트
+  regression: RegressionResult;
+  firstE1RM: number;
+  lastE1RM: number;
+  growthPerWeek: number;
+}[] {
+  const results: { name: string; label: string; regression: RegressionResult; firstE1RM: number; lastE1RM: number; growthPerWeek: number }[] = [];
+
+  for (const pattern of BIG3_LIFT_PATTERNS) {
+    // 해당 운동의 세션별 최고 e1RM 추출
+    const points: { date: string; e1rm: number }[] = [];
+
+    for (const session of sessions) {
+      const exercises = session.sessionData?.exercises || [];
+      const logs = session.logs || {};
+      let bestForSession = 0;
+
+      exercises.forEach((ex, idx) => {
+        if (matchBig3Lift(ex.name) !== pattern.name) return;
+        const exLogs = logs[idx] || [];
+        for (const log of exLogs) {
+          const weight = parseFloat(log.weightUsed || ex.weight || "0");
+          if (!isNaN(weight) && weight > 0 && log.repsCompleted > 0) {
+            const e1rm = estimate1RM(weight, log.repsCompleted);
+            if (e1rm > bestForSession) bestForSession = e1rm;
+          }
+        }
+      });
+
+      if (bestForSession > 0) {
+        points.push({ date: session.date, e1rm: bestForSession });
+      }
+    }
+
+    if (points.length < 2) continue;
+
+    const sorted = points.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const baseDate = sorted[0].date;
+    const regPoints = sorted.map(p => ({ x: dateToDayIndex(p.date, baseDate), y: p.e1rm }));
+    const reg = linearRegression(regPoints);
+    if (!reg) continue;
+
+    results.push({
+      name: pattern.name,
+      label: pattern.label,
+      regression: reg,
+      firstE1RM: Math.round(sorted[0].e1rm),
+      lastE1RM: Math.round(sorted[sorted.length - 1].e1rm),
+      growthPerWeek: Math.round(reg.slope * 7 * 10) / 10,
+    });
+  }
+
+  return results;
+}
+
+/** 기존 호환: 세션 최고 e1RM 트렌드 (deprecated — calcE1RMTrendByExercise 사용 권장) */
 export function calcE1RMTrend(sessions: WorkoutHistory[]): {
   regression: RegressionResult;
   firstE1RM: number;
   lastE1RM: number;
-  growthPerWeek: number; // kg/주
+  growthPerWeek: number;
 } | null {
-  const sorted = sessions
-    .filter(s => s.stats.bestE1RM && s.stats.bestE1RM > 0)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  if (sorted.length < 3) return null;
-
-  const baseDate = sorted[0].date;
-  const points = sorted.map(s => ({
-    x: dateToDayIndex(s.date, baseDate),
-    y: s.stats.bestE1RM!,
-  }));
-
-  const reg = linearRegression(points);
-  if (!reg) return null;
-
-  return {
-    regression: reg,
-    firstE1RM: Math.round(sorted[0].stats.bestE1RM!),
-    lastE1RM: Math.round(sorted[sorted.length - 1].stats.bestE1RM!),
-    growthPerWeek: Math.round(reg.slope * 7 * 10) / 10, // kg per week
-  };
+  // 운동별 트렌드 중 데이터가 가장 많은 종목 반환
+  const byEx = calcE1RMTrendByExercise(sessions);
+  if (byEx.length === 0) return null;
+  return byEx[0]; // 첫 번째 (가장 먼저 매칭된 종목)
 }
 
 /* ─── Phase 2: 체중 트렌드 ─── */

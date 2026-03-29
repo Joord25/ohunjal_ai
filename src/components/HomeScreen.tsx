@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
-import { calcE1RMTrend, calcVolumeGrowthRate, calcWeightTrend, dateToDayIndex } from "@/utils/predictionUtils";
+import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcWeightTrend, dateToDayIndex } from "@/utils/predictionUtils";
 
 interface HomeScreenProps {
   userName?: string;
@@ -261,20 +261,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     const predictionPreview = (() => {
       if (history.length < 3) return null;
 
-      // 경로 1: e1RM 회귀분석 (calcE1RMTrend 사용)
-      const e1t = calcE1RMTrend(history);
-      if (e1t) {
+      // 경로 1: 운동별 e1RM 회귀분석 (3대 운동 중 데이터 가장 많은 종목)
+      const byEx = calcE1RMTrendByExercise(history);
+      if (byEx.length > 0) {
+        const best = byEx[0]; // 첫 번째 매칭 종목
         const lastDay = dateToDayIndex(
-          history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-1)[0].date,
-          history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0].date
+          history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-1)[0]?.date || new Date().toISOString(),
+          history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]?.date || new Date().toISOString()
         );
-        const pred4w = Math.round(Math.max(0, e1t.regression.predict(lastDay + 28)) * 10) / 10;
-        const isGrowing = pred4w > e1t.lastE1RM;
+        const pred4w = Math.round(Math.max(0, best.regression.predict(lastDay + 28)) * 10) / 10;
+        const isGrowing = pred4w > best.lastE1RM;
         return {
-          current: `${e1t.lastE1RM}kg`,
+          current: `${best.lastE1RM}kg`,
           predicted: `${pred4w}kg`,
-          timeline: isGrowing ? "이 페이스면 4주 후 더 강해져요" : "페이스 점검이 필요해요",
-          label: "추정 1RM",
+          timeline: isGrowing ? `${best.label} 4주 후 더 강해져요` : `${best.label} 페이스 점검 필요`,
+          label: best.label,
         };
       }
 

@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { saveUserProfile, updateGender, updateBirthYear, updateWeight } from "@/utils/userProfile";
 import { WorkoutHistory } from "@/constants/workout";
-import { getBig4FromHistory } from "@/utils/workoutMetrics";
 import {
   calcConsistencyScore,
   calcCaloriesTrend,
-  calcE1RMTrend,
+  calcE1RMTrendByExercise,
   calcWeightTrend,
   calcBig3VolumeBalance,
   linearRegression,
@@ -348,19 +347,19 @@ function computeReading(
       };
     }
 
-    // 근력: 현재 근력 수준 평가 (동성/동연령 대비)
+    // 근력: 현재 근력 수준 평가 (3대 운동별)
     if (label.includes("현재 근력 수준 평가")) {
-      const currentE1RM = Math.max(p.bench1RM || 0, p.squat1RM || 0, p.deadlift1RM || 0);
-      if (currentE1RM <= 0) {
-        const e1t = calcE1RMTrend(history || []);
-        if (!e1t) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
-        const ratio = e1t.lastE1RM / p.bodyWeight;
-        const level = ratio >= 1.5 ? "상급" : ratio >= 1.0 ? "중급" : "초급";
-        return { value: `${level} (체중 대비 ${Math.round(ratio * 100)}%)`, sub: `추정 1RM ${e1t.lastE1RM}kg / 체중 ${p.bodyWeight}kg` };
-      }
-      const ratio = currentE1RM / p.bodyWeight;
-      const level = ratio >= 1.5 ? "상급" : ratio >= 1.0 ? "중급" : "초급";
-      return { value: `${level} (체중 대비 ${Math.round(ratio * 100)}%)`, sub: `최고 1RM ${currentE1RM}kg / 체중 ${p.bodyWeight}kg` };
+      // 프로필 1RM이 있으면 사용, 없으면 운동 기록에서 추출
+      const byEx = calcE1RMTrendByExercise(history || []);
+      const benchRM = p.bench1RM || byEx.find(e => e.name === "bench")?.lastE1RM || 0;
+      const squatRM = p.squat1RM || byEx.find(e => e.name === "squat")?.lastE1RM || 0;
+      const deadRM = p.deadlift1RM || byEx.find(e => e.name === "deadlift")?.lastE1RM || 0;
+      if (benchRM <= 0 && squatRM <= 0 && deadRM <= 0) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
+      const items: string[] = [];
+      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${r >= 1.5 ? "상급" : r >= 1.0 ? "중급" : "초급"}`); }
+      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${r >= 1.5 ? "상급" : r >= 1.0 ? "중급" : "초급"}`); }
+      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${r >= 1.5 ? "상급" : r >= 1.0 ? "중급" : "초급"}`); }
+      return { value: items.join(" · "), sub: `체중 ${p.bodyWeight}kg 기준` };
     }
 
     // 근력: 초보자 근성장 속도
@@ -456,47 +455,55 @@ function computeReading(
       };
     }
 
-    // 근력: 중급/상급 진입 예상 기간 (회귀분석 기반)
+    // 근력: 중급/상급 진입 예상 기간 (운동별 회귀분석)
     if (label.includes("중급 진입 예상 기간") || label.includes("상급 진입 예상 기간")) {
-      const e1t = calcE1RMTrend(h);
-      const currentE1RM = e1t?.lastE1RM ?? Math.max(p.bench1RM || 0, p.squat1RM || 0, p.deadlift1RM || 0);
-      const growth = (e1t && e1t.growthPerWeek > 0) ? e1t.growthPerWeek : 2.5;
-      if (currentE1RM <= 0) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
+      const byEx = calcE1RMTrendByExercise(h);
       const isAdvanced = label.includes("상급");
-      const target = p.bodyWeight * (isAdvanced ? 1.5 : 1.0);
-      const targetLabel = `${isAdvanced ? "상급" : "중급"} (${Math.round(target)}kg)`;
-      const remaining = target - currentE1RM;
-      if (remaining <= 0) return { value: `이미 ${isAdvanced ? "상급" : "중급"} 달성`, sub: `현재 ${currentE1RM}kg` };
-      const weeksNeeded = Math.ceil(remaining / growth);
-      const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
+      const ratio = isAdvanced ? 1.5 : 1.0;
+      const levelName = isAdvanced ? "상급" : "중급";
+
+      if (byEx.length === 0) {
+        const currentE1RM = Math.max(p.bench1RM || 0, p.squat1RM || 0, p.deadlift1RM || 0);
+        if (currentE1RM <= 0) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
+        const target = p.bodyWeight * ratio;
+        const remaining = target - currentE1RM;
+        if (remaining <= 0) return { value: `이미 ${levelName} 달성` };
+        const weeksNeeded = Math.ceil(remaining / 2.5);
+        const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
+        return { value: `${levelName} (${Math.round(target)}kg)까지 ${duration}`, sub: `현재 ${currentE1RM}kg, 주 +2.5kg 기준` };
+      }
+
+      const results = byEx.map(ex => {
+        const target = p.bodyWeight * ratio;
+        const remaining = target - ex.lastE1RM;
+        if (remaining <= 0) return `${ex.label} ${levelName} 달성`;
+        const growth = ex.growthPerWeek > 0 ? ex.growthPerWeek : 2.5;
+        const weeksNeeded = Math.ceil(remaining / growth);
+        const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
+        return `${ex.label} ${Math.round(target)}kg까지 ${duration}`;
+      });
       return {
-        value: `${targetLabel}까지 ${duration}`,
-        sub: `현재 ${currentE1RM}kg, 매주 +${growth}kg 성장 중`,
+        value: results.join("\n"),
+        sub: `체중 ${p.bodyWeight}kg × ${ratio}배 기준`,
       };
     }
 
-    // 근력: 3대 운동 각각 +20kg 증량 예상 기간
+    // 근력: 3대 운동 각각 +20kg 증량 예상 기간 (운동별 회귀분석)
     if (label.includes("+20kg 증량 예상 기간")) {
-      const big4 = getBig4FromHistory(h);
-      const e1t = calcE1RMTrend(h);
-      const growth = (e1t && e1t.growthPerWeek > 0) ? e1t.growthPerWeek : 2.5;
-      const targets = [
-        { name: "벤치프레스", patterns: ["벤치", "bench"] },
-        { name: "백스쿼트", patterns: ["스쿼트", "squat"] },
-        { name: "데드리프트", patterns: ["데드", "dead"] },
-      ];
-      const results = targets.map(t => {
-        const match = big4.find((b: { exerciseName: string; value: number }) => t.patterns.some(pat => b.exerciseName.toLowerCase().includes(pat)));
-        if (!match) return `${t.name}: 기록 없음`;
-        const current = Math.round(match.value);
+      const byEx = calcE1RMTrendByExercise(h);
+      if (byEx.length === 0) return { value: "3대 운동 기록 필요", sub: "벤치/스쿼트/데드리프트 기록이 쌓이면 예측합니다" };
+
+      const results = byEx.map(ex => {
+        const current = ex.lastE1RM;
         const target = current + 20;
+        const growth = ex.growthPerWeek > 0 ? ex.growthPerWeek : 2.5;
         const weeksNeeded = Math.ceil(20 / growth);
         const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
-        return `${t.name} ${current}→${target}kg ${duration}`;
+        return `${ex.label} ${current}→${target}kg ${duration}`;
       });
       return {
-        value: results.filter(r => !r.includes("기록 없음")).join("\n") || "3대 운동 기록 필요",
-        sub: `매주 +${growth}kg 성장 기준`,
+        value: results.join("\n"),
+        sub: `각 종목별 성장률 기준`,
       };
     }
 
