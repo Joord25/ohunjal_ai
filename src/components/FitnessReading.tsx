@@ -145,15 +145,18 @@ const PREDICTIONS_BY_GOAL: Record<string, GoalPrediction> = {
 /** 근력 등급에 따라 동적 예측 항목 생성 */
 function getMuscleGainItems(p: FitnessProfile, history?: WorkoutHistory[]): PredictionItem[] {
   const byEx = history ? calcE1RMTrendByExercise(history) : [];
-  // 3대 운동 최고 e1RM (프로필 vs 기록 중 높은 값)
-  const bestE1RM = Math.max(
-    p.bench1RM || 0, p.squat1RM || 0, p.deadlift1RM || 0,
-    ...byEx.map(e => e.lastE1RM)
-  );
-  const midTarget = p.bodyWeight * 1.0;
-  const advTarget = p.bodyWeight * 1.5;
-  const isIntermediate = bestE1RM >= midTarget;
-  const isAdvanced = bestE1RM >= advTarget;
+  // 종목별 NSCA 기준으로 등급 판단 (가장 낮은 등급 기준)
+  const liftStd = { bench: { mid: 1.0, adv: 1.5 }, squat: { mid: 1.25, adv: 1.75 }, deadlift: { mid: 1.5, adv: 2.0 } };
+  const lifts = [
+    { rm: Math.max(p.bench1RM || 0, byEx.find(e => e.name === "bench")?.lastE1RM || 0), std: liftStd.bench },
+    { rm: Math.max(p.squat1RM || 0, byEx.find(e => e.name === "squat")?.lastE1RM || 0), std: liftStd.squat },
+    { rm: Math.max(p.deadlift1RM || 0, byEx.find(e => e.name === "deadlift")?.lastE1RM || 0), std: liftStd.deadlift },
+  ].filter(l => l.rm > 0);
+  // 데이터 있는 종목 중 가장 낮은 등급으로 판단
+  const allIntermediate = lifts.length > 0 && lifts.every(l => l.rm >= p.bodyWeight * l.std.mid);
+  const allAdvanced = lifts.length > 0 && lifts.every(l => l.rm >= p.bodyWeight * l.std.adv);
+  const isAdvanced = allAdvanced;
+  const isIntermediate = allIntermediate && !allAdvanced;
 
   const items: PredictionItem[] = [
     { label: "현재 근력 수준 평가", phase: 0, source: "ExRx/NSCA Strength Standards" },
@@ -383,10 +386,16 @@ function computeReading(
       const squatRM = p.squat1RM || byEx.find(e => e.name === "squat")?.lastE1RM || 0;
       const deadRM = p.deadlift1RM || byEx.find(e => e.name === "deadlift")?.lastE1RM || 0;
       if (benchRM <= 0 && squatRM <= 0 && deadRM <= 0) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
+      // NSCA/ExRx Strength Standards (종목별 체중 대비 기준)
+      const standards = {
+        bench:    { mid: 1.0, adv: 1.5 },
+        squat:    { mid: 1.25, adv: 1.75 },
+        deadlift: { mid: 1.5, adv: 2.0 },
+      };
       const items: string[] = [];
-      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${Math.round(benchRM)}kg ${r >= 1.5 ? "상급" : r >= 1.0 ? "중급" : "초급"}`); }
-      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${Math.round(squatRM)}kg ${r >= 1.5 ? "상급" : r >= 1.0 ? "중급" : "초급"}`); }
-      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${Math.round(deadRM)}kg ${r >= 1.5 ? "상급" : r >= 1.0 ? "중급" : "초급"}`); }
+      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${Math.round(benchRM)}kg ${r >= standards.bench.adv ? "상급" : r >= standards.bench.mid ? "중급" : "초급"}`); }
+      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${Math.round(squatRM)}kg ${r >= standards.squat.adv ? "상급" : r >= standards.squat.mid ? "중급" : "초급"}`); }
+      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${Math.round(deadRM)}kg ${r >= standards.deadlift.adv ? "상급" : r >= standards.deadlift.mid ? "중급" : "초급"}`); }
       return { value: items.join("\n"), sub: `체중 ${p.bodyWeight}kg 기준` };
     }
 
@@ -500,13 +509,12 @@ function computeReading(
     if (label.includes("중급 진입 예상 기간") || label.includes("상급 진입 예상 기간")) {
       const byEx = calcE1RMTrendByExercise(h);
       const isAdvanced = label.includes("상급");
-      const midTarget = p.bodyWeight * 1.0;
-      const advTarget = p.bodyWeight * 1.5;
+      const liftStandards = { bench: { mid: 1.0, adv: 1.5 }, squat: { mid: 1.25, adv: 1.75 }, deadlift: { mid: 1.5, adv: 2.0 } };
 
       const allLifts = [
-        { name: "bench", label: "벤치", profile: p.bench1RM || 0, tracked: byEx.find(e => e.name === "bench") },
-        { name: "squat", label: "스쿼트", profile: p.squat1RM || 0, tracked: byEx.find(e => e.name === "squat") },
-        { name: "deadlift", label: "데드", profile: p.deadlift1RM || 0, tracked: byEx.find(e => e.name === "deadlift") },
+        { name: "bench" as const, label: "벤치", profile: p.bench1RM || 0, tracked: byEx.find(e => e.name === "bench") },
+        { name: "squat" as const, label: "스쿼트", profile: p.squat1RM || 0, tracked: byEx.find(e => e.name === "squat") },
+        { name: "deadlift" as const, label: "데드", profile: p.deadlift1RM || 0, tracked: byEx.find(e => e.name === "deadlift") },
       ];
       const available = allLifts.filter(lift => lift.profile > 0 || lift.tracked);
       if (available.length === 0) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
@@ -514,16 +522,17 @@ function computeReading(
       const results = available.map(lift => {
         const current = Math.max(lift.profile, lift.tracked?.lastE1RM || 0);
         const growth = (lift.tracked?.growthPerWeek || 0) > 0 ? lift.tracked!.growthPerWeek : 2.5;
+        const std = liftStandards[lift.name];
+        const midTarget = p.bodyWeight * std.mid;
+        const advTarget = p.bodyWeight * std.adv;
 
         if (isAdvanced) {
-          // 상급 진입 칸
           const remaining = advTarget - current;
           if (remaining <= 0) return `${lift.label} 상급 달성`;
           const weeksNeeded = Math.ceil(remaining / growth);
           const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
           return `${lift.label} 상급 ${Math.round(advTarget)}kg까지 ${duration}`;
         } else {
-          // 중급 진입 칸 — 이미 중급이면 상급으로 승격, 상급이면 +20kg
           const midRemaining = midTarget - current;
           if (midRemaining > 0) {
             const weeksNeeded = Math.ceil(midRemaining / growth);
@@ -536,7 +545,6 @@ function computeReading(
             const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
             return `${lift.label} 중급 달성 → 상급 ${Math.round(advTarget)}kg까지 ${duration}`;
           }
-          // 상급도 달성 → +20kg
           const target20 = current + 20;
           const weeksNeeded = Math.ceil(20 / growth);
           const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
