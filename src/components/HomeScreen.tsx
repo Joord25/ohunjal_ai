@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
-import { calcCaloriesTrend, calcE1RMTrend, calcVolumeGrowthRate, dateToDayIndex } from "@/utils/predictionUtils";
+import { calcE1RMTrend, calcVolumeGrowthRate, calcWeightTrend, dateToDayIndex } from "@/utils/predictionUtils";
 
 interface HomeScreenProps {
   userName?: string;
@@ -278,20 +278,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
         };
       }
 
-      // 경로 2: 체중 감량 예측
-      if (profile && profile.goal === "fat_loss" && profile.bodyWeight > 0 && profile.weeklyFrequency > 0) {
-        const trend = calcCaloriesTrend(history, profile.bodyWeight);
-        if (trend.length >= 2) {
-          const avgCal = Math.round(trend.reduce((s, t) => s + t.calories, 0) / trend.length);
-          const weeklyBurn = avgCal * profile.weeklyFrequency;
-          const weeklyLossKg = Math.round((weeklyBurn / 7700) * 100) / 100;
-          const pred4w = Math.round((profile.bodyWeight - weeklyLossKg * 4) * 10) / 10;
-          return {
-            current: `${profile.bodyWeight}kg`,
-            predicted: `${pred4w}kg`,
-            timeline: weeklyLossKg > 0 ? "꾸준히 감량 중이에요" : "운동 빈도를 늘려보세요",
-            label: "4주 후 예상 체중",
-          };
+      // 경로 2: 체중 감량 예측 (회귀분석 기반, 최소 4회 체중 기록 필요)
+      if (profile && profile.goal === "fat_loss") {
+        const weightLog: { date: string; weight: number }[] = (() => {
+          try { return JSON.parse(localStorage.getItem("alpha_weight_log") || "[]"); } catch { return []; }
+        })();
+        if (weightLog.length >= 4) {
+          const wt = calcWeightTrend(weightLog);
+          if (wt) {
+            const current = weightLog.sort((a, b) => a.date.localeCompare(b.date)).slice(-1)[0].weight;
+            const pred4w = wt.predictInWeeks(4);
+            const isLosing = pred4w < current;
+            return {
+              current: `${current}kg`,
+              predicted: `${pred4w}kg`,
+              timeline: isLosing ? "꾸준히 감량 중이에요" : "페이스 점검이 필요해요",
+              label: "4주 후 예상 체중",
+            };
+          }
         }
       }
 
