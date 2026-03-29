@@ -887,15 +887,14 @@ type Step = "welcome" | "profile" | "frequency" | "time" | "goal" | "onerm" | "a
 const UNLOCK_THRESHOLDS = [0, 5, 10, 20];
 
 export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremium, isPremium, resultOnly, onBack, workoutCount = 0, workoutHistory, weightLog, onEdit1RM }) => {
-  // Load saved profile for resultOnly mode
+  // Load saved profile
   const savedProfile = React.useMemo<FitnessProfile | null>(() => {
-    if (!resultOnly) return null;
     try {
       const raw = localStorage.getItem("alpha_fitness_profile");
       if (raw) return JSON.parse(raw) as FitnessProfile;
     } catch {}
     return null;
-  }, [resultOnly]);
+  }, []);
 
   const [step, setStep] = useState<Step>(resultOnly && savedProfile ? "result" : "welcome");
   const [profile, setProfile] = useState<Partial<FitnessProfile>>(savedProfile || {});
