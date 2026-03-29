@@ -1,13 +1,17 @@
 import { ExerciseLog, ExerciseStep, WorkoutHistory } from "@/constants/workout";
 
 /**
- * Epley formula: e1RM = weight × (1 + reps / 30)
- * Only valid for reps <= 30 and weight > 0
+ * 반복수 구간별 최적 공식으로 e1RM 추정
+ * - 1~5회: Brzycki (저렙에서 정확, NSCA 권장)
+ * - 6~10회: Epley (중렙에서 적합)
+ * - 11회+: Lombardi (고렙에서 보수적)
  */
 export function estimate1RM(weightKg: number, reps: number): number {
   if (reps <= 0 || weightKg <= 0) return 0;
   if (reps === 1) return weightKg;
-  return weightKg * (1 + reps / 30);
+  if (reps <= 5) return weightKg * (36 / (37 - reps)); // Brzycki
+  if (reps <= 10) return weightKg * (1 + reps / 30); // Epley
+  return weightKg * Math.pow(reps, 0.1); // Lombardi
 }
 
 export type SessionCategory = "strength" | "cardio" | "mobility" | "mixed";
