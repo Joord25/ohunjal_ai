@@ -394,9 +394,9 @@ function computeReading(
         deadlift: { mid: 1.5, adv: 2.0 },
       };
       const items: string[] = [];
-      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${Math.round(benchRM)}kg → ${r >= standards.bench.adv ? "상급" : r >= standards.bench.mid ? "중급" : "초급"}`); }
-      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${Math.round(squatRM)}kg → ${r >= standards.squat.adv ? "상급" : r >= standards.squat.mid ? "중급" : "초급"}`); }
-      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${Math.round(deadRM)}kg → ${r >= standards.deadlift.adv ? "상급" : r >= standards.deadlift.mid ? "중급" : "초급"}`); }
+      if (benchRM > 0) { const r = benchRM / p.bodyWeight; items.push(`벤치 ${Math.round(benchRM)}kg (${r >= standards.bench.adv ? "상급" : r >= standards.bench.mid ? "중급" : "초급"})`); }
+      if (squatRM > 0) { const r = squatRM / p.bodyWeight; items.push(`스쿼트 ${Math.round(squatRM)}kg (${r >= standards.squat.adv ? "상급" : r >= standards.squat.mid ? "중급" : "초급"})`); }
+      if (deadRM > 0) { const r = deadRM / p.bodyWeight; items.push(`데드 ${Math.round(deadRM)}kg (${r >= standards.deadlift.adv ? "상급" : r >= standards.deadlift.mid ? "중급" : "초급"})`); }
       return { value: items.join("\n"), sub: `체중 ${p.bodyWeight}kg 기준` };
     }
 
@@ -529,27 +529,27 @@ function computeReading(
 
         if (isAdvanced) {
           const remaining = advTarget - current;
-          if (remaining <= 0) return `${lift.label} 상급 달성`;
+          if (remaining <= 0) return `${lift.label} → 달성`;
           const weeksNeeded = Math.ceil(remaining / growth);
           const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
-          return `${lift.label} 상급 ${Math.round(advTarget)}kg까지 → ${duration}`;
+          return `${lift.label} → ${Math.round(advTarget)}kg (${duration})`;
         } else {
           const midRemaining = midTarget - current;
           if (midRemaining > 0) {
             const weeksNeeded = Math.ceil(midRemaining / growth);
             const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
-            return `${lift.label} 중급 ${Math.round(midTarget)}kg까지 → ${duration}`;
+            return `${lift.label} → ${Math.round(midTarget)}kg (${duration})`;
           }
           const advRemaining = advTarget - current;
           if (advRemaining > 0) {
             const weeksNeeded = Math.ceil(advRemaining / growth);
             const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
-            return `${lift.label} 상급 ${Math.round(advTarget)}kg까지 → ${duration}`;
+            return `${lift.label} → ${Math.round(advTarget)}kg (${duration})`;
           }
           const target20 = current + 20;
           const weeksNeeded = Math.ceil(20 / growth);
           const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
-          return `${lift.label} ${Math.round(target20)}kg까지 → ${duration}`;
+          return `${lift.label} → ${Math.round(target20)}kg (${duration})`;
         }
       });
       return {
@@ -576,7 +576,7 @@ function computeReading(
           const growth = (lift.tracked?.growthPerWeek || 0) > 0 ? lift.tracked!.growthPerWeek : 2.5;
           const weeksNeeded = Math.ceil(incKg / growth);
           const duration = weeksNeeded > 12 ? `${Math.round(weeksNeeded / 4)}개월` : `${weeksNeeded}주`;
-          return `${lift.label} ${current}→${target}kg까지 → ${duration}`;
+          return `${lift.label} → ${target}kg (${duration})`;
         });
       if (results.length === 0) return { value: "1RM 입력 또는 운동 기록 필요", action: "edit_1rm" };
       return {
