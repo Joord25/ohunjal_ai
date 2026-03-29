@@ -6,7 +6,6 @@ import { WorkoutHistory } from "@/constants/workout";
 import { getBig4FromHistory } from "@/utils/workoutMetrics";
 import {
   calcConsistencyScore,
-  calcVolumeGrowthRate,
   calcCaloriesTrend,
   calcE1RMTrend,
   calcWeightTrend,
@@ -155,47 +154,6 @@ const PREDICTIONS_BY_GOAL: Record<string, GoalPrediction> = {
 
 /* ─── 과학적 계산 함수 ─── */
 
-/** VO2max 추정 — ACSM 연령/성별 기준표 기반
- *  HUNT 공식은 RHR·허리둘레 등 미보유 데이터가 필요하여 과대추정 위험이 큼.
- *  대신 ACSM 연령별 평균 VO2max 표를 기준으로,
- *  운동 빈도에 따라 ±보정하는 방식을 사용.
- *
- *  ACSM 남성 평균 VO2max (mL/kg/min):
- *    20대: 43, 30대: 40, 40대: 37, 50대: 34, 60대+: 30
- *  여성: 약 -8 (ACSM)
- *
- *  운동 빈도 보정: 비활동 -5, 주1~2회 ±0, 주3~4회 +3, 주5+ +5
- *  BMI 보정: BMI 25 초과 시 초과분 × -0.5
- */
-function estimateVO2max(age: number, weight: number, heightEstimate: number, weeklyFreq: number, gender: "male" | "female"): number {
-  // ACSM 연령별 평균 (남성)
-  const maleBaseline = age < 30 ? 43 : age < 40 ? 40 : age < 50 ? 37 : age < 60 ? 34 : 30;
-  const baseline = gender === "male" ? maleBaseline : maleBaseline - 8;
-
-  // 운동 빈도 보정
-  const freqAdj = weeklyFreq === 0 ? -5 : weeklyFreq <= 2 ? 0 : weeklyFreq <= 4 ? 3 : 5;
-
-  // BMI 보정 (과체중 패널티)
-  const bmi = weight / ((heightEstimate / 100) ** 2);
-  const bmiAdj = bmi > 25 ? -(bmi - 25) * 0.5 : 0;
-
-  const vo2 = baseline + freqAdj + bmiAdj;
-  return Math.round(Math.max(15, Math.min(65, vo2)) * 10) / 10;
-}
-
-/** VO2max 기반 피트니스 나이 (HUNT Study, Nes 2013)
- *  해당 VO2max가 평균인 연령을 역산
- */
-function fitnessAge(vo2max: number, gender: "male" | "female"): number {
-  // 평균 VO2max: 남성 ~45 (20세) → ~30 (60세), 여성 ~38 (20세) → ~25 (60세)
-  let age: number;
-  if (gender === "male") {
-    age = Math.round((45 - vo2max) / 0.375 + 20);
-  } else {
-    age = Math.round((38 - vo2max) / 0.325 + 20);
-  }
-  return Math.max(18, Math.min(80, age));
-}
 
 /** ACSM MET 기반 칼로리 소모 추정 (Ainsworth et al., 2011)
  *  일반 저항운동: 3.5-6.0 MET, 유산소: 4.0-8.0 MET
@@ -249,21 +207,6 @@ function assessStrengthLevel(lift: "bench" | "squat" | "deadlift", oneRM: number
   return { level, ratio, percentile };
 }
 
-/** 키 추정 (국민건강영양조사 2022 평균)
- *  실제 키 데이터가 없으므로 성별/연령 평균 사용
- */
-function estimateHeight(gender: "male" | "female", age: number): number {
-  if (gender === "male") {
-    if (age < 30) return 174;
-    if (age < 40) return 173;
-    if (age < 50) return 172;
-    return 170;
-  }
-  if (age < 30) return 161;
-  if (age < 40) return 160;
-  if (age < 50) return 159;
-  return 157;
-}
 
 /* ─── reading results ─── */
 interface StrengthBar {
@@ -477,40 +420,6 @@ function computeReading(
       return {
         value: `강점: ${strongest.name} (${strongest.percentile})`,
         sub: `약점: ${weakest.name} (${weakest.percentile}) — 집중 강화 추천`,
-      };
-    }
-
-    // Phase 2+: 추정 VO2max (운동 데이터 기반으로만)
-    if (label.includes("추정 VO2max")) {
-      const hEst = estimateHeight(p.gender, age);
-      const v = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
-      const vo2Level = v >= 45 ? "우수" : v >= 35 ? "보통" : "개선 필요";
-      return {
-        value: `심폐 체력 ${v}점 (${vo2Level})`,
-        sub: `${p.gender === "male" ? "남" : "여"}성 ${age}세 기준`,
-      };
-    }
-
-    // Phase 2+: 추정 피트니스 나이 + 심혈관 위험 감소율 (복합)
-    if (label.includes("피트니스 나이") && label.includes("심혈관")) {
-      const hEst = estimateHeight(p.gender, age);
-      const v = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
-      const fAge = fitnessAge(v, p.gender);
-      const riskReduction = weeklyMin >= 300 ? "35~40%" : weeklyMin >= 150 ? "25~30%" : "10~20%";
-      return {
-        value: `체력 나이 ${fAge}세 (실제 ${age}세)`,
-        sub: `심혈관 질환 위험 ${riskReduction} 감소 예상`,
-      };
-    }
-
-    // Phase 2+: 추정 피트니스 나이
-    if (label.includes("피트니스 나이")) {
-      const hEst = estimateHeight(p.gender, age);
-      const v = estimateVO2max(age, p.bodyWeight, hEst, p.weeklyFrequency, p.gender);
-      const fAge = fitnessAge(v, p.gender);
-      return {
-        value: `체력 나이 ${fAge}세 (실제 ${age}세)`,
-        sub: v >= 40 ? "심폐 체력 양호" : "운동으로 개선 가능",
       };
     }
 
