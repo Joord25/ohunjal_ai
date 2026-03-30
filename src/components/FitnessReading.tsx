@@ -1175,7 +1175,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
   const [welcomeVisible, setWelcomeVisible] = useState(false);
   const [showMLTooltip, setShowMLTooltip] = useState(false);
   const [showOtherGoals, setShowOtherGoals] = useState(false);
-  const [selectedGoalKey, setSelectedGoalKey] = useState<string | null>(null);
+  const [selectedGoalKey, setSelectedGoalKey] = useState<string | null>(null); // null = 내 목표
   const [showChart, setShowChart] = useState(false);
   const [showFitnessTest, setShowFitnessTest] = useState(false);
 
@@ -1568,20 +1568,54 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
 
                 return (
                   <>
-                    {/* My goal card */}
-                    <div
-                      className={`w-full bg-white rounded-2xl p-5 mb-4 border-2 border-[#2D6A4F]/20 shadow-sm transition-all duration-700 delay-400 ${
-                        showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-                          <span className="text-[#1B4332] text-sm font-bold">내 목표: {myGoalData?.title}</span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#2D6A4F]/10 text-[#2D6A4F]">{levelLabel}</span>
-                        </div>
-                        <span className="text-[#6B7280] text-[11px]">{reading.condition}</span>
-                      </div>
+                    {/* 목표 탭 슬라이드 */}
+                    <div className={`flex gap-1 bg-gray-100 rounded-2xl p-1 mb-4 transition-all duration-700 delay-300 ${
+                      showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                    }`}>
+                      {Object.entries(PREDICTIONS_BY_GOAL).map(([key, gd]) => {
+                        const isMyGoal = key === fp.goal;
+                        const isActive = selectedGoalKey === key || (selectedGoalKey === null && isMyGoal);
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              if (isMyGoal) { setSelectedGoalKey(null); }
+                              else { setSelectedGoalKey(key); }
+                            }}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                              isActive ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
+                            }`}
+                          >
+                            {gd.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 선택된 목표 예측 카드 */}
+                    {(() => {
+                      const isOtherGoal = selectedGoalKey !== null && selectedGoalKey !== fp.goal;
+                      const activeGoalKey = isOtherGoal ? selectedGoalKey : fp.goal;
+                      const activeGoalData = PREDICTIONS_BY_GOAL[activeGoalKey];
+                      const activeItems = activeGoalKey === "muscle_gain" ? getMuscleGainItems(fp, workoutHistory) : (activeGoalData?.[myLevel] || []);
+                      const activeReading = isOtherGoal ? computeReading({ ...fp, goal: activeGoalKey as FitnessProfile["goal"] }, workoutCount, workoutHistory, weightLog) : reading;
+                      const canAccess = !isOtherGoal || isPremium;
+
+                      return (
+                        <div className="relative">
+                          <div
+                            className={`w-full bg-white rounded-2xl p-5 mb-4 border-2 shadow-sm transition-all duration-700 delay-400 ${
+                              showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                            } ${!isOtherGoal ? "border-[#2D6A4F]/20" : "border-gray-100"} ${!canAccess ? "blur-md" : ""}`}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${!isOtherGoal ? "bg-[#2D6A4F]" : "bg-[#059669]"}`} />
+                                <span className="text-[#1B4332] text-sm font-bold">{!isOtherGoal ? "내 목표" : ""}: {activeGoalData?.title}</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#2D6A4F]/10 text-[#2D6A4F]">{levelLabel}</span>
+                              </div>
+                              <span className="text-[#6B7280] text-[11px]">{activeReading.condition}</span>
+                            </div>
                       <div className="space-y-2.5">
                         {myItems.map((item: PredictionItem, i: number) => {
                           const pred = reading.predictions[i];
@@ -1695,98 +1729,17 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                       )}
                     </div>
 
-                    {/* Other goal buttons */}
-                    <div
-                      className={`flex gap-2 mb-4 transition-all duration-700 delay-500 ${
-                        showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                      }`}
-                    >
-                      {Object.entries(PREDICTIONS_BY_GOAL).filter(([k]) => k !== fp.goal).map(([key, gd]) => {
-                        const isSelected = selectedGoalKey === key;
-                        const canAccess = isPremium;
-                        return (
-                          <button
-                            key={key}
-                            onClick={() => {
-                              if (!canAccess) {
-                                setShowOtherGoals(true);
-                              } else {
-                                setSelectedGoalKey(isSelected ? null : key);
-                              }
-                            }}
-                            className={`flex-1 px-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                              isSelected
-                                ? "bg-[#1B4332] text-white"
-                                : canAccess
-                                  ? "bg-white border border-gray-200 text-gray-600 active:scale-95"
-                                  : "bg-gray-50 border border-gray-100 text-gray-300"
-                            }`}
-                          >
-                            {gd.title}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Selected other goal card */}
-                    {selectedGoalKey && isPremium && (() => {
-                      const otherGoalData = PREDICTIONS_BY_GOAL[selectedGoalKey];
-                      const otherItems = selectedGoalKey === "muscle_gain" ? getMuscleGainItems(fp, workoutHistory) : (otherGoalData?.[myLevel] || []);
-                      const otherReading = computeReading({ ...fp, goal: selectedGoalKey as FitnessProfile["goal"] }, workoutCount, workoutHistory, weightLog);
-                      return (
-                        <div className="w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm animate-fade-in">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-[#059669]" />
-                              <span className="text-[#1B4332] text-sm font-bold">{otherGoalData?.title}</span>
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{levelLabel}</span>
-                            </div>
-                            <span className="text-[#6B7280] text-[11px]">{otherReading.condition}</span>
-                          </div>
-                          <div className="space-y-2.5">
-                            {otherItems.map((item: PredictionItem, i: number) => {
-                              const pred = otherReading.predictions[i];
-                              const threshold = UNLOCK_THRESHOLDS[item.phase] ?? 999;
-                              const isUnlocked = workoutCount >= threshold;
-                              return (
-                                <div key={i}>
-                                  {isUnlocked ? (
-                                    <div className="bg-[#FAFBF9] rounded-xl p-3 -mx-1">
-                                      <p className="text-[#6B7280] text-xs mb-2">{item.label.replace(/e1RM/g, "최대 중량").replace(/1RM/g, "최대 중량")}</p>
-                                      {pred?.action === "fitness_test" ? (
-                                        <button onClick={() => setShowFitnessTest(true)} className="flex items-center justify-center gap-2 w-full bg-[#2D6A4F]/10 px-3 py-2 rounded-xl active:bg-[#2D6A4F]/20 transition-all">
-                                          <span className="text-[#1B4332] text-sm font-black">{pred?.value?.toString()}</span>
-                                          <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                                        </button>
-                                      ) : (
-                                        <p className="text-[#1B4332] text-sm font-black text-right whitespace-pre-line">{pred?.value?.toString().replace(/e1RM/g, "최대 중량").replace(/Best e1RM/g, "최고 기록")}</p>
-                                      )}
-                                      {pred?.sub && <p className="text-[#2D6A4F] text-[11px] mt-1 text-right">{pred.sub.replace(/e1RM/g, "최대 중량").replace(/Best e1RM/g, "최고 기록").replace(/R²=\d+%/g, "").replace(/\s+,\s*/g, ", ").trim()}</p>}
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center justify-between py-1">
-                                      <span className="text-[#1B4332] text-sm">{item.label}</span>
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-gray-400 font-medium">{threshold}회 운동 후 해금</span>
-                                        <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                        </svg>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                          {/* 다른 목표 그래프 */}
-                          {selectedGoalKey === "muscle_gain" && (
-                            <div className="mt-3">
-                              <Big3RegressionChart history={workoutHistory || []} profile={fp} />
-                            </div>
-                          )}
-                          {selectedGoalKey === "fat_loss" && (
-                            <div className="mt-3">
-                              <RegressionChart goal="fat_loss" history={workoutHistory || []} weightLog={weightLog || []} profile={fp} />
+                          {/* 블러 오버레이 (프리미엄 아닌 다른 목표) */}
+                          {!canAccess && (
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur-[1px]">
+                              <p className="text-[15px] font-black text-[#1B4332] mb-1">프리미엄으로 모든 목표 예측 보기</p>
+                              <p className="text-[11px] text-gray-400 mb-4">구독하면 모든 목표의 성장 예측을 확인할 수 있어요</p>
+                              <button
+                                onClick={() => onPremium?.()}
+                                className="px-6 py-2.5 rounded-2xl bg-[#1B4332] text-white text-sm font-bold active:scale-95 transition-all"
+                              >
+                                구독하기
+                              </button>
                             </div>
                           )}
                         </div>
