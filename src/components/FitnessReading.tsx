@@ -1617,8 +1617,8 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                               <span className="text-[#6B7280] text-[11px]">{activeReading.condition}</span>
                             </div>
                       <div className="space-y-2.5">
-                        {myItems.map((item: PredictionItem, i: number) => {
-                          const pred = reading.predictions[i];
+                        {activeItems.map((item: PredictionItem, i: number) => {
+                          const pred = activeReading.predictions[i];
                           const threshold = UNLOCK_THRESHOLDS[item.phase] ?? 999;
                           const isUnlocked = workoutCount >= threshold;
                           const isOpen = isUnlocked && (i === 0 || isPremium);
@@ -1702,31 +1702,28 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                         })}
                       </div>
 
-                    </div>
-
-                    {/* 회귀분석 그래프 (별도 카드) */}
-                    <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
-                      <button
-                        onClick={() => setShowChart(!showChart)}
-                        className="w-full flex items-center justify-between px-5 py-4 active:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-                          <span className="text-sm font-bold text-[#1B4332]">데이터 분석 그래프</span>
-                        </div>
-                        <svg className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${showChart ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {showChart && (
-                        <div className="px-5 pb-5 animate-fade-in">
-                          {fp.goal === "muscle_gain" ? (
-                            <Big3RegressionChart history={workoutHistory || []} profile={fp} />
-                          ) : (
-                            <RegressionChart goal={fp.goal} history={workoutHistory || []} weightLog={weightLog || []} profile={fp} />
+                      {/* 회귀분석 그래프 */}
+                      {canAccess && (
+                        <>
+                          <button
+                            onClick={() => setShowChart(!showChart)}
+                            className="w-full flex items-center justify-center gap-1.5 mt-3 py-2 rounded-xl bg-[#2D6A4F]/5 active:bg-[#2D6A4F]/10 transition-all"
+                          >
+                            <span className="text-[11px] font-bold text-[#2D6A4F]">{showChart ? "그래프 접기" : "데이터 분석 그래프 보기"}</span>
+                            <span className={`text-[10px] text-[#2D6A4F] transition-transform ${showChart ? "rotate-180" : ""}`}>▼</span>
+                          </button>
+                          {showChart && (
+                            <div className="mt-3 animate-fade-in">
+                              {activeGoalKey === "muscle_gain" ? (
+                                <Big3RegressionChart history={workoutHistory || []} profile={fp} />
+                              ) : (
+                                <RegressionChart goal={activeGoalKey as "fat_loss" | "endurance"} history={workoutHistory || []} weightLog={weightLog || []} profile={fp} />
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </>
                       )}
+
                     </div>
 
                           {/* 블러 오버레이 (프리미엄 아닌 다른 목표) */}
