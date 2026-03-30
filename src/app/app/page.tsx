@@ -384,7 +384,7 @@ export default function Home() {
     );
 
     if (activeTab === "proof") {
-      return <ProofTab lockedRuleIds={[]} />;
+      return <ProofTab lockedRuleIds={[]} onShowPrediction={() => { setPredictionReturnTab("proof"); setView("prediction_report"); }} />;
     }
 
     switch (view) {
@@ -503,7 +503,7 @@ export default function Home() {
       default:
         // My 탭
         if (activeTab === "my") {
-          return <MyProfileTab user={user} onLogout={handleLogout} onShowPrediction={() => { setPredictionReturnTab("my"); setView("prediction_report"); }} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
+          return <MyProfileTab user={user} onLogout={handleLogout} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
         }
 
         // If workout is already done, show report or proof (홈탭에서만)

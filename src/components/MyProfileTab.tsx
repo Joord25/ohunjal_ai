@@ -16,7 +16,7 @@ interface MyProfileTabProps {
   autoEdit1RM?: boolean;
 }
 
-export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onShowPrediction, autoEdit1RM }) => {
+export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM }) => {
   const [showSubscription, setShowSubscription] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.displayName || "");
@@ -294,17 +294,29 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onSh
           </div>
         </div>
 
-        <button
-          onClick={() => setShowBodyInfo(!showBodyInfo)}
-          className="flex items-center justify-between w-full px-2 mt-2 active:opacity-60"
-        >
-          <p className="text-[11px] font-serif font-medium text-gray-400 uppercase tracking-widest">
-            Body Info
-          </p>
-          <svg className={`w-4 h-4 text-gray-400 transition-transform ${showBodyInfo ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+        {(() => {
+          const missing = [!gender, !birthYear].filter(Boolean).length;
+          return (
+            <button
+              onClick={() => setShowBodyInfo(!showBodyInfo)}
+              className="flex items-center justify-between w-full px-2 mt-2 active:opacity-60"
+            >
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] font-serif font-medium text-gray-400 uppercase tracking-widest">
+                  Body Info
+                </p>
+                {missing > 0 && !showBodyInfo && (
+                  <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                    {missing}개 미설정
+                  </span>
+                )}
+              </div>
+              <svg className={`w-4 h-4 text-gray-400 transition-transform ${showBodyInfo ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          );
+        })()}
 
         {showBodyInfo && (
         <div className="bg-gray-50 rounded-2xl p-5 flex flex-col gap-3">
@@ -419,21 +431,6 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, onSh
           )}
         </div>
         )}
-
-        <button
-          onClick={onShowPrediction}
-          className="w-full bg-gradient-to-r from-[#0a1a14] to-[#1B4332] rounded-2xl p-6 flex items-center justify-between transition-all active:scale-[0.98] mt-4 shadow-lg shadow-[#0a1a14]/20"
-        >
-          <div className="flex flex-col items-start gap-1">
-            <span className="text-lg font-bold text-white">성장 예측 리포트</span>
-            <span className="text-xs text-emerald-300/60">감량·근력·체력 변화 예측</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <svg className="w-5 h-5 text-[#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
-        </button>
 
         <button
           onClick={() => setShowSubscription(true)}

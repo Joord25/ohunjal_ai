@@ -12,6 +12,7 @@ import { WorkoutHistory } from "./WorkoutHistory";
 
 interface ProofTabProps {
   lockedRuleIds: string[]; // Not used in this version, but kept for compatibility
+  onShowPrediction?: () => void;
 }
 
 type ViewState = "dashboard" | "list" | "report" | "weight_detail";
@@ -73,7 +74,7 @@ function DaySessionItem({ session, timeStr, onTap, onDelete }: {
   );
 }
 
-export const ProofTab: React.FC<ProofTabProps> = () => {
+export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
   const [history, setHistory] = useState<WorkoutHistoryType[]>([]);
   const [view, setView] = useState<ViewState>("dashboard");
   const [selectedHistory, setSelectedHistory] = useState<WorkoutHistoryType | null>(null);
@@ -832,6 +833,29 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
               </div>
             );
           })()}
+
+          {/* === 성장 예측 리포트 === */}
+          {onShowPrediction && (
+            <button
+              onClick={onShowPrediction}
+              className="w-full bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm p-5 flex items-center justify-between active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#2D6A4F]/10 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-[#1B4332]">성장 예측 리포트</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">감량 · 근력 · 체력 변화 예측</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
 
           {/* === Season Tier Card === */}
           {(() => {
