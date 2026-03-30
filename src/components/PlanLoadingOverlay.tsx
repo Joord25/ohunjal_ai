@@ -34,12 +34,12 @@ export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
     const timers: ReturnType<typeof setTimeout>[] = [];
     let elapsed = 0;
     STEPS.forEach((_, i) => {
-      elapsed += i === 0 ? 0 : 500 + Math.random() * 1200;
+      elapsed += i === 0 ? 0 : 200 + Math.random() * 300;
       timers.push(setTimeout(() => setActiveStep(i), elapsed));
     });
     // 모든 스텝 완료 후 1초 뒤에 onComplete
     if (onComplete) {
-      timers.push(setTimeout(onComplete, elapsed + 1000));
+      timers.push(setTimeout(onComplete, elapsed + 400));
     }
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);

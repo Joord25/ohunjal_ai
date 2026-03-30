@@ -71,10 +71,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   const [savedGoal, setSavedGoal] = useState<WorkoutGoal | null>(null);
   const [, setIntensityLabel] = useState<string>("중간");
   const [showAllQuests, setShowAllQuests] = useState(false);
-  const [typedText, setTypedText] = useState("");
+  const [typedText, setTypedText] = useState(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("coach_typed")) return sessionStorage.getItem("coach_typed") || "";
+    return "";
+  });
   const [previewIdx, setPreviewIdx] = useState(0);
-  const [typingDone, setTypingDone] = useState(false);
-  const typingStarted = useRef(false);
+  const [typingDone, setTypingDone] = useState(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("coach_typed")) return true;
+    return false;
+  });
+  const typingStarted = useRef(typingDone);
   const [profile, setProfile] = useState<FitnessProfile | null>(null);
   const isFirstVisit = history.length === 0;
 
@@ -156,13 +162,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       if (hour < 17) return "오늘도 해냈군요!";
       return "고생 많았어요!";
     }
-    if (hour < 6) return "이 시간에 오시다니 본캐는 히어로?!";
-    if (hour < 10) return "미라클 모닝의 완성은 쇠질이죠!";
-    if (hour < 12) return "점심 맛있게 먹으려면 지금이에요!";
-    if (hour < 15) return "식후 혈당 근육으로 보내버려요!";
-    if (hour < 18) return "카페인 대신 아드레날린 수혈 가시죠!";
-    if (hour < 21) return "오늘 스트레스 여기서 다 털어요!";
-    return "다들 잘 때 우린 성장하죠!";
+    if (hour < 6) return "새벽 각 제대로네요!";
+    if (hour < 10) return "미라클 모닝 가시죠!";
+    if (hour < 12) return "점심 전에 한판 해요!";
+    if (hour < 15) return "식후엔 근육이 답이죠!";
+    if (hour < 18) return "오후 한방 가시죠!";
+    if (hour < 21) return "스트레스 여기서 털어요!";
+    return "잘 때 우린 성장하죠!";
   })();
 
   // 날짜 포맷
@@ -360,6 +366,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       setTypedText(coachMessage.slice(0, i));
       if (i >= coachMessage.length) {
         clearInterval(timer);
+        sessionStorage.setItem("coach_typed", coachMessage);
         setTimeout(() => setTypingDone(true), 200);
       }
     }, 30);
@@ -483,9 +490,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     <div className="flex flex-col h-full bg-[#FAFBF9]">
       {/* 인사 + 날짜 */}
       <div className="pt-[max(2.5rem,env(safe-area-inset-top))] px-6 pb-1">
-        <h1 className="text-xl font-black leading-snug">
-          <span className="text-2xl text-[#2D6A4F]">{displayName}</span>
-          <span className="text-[#1B4332]">님, {greetingMsg}</span>
+        <h1 className="font-black leading-snug">
+          <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
+          <span className={`text-[#1B4332] ${greetingMsg.length > 14 ? "text-base" : "text-xl"}`}> 님, {greetingMsg}</span>
         </h1>
         <p className="text-[12px] font-medium text-gray-400 mt-1">{dateStr}</p>
       </div>

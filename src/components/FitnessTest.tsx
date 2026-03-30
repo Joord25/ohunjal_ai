@@ -298,6 +298,10 @@ export const FitnessTest: React.FC<FitnessTestProps> = ({ gender, birthYear, onC
 
   // 횟수 입력
   if (phase === "input") {
+    // 퀵 선택 버튼: 현재 count 기준으로 가장 가까운 10의 배수 중심 3개
+    const base = Math.max(10, Math.round(count / 10) * 10);
+    const quickOptions = [base - 20, base - 10, base, base + 10, base + 20].filter(v => v > 0 && v !== count).slice(0, 4);
+
     return (
       <div className="flex flex-col h-full bg-white animate-fade-in">
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
@@ -305,7 +309,7 @@ export const FitnessTest: React.FC<FitnessTestProps> = ({ gender, birthYear, onC
             {currentExercise.label} 완료
           </p>
           <p className="text-lg font-bold text-[#1B4332] mb-8">몇 회 하셨나요?</p>
-          <div className="flex items-center gap-6 mb-8">
+          <div className="flex items-center gap-6 mb-4">
             <button
               onClick={() => setCount(c => Math.max(0, c - 1))}
               className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-2xl active:scale-95 transition-all"
@@ -319,6 +323,17 @@ export const FitnessTest: React.FC<FitnessTestProps> = ({ gender, birthYear, onC
             >
               +
             </button>
+          </div>
+          <div className="flex gap-2 mb-8">
+            {quickOptions.map(v => (
+              <button
+                key={v}
+                onClick={() => setCount(v)}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gray-100 text-gray-600 active:scale-95 transition-all"
+              >
+                {v}회
+              </button>
+            ))}
           </div>
           <button
             onClick={handleExerciseDone}

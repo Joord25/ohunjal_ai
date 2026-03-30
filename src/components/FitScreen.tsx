@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { THEME } from "@/constants/theme";
 import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
+import { AiCoachChat } from "@/components/AiCoachChat";
 import { getVideoEmbedUrl, getYoutubeSearchUrl, getExerciseKoreanName } from "@/constants/exerciseVideos";
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
@@ -89,6 +90,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [selectedWeight, setSelectedWeight] = useState<number>(getStoredWeight);
   const [weightConfirmed, setWeightConfirmed] = useState(!hasWeight);
   const [showWeightEdit, setShowWeightEdit] = useState(false);
+  const [showAiTip, setShowAiTip] = useState(!!lastSessionRecord && (lastSessionRecord.maxWeight ?? 0) > 0);
 
   const [view, setView] = useState<"active" | "feedback">("active");
   const [failedReps, setFailedReps] = useState(Math.max(0, setInfo.targetReps - 1));
@@ -331,16 +333,16 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     } catch (e) {}
   };
 
-  // Weight presets: 5 nearest 10kg steps centered around current weight
+  // Weight presets: 4 nearest 10kg steps centered around current weight (excluding current)
   const weightPresets = (() => {
     const center = selectedWeight || getDefaultWeight();
     const base = Math.round(center / 10) * 10;
     const presets: number[] = [];
     for (let i = -2; i <= 2; i++) {
       const v = base + i * 10;
-      if (v > 0) presets.push(v);
+      if (v > 0 && v !== selectedWeight) presets.push(v);
     }
-    return presets;
+    return presets.slice(0, 4);
   })();
 
   // Long-press support for +/- buttons
@@ -544,14 +546,22 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Dynamic Font Size for Long Titles
-  const isLongTitle = exercise.name.length > 20;
-  const isVeryLongTitle = exercise.name.length > 40;
-  const titleSizeClass = isVeryLongTitle
-    ? "text-3xl"
-    : isLongTitle
+  // Dynamic Font Size for Long Titles (한글 제목 기준)
+  const mainTitleForSize = exercise.name.split('(')[0].trim();
+  const titleSizeClass = mainTitleForSize.length <= 5
+    ? "text-5xl"
+    : mainTitleForSize.length <= 8
       ? "text-4xl"
-      : "text-5xl";
+      : mainTitleForSize.length <= 10
+        ? "text-3xl"
+        : "text-2xl";
+
+  // 마지막 세트(NEXT 표시)일 때 전체 축소
+  const isLastSet = setInfo.current === setInfo.total && !!nextExerciseName;
+  const timerSize = isLastSet ? "text-5xl" : "text-7xl";
+  const timerColor = "#74A68D";
+  const valueSize = isLastSet ? "text-4xl" : "text-6xl";
+  const unitSize = isLastSet ? "text-lg" : "text-xl";
 
   // Reset view when exercise changes or set changes
   const prevIsResting = useRef(isResting);
@@ -670,10 +680,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="w-10" />
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-evenly px-6 gap-3 overflow-y-auto scrollbar-hide">
-          <div className="flex flex-col items-center gap-0 shrink-0">
+        <div className="flex-1 flex flex-col items-center px-6 overflow-y-auto scrollbar-hide">
+          {/* 운동명 */}
+          <div className="flex flex-col items-center pt-2 pb-4 shrink-0">
             <div className="flex items-center gap-2 justify-center">
-              <h1 className="text-3xl font-black text-[#1B4332] tracking-tight leading-tight break-keep text-center">{mainTitle}</h1>
+              <h1 className={`font-black text-[#1B4332] tracking-tight leading-tight break-keep text-center ${mainTitle.length <= 5 ? "text-4xl" : mainTitle.length <= 8 ? "text-3xl" : mainTitle.length <= 10 ? "text-2xl" : "text-xl"}`}>{mainTitle}</h1>
               {alternatives.length > 0 && (
                 <button
                   onClick={() => setShowSwapMenu(true)}
@@ -685,7 +696,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 </button>
               )}
             </div>
-            {subTitle && <p className="text-sm text-gray-400 font-medium">{subTitle}</p>}
+            {subTitle && <p className="text-base text-gray-400 font-medium mt-0.5">{subTitle}</p>}
           </div>
 
           {/* 자세 가이드 미리보기 */}
@@ -693,7 +704,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             const embedUrl = getVideoEmbedUrl(exercise.name);
             if (embedUrl) {
               return (
-                <button onClick={() => setShowVideoGuide(true)} className="h-[35dvh] aspect-[9/16] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all shrink-0">
+                <button onClick={() => setShowVideoGuide(true)} className="flex-1 min-h-0 max-h-[40dvh] aspect-[9/16] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all">
                   <iframe
                     src={embedUrl}
                     className="w-full h-full pointer-events-none scale-[1.15] origin-center"
@@ -725,78 +736,57 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             );
           })()}
 
-          <div className="flex flex-col items-center gap-2">
-            {lastSessionRecord && lastSessionRecord.maxWeight > 0 ? (() => {
-              const minRep = Math.min(...lastSessionRecord.reps);
-              const maxRep = Math.max(...lastSessionRecord.reps);
-              const repText = minRep === maxRep ? `${minRep}회` : `${minRep}~${maxRep}회`;
-              const challenge = lastSessionRecord.hadEasy ? Math.round(lastSessionRecord.maxWeight * 1.05 / 2.5) * 2.5 : null;
-              return (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2D6A4F]/10">
-                  <img src="/favicon_backup.png" alt="AI" className="w-3.5 h-3.5 rounded-full" />
-                  <p className="text-[11px] font-bold text-[#2D6A4F]">
-                    지난번 {lastSessionRecord.maxWeight}kg × {repText}{challenge ? <span className="text-amber-500"> → {challenge}kg 도전!</span> : null}
-                  </p>
-                </div>
-              );
-            })() : null}
-            <div className="flex items-center justify-center gap-4 w-full">
+          {/* 무게 선택 + 프리셋 */}
+          <div className="flex flex-col items-center pt-4 pb-2 shrink-0">
+            <div className="flex items-center justify-center gap-5 mb-3">
               <button
                 onPointerDown={() => startLongPress("down")}
                 onPointerUp={() => stopLongPress()}
                 onPointerLeave={() => cancelLongPress()}
-                className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
+                className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-2xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
               >
                 -
               </button>
-              <div className="w-40 flex items-baseline justify-center">
-                <span className="text-6xl font-black text-[#1B4332] tabular-nums">{selectedWeight}</span>
+              <div className="w-36 flex items-baseline justify-center">
+                <span className="text-7xl font-black text-[#1B4332] tabular-nums">{selectedWeight}</span>
                 <span className="text-xl font-bold text-gray-400 ml-1">kg</span>
               </div>
               <button
                 onPointerDown={() => startLongPress("up")}
                 onPointerUp={() => stopLongPress()}
                 onPointerLeave={() => cancelLongPress()}
-                className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
+                className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-2xl active:scale-95 transition-all hover:bg-gray-200 shrink-0"
               >
                 +
               </button>
             </div>
-          </div>
-
-          {/* Presets — horizontal carousel, selected centered */}
-          <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide py-1 -mx-6 px-6">
-            {weightPresets.map((w) => {
-              const isSelected = selectedWeight === w;
-              const centerIdx = weightPresets.indexOf(selectedWeight);
-              const dist = centerIdx >= 0 ? Math.abs(weightPresets.indexOf(w) - centerIdx) : 0;
-              const opacity = isSelected ? 1 : dist === 1 ? 0.7 : dist === 2 ? 0.45 : 0.3;
-              const scale = isSelected ? "scale-110" : dist === 1 ? "scale-100" : "scale-90";
-              return (
+            <div className="flex items-center justify-center gap-2">
+              {weightPresets.map((w) => (
                 <button
                   key={w}
                   onClick={() => setSelectedWeight(w)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 shrink-0 ${scale} ${
-                    isSelected
-                      ? "bg-[#1B4332] text-white shadow-lg"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                  style={{ opacity }}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-gray-100 text-gray-600 transition-all duration-200 active:scale-95 shrink-0"
                 >
                   {w}kg
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
         </div>
 
-        <div className="flex flex-col items-center gap-3 shrink-0 px-6 pb-3">
+        <div className="shrink-0 px-6 pb-8 flex items-center gap-3">
           <button
             onClick={confirmWeight}
-            className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
+            className="flex-1 py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
           >
             {selectedWeight}kg 으로 시작
+          </button>
+          <button
+            onClick={() => setShowAiTip(true)}
+            className="w-14 h-14 rounded-2xl bg-[#2D6A4F]/10 flex items-center justify-center active:scale-90 transition-all shrink-0"
+          >
+            <img src="/favicon_backup.png" alt="AI 코치" className="w-7 h-7 rounded-full" />
           </button>
         </div>
 
@@ -938,6 +928,15 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* AI 코칭 채팅창 */}
+        {showAiTip && (
+          <AiCoachChat
+            record={lastSessionRecord?.maxWeight ? lastSessionRecord : null}
+            gender={(localStorage.getItem("alpha_gender") as "male" | "female") || "male"}
+            onClose={() => setShowAiTip(false)}
+          />
         )}
 
       </div>
@@ -1110,7 +1109,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   </div>
                 ) : (
                   <>
-                    <p className="text-5xl font-black tracking-tighter tabular-nums" style={{ color: THEME.textMain }}>
+                    <p className={`${timerSize} font-black tracking-tighter tabular-nums`} style={{ color: timerColor }}>
                       {formatTime(elapsedTime)}
                     </p>
                     <p className="text-base font-bold text-[#2D6A4F] mt-1">
@@ -1132,8 +1131,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     onClick={() => setShowWeightEdit(true)}
                     className="flex items-baseline gap-1 active:opacity-60 transition-all"
                   >
-                    <span className="text-5xl font-black text-[#2D6A4F]">{selectedWeight}</span>
-                    <span className="text-lg font-bold text-gray-400">kg</span>
+                    <span className={`${valueSize} font-black`} style={{ color: THEME.textMain }}>{selectedWeight}</span>
+                    <span className={`${unitSize} font-bold text-gray-400`}>kg</span>
                   </button>
                 )}
                 {!hasWeight && exercise.weight && (
@@ -1146,14 +1145,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   onClick={() => setShowRepsEdit(true)}
                   className="flex items-baseline gap-1 active:opacity-60 transition-all"
                 >
-                  <span className="text-5xl font-black" style={{ color: THEME.textMain }}>{adjustedReps}</span>
-                  <span className="text-lg font-bold text-gray-400">REPS</span>
+                  <span className={`${valueSize} font-black`} style={{ color: THEME.textMain }}>{adjustedReps}</span>
+                  <span className={`${unitSize} font-bold text-gray-400`}>REPS</span>
                 </button>
               </div>
 
               {/* Stopwatch */}
               <div className="flex flex-col items-center mt-1">
-                <span className="text-5xl font-black tabular-nums tracking-tighter" style={{ color: THEME.textMain }}>
+                <span className={`${timerSize} font-black tabular-nums tracking-tighter`} style={{ color: timerColor }}>
                   {formatTime(repsStopwatch)}
                 </span>
                 <button
@@ -1187,7 +1186,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <svg className="w-7 h-7 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="font-bold text-xs tracking-wider">DONE</span>
+                    <span className="font-black text-base tracking-wider">완 료</span>
                   </button>
                 ) : !isPlaying && elapsedTime > 0 ? (
                   <div className="flex items-center gap-6">
@@ -1201,7 +1200,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         onClick={handleDoneClick}
                         className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <span className="font-bold text-xs tracking-wider">DONE</span>
+                        <span className="font-black text-base tracking-wider">완료</span>
                       </button>
                   </div>
                 ) : !isPlaying && elapsedTime === 0 && !timerCompleted ? (
@@ -1223,7 +1222,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         onClick={handleDoneClick}
                         className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <span className="font-bold text-xs tracking-wider">DONE</span>
+                        <span className="font-black text-base tracking-wider">완료</span>
                       </button>
                   </div>
                 )}
@@ -1254,8 +1253,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <span className="text-white text-xs font-bold tracking-widest uppercase">
-                    Done
+                  <span className="text-white text-base font-black tracking-wider">
+                    완 료
                   </span>
                 )}
               </button>
@@ -1388,25 +1387,15 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </button>
             </div>
             <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide py-1 -mx-6 px-6 mb-6">
-              {weightPresets.map((w) => {
-                const isSelected = selectedWeight === w;
-                const centerIdx = weightPresets.indexOf(selectedWeight);
-                const dist = centerIdx >= 0 ? Math.abs(weightPresets.indexOf(w) - centerIdx) : 0;
-                const opacity = isSelected ? 1 : dist === 1 ? 0.7 : dist === 2 ? 0.45 : 0.3;
-                const scale = isSelected ? "scale-110" : dist === 1 ? "scale-100" : "scale-90";
-                return (
-                  <button
-                    key={w}
-                    onClick={() => setSelectedWeight(w)}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 shrink-0 ${scale} ${
-                      isSelected ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
-                    }`}
-                    style={{ opacity }}
-                  >
-                    {w}kg
-                  </button>
-                );
-              })}
+              {weightPresets.map((w) => (
+                <button
+                  key={w}
+                  onClick={() => setSelectedWeight(w)}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-gray-100 text-gray-600 transition-all duration-200 active:scale-95 shrink-0"
+                >
+                  {w}kg
+                </button>
+              ))}
             </div>
             <button
               onClick={confirmWeight}

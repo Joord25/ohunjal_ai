@@ -493,7 +493,7 @@ function computeReading(
       if (!reg) return { value: "데이터 분석 중" };
       // 목표 적자: -targetKg * 7700kcal
       const targetDeficit = -targetKg * 7700;
-      if (reg.slope >= 0) return { value: "감량 추세가 필요해요", sub: "운동량 증가 또는 식단 조절 권장" };
+      if (reg.slope >= 0) return { value: "현재 칼로리 소모가 부족해요", sub: "운동 빈도를 늘리거나 식단 조절이 필요해요" };
       // 현재 누적에서 목표까지 남은 적자 / 일일 적자율 = 남은 일수
       const remaining = targetDeficit - balanceTrend.cumulative;
       const daysNeeded = Math.ceil(Math.abs(remaining) / Math.abs(reg.slope));
