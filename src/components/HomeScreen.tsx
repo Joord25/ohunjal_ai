@@ -37,16 +37,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   const [savedGoal, setSavedGoal] = useState<WorkoutGoal | null>(null);
   const [, setIntensityLabel] = useState<string>("중간");
   const [showAllQuests, setShowAllQuests] = useState(false);
-  const [typedText, setTypedText] = useState(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("coach_typed")) return sessionStorage.getItem("coach_typed") || "";
-    return "";
-  });
+  const [typedText, setTypedText] = useState("");
   const [previewIdx, setPreviewIdx] = useState(0);
-  const [typingDone, setTypingDone] = useState(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("coach_typed")) return true;
-    return false;
-  });
-  const typingStarted = useRef(typingDone);
+  const [typingDone, setTypingDone] = useState(false);
+  const typingStarted = useRef(false);
   const [profile, setProfile] = useState<FitnessProfile | null>(null);
   const isFirstVisit = history.length === 0;
 
@@ -290,17 +284,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     })();
 
 
-  // AI 코치 메시지 타이핑 효과
+  // AI 코치 메시지: 최근 3개 기록 분석 → 안 한 부위 추천
   const coachMessage = (() => {
     if (history.length === 0) return "오늘 첫 운동을 시작해볼까요?";
+    if (didWorkoutToday) {
+      const last = history[history.length - 1];
+      const desc = last.sessionData.description || last.sessionData.title || "";
+      return desc ? `오늘 ${desc} 완료! 내일도 이 페이스 유지해봐요` : "오늘도 해냈어요! 내일도 힘내봐요";
+    }
+
+    // 최근 3개 기록에서 한 부위 추출
+    const allParts = ["가슴", "등", "어깨", "팔", "하체", "코어", "유산소"];
+    const recentTitles = history.slice(-3).map(h =>
+      (h.sessionData.title + " " + h.sessionData.description).toLowerCase()
+    );
+    const doneParts = new Set<string>();
+    for (const t of recentTitles) {
+      if (/가슴|푸시|chest|push|벤치/.test(t)) doneParts.add("가슴");
+      if (/등|풀|back|pull|로우|랫/.test(t)) doneParts.add("등");
+      if (/어깨|shoulder|프레스|레이즈/.test(t)) doneParts.add("어깨");
+      if (/팔|이두|삼두|arm|bicep|tricep|컬/.test(t)) doneParts.add("팔");
+      if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(t)) doneParts.add("하체");
+      if (/코어|복근|core|ab|플랭크/.test(t)) doneParts.add("코어");
+      if (/러닝|유산소|cardio|run|hiit|서킷/.test(t)) doneParts.add("유산소");
+    }
+    const missing = allParts.filter(p => !doneParts.has(p));
+
+    if (missing.length > 0 && missing.length < allParts.length) {
+      const done = [...doneParts].join(" · ");
+      const recommend = missing.slice(0, 2).join(" · ");
+      return `최근 ${done} 했어요. 오늘은 ${recommend} 어때요?`;
+    }
     const last = history[history.length - 1];
-    if (last.analysis?.nextSessionAdvice) return last.analysis.nextSessionAdvice;
     const desc = last.sessionData.description || last.sessionData.title || "";
-    return desc ? `지난번 ${desc} 했어요. 오늘도 힘내볼까요?` : "오늘도 운동 한번 해볼까요?";
+    return desc ? `지난번 ${desc} 했어요. 오늘도 해볼까요?` : "오늘 운동 한번 해볼까요?";
   })();
 
   useEffect(() => {
     if (!coachMessage || typingStarted.current) return;
+    // 같은 메시지 캐시 있으면 타이핑 생략
+    const cached = sessionStorage.getItem("coach_typed");
+    if (cached === coachMessage) {
+      setTypedText(coachMessage);
+      setTypingDone(true);
+      typingStarted.current = true;
+      return;
+    }
     typingStarted.current = true;
     let i = 0;
     const timer = setInterval(() => {
