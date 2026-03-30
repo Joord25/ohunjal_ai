@@ -490,6 +490,9 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
       <div className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-3 sm:pb-4 px-4 sm:px-6 text-center z-10 shrink-0">
         <span className="text-[11px] tracking-[0.4em] uppercase font-serif font-medium text-[#2D6A4F]">Proof</span>
         <h1 className="text-3xl sm:text-4xl font-black text-[#1B4332] mt-2">훈련 기록</h1>
+        {monthHistory.length > 0 && (
+          <p className="text-[12px] font-bold text-[#2D6A4F] mt-1">{isCurrentMonth ? "이번" : `${viewMonth + 1}`}달 {monthHistory.length}회 완료</p>
+        )}
         <div className="mt-4 inline-flex items-center gap-1 bg-[#2D6A4F]/10 rounded-full">
           <button
             onClick={() => setMonthOffset(prev => prev - 1)}
@@ -696,6 +699,14 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
           })()
         )}
 
+        {/* 기록 없을 때 안내 */}
+        {history.length === 0 && (
+          <div className="mt-4 rounded-2xl bg-[#2D6A4F]/5 border border-[#2D6A4F]/10 px-5 py-6 text-center">
+            <p className="text-[15px] font-bold text-[#1B4332] mb-1">아직 운동 기록이 없어요</p>
+            <p className="text-[12px] text-gray-400">첫 운동을 완료하면 여기에 기록이 쌓여요</p>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col gap-3">
           {/* === Season Tier Card === */}
           {(() => {
@@ -804,12 +815,15 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
                     </svg>
                   </button>
                 </div>
-                <div className="flex items-baseline gap-1 mb-3 sm:mb-4">
+                <div className="flex items-baseline gap-1 mb-1 sm:mb-2">
                   <h3 className="text-2xl sm:text-3xl font-black text-[#1B4332]">{latestWeight.toFixed(1)}</h3>
                   <span className="text-base sm:text-lg text-[#2D6A4F]/50">kg</span>
                 </div>
+                <p className="text-[12px] font-bold text-[#2D6A4F] mb-3">
+                  {diff <= -1 ? "목표에 한 발짝 가까워지고 있어요!" : diff <= -0.3 ? "조금씩 변화가 시작되고 있어요" : diff >= 0.5 ? "근육이 붙으면서 체중이 오를 수 있어요" : "꾸준히 기록하면 변화가 보여요"}
+                </p>
 
-                <div className="relative h-36 sm:h-32 mt-5 sm:mt-4 mb-2 mx-5">
+                <div className="relative h-36 sm:h-32 mt-2 sm:mt-1 mb-2 mx-5">
                   {/* Y-axis reference lines */}
                   {(() => {
                     const ticks = [rawMin, (rawMin + rawMax) / 2, rawMax];
@@ -895,7 +909,7 @@ export const ProofTab: React.FC<ProofTabProps> = () => {
             onClick={() => setShowAdvancedStats(v => !v)}
             className="flex items-center justify-center gap-1.5 w-full py-3 text-[12px] font-bold text-gray-400 active:opacity-60 transition-opacity"
           >
-            상세 분석
+            운동 과학 데이터
             <svg className={`w-3.5 h-3.5 transition-transform ${showAdvancedStats ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
