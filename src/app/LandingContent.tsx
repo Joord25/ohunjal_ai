@@ -25,15 +25,15 @@ function useBodyScroll() {
 
 const FEATURES = [
   {
-    pain: "운동하면 나 얼마나 변할 수 있어?",
-    title: "운동 AI, 국내 최초 회귀분석 예측모델로 내 미래를 미리 본다",
-    desc: "5kg 감량까지 몇주 예상? 근육량 1kg 언제 달성?\n내 체중·운동빈도·목표를 분석해\n다이어트 정체기 시점, 근육량 증가 기간,\n10km 완주 시점까지 AI가 예측합니다.\n막연한 운동이 아닌 구체적인 목표가 생깁니다.",
+    pain: "이 운동, 진짜 의미 있는 거 맞아?",
+    title: "숫자가 아닌 내 몸의 변화를 미리 보여주는 AI",
+    desc: "오늘 흘린 땀이 어떤 변화로 돌아오는지 보여줍니다.\n3주 뒤 거울 속 어깨 라인의 변화,\n한 달 뒤 계단 오를 때 달라진 호흡.\nAI 예측 모델이 운동 데이터를 분석해\n당신의 일상에서 느낄 변화를 구체적으로 그려줍니다.",
     video: "/predictmodel.mp4",
   },
   {
     pain: "헬스장 가서 뭐하지?",
     title: "AI가 오늘의 운동 루틴을 자동 생성",
-    desc: "헬린이도 걱정 없어요.\n컨디션과 목표만 선택하면 AI 운동 플래너가\n개인화된 운동 계획을 자동으로 짜드립니다.\n웨이트, 맨몸운동, 러닝까지 맞춤 운동 프로그램을\nAI가 매일 새롭게 추천해요.",
+    desc: "뭘 할지 고민하는 시간, AI가 줄여줍니다.\n컨디션과 목표만 선택하면 AI 운동 플래너가\n개인화된 운동 계획을 자동으로 짜드립니다.\n아낀 시간은 당신의 일상으로 돌아갑니다.",
     video: "/what.mp4",
   },
   {
@@ -46,7 +46,7 @@ const FEATURES = [
   {
     pain: "이거 내가 제대로 하고 있는 건가?",
     title: "AI 운동 코칭 + 운동 기록 자동 저장",
-    desc: "운동 일지를 자동으로 기록하고,\nACSM 가이드라인과 SCI급 논문을 학습한 AI가\n내 운동을 분석해 피드백합니다.\n헬스 기구 사용법부터 세트·무게 조절까지\nAI가 코칭하는 운동 기록 앱.",
+    desc: "AI에게 맡기는 게 아니라 함께 성장합니다.\nACSM 가이드라인 기반 AI가 내 운동을 분석하고\n다음 세트 무게와 횟수를 제안합니다.\n스스로 판단하고, AI는 근거를 제공하는 코칭.",
     video: "/is-it-right.mp4",
   },
   {
@@ -58,7 +58,7 @@ const FEATURES = [
   {
     pain: "PT는 너무 비싸...",
     title: "월 6,900원, PT 대체 AI 트레이너",
-    desc: "개발자가 아닌 현역 트레이너가 직접 만든\nAI 운동 플래너가 매일 맞춤 운동을 처방합니다.\n개인 운동 기록, 헬스 루틴 생성, 운동 분석까지\nPT의 약 95배 저렴한 가격에 전문성은 더 Up!",
+    desc: "전문 트레이닝이 비용 때문에 닿지 않던 곳에 있었다면\nAI가 그 장벽을 허뭅니다.\n현역 트레이너가 설계한 AI 운동 플래너가\n매일 맞춤 운동을 처방합니다.\nPT 약 95배 저렴한 가격에 전문성은 그대로.",
     video: "",
     priceCard: true,
   },
@@ -198,7 +198,7 @@ export default function LandingContent() {
               <span className="text-[#34d399]">러닝머신만 타는 당신</span><br />3초 입력, <span className="text-[#34d399]">해결하세요!</span>
             </h1>
             <p className="mt-6 text-sm sm:text-lg text-white/50 font-medium tracking-wide">
-              컨디션 맞춤 운동 루틴 추천, 운동 기록, AI 성장 예측까지
+              AI가 운동을 대신하는 게 아니라, 당신의 시간을 되돌려줍니다
             </p>
             <div className="mt-10">
               <a
@@ -280,9 +280,9 @@ export default function LandingContent() {
         <div className="max-w-5xl mx-auto px-6">
           <RevealSection>
             <div className="text-center mb-10">
-              <p className="text-sm font-bold text-[#059669] mb-2">사용자 데이터 기반</p>
+              <p className="text-sm font-bold text-[#059669] mb-2">AI와 함께 성장한 결과</p>
               <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332]">
-                꾸준히 하면, 숫자가 증명합니다
+                수동적 의존이 아닌, 자발적 성장의 증거
               </h2>
             </div>
           </RevealSection>

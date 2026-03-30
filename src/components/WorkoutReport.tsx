@@ -16,51 +16,93 @@ interface RpgInsight {
   volumeCompare?: string;  // 4. vs 지난 세션 비교
 }
 
-function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress, onShowPrediction, skipAnimation, insight }: {
-  totalDurationSec: number; totalSets: number; totalVolume: number; successRate: number;
+function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress, onShowPrediction, skipAnimation, insight, sessionDesc }: {
+  totalDurationSec: number; totalSets?: number; totalVolume: number; successRate: number;
   isStrengthSession: boolean; seasonExp: number; prevSeasonExp: number; expGained: ExpLogEntry[];
   intensityLevel: "high" | "moderate" | "low";
   formatDuration: (s: number) => string; onHelpPress: () => void; onShowPrediction?: () => void; skipAnimation?: boolean;
-  insight?: RpgInsight;
+  insight?: RpgInsight; sessionDesc?: string;
 }) {
   const [visibleChars, setVisibleChars] = useState<number[]>([]);
   const [currentLine, setCurrentLine] = useState(skipAnimation ? 999 : -1);
-  const [showExp, setShowExp] = useState(skipAnimation ? true : false);
   const current = getTierFromExp(seasonExp);
   const prev = getTierFromExp(prevSeasonExp);
   const tierUp = current.tierIdx > prev.tierIdx;
   const totalExpGained = sumExp(expGained);
 
   const intensityLabel = intensityLevel === "high" ? "고강도" : intensityLevel === "moderate" ? "중강도" : "저강도";
-  const gradeMsg = successRate >= 95 ? "완벽한 세션이었다!"
-    : successRate >= 80 ? "오늘 꽤 잘 싸웠다!"
-    : successRate >= 60 ? "무난하게 해냈다!"
-    : successRate >= 40 ? "조금 아쉽지만 해냈다!"
-    : "힘든 날이었지만 나왔다는게 대단하다!";
+  const gradeMsg = successRate >= 95 ? "고생했어요! 쉽지 않았는데 완벽히 소화했네요!"
+    : successRate >= 80 ? "고생했어요! 오늘 멋지게 해냈어요!"
+    : successRate >= 60 ? "고생했어요! 꾸준함이 실력이에요"
+    : successRate >= 40 ? "고생했어요! 힘든 날이었지만 끝까지 버텼네요!"
+    : "고생했어요! 나온 것만으로 이미 성공입니다!";
 
-  const lines: { text: string; bold?: boolean; highlight?: boolean; onTap?: () => void }[] = [
-    { text: "운동을 완료했다!", bold: true },
-    { text: `${intensityLabel} ${formatDuration(totalDurationSec)} 전투!` },
-    { text: `${totalSets}세트를 클리어했다!` },
-    ...(isStrengthSession && totalVolume > 0 ? [{ text: `총 ${totalVolume.toLocaleString()}kg 을 들어올렸다!` }] : []),
-    { text: `달성률 ${successRate}% — ${gradeMsg}`, bold: true, highlight: successRate >= 80 },
-    // Quest completion lines
+  // 볼륨 경험 번역
+  const volumeExpMsg = (() => {
+    if (!isStrengthSession || totalVolume <= 0) return null;
+    const desc = (sessionDesc || "").toLowerCase();
+    if (/가슴|푸시|chest|push|벤치/.test(desc)) return "거울 앞에서 어깨 라인이 달라지는 걸 곧 느끼게 돼요";
+    if (/등|풀|back|pull|로우|랫/.test(desc)) return "자세가 펴지고 등이 단단해지는 걸 느끼게 돼요";
+    if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(desc)) return "계단 3층쯤은 숨 안 차고 올라가는 날이 올 거예요";
+    if (/코어|복근|core|ab|플랭크/.test(desc)) return "오래 앉아 일해도 허리가 덜 뻐근해지는 중이에요";
+    if (/러닝|유산소|cardio|run|hiit|서킷/.test(desc)) return "일상에서 몸이 가벼워지는 걸 곧 느끼게 돼요";
+    return "꾸준히 하면 일상에서 몸이 달라지는 걸 느끼게 돼요";
+  })();
+
+  type ReportLine = { text: string; bold?: boolean; highlight?: boolean; onTap?: () => void };
+
+  // 코치카드 블록 구성
+  const block1 = { // 감정 + 세션 요약
+    gradeMsg,
+    sessionInfo: `${sessionDesc || ""} · ${intensityLabel} · ${formatDuration(totalDurationSec)}`,
+  };
+
+  const block2Lines: string[] = [ // 경험 번역 (최대 2줄)
+    ...(volumeExpMsg ? [volumeExpMsg] : []),
+    ...(insight?.weightPR ? ["무거운 짐도 가뿐해지는 날이 가까워지고 있어요"] : []),
+  ].slice(0, 2);
+
+  // goalLine 경험 번역
+  const goalExpMsg = (() => {
+    if (!insight?.goalLine) return null;
+    const gl = insight.goalLine;
+    if (/kcal/.test(gl)) return "이 페이스면 4주 뒤 체중계 숫자가 달라져요";
+    if (/1RM/.test(gl)) return "같은 무게가 점점 가벼워지고 있어요";
+    if (/WHO/.test(gl)) return "건강한 삶의 기준을 넘어서고 있어요";
+    return null;
+  })();
+  if (goalExpMsg && block2Lines.length < 2) block2Lines.push(goalExpMsg);
+
+  const block3Lines: string[] = [ // 수치 보조 (압축)
+    ...(insight?.volumeCompare ? [insight.volumeCompare] : []),
+    ...(insight?.weightPR ? [insight.weightPR] : []),
+    ...(insight?.goalLine && !goalExpMsg ? [insight.goalLine] : []),
+  ];
+
+  // 타이핑 애니메이션용 전체 라인
+  const coachLines: ReportLine[] = [
+    { text: block1.gradeMsg, bold: true },
+    { text: block1.sessionInfo },
+    ...block2Lines.map(t => ({ text: t, highlight: true })),
+    ...block3Lines.map(t => ({ text: t })),
+  ];
+
+  // 카드2: 게이미피케이션 라인
+  const gameLines: ReportLine[] = [
     ...expGained
       .filter(e => e.source !== "workout")
       .map(e => ({ text: `${e.detail}! +${e.amount} EXP`, bold: true, highlight: true })),
-    // ── Insight lines ──
-    ...(insight?.weightPR ? [{ text: insight.weightPR, bold: true, highlight: true }] : []),
-    ...(insight?.volumeCompare ? [{ text: insight.volumeCompare }] : []),
-    ...(insight?.goalLine ? [{ text: insight.goalLine }] : []),
-    ...(insight?.phaseUnlock ? [{ text: insight.phaseUnlock + (insight.phaseJustUnlocked ? " →" : ""), bold: !!insight.phaseJustUnlocked, highlight: !!insight.phaseJustUnlocked, onTap: insight.phaseJustUnlocked && onShowPrediction ? onShowPrediction : undefined }] : []),
-    // EXP & Tier (맨 밑)
     ...(totalExpGained > 0 ? [{ text: `+${totalExpGained} EXP 획득!`, bold: true }] : []),
     ...(tierUp
       ? [{ text: `${prev.tier.name} → ${current.tier.name} 승급!`, bold: true, highlight: true }]
       : current.nextTier
         ? [{ text: `${current.tier.name}  ${current.nextTier.name}까지 ${current.remaining} EXP` }]
         : [{ text: `${current.tier.name}  최고 티어 달성!`, bold: true, highlight: true }]),
+    ...(insight?.phaseUnlock ? [{ text: insight.phaseUnlock + (insight.phaseJustUnlocked ? " →" : ""), bold: !!insight.phaseJustUnlocked, highlight: !!insight.phaseJustUnlocked, onTap: insight.phaseJustUnlocked && onShowPrediction ? onShowPrediction : undefined }] : []),
   ];
+
+  // 합쳐서 타이핑 애니메이션용 (코치 → 게임 순)
+  const lines = [...coachLines, ...gameLines];
 
   useEffect(() => {
     if (skipAnimation) {
@@ -70,8 +112,8 @@ function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, 
     }
     const timers: ReturnType<typeof setTimeout>[] = [];
     let baseDelay = 300;
-    const charSpeed = 40; // ms per character
-    const linePause = 400; // pause between lines
+    const charSpeed = 20; // ms per character
+    const linePause = 250; // pause between lines
 
     lines.forEach((line, lineIdx) => {
       // Start this line
@@ -91,63 +133,149 @@ function RpgResultCard({ totalDurationSec, totalSets, totalVolume, successRate, 
       baseDelay += line.text.length * charSpeed + linePause;
     });
 
-    // Show EXP bar after all lines
-    timers.push(setTimeout(() => setShowExp(true), baseDelay));
-
     return () => timers.forEach(clearTimeout);
   }, []);
 
   return (
-    <div className="mb-5">
-      <div className="bg-[#0f2a1f] rounded-2xl p-5 shadow-sm border border-[#1B4332] overflow-hidden relative" style={{ fontFamily: "'Neo둥근모', 'NeoDunggeunmo', monospace" }}>
-        {/* 레벨 도움말 버튼 */}
-        <button
-          onClick={onHelpPress}
-          className="absolute top-4 right-4 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center"
-        >
-          <span className="text-[10px] font-black text-[#a7f3d0]">?</span>
-        </button>
-
-        <div className="flex flex-col gap-1.5">
-          {lines.map((line, i) => {
-            if (i > currentLine) return null;
-            const chars = visibleChars[i] ?? 0;
-            const displayText = line.text.slice(0, chars);
-            const isTyping = i === currentLine && chars < line.text.length;
-            return (
-              <p
-                key={i}
-                className={`text-[15px] leading-relaxed ${
-                  line.highlight ? "text-[#34d399] text-base" : line.bold ? "text-white" : "text-[#a7f3d0]"
-                } ${line.onTap ? "underline underline-offset-2 cursor-pointer active:opacity-70" : ""}`}
-                onClick={line.onTap}
-              >
-                {displayText}
-                {isTyping && <span className="inline-block w-2 h-4 bg-[#34d399]/50 ml-0.5 animate-pulse" />}
-              </p>
-            );
-          })}
+    <div className="mb-5 flex flex-col gap-3">
+      {/* 카드1: AI 코치 리포트 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-hidden">
+        <div className="flex items-center gap-2 mb-3">
+          <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
+          <span className="text-[11px] font-bold text-gray-400">오운잘 AI 코치</span>
         </div>
 
-        {/* EXP 바 */}
-        {showExp && (
-          <div className="mt-4 pt-3 border-t border-[#1B4332] animate-fade-in">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px] font-bold" style={{ color: current.tier.color }}>{seasonExp} EXP</span>
-              <span className="text-[12px] text-[#a7f3d0]/60">
-                {current.nextTier ? `${current.nextTier.name}까지 ${current.remaining} EXP` : "최고 티어!"}
-              </span>
+        {/* 블록1: 감정 + 세션 요약 */}
+        {(() => {
+          const line0Chars = visibleChars[0] ?? 0;
+          const line1Chars = visibleChars[1] ?? 0;
+          return (
+            <div className="mb-3">
+              {0 <= currentLine && (
+                <p className="text-[16px] font-black text-[#1B4332] leading-relaxed">
+                  {block1.gradeMsg.slice(0, line0Chars)}
+                  {0 === currentLine && line0Chars < block1.gradeMsg.length && <span className="inline-block w-0.5 h-4 bg-[#2D6A4F] ml-0.5 animate-pulse align-middle" />}
+                </p>
+              )}
+              {1 <= currentLine && (
+                <p className="text-[13px] font-medium text-gray-400 mt-0.5">
+                  {block1.sessionInfo.slice(0, line1Chars)}
+                  {1 === currentLine && line1Chars < block1.sessionInfo.length && <span className="inline-block w-0.5 h-3 bg-gray-300 ml-0.5 animate-pulse align-middle" />}
+                </p>
+              )}
             </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-1000"
-                style={{ width: `${current.progress * 100}%`, backgroundColor: current.tier.color }}
-              />
+          );
+        })()}
+
+        {/* 블록2: 경험 번역 */}
+        {block2Lines.length > 0 && (() => {
+          const startIdx = 2;
+          const anyVisible = startIdx <= currentLine;
+          if (!anyVisible) return null;
+          return (
+            <div className="bg-[#2D6A4F]/5 rounded-xl px-4 py-3 mb-3">
+              {block2Lines.map((text, bi) => {
+                const lineIdx = startIdx + bi;
+                if (lineIdx > currentLine) return null;
+                const chars = visibleChars[lineIdx] ?? 0;
+                return (
+                  <p key={bi} className={`${bi === 0 ? "text-[15px] font-bold" : "text-[13px]"} text-[#2D6A4F] leading-relaxed`}>
+                    {text.slice(0, chars)}
+                    {lineIdx === currentLine && chars < text.length && <span className="inline-block w-0.5 h-4 bg-[#2D6A4F] ml-0.5 animate-pulse align-middle" />}
+                  </p>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* 블록3: 수치 보조 */}
+        {block3Lines.length > 0 && (() => {
+          const startIdx = 2 + block2Lines.length;
+          const anyVisible = startIdx <= currentLine;
+          if (!anyVisible) return null;
+          return (
+            <div className="flex flex-col gap-0.5">
+              {block3Lines.map((text, bi) => {
+                const lineIdx = startIdx + bi;
+                if (lineIdx > currentLine) return null;
+                const chars = visibleChars[lineIdx] ?? 0;
+                return (
+                  <p key={bi} className="text-[12px] text-gray-400 font-medium">
+                    {text.slice(0, chars)}
+                    {lineIdx === currentLine && chars < text.length && <span className="inline-block w-0.5 h-3 bg-gray-300 ml-0.5 animate-pulse align-middle" />}
+                  </p>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* 카드2: 게이미피케이션 (접힌 상태) */}
+      {gameLines.length > 0 && (() => {
+        const [gameOpen, setGameOpen] = React.useState(false);
+        const expSummary = totalExpGained > 0
+          ? `+${totalExpGained} EXP${tierUp ? ` · ${current.tier.name} 승급!` : ""}`
+          : current.tier.name;
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <button
+              onClick={() => setGameOpen(!gameOpen)}
+              className="w-full flex items-center justify-between px-5 py-4 active:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: current.tier.color }}>
+                  <span className="text-[8px] font-black text-white">⚔</span>
+                </div>
+                <span className="text-[13px] font-bold text-[#1B4332]">{expSummary}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onHelpPress(); }}
+                  className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center"
+                >
+                  <span className="text-[9px] font-black text-gray-400">?</span>
+                </button>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${gameOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+
+            <div className="px-5 pb-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold" style={{ color: current.tier.color }}>{current.tier.name} {seasonExp} EXP</span>
+                <span className="text-[11px] text-gray-400">
+                  {current.nextTier ? `${current.nextTier.name}까지 ${current.remaining}` : "최고 티어!"}
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-1000"
+                  style={{ width: `${current.progress * 100}%`, backgroundColor: current.tier.color }}
+                />
+              </div>
+            </div>
+
+            <div className={`overflow-hidden transition-all duration-300 ${gameOpen ? "max-h-[300px]" : "max-h-0"}`}>
+              <div className="px-5 pb-4 pt-1 border-t border-gray-100 flex flex-col gap-1.5">
+                {gameLines.map((line, gi) => (
+                  <p
+                    key={gi}
+                    className={`text-[13px] leading-relaxed ${
+                      line.highlight ? "text-[#2D6A4F] font-black" : line.bold ? "text-[#1B4332] font-bold" : "text-gray-500"
+                    } ${line.onTap ? "underline underline-offset-2 cursor-pointer active:opacity-70" : ""}`}
+                    onClick={line.onTap}
+                  >
+                    {line.text}
+                  </p>
+                ))}
+              </div>
             </div>
           </div>
-        )}
-
-      </div>
+        );
+      })()}
     </div>
   );
 }
@@ -298,7 +426,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <span className="text-[11px] font-serif font-medium tracking-[0.25em] text-gray-400 uppercase">Session Report</span>
+        <span className="text-[11px] font-medium text-gray-400">{(sessionDate ? new Date(sessionDate) : new Date()).toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</span>
         {sessionDate ? (
           <div className="flex items-center gap-1 -mr-2">
             <button onClick={() => setShowShare(true)} className="p-2 active:scale-95 transition-all">
@@ -320,11 +448,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-5 scrollbar-hide" style={{ paddingBottom: "calc(96px + var(--safe-area-bottom, 0px))" }}>
-        {/* Header */}
-        <div className="flex flex-col items-center mb-6 mt-2">
-          <h1 className="text-3xl font-serif font-light text-[#1B4332] tracking-[0.08em] animate-report-pop uppercase">Session Complete</h1>
-          <p className="text-xs text-gray-400 font-medium mt-1 animate-report-slide" style={{ animationDelay: "0.2s" }}>{(sessionDate ? new Date(sessionDate) : new Date()).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}</p>
-        </div>
 
         {/* === RPG 리절트 화면 === */}
         {(() => {
@@ -459,12 +582,14 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               onShowPrediction={onShowPrediction}
               skipAnimation={!!sessionDate}
               insight={insight}
+              sessionDesc={sessionData.description || sessionData.title || ""}
             />
           );
         })()}
 
 
-        {/* === 상세 분석 (펼쳐보기) === */}
+        {/* === 운동 과학 데이터 (펼쳐보기, 웨이트만) === */}
+        {isStrengthSession && (
         <div className="mb-5">
           <button
             onClick={() => setShowDetail(!showDetail)}
@@ -472,7 +597,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           >
             <div className="flex items-center gap-2">
               <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-              <span className="text-sm font-bold text-[#1B4332]">상세 분석</span>
+              <span className="text-sm font-bold text-[#1B4332]">운동 과학 데이터</span>
               <span className="text-[10px] text-gray-400 font-medium">1RM · 부하 · 강도 · 피로</span>
             </div>
             <svg className={`w-4 h-4 text-gray-400 transition-transform ${showDetail ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -480,8 +605,9 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             </svg>
           </button>
         </div>
+        )}
 
-        {showDetail && <>
+        {showDetail && isStrengthSession && <>
         {/* === 2x2 Metric Cards === */}
         <div className="grid grid-cols-2 gap-2.5 mb-5">
           {isStrengthSession ? (
@@ -706,21 +832,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           )}
         </div>
 
-        {/* Total Duration (strength sessions — cardio/mobility already shows above) */}
-        {isStrengthSession && totalDurationSec > 0 && (
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-5 flex items-center justify-between animate-count-up" style={{ animationDelay: "0.8s" }}>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
-                <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 6v6l4 2" />
-                </svg>
-              </div>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">총 운동 시간</p>
-            </div>
-            <p className="text-xl font-black text-[#1B4332]">{formatDuration(totalDurationSec)}</p>
-          </div>
-        )}
 
 
         {/* === Summary Stats Row === */}

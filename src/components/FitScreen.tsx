@@ -934,6 +934,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         {showAiTip && (
           <AiCoachChat
             record={lastSessionRecord?.maxWeight ? lastSessionRecord : null}
+            exerciseName={exercise.name.split("(")[0].trim()}
             gender={(localStorage.getItem("alpha_gender") as "male" | "female") || "male"}
             onClose={() => setShowAiTip(false)}
           />

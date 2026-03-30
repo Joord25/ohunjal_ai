@@ -12,6 +12,7 @@ interface SessionRecord {
 
 interface AiCoachChatProps {
   record: SessionRecord | null;
+  exerciseName?: string;
   gender?: "male" | "female";
   onClose: () => void;
 }
@@ -42,7 +43,7 @@ function buildAdvice(record: SessionRecord, gender: "male" | "female" = "male"):
   return `같은 무게로 횟수를 늘려보는 건 어때? 꾸준히 하면 금방 늘어!`;
 }
 
-export const AiCoachChat: React.FC<AiCoachChatProps> = ({ record, gender, onClose }) => {
+export const AiCoachChat: React.FC<AiCoachChatProps> = ({ record, exerciseName, gender, onClose }) => {
   const hasRecord = !!record;
   const sets = record ? record.weights.map((w, i) => ({ weight: w, reps: record.reps[i] ?? 0 })) : [];
 
@@ -143,7 +144,7 @@ export const AiCoachChat: React.FC<AiCoachChatProps> = ({ record, gender, onClos
                   <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-gray-100">
                     {hasRecord ? (
                       <>
-                        <p className="text-[11px] font-bold text-gray-400 mb-2">📊 지난번 기록</p>
+                        <p className="text-[11px] font-bold text-gray-400 mb-2">📊 {exerciseName || "지난번"} 이전 기록</p>
                         <div className="space-y-1">
                           {sets.map((s, i) => (
                             <div key={i} className="flex items-center gap-2">
