@@ -1509,9 +1509,6 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
       {/* Result Screen */}
       {step === "result" && reading && (() => {
         const fp = profile as FitnessProfile;
-        const freqLabel = fp.weeklyFrequency === 0 ? "입문" : `주 ${fp.weeklyFrequency}회`;
-        const age = new Date().getFullYear() - fp.birthYear;
-        const genderLabel = fp.gender === "male" ? "남" : "여";
 
         return (
           <div className="flex-1 flex flex-col bg-[#FAFBF9] min-h-0">
@@ -1540,36 +1537,26 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                   showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
               >
-                {genderLabel} · {age}세 · {fp.bodyWeight}kg · {freqLabel} · {fp.sessionMinutes}분
+                {fp.weeklyFrequency >= 3
+                  ? `주 ${fp.weeklyFrequency}회, ${fp.sessionMinutes}분씩 꾸준히 하고 계시네요`
+                  : `주 ${fp.weeklyFrequency}회, ${fp.sessionMinutes}분씩 운동 중이에요`}
               </p>
             </div>
             <div className="flex-1 overflow-y-auto px-6 pb-6">
 
-              {/* Message + Stars */}
+              {/* AI 코치 메시지 */}
               <div
                 className={`w-full bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm transition-all duration-700 delay-200 ${
                   showResult ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                 }`}
               >
-                <p className="text-[#1B4332] text-sm font-medium leading-relaxed whitespace-pre-line mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <img src="/favicon_backup.png" alt="AI" className="w-5 h-5 rounded-full shrink-0" />
+                  <span className="text-[11px] font-bold text-gray-400">오운잘 AI 코치</span>
+                </div>
+                <p className="text-[#1B4332] text-sm font-bold leading-relaxed whitespace-pre-line">
                   {reading.message}
                 </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#6B7280] text-sm">성장 가능성</span>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <span
-                        key={i}
-                        className={`text-base text-[#2D6A4F] transition-all duration-300 ${
-                          resultReady ? "scale-100" : "scale-0"
-                        }`}
-                        style={{ transitionDelay: `${400 + i * 100}ms` }}
-                      >
-                        {i <= reading.growthStars ? "★" : "☆"}
-                      </span>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* My goal card (always visible) + other goal buttons */}
@@ -1643,20 +1630,37 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                                     <p className="text-[#1B4332] text-sm font-black text-right whitespace-pre-line">{easyValue}</p>
                                   )}
                                   {!pred?.strengthBars && easySub && <p className="text-[#2D6A4F] text-[11px] mt-1 text-right">{easySub}</p>}
+                                  {!pred?.strengthBars && !pred?.action && (() => {
+                                    const label = (easyLabel || "").toLowerCase();
+                                    if (/체중|감량|kg/.test(label)) return <p className="text-[#2D6A4F] text-[11px] mt-1.5 text-right font-bold">꾸준히 하면 거울 속 변화가 다가와요</p>;
+                                    if (/1rm|중량|근력/.test(label)) return <p className="text-[#2D6A4F] text-[11px] mt-1.5 text-right font-bold">같은 무게가 점점 가벼워지고 있어요</p>;
+                                    if (/칼로리|kcal/.test(label)) return <p className="text-[#2D6A4F] text-[11px] mt-1.5 text-right font-bold">이 페이스면 몸이 달라지고 있어요</p>;
+                                    if (/who|권장/.test(label)) return <p className="text-[#2D6A4F] text-[11px] mt-1.5 text-right font-bold">건강한 삶의 기준을 넘어서고 있어요</p>;
+                                    return null;
+                                  })()}
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-between py-1">
-                                  <span className="text-[#1B4332] text-sm">{item.label}</span>
-                                  <div className="flex items-center gap-1.5">
-                                    {!isUnlocked ? (
-                                      <span className="text-[10px] text-gray-400 font-medium">{threshold}회 운동 후 해금</span>
-                                    ) : (
-                                      <span className="text-[10px] text-gray-400 font-medium">프리미엄</span>
-                                    )}
-                                    <svg className="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                    </svg>
+                                <div className="bg-gray-50 rounded-xl p-3 -mx-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[#1B4332] text-sm font-medium">{easyLabel}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      {!isUnlocked ? (
+                                        <span className="text-[10px] text-[#2D6A4F] font-bold">{Math.max(0, threshold - workoutCount)}회 더 하면 열려요</span>
+                                      ) : (
+                                        <span className="text-[10px] text-amber-600 font-bold">프리미엄</span>
+                                      )}
+                                    </div>
                                   </div>
+                                  <p className="text-[10px] text-gray-400 leading-relaxed">
+                                    {(() => {
+                                      const label = (easyLabel || "").toLowerCase();
+                                      if (/체중|감량/.test(label)) return "해금되면: 목표까지 몇 주 걸리는지 알려드려요";
+                                      if (/1rm|중량|근력/.test(label)) return "해금되면: 근력 성장 추이를 예측해드려요";
+                                      if (/칼로리/.test(label)) return "해금되면: 칼로리 밸런스를 분석해드려요";
+                                      if (/체력|who/.test(label)) return "해금되면: 체력 변화를 추적해드려요";
+                                      return "해금되면: 상세 예측을 확인할 수 있어요";
+                                    })()}
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -1664,16 +1668,24 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                         })}
                       </div>
 
-                      {/* 회귀분석 그래프 토글 */}
+                    </div>
+
+                    {/* 회귀분석 그래프 (별도 카드) */}
+                    <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
                       <button
                         onClick={() => setShowChart(!showChart)}
-                        className="w-full flex items-center justify-center gap-1.5 mt-3 py-2 rounded-xl bg-[#2D6A4F]/5 active:bg-[#2D6A4F]/10 transition-all"
+                        className="w-full flex items-center justify-between px-5 py-4 active:bg-gray-50 transition-colors"
                       >
-                        <span className="text-[11px] font-bold text-[#2D6A4F]">{showChart ? "그래프 접기" : "회귀분석 그래프 보기"}</span>
-                        <span className={`text-[10px] text-[#2D6A4F] transition-transform ${showChart ? "rotate-180" : ""}`}>▼</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
+                          <span className="text-sm font-bold text-[#1B4332]">데이터 분석 그래프</span>
+                        </div>
+                        <svg className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${showChart ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </button>
                       {showChart && (
-                        <div className="mt-3 animate-fade-in">
+                        <div className="px-5 pb-5 animate-fade-in">
                           {fp.goal === "muscle_gain" ? (
                             <Big3RegressionChart history={workoutHistory || []} profile={fp} />
                           ) : (
