@@ -24,45 +24,11 @@ interface FitnessProfile {
   deadlift1RM?: number;
 }
 
-// 오늘의 추천 운동 타입 계산
-const getTodayWorkoutInfo = (goal: WorkoutGoal | null) => {
-  const dayIndex = (new Date().getDay() + 6) % 7; // 월=0 ~ 일=6
-  const g = goal || "muscle_gain";
-
-  const splitLabels: Record<string, { label: string; focus: string }> = {
-    push: { label: "푸시 데이", focus: "가슴 · 어깨 · 삼두" },
-    pull: { label: "풀 데이", focus: "등 · 이두" },
-    leg_core: { label: "레그 데이", focus: "하체 · 코어" },
-    run_speed: { label: "스피드 러닝", focus: "인터벌 트레이닝" },
-    run_easy: { label: "회복 러닝", focus: "가벼운 유산소" },
-    run_long: { label: "장거리 러닝", focus: "지구력 훈련" },
-    mobility: { label: "모빌리티", focus: "회복 · 스트레칭" },
-    full_body_circuit: { label: "전신 서킷", focus: "서킷 트레이닝" },
-    hiit_cardio: { label: "HIIT 유산소", focus: "고강도 인터벌" },
-    full_body_mobility: { label: "전신 모빌리티", focus: "유연성 회복" },
-    upper_cardio: { label: "상체 + 유산소", focus: "상체 트레이닝" },
-    lower_core: { label: "하체 + 코어", focus: "하체 트레이닝" },
-  };
-
-  const goalLabels: Record<WorkoutGoal, string> = {
-    muscle_gain: "근육 키우기",
-    strength: "근력 강화",
-    fat_loss: "체지방 감량",
-    general_fitness: "체력 향상",
-  };
-
-  const defaultSchedule = ["push", "run_speed", "pull", "run_easy", "leg_core", "run_long", "mobility"];
-  const fatLossSchedule = ["push", "pull", "leg_core", "full_body_circuit", "push", "leg_core", "mobility"];
-  const generalSchedule = ["full_body_circuit", "hiit_cardio", "lower_core", "upper_cardio", "full_body_mobility", "mobility", "mobility"];
-
-  const schedule = g === "fat_loss" ? fatLossSchedule : g === "general_fitness" ? generalSchedule : defaultSchedule;
-  const type = schedule[dayIndex];
-  const info = splitLabels[type] || { label: "운동", focus: "전신 트레이닝" };
-
-  return {
-    goalLabel: goalLabels[g],
-    ...info,
-  };
+const GOAL_LABELS: Record<WorkoutGoal, string> = {
+  muscle_gain: "근육 키우기",
+  strength: "근력 강화",
+  fat_loss: "체지방 감량",
+  general_fitness: "체력 향상",
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout, onShowPrediction }) => {
@@ -180,9 +146,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return `${month}월 ${date}일 (${days[now.getDay()]})`;
   })();
 
-  // 추천 루틴 정보
-  const routineInfo = getTodayWorkoutInfo(savedGoal);
-
   // 개인 성장 인사이트
   const growthInsight = (() => {
     if (history.length < 2) return null;
@@ -231,25 +194,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   })();
 
   // 헤드라인: "이전 → 오늘" 연결 (항상 표시 — AI가 나를 안다)
-  const routineContext = (() => {
-    if (history.length === 0) return null;
-    const last = history[history.length - 1];
-    const lastTitle = last.sessionData.title || last.sessionData.description || "";
-    const lastFocus = (() => {
-      if (/푸시|가슴|어깨|삼두|chest|push/i.test(lastTitle)) return "상체 앞면";
-      if (/풀|등|이두|back|pull/i.test(lastTitle)) return "상체 뒷면";
-      if (/레그|하체|코어|스쿼트|leg/i.test(lastTitle)) return "하체";
-      if (/러닝|유산소|HIIT|run|cardio/i.test(lastTitle)) return "유산소";
-      if (/모빌리티|회복|mobility/i.test(lastTitle)) return "회복";
-      if (/서킷|circuit/i.test(lastTitle)) return "전신";
-      return null;
-    })();
-
-    if (lastFocus) {
-      return { prev: `이전에 ${lastFocus} 했으니`, next: `오늘은 ${routineInfo.focus}` };
-    }
-    return { prev: null, next: `오늘은 ${routineInfo.focus}` };
-  })();
 
   // 서브 뱃지: 연속 출석 / 이번 주 달성 (있을 때만)
   const subBadges: string[] = [];
@@ -348,13 +292,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
   // AI 코치 메시지 타이핑 효과
   const coachMessage = (() => {
-    if (!routineContext) return "";
-    if (routineContext.prev) {
-      const prev = routineContext.prev.replace("이전에 ", "").replace(" 했으니", "");
-      const next = routineContext.next.replace("오늘은 ", "");
-      return `어제 ${prev} 했으니, 오늘은 ${next} 어때요?`;
-    }
-    return `오늘은 ${routineInfo.focus} 어때요?`;
+    if (history.length === 0) return "오늘 첫 운동을 시작해볼까요?";
+    const last = history[history.length - 1];
+    if (last.analysis?.nextSessionAdvice) return last.analysis.nextSessionAdvice;
+    const desc = last.sessionData.description || last.sessionData.title || "";
+    return desc ? `지난번 ${desc} 했어요. 오늘도 힘내볼까요?` : "오늘도 운동 한번 해볼까요?";
   })();
 
   useEffect(() => {
@@ -510,7 +452,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
           </p>
           <div className={`transition-opacity duration-500 ${typingDone ? "opacity-100" : "opacity-0"}`}>
             <div className="flex items-center gap-2 flex-wrap mb-4">
-              <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{routineInfo.goalLabel}</span>
+              <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{GOAL_LABELS[savedGoal || "muscle_gain"]}</span>
               {subBadges.map((badge, i) => (
                 <span key={i} className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{badge}</span>
               ))}
