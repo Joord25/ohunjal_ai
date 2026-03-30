@@ -485,10 +485,6 @@ export default function Home() {
             onClose={() => {
               setActiveTab("proof");
             }}
-            onShowPrediction={() => {
-              setPredictionReturnTab("my");
-              setView("prediction_report");
-            }}
             onAnalysisComplete={(analysis) => {
                 // Update the latest history entry with analysis data
                 try {
