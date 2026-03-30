@@ -72,7 +72,7 @@ const STEPS = [
 ];
 
 const FAQS = [
-  { q: "무료로 사용할 수 있나요?", a: "네, 무료 플랜으로 3회 AI 운동 루틴 자동 생성이 가능합니다. 무제한 맞춤 운동 프로그램 생성과 AI 운동 분석 리포트는 프리미엄 구독이 필요합니다." },
+  { q: "무료로 사용할 수 있나요?", a: "네, 비로그인 상태에서도 1회 체험이 가능하고, 회원가입 후 무료 플랜으로 하루 4회 AI 운동 루틴 자동 생성이 가능합니다. 무제한 맞춤 운동 프로그램 생성과 AI 운동 분석 리포트는 프리미엄 구독이 필요합니다." },
   { q: "헬린이(운동 초보)도 사용할 수 있나요?", a: "물론입니다. 헬스장 개인 운동이 처음이어도 걱정 없어요. AI 운동 플래너가 체력 수준에 맞춰 헬스 기구 사용법, 무게, 횟수, 세트 수를 자동으로 조절합니다. 운동 초보자부터 상급자까지 개인화된 운동 계획을 받을 수 있어요." },
   { q: "어떤 운동을 지원하나요?", a: "스쿼트, 벤치프레스, 데드리프트 등 웨이트 트레이닝은 물론 맨몸운동, 러닝, 모빌리티까지 100가지 이상의 운동을 AI가 자동으로 조합해 헬스 루틴을 생성합니다." },
   { q: "다른 운동 어플과 뭐가 다른가요?", a: "기존 운동 기록 앱은 직접 운동을 골라 기록해야 하지만, 오운잘 AI는 컨디션만 선택하면 AI가 운동 루틴을 자동 생성하고, 운동 일지 저장부터 AI 운동 코칭, 분석 리포트까지 제공합니다. PT 대체 서비스로 헬스 루틴 생성부터 오운완 인증까지 올인원." },
@@ -429,7 +429,7 @@ export default function LandingContent() {
                 <ul className="space-y-3 text-sm text-gray-600 mb-8">
                   <li className="flex items-start gap-2">
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="mt-0.5 shrink-0"><path d="M4 9L7.5 12.5L14 6" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    최초 접속 시 3회 AI 운동 플랜
+                    비로그인 1회 체험 · 하루 4회 AI 운동 플랜
                   </li>
                   <li className="flex items-start gap-2">
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="mt-0.5 shrink-0"><path d="M4 9L7.5 12.5L14 6" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -725,6 +725,7 @@ export default function LandingContent() {
           <div className="text-sm leading-loose space-y-1 text-gray-400 mb-8">
             <p>주드(Joord) · 대표 임주용</p>
             <p>사업자등록번호 | 623-36-01460</p>
+            <p>통신판매 | 2026-서울관악-0647</p>
             <p>서울특별시 관악구 은천로35길 40-6, 404호</p>
             <p>H.P 010-4824-2869 | ounjal.ai.app@gmail.com</p>
           </div>
