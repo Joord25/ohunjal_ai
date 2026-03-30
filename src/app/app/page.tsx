@@ -230,13 +230,9 @@ export default function Home() {
 
   const handleTabChange = (id: TabId) => {
     setActiveTab(id);
-    // Reset view when going back to "home" tab
-    if (id === "home") {
-      if (view === "login") {
-        // keep login view
-      } else if (view !== "master_plan_preview" && view !== "workout_session") {
-        setView("home");
-      }
+    // 탭 변경 시 view 리셋 (운동 세션 중에는 유지)
+    if (view !== "workout_session" && view !== "login") {
+      setView("home");
     }
   };
 
