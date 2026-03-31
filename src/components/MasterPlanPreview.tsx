@@ -501,10 +501,11 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Bottom CTA — sticky, 스크롤 영역 안 */}
-        <div className="sticky bottom-0 left-0 right-0 -mx-6 px-5 pt-8 pb-2 bg-gradient-to-t from-[#FAFBF9] via-[#FAFBF9] to-transparent z-20">
-          <div className="flex items-center gap-2.5">
+      {/* Bottom CTA */}
+      <div className="absolute bottom-0 left-0 right-0 px-5 pt-8 bg-gradient-to-t from-[#FAFBF9] via-[#FAFBF9] to-transparent z-20" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)" }}>
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowShareCard(true)}
             className="h-14 px-5 rounded-2xl bg-white border-2 border-gray-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -524,7 +525,6 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             </svg>
           </button>
         </div>
-      </div>
       </div>
 
       {/* Plan Adjustment Bottom Sheet */}
