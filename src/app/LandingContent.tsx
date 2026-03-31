@@ -363,7 +363,7 @@ export default function LandingContent() {
                   </div>
                   {/* Text */}
                   <div className="flex-1 text-center sm:text-left sm:pl-22">
-                    <p className="text-2xl sm:text-4xl font-black text-red-400 mb-4 sm:mb-5">&ldquo;{f.pain}&rdquo;</p>
+                    <p className="text-xl sm:text-4xl font-black text-red-400 mb-4 sm:mb-5">&ldquo;{f.pain}&rdquo;</p>
                     <h3 className="text-xl sm:text-3xl font-black text-[#1B4332] mb-2 sm:mb-3">{f.title}</h3>
                     <p className="text-sm sm:text-base text-gray-500 leading-relaxed max-w-md mx-auto sm:mx-0 whitespace-pre-line">{f.desc}</p>
                   </div>
