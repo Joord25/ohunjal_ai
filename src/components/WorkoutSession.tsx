@@ -312,7 +312,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
               </div>
             </div>
 
-            <div className="shrink-0 flex flex-col gap-2 pb-6">
+            <div className="shrink-0 flex flex-col gap-2" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}>
               <button
                 onClick={handleConfirmAddExercise}
                 className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
@@ -377,7 +377,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
               )}
             </div>
 
-            <div className="shrink-0 px-6" style={{ paddingTop: "16px", paddingBottom: "8px" }}>
+            <div className="shrink-0 px-6" style={{ paddingTop: "16px", paddingBottom: "calc(var(--safe-area-bottom, 0px) + 8px)" }}>
               <button
                 onClick={handleFinishWorkout}
                 className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"

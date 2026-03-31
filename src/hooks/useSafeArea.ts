@@ -31,14 +31,10 @@ export function useSafeArea() {
           `env(safe-area-inset-bottom)`
         );
       } else if (isStandalone) {
-        // Android PWA: env() returns 0 but nav bar may overlap
-        // Estimate nav bar height from screen vs viewport difference
-        const navBarHeight = window.screen.height - window.innerHeight;
-        // Only apply if reasonable range (16~80px), otherwise small fallback
-        const fallback = navBarHeight > 16 && navBarHeight < 80 ? navBarHeight : 24;
+        // Android PWA: 고정값 사용 (JS 계산 타이밍 문제 제거)
         document.documentElement.style.setProperty(
           "--safe-area-bottom",
-          `${fallback}px`
+          "12px"
         );
       } else {
         // Regular browser: browser chrome provides spacing
