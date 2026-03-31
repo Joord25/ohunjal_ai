@@ -25,42 +25,42 @@ function useBodyScroll() {
 
 const FEATURES = [
   {
-    pain: "이 운동, 진짜 의미 있는 거 맞아?",
-    title: "숫자가 아닌 내 몸의 변화를 미리 보여주는 AI",
-    desc: "오늘 흘린 땀이 어떤 변화로 돌아오는지 보여줍니다.\n3주 뒤 거울 속 어깨 라인의 변화,\n한 달 뒤 계단 오를 때 달라진 호흡.\nAI 예측 모델이 운동 데이터를 분석해\n당신의 일상에서 느낄 변화를 구체적으로 그려줍니다.",
-    video: "/predictmodel.mp4",
-  },
-  {
-    pain: "헬스장 가서 뭐하지?",
-    title: "AI가 오늘의 운동 루틴을 자동 생성",
-    desc: "뭘 할지 고민하는 시간, AI가 줄여줍니다.\n컨디션과 목표만 선택하면 AI 운동 플래너가\n개인화된 운동 계획을 자동으로 짜드립니다.\n아낀 시간은 당신의 일상으로 돌아갑니다.",
+    pain: "오늘 뭐 할지 매일 고민하지 마세요",
+    title: "매일 달라지는 AI 맞춤 운동 루틴",
+    desc: "어제 상체 했으면 오늘은 하체,\n컨디션 안 좋으면 가벼운 운동.\nAI가 알아서 균형 잡아줘요.\n뭐 할지 고민하는 시간, 이제 0초.",
     video: "/what.mp4",
   },
   {
-    pain: "운동 꾸준히 하기 너무 힘들어...",
-    title: "주간 퀘스트 + 시즌 티어로 게임처럼 재밌게!",
-    desc: "매주 강도별 운동 퀘스트를 달성하면\nEXP가 쌓이고 Iron → Gold → Platinum → Diamond → Challenger까지\n시즌 티어가 올라가요.\n운동과학(ACSM) 기반 미션이라\n게임하듯 즐기면서 성장하면 올바른 운동 습관이 만들어져요.",
-    video: "",
-    questCard: true,
-  },
-  {
     pain: "이거 내가 제대로 하고 있는 건가?",
-    title: "AI 운동 코칭 + 운동 기록 자동 저장",
-    desc: "AI에게 맡기는 게 아니라 함께 성장합니다.\nACSM 가이드라인 기반 AI가 내 운동을 분석하고\n다음 세트 무게와 횟수를 제안합니다.\n스스로 판단하고, AI는 근거를 제공하는 코칭.",
+    title: "운동 기록부터 코칭까지 AI가 알아서",
+    desc: "운동 기록은 자동 저장,\n다음 세트 무게와 횟수는 AI가 추천.\n혼자 해도 PT 받는 것처럼 체계적으로.",
     video: "/is-it-right.mp4",
   },
   {
-    pain: "귀찮아, 쉽고 빠르게 하고 싶어",
-    title: "입력 최소화 몇번의 터치로 오운완 달성",
-    desc: "복잡한 조작 설정 없이\n원터치 설정 시스템, 키보드 입력 최소화\n입력 부분 간소화 및 최소화.\n 오운완 인증샷 공유도 한 번에 가능.",
-    video: "/easy-to-use.mp4",
-  },
-  {
-    pain: "PT는 너무 비싸...",
-    title: "월 6,900원, PT 대체 AI 트레이너",
-    desc: "전문 트레이닝이 비용 때문에 닿지 않던 곳에 있었다면\nAI가 그 장벽을 허뭅니다.\n현역 트레이너가 설계한 AI 운동 플래너가\n매일 맞춤 운동을 처방합니다.\nPT 약 95배 저렴한 가격에 전문성은 그대로.",
+    pain: "PT 한 번에 5만원인데...",
+    title: "월 6,900원, 매일 AI 코칭 받기",
+    desc: "현역 트레이너가 설계한 AI가\n매일 맞춤 운동을 짜드려요.\nPT 한 달이면 40만원,\n오운잘은 한 달에 커피 한 잔 값.",
     video: "",
     priceCard: true,
+  },
+  {
+    pain: "오운완 인증하고 싶은데 뭘 올리지?",
+    title: "오운완 인증샷 자동 생성",
+    desc: "운동 끝나면 예쁜 기록 카드가 자동으로 만들어져요.\n카카오톡, 인스타그램에 바로 공유.\n터치 한 번이면 오늘의 오운완 완성.",
+    video: "/easy-to-use.mp4",
+  },
+];
+
+const COMPACT_FEATURES = [
+  {
+    title: "게임처럼 운동 습관 만들기",
+    desc: "퀘스트 클리어하면 경험치가 쌓이고 티어가 올라가요",
+    questCard: true,
+  },
+  {
+    title: "AI가 내 몸의 변화를 미리 예측",
+    desc: "운동 데이터를 분석해 체중, 근력 변화를 알려줘요",
+    video: "/predictmodel.mp4",
   },
 ];
 
@@ -349,12 +349,6 @@ export default function LandingContent() {
                           </div>
                         </div>
                       </div>
-                    ) : f.questCard ? (
-                      <div className="rounded-[32px] border-[5px] border-gray-200 bg-black shadow-xl overflow-hidden">
-                        <video autoPlay loop muted playsInline className="w-full">
-                          <source src="/game.mp4" type="video/mp4" />
-                        </video>
-                      </div>
                     ) : f.video ? (
                       <div className="rounded-[32px] border-[5px] border-gray-200 bg-black shadow-xl overflow-hidden">
                         <video autoPlay loop muted playsInline className="w-full">
@@ -376,6 +370,17 @@ export default function LandingContent() {
                 </div>
               </RevealSection>
             ); })}
+            {/* 컴팩트 2열 — 리텐션 + LTV */}
+            <RevealSection>
+              <div className="grid grid-cols-2 gap-4 mt-12 sm:mt-16">
+                {COMPACT_FEATURES.map((cf, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 text-center">
+                    <h3 className="text-base sm:text-lg font-black text-[#1B4332] mb-2">{cf.title}</h3>
+                    <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{cf.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </RevealSection>
           </div>
         </div>
       </section>
