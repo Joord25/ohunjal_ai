@@ -99,3 +99,21 @@ Firebase Auth with Google sign-in (real auth, not mocked). The `onAuthStateChang
 - `page.tsx` is a `"use client"` component — all app state lives there, no SSR for the main app
 - `WorkoutReport` uses `sessionDate` prop to distinguish history view (share button only) from current session (share + complete buttons)
 - Bottom sheets in `FitScreen` use `rounded-[2rem]` with `bottom-2 left-2 right-2` floating style (no nav bar present, unlike `MasterPlanPreview`)
+
+## Skill routing
+
+When the user's request matches an available skill, ALWAYS invoke it using the Skill
+tool as your FIRST action. Do NOT answer directly, do NOT use other tools first.
+The skill has specialized workflows that produce better results than ad-hoc answers.
+
+Key routing rules:
+- Product ideas, "is this worth building", brainstorming → invoke office-hours
+- Bugs, errors, "why is this broken", 500 errors → invoke investigate
+- Ship, deploy, push, create PR → invoke ship
+- QA, test the site, find bugs → invoke qa
+- Code review, check my diff → invoke review
+- Update docs after shipping → invoke document-release
+- Weekly retro → invoke retro
+- Design system, brand → invoke design-consultation
+- Visual audit, design polish → invoke design-review
+- Architecture review → invoke plan-eng-review
