@@ -335,8 +335,9 @@ export default function LandingContent() {
                           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 rounded-full flex items-center justify-center mb-3 sm:mb-4">
                             <svg width="24" height="24" viewBox="0 0 20 20" fill="none"><path d="M5 5L15 15M15 5L5 15" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round"/></svg>
                           </div>
-                          <p className="text-xs text-gray-500 font-bold mb-1">PT 업계 월 평균</p>
-                          <p className="text-2xl sm:text-3xl font-black text-gray-800">₩660,000</p>
+                          <p className="text-xs text-gray-500 font-bold mb-1">PT 1회</p>
+                          <p className="text-2xl sm:text-3xl font-black text-gray-800">₩50,000</p>
+                          <p className="text-[10px] text-gray-400 mt-1">월 8회면 40만원</p>
                         </div>
                         <div className="flex-1 rounded-2xl bg-[#f0fdf4] p-3 sm:p-5 text-center shadow-lg border-2 border-[#059669] flex flex-col items-center justify-center">
                           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#d1fae5] rounded-full flex items-center justify-center mb-3 sm:mb-4">
@@ -345,7 +346,7 @@ export default function LandingContent() {
                           <p className="text-xs text-[#059669] font-bold mb-1">오운잘 AI (월)</p>
                           <p className="text-2xl sm:text-3xl font-black text-[#1B4332]">₩6,900</p>
                           <div className="mt-3 px-2 py-1 bg-[#059669] rounded-full inline-block">
-                            <span className="text-xs font-bold text-white">약 95배 저렴</span>
+                            <span className="text-xs font-bold text-white">커피 한 잔 값</span>
                           </div>
                         </div>
                       </div>
