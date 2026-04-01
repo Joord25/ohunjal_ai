@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { THEME } from "@/constants/theme";
 import { WorkoutSessionData, ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { PlanShareCard } from "./PlanShareCard";
+import { trackEvent } from "@/utils/analytics";
 
 interface MasterPlanPreviewProps {
   sessionData: WorkoutSessionData;
@@ -56,6 +57,8 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   const [localExercises, setLocalExercises] = useState<ExerciseStep[]>(() =>
     sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex) }))
   );
+
+  useEffect(() => { trackEvent("plan_preview_view", { exercise_count: sessionData.exercises.length }); }, []);
 
   // Sync when sessionData changes (e.g. after regenerate)
   useEffect(() => {

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { trackEvent } from "@/utils/analytics";
 
 interface SubscriptionScreenProps {
   user: User;
@@ -412,6 +413,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       return;
     }
 
+    trackEvent("paywall_tap_subscribe");
     setIsProcessing(true);
     setError(null);
 
@@ -464,6 +466,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       }
 
       // Success
+      trackEvent("subscription_complete");
       setStatus("active");
       await checkSubscription();
     } catch (err) {

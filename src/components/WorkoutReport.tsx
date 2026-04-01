@@ -6,6 +6,7 @@ import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore } from "@/utils/workoutHistory";
 import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, processWorkoutCompletion, getOrRebuildSeasonExp } from "@/utils/questSystem";
+import { trackEvent } from "@/utils/analytics";
 
 /* === RPG 리절트 카드 === */
 interface RpgInsight {
@@ -340,6 +341,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const [activeDot, setActiveDot] = useState<string | null>(null);
   const [e1rmIndex, setE1rmIndex] = useState(0);
   const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>(getRecentHistorySync);
+
+  useEffect(() => { trackEvent("report_view"); }, []);
 
   const metrics = buildWorkoutMetrics(sessionData.exercises, logs, bodyWeightKg, savedDurationSec);
   const { sessionCategory, totalVolume, bestE1RM, allE1RMs, successRate, fatigueDrop, loadScore, totalDurationSec } = metrics;

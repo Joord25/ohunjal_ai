@@ -5,6 +5,7 @@ import { UserCondition, WorkoutGoal, WorkoutHistory, SessionMode, TargetMuscle, 
 import { updateWeight, updateGender, updateBirthYear } from "@/utils/userProfile";
 import { getIntensityRecommendation, type IntensityLevel } from "@/utils/workoutMetrics";
 import { CoachTooltip } from "./Tutorial";
+import { trackEvent } from "@/utils/analytics";
 
 export interface SessionSelection {
   goal: WorkoutGoal;
@@ -52,6 +53,8 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
     return true;
   });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { trackEvent("condition_check_start"); }, []);
 
   // Load recent history for intensity recommendation
   useEffect(() => {
@@ -108,6 +111,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
 
   const handleNext = (selectedBodyPart?: UserCondition["bodyPart"], selectedGoal?: WorkoutGoal, session?: SessionSelection) => {
     if (step === "body_check" && selectedBodyPart) {
+      trackEvent("condition_check_step", { step: "body_check" });
       setBodyPart(selectedBodyPart);
       setStep("weight_input");
     } else if (step === "weight_input") {
@@ -126,8 +130,10 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
       if (!localStorage.getItem("alpha_fitness_reading_done")) {
         localStorage.setItem("alpha_fitness_reading_done", "1");
       }
+      trackEvent("condition_check_step", { step: "weight_input" });
       setStep("goal_select");
     } else if (step === "goal_select" && selectedGoal) {
+      trackEvent("condition_check_complete", { goal: selectedGoal });
       setGoal(selectedGoal);
       const weightNum = parseFloat(bodyWeight);
       const birthYearNum = parseInt(birthYear);

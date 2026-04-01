@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
+import { trackEvent } from "@/utils/analytics";
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
@@ -30,6 +31,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const [pendingExercise, setPendingExercise] = useState<string | null>(null);
   const [addSets, setAddSets] = useState(3);
   const [addReps, setAddReps] = useState(12);
+
+  useEffect(() => { trackEvent("workout_start", { exercise_count: sessionData.exercises.length }); }, []);
 
   // Timing: session start + per-exercise tracking
   const sessionStartRef = useRef(Date.now());

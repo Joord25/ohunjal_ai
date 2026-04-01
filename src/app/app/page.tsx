@@ -22,6 +22,7 @@ import { FitnessReading } from "@/components/FitnessReading";
 import { HomeScreen } from "@/components/HomeScreen";
 import { loadUserProfile } from "@/utils/userProfile";
 import { useSafeArea } from "@/hooks/useSafeArea";
+import { trackEvent } from "@/utils/analytics";
 
 const lazyGenerateWorkout = async (...args: Parameters<typeof import("@/constants/workout").generateAdaptiveWorkout>) => {
   const { generateAdaptiveWorkout } = await import("@/constants/workout");
@@ -206,6 +207,7 @@ export default function Home() {
   const handleLogin = () => {
     // Firebase Auth handles state via onAuthStateChanged
     // This callback is called after successful signInWithPopup in LoginScreen
+    trackEvent("onboarding_start", { method: "google" });
     setShowLoginModal(false);
     setView("home");
   };
@@ -289,6 +291,7 @@ export default function Home() {
     }
     // Check free usage limit
     if (subStatus === "free" && getPlanCount() >= FREE_PLAN_LIMIT) {
+      trackEvent("paywall_view", { session_number: getPlanCount() });
       setShowPaywall(true);
       return;
     }
@@ -423,7 +426,7 @@ export default function Home() {
         return (
           <MasterPlanPreview
             sessionData={currentWorkoutSession!}
-            onStart={(modifiedData) => { setCurrentWorkoutSession(modifiedData); setView("workout_session"); }}
+            onStart={(modifiedData) => { trackEvent("plan_preview_start"); setCurrentWorkoutSession(modifiedData); setView("workout_session"); }}
             onBack={() => setView("condition_check")}
             onRegenerate={handleRegenerate}
             onIntensityChange={handleIntensityChange}
@@ -437,6 +440,7 @@ export default function Home() {
           <WorkoutSession
             sessionData={currentWorkoutSession!}
             onComplete={(completedData, logs, timing) => {
+              trackEvent("workout_complete", { session_number: getPlanCount(), duration_min: Math.round(timing.totalDurationSec / 60) });
               setCurrentWorkoutSession(completedData);
               setWorkoutLogs(logs);
               setWorkoutDurationSec(timing.totalDurationSec);
@@ -502,7 +506,7 @@ export default function Home() {
         );
 
       case "login":
-        return <LoginScreen onLogin={handleLogin} onTryFree={() => setView("home")} />;
+        return <LoginScreen onLogin={handleLogin} onTryFree={() => { trackEvent("onboarding_start", { method: "guest" }); setView("home"); }} />;
 
       case "home":
       default:
@@ -581,6 +585,7 @@ export default function Home() {
             <SubscriptionScreen
               user={user}
               onClose={() => {
+                trackEvent("paywall_dismiss");
                 setShowPaywall(false);
                 // Re-check subscription status
                 user.getIdToken().then(token => {
