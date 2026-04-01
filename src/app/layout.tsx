@@ -187,6 +187,33 @@ export default function RootLayout({
             })
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Person",
+              "@id": "https://ohunjal.com/#founder",
+              "name": "임주용",
+              "jobTitle": "트레이너 겸 개발자",
+              "description": "한국체육대학교 대학원 건강운동관리 석사. 10년차 트레이너이자 오운잘 AI의 운동 알고리즘을 직접 설계한 개발자.",
+              "alumniOf": {
+                "@type": "CollegeOrUniversity",
+                "name": "한국체육대학교 대학원"
+              },
+              "hasCredential": [
+                "NASM-CPT (미국스포츠의학회)",
+                "ACSM-CPT (미국스포츠의학회)",
+                "NSCA-FLC (프리웨이트 리프팅코치)",
+                "IFBB 국제보디빌딩 마스터",
+                "생활체육지도자 2급 - 보디빌딩",
+                "한국체력코치협회(KCA) 체력코치"
+              ],
+              "knowsAbout": ["운동 프로그래밍", "체중감량", "근력 트레이닝", "재활 운동", "체형 교정"],
+              "worksFor": { "@type": "Organization", "@id": "https://ohunjal.com/#organization" }
+            })
+          }}
+        />
       </head>
       <body
         className={`${cormorant.variable} antialiased`}

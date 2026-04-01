@@ -28,7 +28,7 @@ const FEATURES = [
     pain: "살은 빼고 싶은데, 뭘 해야 빠지는 건지...",
     title: "체중감량 맞춤 운동 루틴",
     desc: "다이어트 목표를 고르면\n유산소와 웨이트 균형까지 AI가 짜줘요.\n매일 컨디션에 맞춰 조절되니까\n무리 없이 꾸준히 빠져요.",
-    video: "/hero.mp4",
+    video: "/weight-loss.mp4",
   },
   {
     pain: "PT 한 달이면 40만원인데...",
@@ -41,13 +41,13 @@ const FEATURES = [
     pain: "오늘 뭐 할지 매일 고민하지 마세요",
     title: "매일 달라지는 AI 맞춤 운동 루틴",
     desc: "어제 상체 했으면 오늘은 하체,\n컨디션 안 좋으면 가벼운 운동.\nAI가 알아서 균형 잡아줘요.\n뭐 할지 고민하는 시간, 이제 0초.",
-    video: "/is-it-right.mp4",
+    video: "/hero.mp4",
   },
   {
     pain: "혼자 해도 제대로 하고 있는 건지...",
     title: "PT 없이도 체계적으로, AI가 알아서 코칭",
     desc: "운동 기록은 자동 저장,\n다음 세트 무게와 횟수는 AI가 추천.\n혼자 해도 PT 받는 것처럼 체계적으로.",
-    video: "/easy-to-use.mp4",
+    video: "/is-it-right.mp4",
   },
 ];
 
@@ -197,10 +197,10 @@ export default function LandingContent() {
 
         <div className="relative max-w-5xl mx-auto px-6 pt-16 sm:pt-24 pb-24 sm:pb-32 text-center">
           <RevealSection>
-            <h1 className="text-2xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
-              <span className="text-white/70 opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0s_forwards]">살은 빼고 싶고,</span><br />
-              <span className="text-white/70 opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.3s_forwards]">PT는 비싸고,</span><br />
-              <span className="text-[#34d399] opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.6s_forwards]">혼자 하자니 뭘 해야 할지 모르겠고.</span>
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
+              <span className="text-white opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0s_forwards]">살은 빼고 싶고,</span><br />
+              <span className="text-white opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.3s_forwards]">PT는 비싸고,</span><br />
+              <span className="text-[#34d399] text-xl sm:text-5xl lg:text-6xl opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.6s_forwards]">혼자 하자니 뭘 해야 할지 모르겠고.</span>
             </h1>
             <p className="mt-6 text-sm sm:text-lg text-white font-medium tracking-wide opacity-0 animate-[fadeSlideUp_0.5s_ease-out_1.2s_forwards]">
               컨디션만 고르면 오운잘 AI가 오늘 운동을 짜드려요
@@ -335,7 +335,7 @@ export default function LandingContent() {
             ].map((stat, i) => (
               <RevealSection key={i}>
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 text-center shadow-sm">
-                  <p className="text-2xl sm:text-3xl font-black text-[#1B4332] mb-1">{stat.value}</p>
+                  <p className="text-xl sm:text-3xl font-black text-[#1B4332] mb-1 whitespace-nowrap">{stat.value}</p>
                   <p className="text-[13px] font-bold text-gray-700 mb-1">{stat.label}</p>
                   <p className="text-[11px] text-gray-400">{stat.sub}</p>
                 </div>
@@ -404,7 +404,7 @@ export default function LandingContent() {
                   </div>
                   {/* Text */}
                   <div className="flex-1 text-center sm:text-left sm:pl-22">
-                    <p className="text-xl sm:text-4xl font-black text-red-400 mb-4 sm:mb-5">&ldquo;{f.pain}&rdquo;</p>
+                    <p className="text-lg sm:text-4xl font-black text-red-400 mb-4 sm:mb-5 whitespace-nowrap">&ldquo;{f.pain}&rdquo;</p>
                     <h3 className="text-xl sm:text-3xl font-black text-[#1B4332] mb-2 sm:mb-3">{f.title}</h3>
                     <p className="text-sm sm:text-base text-gray-500 leading-relaxed max-w-md mx-auto sm:mx-0 whitespace-pre-line">{f.desc}</p>
                   </div>
@@ -423,6 +423,48 @@ export default function LandingContent() {
               </div>
             </RevealSection>
           </div>
+        </div>
+      </section>
+
+      {/* WHO MADE THIS — 트레이너 프로필 */}
+      <section className="py-16 sm:py-24 bg-[#FAFBF9]">
+        <div className="max-w-3xl mx-auto px-6">
+          <RevealSection>
+            <div className="text-center mb-10">
+              <p className="text-sm font-bold text-[#059669] mb-2">WHO MADE THIS</p>
+              <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332]">개발자가 아니라, 트레이너가 만들었습니다</h2>
+            </div>
+          </RevealSection>
+          <RevealSection>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-br from-[#1B4332] to-[#2D6A4F] p-8 sm:p-10 text-center">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white/30 mx-auto mb-4 shadow-lg">
+                  <img src="/CEO.jpeg" alt="임주용 트레이너" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white mb-1">임주용</h3>
+                <p className="text-sm sm:text-base text-white/70 font-medium">트레이너 10년차 · 개발자</p>
+              </div>
+              <div className="p-6 sm:p-8">
+                <div className="flex flex-wrap justify-center gap-2 mb-6">
+                  {["NASM-CPT", "ACSM-CPT", "NSCA-FLC"].map((cert) => (
+                    <span key={cert} className="px-3 py-1.5 bg-[#f0fdf4] text-[#059669] text-xs sm:text-sm font-bold rounded-full border border-[#d1fae5]">
+                      {cert}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-center text-sm sm:text-base text-gray-500 mb-6 leading-relaxed">
+                  한국체육대학교 대학원 건강운동관리 석사<br />
+                  생활체육지도자 2급 · 체력코치(KCA)
+                </p>
+                <div className="bg-[#FAFBF9] rounded-2xl p-5 sm:p-6">
+                  <p className="text-sm sm:text-base text-[#1B4332] font-medium leading-relaxed text-center italic">
+                    &ldquo;트레이너가 직접 만든 운동 앱은 많지 않아요.
+                    10년간 헬스장에서 들은 &lsquo;뭘 해야 할지 모르겠어요&rsquo;를 풀기 위해 직접 만들었습니다.&rdquo;
+                  </p>
+                </div>
+              </div>
+            </div>
+          </RevealSection>
         </div>
       </section>
 
