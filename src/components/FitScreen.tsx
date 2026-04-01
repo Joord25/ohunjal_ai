@@ -559,12 +559,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         ? "text-3xl"
         : "text-2xl";
 
-  // 마지막 세트(NEXT 표시)일 때 전체 축소
+  // NEXT 표시 여부만 판별 (사이즈는 항상 동일)
   const isLastSet = setInfo.current === setInfo.total && !!nextExerciseName;
-  const timerSize = isLastSet ? "text-5xl" : "text-7xl";
+  const timerSize = "text-7xl";
   const timerColor = "#74A68D";
-  const valueSize = isLastSet ? "text-4xl" : "text-6xl";
-  const unitSize = isLastSet ? "text-lg" : "text-xl";
+  const valueSize = "text-6xl";
+  const unitSize = "text-xl";
 
   // Reset view when exercise changes or set changes
   const prevIsResting = useRef(isResting);
