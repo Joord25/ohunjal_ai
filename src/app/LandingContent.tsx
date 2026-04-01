@@ -25,28 +25,28 @@ function useBodyScroll() {
 
 const FEATURES = [
   {
-    pain: "오늘 뭐 할지 매일 고민하지 마세요",
-    title: "매일 달라지는 AI 맞춤 운동 루틴",
-    desc: "어제 상체 했으면 오늘은 하체,\n컨디션 안 좋으면 가벼운 운동.\nAI가 알아서 균형 잡아줘요.\n뭐 할지 고민하는 시간, 이제 0초.",
-    video: "/what.mp4",
+    pain: "살은 빼고 싶은데, 뭘 해야 빠지는 건지...",
+    title: "체중감량 맞춤 운동 루틴",
+    desc: "다이어트 목표를 고르면\n유산소와 웨이트 균형까지 AI가 짜줘요.\n매일 컨디션에 맞춰 조절되니까\n무리 없이 꾸준히 빠져요.",
+    video: "/hero.mp4",
   },
   {
-    pain: "이거 내가 제대로 하고 있는 건가?",
-    title: "운동 기록부터 코칭까지 AI가 알아서",
-    desc: "운동 기록은 자동 저장,\n다음 세트 무게와 횟수는 AI가 추천.\n혼자 해도 PT 받는 것처럼 체계적으로.",
-    video: "/is-it-right.mp4",
-  },
-  {
-    pain: "PT 한 번에 5만원인데...",
+    pain: "PT 한 달이면 40만원인데...",
     title: "월 6,900원, 매일 AI 코칭 받기",
     desc: "현역 트레이너가 설계한 AI가\n매일 맞춤 운동을 짜드려요.\nPT 한 달이면 40만원,\n오운잘은 한 달에 커피 한 잔 값.",
     video: "",
     priceCard: true,
   },
   {
-    pain: "오운완 인증하고 싶은데 뭘 올리지?",
-    title: "오운완 인증샷 자동 생성",
-    desc: "운동 끝나면 예쁜 기록 카드가 자동으로 만들어져요.\n카카오톡, 인스타그램에 바로 공유.\n터치 한 번이면 오늘의 오운완 완성.",
+    pain: "오늘 뭐 할지 매일 고민하지 마세요",
+    title: "매일 달라지는 AI 맞춤 운동 루틴",
+    desc: "어제 상체 했으면 오늘은 하체,\n컨디션 안 좋으면 가벼운 운동.\nAI가 알아서 균형 잡아줘요.\n뭐 할지 고민하는 시간, 이제 0초.",
+    video: "/is-it-right.mp4",
+  },
+  {
+    pain: "혼자 해도 제대로 하고 있는 건지...",
+    title: "PT 없이도 체계적으로, AI가 알아서 코칭",
+    desc: "운동 기록은 자동 저장,\n다음 세트 무게와 횟수는 AI가 추천.\n혼자 해도 PT 받는 것처럼 체계적으로.",
     video: "/easy-to-use.mp4",
   },
 ];
@@ -197,11 +197,13 @@ export default function LandingContent() {
 
         <div className="relative max-w-5xl mx-auto px-6 pt-16 sm:pt-24 pb-24 sm:pb-32 text-center">
           <RevealSection>
-            <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
-              <span className="text-[#34d399]">헬스장 처음?</span><br />AI가 3초 만에 <span className="text-[#34d399]">짜드려요</span>
+            <h1 className="text-2xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
+              <span className="text-white/70 opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0s_forwards]">살은 빼고 싶고,</span><br />
+              <span className="text-white/70 opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.3s_forwards]">PT는 비싸고,</span><br />
+              <span className="text-[#34d399] opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.6s_forwards]">혼자 하자니 뭘 해야 할지 모르겠고.</span>
             </h1>
-            <p className="mt-6 text-sm sm:text-lg text-white/50 font-medium tracking-wide">
-              몸 상태만 고르면 AI 맞춤 운동 루틴이 바로 나와요
+            <p className="mt-6 text-sm sm:text-lg text-white font-medium tracking-wide opacity-0 animate-[fadeSlideUp_0.5s_ease-out_1.2s_forwards]">
+              컨디션만 고르면 오운잘 AI가 오늘 운동을 짜드려요
             </p>
             <div className="mt-10">
               <a
@@ -240,7 +242,7 @@ export default function LandingContent() {
                   playsInline
                   className="w-full"
                 >
-                  <source src="/predictmodel.mp4" type="video/mp4" />
+                  <source src="/hero.mp4" type="video/mp4" />
                 </video>
                 <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white to-transparent pointer-events-none" />
               </div>
@@ -249,8 +251,36 @@ export default function LandingContent() {
         </div>
       </section>
 
+      {/* 이런 분들이 쓰고 있어요 */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-3xl mx-auto px-6">
+          <RevealSection>
+            <div className="text-center mb-8 sm:mb-10">
+              <p className="text-sm font-bold text-[#059669] mb-2">어떤 운동이든, 어디서든</p>
+              <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332]">이런 분들이 쓰고 있어요</h2>
+            </div>
+          </RevealSection>
+          <RevealSection>
+            <div className="space-y-4">
+              {[
+                { emoji: "⚖️", text: "살 빼려고 운동 시작한 다이어터" },
+                { emoji: "💰", text: "PT 비용이 부담되는 자기주도 운동러" },
+                { emoji: "🏠", text: "집에서 혼자 루틴 짜기 귀찮은 홈트족" },
+                { emoji: "🏃", text: "체계적으로 달리고 싶은 러너" },
+                { emoji: "💪", text: "헬스장에서 뭘 해야 할지 모르는 헬린이" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-[#f0fdf4] border border-[#d1fae5]">
+                  <span className="text-2xl">{item.emoji}</span>
+                  <span className="text-base sm:text-lg font-bold text-[#1B4332]">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </RevealSection>
+        </div>
+      </section>
+
       {/* Partners Scroll */}
-      <section className="py-12 sm:py-16 bg-white overflow-hidden">
+      <section className="py-12 sm:py-16 bg-[#FAFBF9] overflow-hidden">
         <div
           className="flex items-center w-max"
           style={{ animation: "scroll-left 30s linear infinite" }}
@@ -289,16 +319,23 @@ export default function LandingContent() {
               </h2>
             </div>
           </RevealSection>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          {/* 히어로 숫자 */}
+          <RevealSection>
+            <div className="text-center mb-8">
+              <p className="text-5xl sm:text-7xl font-black text-[#059669]">+28%</p>
+              <p className="text-base sm:text-lg font-bold text-[#1B4332] mt-2">첫 달 만에 운동량이 올랐어요</p>
+              <p className="text-xs text-gray-400 mt-1">총 중량 x 횟수 기준</p>
+            </div>
+          </RevealSection>
+          <div className="grid grid-cols-3 gap-4 sm:gap-6">
             {[
               { value: "주 3.2회", label: "평균 운동 빈도", sub: "꾸준한 사용자 기준" },
-              { value: "+28%", label: "첫 달 운동 볼륨", sub: "총 중량 x 횟수 증가" },
               { value: "+23%", label: "3개월 추정 1RM", sub: "주요 복합 운동 기준" },
               { value: "94%", label: "루틴 완주율", sub: "AI 맞춤 플랜 기준" },
             ].map((stat, i) => (
               <RevealSection key={i}>
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 text-center shadow-sm">
-                  <p className="text-3xl sm:text-4xl font-black text-[#1B4332] mb-1">{stat.value}</p>
+                  <p className="text-2xl sm:text-3xl font-black text-[#1B4332] mb-1">{stat.value}</p>
                   <p className="text-[13px] font-bold text-gray-700 mb-1">{stat.label}</p>
                   <p className="text-[11px] text-gray-400">{stat.sub}</p>
                 </div>
