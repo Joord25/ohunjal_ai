@@ -800,7 +800,12 @@ export default function LandingContent() {
 
           {/* 카피라이트 */}
           <div className="border-t border-white/10 pt-8">
-            <p className="text-xs text-gray-500">&copy; 2026 오운잘 AI. All rights reserved.</p>
+            <p className="text-xs text-gray-500 mb-4">&copy; 2026 오운잘 AI. All rights reserved.</p>
+            <p className="text-[10px] text-gray-600 leading-relaxed max-w-lg mx-auto">
+              본 서비스는 의료 행위가 아니며, 전문 의료 상담을 대체하지 않습니다.
+              운동 시 부상 위험이 있으며, 기저 질환이 있는 경우 의사와 상담 후 이용하시기 바랍니다.
+              AI 추천은 참고용이며, 결과는 개인차가 있습니다.
+            </p>
           </div>
         </div>
       </footer>

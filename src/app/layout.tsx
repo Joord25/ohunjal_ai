@@ -122,6 +122,71 @@ export default function RootLayout({
             })
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "@id": "https://ohunjal.com/#organization",
+              "name": "주드(Joord)",
+              "url": "https://ohunjal.com",
+              "logo": "https://ohunjal.com/favicon.png",
+              "description": "AI 맞춤 운동 루틴 서비스 오운잘 AI를 만드는 팀",
+              "foundingDate": "2025",
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "telephone": "+82-10-4824-2869",
+                "email": "ounjal.ai.app@gmail.com",
+                "contactType": "customer service",
+                "availableLanguage": "Korean"
+              },
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "서울특별시 관악구",
+                "addressCountry": "KR"
+              }
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                { "@type": "Question", "name": "무료로 쓸 수 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "네, 회원가입 없이 바로 1회 체험 가능해요. 가입하면 하루 4회까지 무료예요." }},
+                { "@type": "Question", "name": "운동 초보(헬린이)인데 괜찮을까요?", "acceptedAnswer": { "@type": "Answer", "text": "오히려 초보일수록 좋아요. AI가 체력에 맞춰 운동을 짜주니까 뭘 해야 할지 고민할 필요 없어요." }},
+                { "@type": "Question", "name": "다른 운동 루틴 추천 앱이랑 뭐가 달라요?", "acceptedAnswer": { "@type": "Answer", "text": "다른 앱은 운동을 직접 골라야 해요. 오운잘은 컨디션만 고르면 AI가 알아서 짜줘요." }},
+                { "@type": "Question", "name": "PT 없이 혼자 운동해도 효과가 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "네, AI가 매 세트마다 무게와 횟수를 조절해주고, 운동 후 분석 리포트까지 제공해요. PT 없이도 체계적으로 운동할 수 있어요." }},
+                { "@type": "Question", "name": "체중감량에 도움이 되나요?", "acceptedAnswer": { "@type": "Answer", "text": "네, 체중감량 목표를 선택하면 유산소와 웨이트의 균형을 맞춘 루틴을 짜줘요. 매일 컨디션에 따라 조절되니까 무리 없이 꾸준히 할 수 있어요." }},
+                { "@type": "Question", "name": "홈트레이닝도 되나요?", "acceptedAnswer": { "@type": "Answer", "text": "네, 홈트레이닝 모드가 있어요. 맨몸운동, 덤벨 운동 등 집에서 할 수 있는 루틴을 AI가 짜줘요." }},
+                { "@type": "Question", "name": "러닝 프로그램도 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "네, 인터벌 러닝, 장거리(LSD), 이지런 등 다양한 러닝 프로그램을 지원해요." }},
+                { "@type": "Question", "name": "앱 설치해야 하나요?", "acceptedAnswer": { "@type": "Answer", "text": "아니요, 웹에서 바로 써요. 홈화면에 추가하면 앱처럼 쓸 수 있어요." }},
+                { "@type": "Question", "name": "어떤 운동을 지원하나요?", "acceptedAnswer": { "@type": "Answer", "text": "웨이트, 맨몸운동, 러닝, 스트레칭까지 100가지 이상을 AI가 자동 조합해요." }},
+                { "@type": "Question", "name": "구독 해지 어렵지 않나요?", "acceptedAnswer": { "@type": "Answer", "text": "프로필에서 터치 한 번이면 바로 해지돼요. 해지해도 결제 기간까지 이용 가능해요." }}
+              ]
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "HowTo",
+              "name": "오운잘 AI로 맞춤 운동 루틴 받는 법",
+              "description": "컨디션만 고르면 AI가 3초 만에 오늘 운동을 짜드려요",
+              "step": [
+                { "@type": "HowToStep", "position": 1, "name": "몸 상태 고르기", "text": "상체 뻐근, 하체 무거움 등 오늘 몸 상태를 터치 한 번으로 선택합니다." },
+                { "@type": "HowToStep", "position": 2, "name": "목표 고르기", "text": "체중감량, 근육 증가, 체력 향상 중 오늘의 운동 목표를 선택합니다." },
+                { "@type": "HowToStep", "position": 3, "name": "AI가 루틴 생성", "text": "3초 만에 컨디션과 목표에 맞는 맞춤 운동 루틴이 자동 생성됩니다." },
+                { "@type": "HowToStep", "position": 4, "name": "운동하고 기록", "text": "가이드에 따라 운동하면 세트별 기록이 자동 저장되고, AI가 성장을 분석해줍니다." }
+              ]
+            })
+          }}
+        />
       </head>
       <body
         className={`${cormorant.variable} antialiased`}

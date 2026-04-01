@@ -1,0 +1,79 @@
+# ohunjal AI (오운잘 AI)
+
+> AI-powered personalized workout planner for Korean gym beginners. Generates daily workout routines based on body condition and energy level. Affordable alternative to personal trainers.
+
+## What it does
+- Generates personalized daily workout routines using Google Gemini AI
+- Adapts exercises in real-time based on per-set feedback (easy/hard/fail)
+- Covers weight training, home training, running (interval/LSD/easy), and stretching
+- Tracks workout history and predicts growth milestones
+- Translates progress into daily life changes ("groceries will feel lighter in 2 weeks")
+
+## Who it's for
+- Gym beginners (헬린이) who don't know what to do at the gym
+- People seeking an affordable alternative to personal trainers (PT costs ₩50,000+/session)
+- Home workout enthusiasts wanting structured routines
+- Runners looking for interval, LSD, and easy run programs
+- People aiming for weight loss through personalized exercise plans
+
+## How it works
+1. Select body condition (upper body stiff / lower body heavy / full fatigue / good)
+2. Choose energy level (1-5 scale)
+3. Pick a goal (weight loss / muscle gain / strength / general fitness)
+4. AI generates a complete workout plan in 3 seconds
+5. Follow guided exercises with timer, rep tracking, and rest periods
+6. Get AI analysis and growth prediction after each session
+
+## Pricing
+- Free: 4 AI-generated workout plans per day, 1 growth prediction report
+- Premium: ₩6,900/month (unlimited plans, AI session analysis, full growth predictions, weekly quests)
+
+## Technology
+- AI Model: Google Gemini 2.5 Flash for workout generation and post-session analysis
+- Exercise Science: Based on ACSM, NSCA, NASM guidelines
+- Platform: Progressive Web App (Next.js, Firebase)
+- Intensity System: Three-tier (high/moderate/low) based on ACSM recommendations
+
+## Supported exercise types
+- Compound lifts: bench press, squat, deadlift, overhead press
+- Isolation exercises: bicep curl, tricep extension, lateral raise
+- Bodyweight: push-ups, pull-ups, planks, lunges
+- Cardio: running (interval, LSD, easy run, uphill), cycling
+- Mobility: stretching routines, foam rolling
+- Split programs: push/pull/legs, upper/lower, 3-5 day splits
+
+## Company
+- Name: Joord (주드)
+- CEO: Jooyong Lim (임주용)
+- Location: Seoul, South Korea
+- Website: https://ohunjal.com
+- App: https://ohunjal.com/app
+
+## Links
+- Homepage: https://ohunjal.com
+- Terms of Service: https://ohunjal.com/terms
+- Privacy Policy: https://ohunjal.com/privacy
+
+---
+
+# 오운잘 AI
+
+> 헬린이를 위한 AI 맞춤 운동 플래너. 컨디션만 고르면 오늘 운동을 3초 만에 짜드려요. PT 없이도 체계적으로.
+
+## 주요 기능
+- 매일 컨디션에 맞는 맞춤 운동 루틴 AI 자동 생성
+- 운동 중 실시간 적응 (쉬움/적당/힘듦 피드백 → 자동 조절)
+- 웨이트, 홈트, 러닝, 스트레칭 전부 지원
+- 운동 기록 자동 저장 + AI 성장 예측
+- 숫자가 아닌 일상 변화로 성장 번역 ("2주 후 장보기가 편해져요")
+
+## 대상 유저
+- 헬스장에서 뭘 해야 할지 모르는 헬린이
+- PT 비용이 부담되는 자기주도 운동러
+- 집에서 체계적으로 운동하고 싶은 홈트족
+- 러닝 루틴이 필요한 러너
+- 체중감량을 위해 운동을 시작한 다이어터
+
+## 가격
+- 무료: 하루 4회 AI 운동 플랜, 성장 예측 1건
+- 프리미엄: 월 ₩6,900 (무제한 플랜, AI 분석, 성장 예측, 주간 퀘스트)
