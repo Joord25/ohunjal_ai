@@ -162,10 +162,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
     // 이번 주 (경험 번역)
     if (thisWeekCount >= 3) {
-      return `이번 주 벌써 ${thisWeekCount}회! 몸이 달라지는 걸 곧 느끼게 돼요`;
+      return t("home.insight.weekGreat", { count: String(thisWeekCount) });
     }
     if (thisWeekCount > 0) {
-      return `이번 주 ${thisWeekCount}회 완료! 꾸준함이 최고의 무기예요`;
+      return t("home.insight.weekGood", { count: String(thisWeekCount) });
     }
     const thisMonthDays = new Set(thisMonth.map(h => new Date(h.date).toDateString())).size;
     if (thisMonthDays > 0) {
@@ -401,8 +401,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return (
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[13px] font-black text-[#1B4332]">이번 주 퀘스트</h3>
-          <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{doneCount}/{questDefs.length} 완료</span>
+          <h3 className="text-[13px] font-black text-[#1B4332]">{t("home.quest.title")}</h3>
+          <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{doneCount}/{questDefs.length} {t("home.quest.done")}</span>
         </div>
         <div className="space-y-2.5">
           {visible.map(q => {
@@ -455,7 +455,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
-            <span className="text-[11px] font-bold text-gray-400">오운잘 AI 코치</span>
+            <span className="text-[11px] font-bold text-gray-400">{t("home.coachTitle")}</span>
           </div>
           <p className="text-[15px] font-bold text-[#1B4332] leading-relaxed mb-4 min-h-[2.5em]">
             {typedText}
@@ -477,15 +477,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
               const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
               return history.filter(h => new Date(h.date) >= monthStart).length;
             })()}<span className="text-[11px] font-bold text-gray-400 ml-0.5">회</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">이번 달 총</p>
+            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.thisMonth")}</p>
           </div>
           <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
             <p className="text-2xl font-black text-[#1B4332] leading-none">{streak}<span className="text-[11px] font-bold text-gray-400 ml-0.5">일</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">연속 출석</p>
+            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.streak")}</p>
           </div>
           <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
             <p className="text-2xl font-black text-[#1B4332] leading-none">{thisWeekCount}<span className="text-[11px] font-bold text-gray-400 ml-0.5">일</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">이번 주</p>
+            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.thisWeek")}</p>
           </div>
         </div>
 
@@ -513,7 +513,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
               onClick={onShowPrediction}
             >
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[12px] font-medium text-gray-500">지금 페이스대로라면</p>
+                <p className="text-[12px] font-medium text-gray-500">{t("home.prediction.atThisPace")}</p>
                 {sortedPreviews.length > 1 && (
                   <div className="flex gap-1">
                     {sortedPreviews.map((_, i) => (
@@ -525,7 +525,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
               <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{preview.label}</p>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="text-center">
-                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">현재</p>
+                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">{t("home.prediction.current")}</p>
                   <p className="text-[18px] font-black text-[#1B4332]">{preview.current}</p>
                 </div>
                 <div className="flex-1 flex items-center justify-center px-3">
@@ -534,13 +534,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-0.5">4주 후</p>
+                  <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-0.5">{t("home.prediction.in4weeks")}</p>
                   <p className="text-[18px] font-black text-[#2D6A4F]">{preview.predicted}</p>
                 </div>
               </div>
               <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed mt-2">{previewExpMsg}</p>
               <p className="text-[11px] font-bold text-gray-400 text-center mt-2">
-                전체 리포트 보기 &gt;
+                {t("home.prediction.viewReport")} &gt;
               </p>
             </div>
           );
