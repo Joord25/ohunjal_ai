@@ -1653,6 +1653,10 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                             .replace("주간 균형 분석", "Weekly balance analysis")
                             .replace("맞춤 운동 추천", "Personalized recommendations")
                             .replace("현재 근력 수준 평가", "Current strength level")
+                            .replace("현재 기초체력 등급", "Current fitness grade")
+                            .replace("다음 등급 도달 예상 기간", "Next grade timeline")
+                            .replace("2단계 상위 등급 도달 예상 기간", "2nd tier grade timeline")
+                            .replace("최고 등급 도달 예상 기간", "Top grade timeline")
                             .replace("WHO 권장 운동량 달성률", "WHO exercise target %")
                             : item.label;
                           const easyLabel = rawLabel.replace(/e1RM/g, locale === "en" ? "est. 1RM" : "최대 중량").replace(/1RM/g, locale === "en" ? "1RM" : "최대 중량");
@@ -1664,6 +1668,8 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                             .replace("현재 칼로리 소모가 부족해요", "Not enough calorie burn")
                             .replace(/(\d+)% 달성/, "$1% achieved")
                             .replace("최대 중량 입력 후 평가 가능", "Enter 1RM to evaluate")
+                            .replace("체력 테스트를 완료하면 등급이 표시됩니다", "Complete fitness test to see grade")
+                            .replace("체력 테스트 2회 이상 필요", "2+ fitness tests required")
                             .replace(/(\d+)회 운동 후 해금/, "$1 more workouts to unlock")
                             .replace(/벤치/g, "Bench").replace(/스쿼트/g, "Squat").replace(/데드/g, "Dead")
                             .replace(/초급/g, "Beginner").replace(/중급/g, "Intermediate").replace(/상급/g, "Advanced").replace(/엘리트/g, "Elite")
@@ -1678,6 +1684,9 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                             .replace(/주 (\d+)분 운동 중 \/ 권장 (.+)/, "$1 min/week — recommended $2")
                             .replace(/체중 (\d+)kg 기준/, "Based on $1kg body weight")
                             .replace("각 종목별 성장률 기준", "Based on per-exercise growth rate")
+                            .replace("푸쉬업 · 크런치 · 맨몸 스쿼트 (각 2분)", "Push-ups · Crunches · Squats (2 min each)")
+                            .replace("테스트를 반복하면 성장 추세를 예측합니다", "Repeated tests predict growth trends")
+                            .replace(/푸쉬업/g, "Push-ups").replace(/크런치/g, "Crunches").replace(/스쿼트/g, "Squats")
                             .replace(/현재 (\d+)회 완료/, "$1 completed so far")
                             .replace(/e1RM/g, "est. 1RM").replace(/R²=\d+%/g, "").trim()
                             : rawSub.replace(/e1RM/g, "최대 중량").replace(/Best e1RM/g, "최고 기록").replace(/R²=\d+%/g, "").replace(/\s+,\s*/g, ", ").trim();
