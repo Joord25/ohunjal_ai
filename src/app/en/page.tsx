@@ -493,9 +493,9 @@ export default function EnLandingPage() {
             <span className="font-bold text-[#10B981] text-lg">ohunjal AI</span>
           </div>
           <div className="flex items-center justify-center gap-4 mb-6 text-sm">
-            <a href="/terms" className="text-gray-400 hover:text-gray-300 transition-colors underline underline-offset-2">Terms</a>
+            <a href="/en/terms" className="text-gray-400 hover:text-gray-300 transition-colors underline underline-offset-2">Terms</a>
             <span className="text-gray-600">|</span>
-            <a href="/privacy" className="text-gray-400 hover:text-gray-300 transition-colors underline underline-offset-2">Privacy</a>
+            <a href="/en/privacy" className="text-gray-400 hover:text-gray-300 transition-colors underline underline-offset-2">Privacy</a>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-gray-500">&copy; 2026 ohunjal AI. All rights reserved.</p>
