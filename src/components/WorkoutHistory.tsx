@@ -194,6 +194,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                 </button>
               )}
 
+              <div className="flex-1 min-w-0">
               <SwipeToDelete onDelete={() => onDelete([session.id])}>
                 <button
                   onClick={() => isEditing ? toggleSelect(session.id) : onSelectSession(session)}
@@ -217,7 +218,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                   </div>
                 </button>
               </SwipeToDelete>
-
+              </div>
             </div>
           ))}
 
