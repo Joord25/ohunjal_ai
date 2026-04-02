@@ -312,7 +312,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
         <div className="bg-gray-50 rounded-2xl p-5 flex flex-col gap-3">
           {/* Subscription status */}
           <div className="flex justify-between items-center">
-            <span className="text-sm font-bold text-gray-500">{t("Subscription")}</span>
+            <span className="text-sm font-bold text-gray-500">{t("my.subscription")}</span>
             {subStatus === "loading" ? (
               <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
             ) : (
