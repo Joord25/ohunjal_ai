@@ -473,9 +473,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
             <p className="text-2xl font-black text-[#1B4332] leading-none">{(() => {
               const now = new Date();
               const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-              return new Set(history.filter(h => new Date(h.date) >= monthStart).map(h => new Date(h.date).toDateString())).size;
-            })()}<span className="text-[11px] font-bold text-gray-400 ml-0.5">일</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">이번 달</p>
+              return history.filter(h => new Date(h.date) >= monthStart).length;
+            })()}<span className="text-[11px] font-bold text-gray-400 ml-0.5">회</span></p>
+            <p className="text-[10px] font-bold text-gray-400 mt-1">이번 달 총</p>
           </div>
           <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
             <p className="text-2xl font-black text-[#1B4332] leading-none">{streak}<span className="text-[11px] font-bold text-gray-400 ml-0.5">일</span></p>
