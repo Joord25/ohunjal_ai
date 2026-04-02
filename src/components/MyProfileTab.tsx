@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage, auth } from "@/lib/firebase";
 import { SubscriptionScreen, TERMS_TEXT, PRIVACY_TEXT, REFUND_TEXT } from "./SubscriptionScreen";
 import { updateGender, updateBirthYear, saveUserProfile } from "@/utils/userProfile";
+import { useTranslation } from "@/hooks/useTranslation";
 import { getTierFromExp, getOrRebuildSeasonExp, getCurrentSeason } from "@/utils/questSystem";
 import { loadWorkoutHistory } from "@/utils/workoutHistory";
 
@@ -16,7 +17,15 @@ interface MyProfileTabProps {
   autoEdit1RM?: boolean;
 }
 
+// 영어 약관/개인정보 요약 (모달용)
+const TERMS_EN = `NOTICE: This English translation is provided for reference only. The legally binding version is the Korean original.\n\n---\n\nArticle 1 (Purpose)\nThese Terms govern the rights, obligations, and responsibilities between ohunjal AI ("the Company") and users ("Members") regarding the use of services provided by the Company.\n\nArticle 11 (AI Service Disclosure)\nAI workout plans and analysis reports are generated automatically and do not replace professional medical consultation. AI-generated content may not always be 100% accurate. Members should exercise their own judgment.\n\nArticle 12 (Limitation of Liability)\nThe Company is not liable for injuries or damages resulting from AI-generated content.\n\nFull terms available at ohunjal.com/en/terms\n\nEffective from March 1, 2026.`;
+
+const PRIVACY_EN = `NOTICE: This English translation is provided for reference only. The legally binding version is the Korean original.\n\n---\n\nArticle 1 (Purpose)\nThis Privacy Policy describes how ohunjal AI collects, uses, and protects personal information.\n\nItems Collected: Email, name (Google login), gender, birth year, weight, workout records, auto-generated health metrics.\n\nPurpose: AI workout plan generation, growth predictions, payment processing, service improvement.\n\nThird-party Processing: Google Firebase (auth/storage), Google Gemini API (AI plans), PortOne (payments).\n\nFull policy available at ohunjal.com/en/privacy\n\nEffective from March 1, 2026.`;
+
+const REFUND_EN = `NOTICE: This English translation is provided for reference only.\n\n---\n\nRefunds are available within 7 days of the initial subscription if no premium features have been used.\n\nTo request a refund, contact ounjal.ai.app@gmail.com.\n\nUpon cancellation, the subscription remains active until the end of the current billing period.`;
+
 export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM }) => {
+  const { t, locale } = useTranslation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.displayName || "");
@@ -531,7 +540,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
             <span className="text-gray-300">|</span>
             <button type="button" onClick={() => setShowPrivacy(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">개인정보 처리방침</button>
             <span className="text-gray-300">|</span>
-            <button type="button" onClick={() => setShowRefund(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">환불정책</button>
+            <button type="button" onClick={() => setShowRefund(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">{t("my.refund")}</button>
           </div>
           <div className="flex flex-col gap-1 text-[10px] text-gray-500 leading-relaxed text-center">
             <p className="font-medium text-gray-600">주드(Joord) · 대표 임주용</p>
@@ -550,16 +559,16 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setShowTerms(false)}>
           <div className="bg-white rounded-2xl mx-4 w-full max-h-[70vh] flex flex-col shadow-xl mb-24" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1B4332]">이용약관</h2>
+              <h2 className="text-base font-bold text-[#1B4332]">{locale === "en" ? "Terms of Service" : "이용약관"}</h2>
               <button type="button" onClick={() => setShowTerms(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{TERMS_TEXT}</pre>
+              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{locale === "en" ? TERMS_EN : TERMS_TEXT}</pre>
             </div>
             <div className="px-5 py-3 border-t border-gray-100">
-              <button type="button" onClick={() => setShowTerms(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+              <button type="button" onClick={() => setShowTerms(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">{t("common.confirm")}</button>
             </div>
           </div>
         </div>
@@ -570,16 +579,16 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setShowPrivacy(false)}>
           <div className="bg-white rounded-2xl mx-4 w-full max-h-[70vh] flex flex-col shadow-xl mb-24" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1B4332]">개인정보 처리방침</h2>
+              <h2 className="text-base font-bold text-[#1B4332]">{locale === "en" ? "Privacy Policy" : "개인정보 처리방침"}</h2>
               <button type="button" onClick={() => setShowPrivacy(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{PRIVACY_TEXT}</pre>
+              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{locale === "en" ? PRIVACY_EN : PRIVACY_TEXT}</pre>
             </div>
             <div className="px-5 py-3 border-t border-gray-100">
-              <button type="button" onClick={() => setShowPrivacy(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+              <button type="button" onClick={() => setShowPrivacy(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">{t("common.confirm")}</button>
             </div>
           </div>
         </div>
@@ -590,16 +599,16 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setShowRefund(false)}>
           <div className="bg-white rounded-2xl mx-4 w-full max-h-[70vh] flex flex-col shadow-xl mb-24" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1B4332]">환불정책</h2>
+              <h2 className="text-base font-bold text-[#1B4332]">{locale === "en" ? "Refund Policy" : "환불정책"}</h2>
               <button type="button" onClick={() => setShowRefund(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{REFUND_TEXT}</pre>
+              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{locale === "en" ? REFUND_EN : REFUND_TEXT}</pre>
             </div>
             <div className="px-5 py-3 border-t border-gray-100">
-              <button type="button" onClick={() => setShowRefund(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+              <button type="button" onClick={() => setShowRefund(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">{t("common.confirm")}</button>
             </div>
           </div>
         </div>
