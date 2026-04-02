@@ -6,6 +6,7 @@ import { WorkoutSessionData, ExerciseStep, getAlternativeExercises, LABELED_EXER
 import { PlanShareCard } from "./PlanShareCard";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getExerciseName } from "@/utils/exerciseName";
 
 interface MasterPlanPreviewProps {
   sessionData: WorkoutSessionData;
@@ -56,7 +57,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   recommendedIntensity,
   goal
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   // Local mutable copy of exercises (for set count adjustments)
   const [localExercises, setLocalExercises] = useState<ExerciseStep[]>(() =>
     sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex) }))
@@ -448,7 +449,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            const parts = ex.name.split('(');
+                            const parts = getExerciseName(ex.name, locale).split('(');
                             const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
                             window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
                           }}
@@ -713,7 +714,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
               <button onClick={() => setSwapExercise(null)} className="text-sm text-gray-400 font-bold">닫기</button>
             </div>
             <p className="text-[10px] font-bold text-gray-500 mb-3">
-              현재: <span className="text-[#1B4332]">{swapExercise.exercise.name.split("(")[0].trim()}</span>
+              현재: <span className="text-[#1B4332]">{getExerciseName(swapExercise.exercise.name, locale).split("(")[0].trim()}</span>
             </p>
 
             {/* Search Input */}
@@ -915,7 +916,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             {/* Exercise Name */}
             <div className="mb-5">
               {(() => {
-                const parts = guideExercise.name.split('(');
+                const parts = getExerciseName(guideExercise.name, locale).split('(');
                 const korean = parts[0].trim();
                 const english = parts.length > 1 ? parts[1].replace(')', '').trim() : "";
                 return (
@@ -953,7 +954,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             {/* YouTube Search Button */}
             <button
               onClick={() => {
-                const parts = guideExercise.name.split('(');
+                const parts = getExerciseName(guideExercise.name, locale).split('(');
                 const searchTerm = parts.length > 1 ? parts[1].replace(')', '').trim() : parts[0].trim();
                 window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm + " exercise form guide")}`, "_blank");
               }}

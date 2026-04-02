@@ -6,6 +6,7 @@ import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@
 import { AiCoachChat } from "@/components/AiCoachChat";
 import { getVideoEmbedUrl, getYoutubeSearchUrl, getExerciseKoreanName } from "@/constants/exerciseVideos";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getExerciseName } from "@/utils/exerciseName";
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
 
@@ -53,7 +54,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   nextExerciseName,
   lastSessionRecord,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [showSwapMenu, setShowSwapMenu] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
   const [swapFilter, setSwapFilter] = useState<string | null>(null);
@@ -551,8 +552,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Dynamic Font Size for Long Titles (한글 제목 기준)
-  const mainTitleForSize = exercise.name.split('(')[0].trim();
+  // Dynamic Font Size for Long Titles
+  const mainTitleForSize = getExerciseName(exercise.name, locale).split('(')[0].trim();
   const titleSizeClass = mainTitleForSize.length <= 5
     ? "text-5xl"
     : mainTitleForSize.length <= 8
@@ -684,7 +685,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   // Weight Picker View (First set of strength exercises)
   if (hasWeight && !weightConfirmed) {
-    const parts = exercise.name.split('(');
+    const localizedName = getExerciseName(exercise.name, locale);
+    const parts = localizedName.split('(');
     const mainTitle = parts[0].trim();
     const subTitle = parts.length > 1 ? parts[1].replace(')', '').trim() : "";
 
@@ -1023,7 +1025,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         {/* 그룹1: 운동 이름 + 영상 */}
         <div className="flex flex-col items-center gap-1 shrink-0">
           {(() => {
-            const parts = exercise.name.split('(');
+            const localName = getExerciseName(exercise.name, locale);
+            const parts = localName.split('(');
             const mainTitle = parts[0].trim();
             const subTitle = parts.length > 1 ? parts[1].replace(')', '').trim() : "";
 
