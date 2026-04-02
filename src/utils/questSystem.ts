@@ -542,7 +542,7 @@ export function getOrRebuildSeasonExp(
   const seasonKey = getSeasonKey();
   const saved = loadSeasonExp(seasonKey);
 
-  // 캐시된 workout 횟수 vs 실제 히스토리 비교 → 불일치면 리빌드
+  // 캐시된 workout 횟수 vs 실제 히스토리 비교
   const season = getCurrentSeason();
   const seasonSessionCount = history.filter(h => {
     const d = new Date(h.date);
@@ -550,11 +550,14 @@ export function getOrRebuildSeasonExp(
   }).length;
   const cachedWorkoutCount = saved.expLog.filter(e => e.source === "workout").length;
 
-  if (saved.totalExp > 0 && cachedWorkoutCount === seasonSessionCount) {
+  if (saved.totalExp > 0 && cachedWorkoutCount >= seasonSessionCount) {
+    // 캐시가 history와 같거나 더 많으면 캐시 신뢰
+    // (processWorkoutCompletion이 이미 최신 EXP를 저장했을 수 있음)
     return saved;
   }
 
-  // Rebuild from history (캐시 없거나, 세션 삭제/추가로 불일치)
+  // 캐시보다 history가 많을 때만 리빌드 (세션 추가됨)
+  // 또는 캐시가 비어있을 때
   const rebuilt = rebuildFromHistory(history, birthYear, gender);
   saveSeasonExp(rebuilt);
   return rebuilt;
