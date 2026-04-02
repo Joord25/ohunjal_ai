@@ -25,7 +25,7 @@ const PRIVACY_EN = `NOTICE: This English translation is provided for reference o
 const REFUND_EN = `NOTICE: This English translation is provided for reference only.\n\n---\n\nRefunds are available within 7 days of the initial subscription if no premium features have been used.\n\nTo request a refund, contact ounjal.ai.app@gmail.com.\n\nUpon cancellation, the subscription remains active until the end of the current billing period.`;
 
 export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM }) => {
-  const { t, locale } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.displayName || "");
@@ -520,13 +520,32 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
           </svg>
         </a>
 
+        {/* Language Selector */}
+        <div className="w-full bg-[#1B4332] rounded-2xl p-5 flex items-center justify-between">
+          <div className="flex flex-col items-start gap-1">
+            <span className="text-base font-bold text-white">{t("my.language")}</span>
+            <span className="text-xs text-white/50">{locale === "en" ? "English" : "한국어"}</span>
+          </div>
+          <div className="flex gap-2">
+            {([["ko", "🇰🇷"], ["en", "🇺🇸"]] as const).map(([code, flag]) => (
+              <button
+                key={code}
+                onClick={() => setLocale(code)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${locale === code ? "bg-white shadow-md scale-105" : "bg-white/10 hover:bg-white/20"}`}
+              >
+                {flag}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={handleLogoutClick}
           className="w-full bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-2xl p-6 flex items-center justify-between transition-all active:scale-[0.98]"
         >
           <div className="flex flex-col items-start gap-1">
             <span className="text-lg font-bold text-red-500">Log Out</span>
-            <span className="text-xs text-gray-400">계정 로그아웃</span>
+            <span className="text-xs text-gray-400">{t("my.logout.desc")}</span>
           </div>
           <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
