@@ -162,6 +162,8 @@ export default function LandingContent() {
             </div>
             <div className="flex items-center gap-3">
               <a href="/en" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">EN</a>
+              <a href="/ja" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">JA</a>
+              <a href="/zh" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">ZH</a>
               <a
                 href="/app"
                 className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors"

@@ -64,6 +64,8 @@ export const metadata: Metadata = {
     languages: {
       "ko": "https://ohunjal.com",
       "en": "https://ohunjal.com/en",
+      "ja": "https://ohunjal.com/ja",
+      "zh": "https://ohunjal.com/zh",
     },
   },
   verification: {
