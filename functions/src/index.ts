@@ -10,6 +10,17 @@ const db = getFirestore(app);
 
 setGlobalOptions({ region: "us-central1" });
 
+// Admin UID whitelist
+const ADMIN_UIDS = ["jDkXqeAFCMgJj8cFbRZITpokS2H2"];
+
+async function verifyAdmin(authHeader: string | undefined): Promise<string> {
+  const uid = await verifyAuth(authHeader);
+  if (!ADMIN_UIDS.includes(uid)) {
+    throw new Error("Forbidden: not an admin");
+  }
+  return uid;
+}
+
 // Helper: verify Firebase ID token from Authorization header
 async function verifyAuth(authHeader: string | undefined): Promise<string> {
   if (!authHeader?.startsWith("Bearer ")) {
@@ -756,6 +767,142 @@ export const cancelSubscription = onRequest(
     } catch (error) {
       console.error("cancelSubscription error:", error);
       res.status(500).json({ error: "구독 취소에 실패했습니다." });
+    }
+  }
+);
+
+/**
+ * POST /adminActivate
+ * Body: { email, months? }
+ * Admin only: 이메일로 유저 찾아서 구독 활성화
+ */
+export const adminActivate = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    let adminUid: string;
+    try { adminUid = await verifyAdmin(req.headers.authorization); } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ error: msg });
+      return;
+    }
+
+    const { email, months = 1 } = req.body;
+    if (!email) { res.status(400).json({ error: "Missing email" }); return; }
+
+    try {
+      // 이메일로 유저 UID 조회
+      const userRecord = await getAuth().getUserByEmail(email);
+      const uid = userRecord.uid;
+
+      // 구독 활성화
+      const now = new Date();
+      const expiresAt = new Date(now);
+      expiresAt.setMonth(expiresAt.getMonth() + months);
+
+      const subRef = db.collection("subscriptions").doc(uid);
+      const existingDoc = await subRef.get();
+
+      if (existingDoc.exists) {
+        await subRef.update({
+          status: "active",
+          plan: "monthly",
+          amount: 0,
+          billingKey: "manual_admin",
+          lastPaymentAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } else {
+        await subRef.set({
+          uid,
+          status: "active",
+          plan: "monthly",
+          amount: 0,
+          billingKey: "manual_admin",
+          lastPaymentAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      // 관리자 로그 기록
+      await db.collection("admin_logs").add({
+        action: "activate",
+        adminUid,
+        targetEmail: email,
+        targetUid: uid,
+        months,
+        expiresAt: expiresAt.toISOString(),
+        timestamp: FieldValue.serverTimestamp(),
+      });
+
+      res.status(200).json({
+        status: "activated",
+        email,
+        uid,
+        months,
+        expiresAt: expiresAt.toISOString(),
+      });
+    } catch (error: unknown) {
+      console.error("adminActivate error:", error);
+      const msg = error instanceof Error && error.message.includes("no user record")
+        ? "해당 이메일의 유저를 찾을 수 없습니다."
+        : "구독 활성화에 실패했습니다.";
+      res.status(error instanceof Error && error.message.includes("no user record") ? 404 : 500).json({ error: msg });
+    }
+  }
+);
+
+/**
+ * POST /adminCheckUser
+ * Body: { email }
+ * Admin only: 유저 구독 상태 조회
+ */
+export const adminCheckUser = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    try { await verifyAdmin(req.headers.authorization); } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ error: msg });
+      return;
+    }
+
+    const { email } = req.body;
+    if (!email) { res.status(400).json({ error: "Missing email" }); return; }
+
+    try {
+      const userRecord = await getAuth().getUserByEmail(email);
+      const uid = userRecord.uid;
+      const doc = await db.collection("subscriptions").doc(uid).get();
+
+      if (!doc.exists) {
+        res.status(200).json({ email, uid, status: "free", displayName: userRecord.displayName || null });
+        return;
+      }
+
+      const data = doc.data()!;
+      res.status(200).json({
+        email,
+        uid,
+        displayName: userRecord.displayName || null,
+        status: data.status,
+        plan: data.plan || null,
+        expiresAt: data.expiresAt || null,
+        lastPaymentAt: data.lastPaymentAt || null,
+        amount: data.amount || null,
+        billingKey: data.billingKey === "manual_admin" ? "수동 활성화" : "카카오페이",
+      });
+    } catch (error: unknown) {
+      console.error("adminCheckUser error:", error);
+      const msg = error instanceof Error && error.message.includes("no user record")
+        ? "해당 이메일의 유저를 찾을 수 없습니다."
+        : "조회에 실패했습니다.";
+      res.status(error instanceof Error && error.message.includes("no user record") ? 404 : 500).json({ error: msg });
     }
   }
 );
