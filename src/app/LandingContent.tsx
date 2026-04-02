@@ -160,12 +160,15 @@ export default function LandingContent() {
               <img src="/favicon.png" alt="오운잘 AI" className="w-8 h-8 rounded-lg" />
               <span className="font-bold text-[#10B981] text-lg">오운잘 AI</span>
             </div>
-            <a
-              href="/app"
-              className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors"
-            >
-              시작하기
-            </a>
+            <div className="flex items-center gap-3">
+              <a href="/en" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">EN</a>
+              <a
+                href="/app"
+                className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors"
+              >
+                시작하기
+              </a>
+            </div>
           </div>
         </nav>
 

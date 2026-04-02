@@ -61,6 +61,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://ohunjal.com",
+    languages: {
+      "ko": "https://ohunjal.com",
+      "en": "https://ohunjal.com/en",
+    },
   },
   verification: {
     google: "pT2HHHagN-fpWgy6salyFyDgjf679FnLU5hb2btFn6s",
