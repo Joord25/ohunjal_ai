@@ -150,7 +150,39 @@ Members may contact the Privacy Officer at any time to exercise their rights reg
 Supplementary Provisions
 This Policy shall be effective from March 1, 2026.`;
 
-const REFUND_EN = `NOTICE: This English translation is provided for reference only.\n\n---\n\nRefunds are available within 7 days of the initial subscription if no premium features have been used.\n\nTo request a refund, contact ounjal.ai.app@gmail.com.\n\nUpon cancellation, the subscription remains active until the end of the current billing period.`;
+const REFUND_EN = `NOTICE: This English translation is provided for reference purposes only. The legally binding version is the Korean original.
+
+---
+
+Article 1 (Purpose)
+This Refund Policy outlines the refund criteria and procedures for the Premium subscription service provided by ohunjal AI (hereinafter "the Company").
+
+Article 2 (Refund Eligibility)
+Refunds are available only if requested within 7 days of the payment date. However, if any premium features (AI workout plan generation, AI analysis reports, etc.) have been used even once after payment, refunds are not available.
+
+Article 3 (Non-Refundable Cases)
+- More than 7 days have passed since the payment date
+- Premium-exclusive features have been used
+- Account restriction or forced termination due to Terms of Service violation
+
+Article 4 (Cancellation vs. Refund)
+Subscription Cancellation: Automatic billing stops from the next billing cycle. After cancellation, premium features remain accessible until the current billing period expires.
+Refund: The payment amount is returned. Upon refund processing, premium features are immediately discontinued.
+
+Article 5 (Refund Procedure)
+1. Request a refund through the in-app support or the contact information below.
+2. The Company will verify refund eligibility after receiving the request (1-3 business days).
+3. Once approved, the refund will be processed to the original payment method (3-5 business days for KakaoPay).
+
+Article 6 (Partial Refunds)
+Partial refunds (pro-rated) are not available for monthly subscriptions. Refunds are processed as either a full refund or no refund.
+
+Article 7 (Refund Inquiries)
+Email: ounjal.ai.app@gmail.com
+Phone: 010-4824-2869
+
+Supplementary Provisions
+This Refund Policy shall be effective from March 1, 2026.`;
 
 export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM }) => {
   const { t, locale, setLocale } = useTranslation();
