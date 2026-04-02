@@ -108,15 +108,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return count;
   })();
 
-  // 이번 주 운동 일수 (당일 N회도 1일로 카운트)
+  // 이번 주 운동 일수 (당일 N회도 1일로, 이번 달 범위만)
   const thisWeekCount = (() => {
     const now = new Date();
     const monday = new Date(now);
     monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
     monday.setHours(0, 0, 0, 0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const weekStart = monday > monthStart ? monday : monthStart;
     const days = new Set(
       history
-        .filter(h => new Date(h.date).getTime() >= monday.getTime())
+        .filter(h => new Date(h.date).getTime() >= weekStart.getTime())
         .map(h => new Date(h.date).toDateString())
     );
     return days.size;
