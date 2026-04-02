@@ -679,17 +679,13 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             )}
 
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-              <p className="text-sm font-bold text-[#1B4332] mb-2">계좌이체로 구독하기</p>
-              <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                카드 결제 시스템 준비 중입니다.<br/>
-                아래 계좌로 이체 후 문자나 이메일로 연락주시면<br/>
-                <span className="font-bold">24시간 이내 프리미엄을 활성화</span>해드립니다.
-              </p>
+              <p className="text-sm font-bold text-[#1B4332] mb-2">{t("sub.bankTransfer.title")}</p>
+              <p className="text-xs text-gray-600 leading-relaxed mb-3 whitespace-pre-line">{t("sub.bankTransfer.desc")}</p>
               <div className="bg-white rounded-lg p-3 text-sm space-y-1">
-                <p className="text-gray-600">예금주: <span className="font-bold text-[#1B4332]">임주용(주드)</span></p>
-                <p className="text-gray-600">은행: <span className="font-bold text-[#1B4332]">신한</span></p>
-                <p className="text-gray-600">계좌: <span className="font-bold text-[#1B4332]">100-037-160223</span></p>
-                <p className="text-gray-600">금액: <span className="font-bold text-[#1B4332]">월 6,900원</span></p>
+                <p className="text-gray-600">{t("sub.bankTransfer.holder")}: <span className="font-bold text-[#1B4332]">{t("sub.bankTransfer.holderName")}</span></p>
+                <p className="text-gray-600">{t("sub.bankTransfer.bank")}: <span className="font-bold text-[#1B4332]">Shinhan</span></p>
+                <p className="text-gray-600">{t("sub.bankTransfer.account")}: <span className="font-bold text-[#1B4332]">100-037-160223</span></p>
+                <p className="text-gray-600">{t("sub.bankTransfer.amount")}: <span className="font-bold text-[#1B4332]">{t("sub.bankTransfer.amountValue")}</span></p>
               </div>
             </div>
 
@@ -711,12 +707,12 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
               <span className="text-amber-500 text-base">⚠️</span>
               <p className="text-xs text-amber-700 font-medium leading-snug">
-                현재 테스트 모드입니다. 결제 시 <span className="font-bold">실제 금액이 청구되지 않습니다.</span>
+                {t("sub.testMode")}
               </p>
             </div>
 
             <p className="text-[10px] text-gray-400 text-center">
-              구독은 매월 자동 갱신되며, 언제든 취소할 수 있습니다
+              {t("sub.autoRenew")}
             </p>
           </div>
         )}
@@ -816,7 +812,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setShowRefund(false)}>
           <div className="bg-white rounded-2xl mx-4 w-full max-h-[85vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1B4332]">환불정책</h2>
+              <h2 className="text-base font-bold text-[#1B4332]">{t("my.refund")}</h2>
               <button type="button" onClick={() => setShowRefund(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
@@ -825,7 +821,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">{REFUND_TEXT}</pre>
             </div>
             <div className="px-5 py-3 border-t border-gray-100">
-              <button type="button" onClick={() => setShowRefund(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">확인</button>
+              <button type="button" onClick={() => setShowRefund(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">{t("common.confirm")}</button>
             </div>
           </div>
         </div>
