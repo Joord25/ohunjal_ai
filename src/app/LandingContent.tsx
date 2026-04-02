@@ -161,9 +161,17 @@ export default function LandingContent() {
               <span className="font-bold text-[#10B981] text-lg">오운잘 AI</span>
             </div>
             <div className="flex items-center gap-3">
-              <a href="/en" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">EN</a>
-              <a href="/ja" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">JA</a>
-              <a href="/zh" className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors">ZH</a>
+              <select
+                onChange={(e) => { if (e.target.value) window.location.href = e.target.value; }}
+                defaultValue=""
+                className="bg-transparent text-white/50 text-sm font-medium border border-white/20 rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none"
+              >
+                <option value="" disabled className="text-gray-800">🌐 언어</option>
+                <option value="/" className="text-gray-800">🇰🇷 한국어</option>
+                <option value="/en" className="text-gray-800">🇺🇸 English</option>
+                <option value="/ja" className="text-gray-800">🇯🇵 日本語</option>
+                <option value="/zh" className="text-gray-800">🇨🇳 中文</option>
+              </select>
               <a
                 href="/app"
                 className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors"
