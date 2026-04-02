@@ -111,6 +111,7 @@
   "condition.prevWeight": "Previous weight",
   "condition.weight.same": "Same as yesterday",
   "condition.weight.changed": "My weight changed",
+  "condition.weight.edit": "Edit weight",
   "condition.weight.recording": "Recording updated weight",
   "condition.goal.fatLoss": "Weight Loss",
   "condition.goal.fatLoss.desc": "Cardio + circuit focused",

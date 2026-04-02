@@ -111,6 +111,7 @@
   "condition.prevWeight": "이전 체중",
   "condition.weight.same": "어제랑 같아요",
   "condition.weight.changed": "체중이 바뀌었어요",
+  "condition.weight.edit": "체중 변경",
   "condition.weight.recording": "변경된 체중으로 기록합니다",
   "condition.goal.fatLoss": "체중감량",
   "condition.goal.fatLoss.desc": "유산소 + 서킷 중심",

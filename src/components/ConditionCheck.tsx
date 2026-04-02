@@ -276,7 +276,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
               /* 재방문: "어제랑 같아요" 원탭 + 변경 옵션 */
               showWeightEdit ? (
                 <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-card-enter" style={{ animationDelay: "0.05s", animationFillMode: "forwards" }}>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">체중 변경</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">{t("condition.weight.edit")}</p>
                   <div className="flex items-end justify-center gap-2">
                     <input
                       type="number"
@@ -323,7 +323,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
               onClick={() => handleNext()}
               className={`w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] bg-[#1B4332] text-white hover:bg-[#2D6A4F] ${hasProfile && !showWeightEdit ? "hidden" : ""}`}
             >
-              다음
+              {t("common.next")}
             </button>
           </div>
         ) : (
