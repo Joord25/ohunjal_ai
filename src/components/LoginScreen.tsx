@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -226,6 +227,7 @@ Google LLC: 맞춤형 운동 플랜 및 리포트 생성을 위한 AI 연동(Gem
 본 방침은 2026년 3월 1일부터 시행합니다.`;
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
@@ -256,7 +258,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
         setError(null);
       } else {
         console.error("Login failed:", err);
-        setError("로그인에 실패했습니다. 다시 시도해주세요.");
+        setError(t("login.error"));
       }
     } finally {
       setIsLoading(false);
@@ -283,8 +285,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
 
         {/* Description */}
         <p className="text-[#1B4332] leading-relaxed text-sm max-w-[240px]">
-          당신의 시간을 아끼고<br />
-          성장의 즐거움과 건강을 드립니다.
+          {t("login.tagline1")}<br />
+          {t("login.tagline2")}
         </p>
 
         {/* Action Area */}
@@ -306,7 +308,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
               </div>
             )}
             <span className="font-bold text-white">
-              {isLoading ? "로그인 중..." : "Google로 계속하기"}
+              {isLoading ? t("login.loading") : t("login.google")}
             </span>
           </button>
 
@@ -319,12 +321,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
               onClick={onTryFree}
               className="w-full py-3.5 rounded-2xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all"
             >
-              가입 없이 체험하기
+              {t("login.tryFree")}
             </button>
           )}
 
           <p className="text-[10px] text-gray-400 font-medium text-center tracking-widest">
-            로그인 시 <button type="button" onClick={() => setShowTerms(true)} className="underline text-gray-500 hover:text-gray-700 transition-colors">이용약관</button> 및 <button type="button" onClick={() => setShowPrivacy(true)} className="underline text-gray-500 hover:text-gray-700 transition-colors">개인정보 처리방침</button>에 동의합니다
+            {t("login.agreePrefix")} <button type="button" onClick={() => setShowTerms(true)} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.terms")}</button> {t("login.agreeAnd")} <button type="button" onClick={() => setShowPrivacy(true)} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.privacy")}</button>{t("login.agreeSuffix")}
           </p>
         </div>
       </div>
