@@ -966,6 +966,120 @@ export const adminDeactivate = onRequest(
 );
 
 /**
+ * POST /adminDashboard
+ * Admin only: 통계 대시보드 (총유저, 구독자, 무료, 만료임박, 매출)
+ */
+export const adminDashboard = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    try { await verifyAdmin(req.headers.authorization); } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ error: msg });
+      return;
+    }
+
+    try {
+      const subsSnap = await db.collection("subscriptions").get();
+      let active = 0, free = 0, cancelled = 0, expired = 0, expiringIn3Days = 0, monthlyRevenue = 0;
+      const now = new Date();
+      const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      subsSnap.forEach(doc => {
+        const d = doc.data();
+        if (d.status === "active") {
+          active++;
+          if (d.expiresAt) {
+            const exp = new Date(d.expiresAt);
+            if (exp <= threeDaysLater && exp > now) expiringIn3Days++;
+          }
+          if (d.lastPaymentAt && new Date(d.lastPaymentAt) >= monthStart && d.amount > 0) {
+            monthlyRevenue += d.amount;
+          }
+        } else if (d.status === "cancelled") { cancelled++; }
+        else if (d.status === "expired") { expired++; }
+        else { free++; }
+      });
+
+      // Total registered users from Firebase Auth
+      const listResult = await getAuth().listUsers(1);
+      const totalUsers = listResult.users.length > 0 ? (await getAuth().listUsers(1000)).users.length : 0;
+
+      res.status(200).json({
+        totalUsers,
+        active,
+        free: totalUsers - active - cancelled - expired,
+        cancelled,
+        expired,
+        expiringIn3Days,
+        monthlyRevenue,
+      });
+    } catch (error) {
+      console.error("adminDashboard error:", error);
+      res.status(500).json({ error: "대시보드 조회 실패" });
+    }
+  }
+);
+
+/**
+ * POST /adminListUsers
+ * Body: { status?, page?, limit? }
+ * Admin only: 구독자 목록 (필터 + 페이지네이션)
+ */
+export const adminListUsers = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    try { await verifyAdmin(req.headers.authorization); } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ error: msg });
+      return;
+    }
+
+    const { status, page = 1, limit = 20 } = req.body;
+
+    try {
+      let query: FirebaseFirestore.Query = db.collection("subscriptions").orderBy("updatedAt", "desc");
+      if (status && status !== "all") {
+        query = query.where("status", "==", status);
+      }
+
+      const allDocs = await query.get();
+      const total = allDocs.size;
+      const startIdx = (page - 1) * limit;
+      const pageDocs = allDocs.docs.slice(startIdx, startIdx + limit);
+
+      const users = await Promise.all(pageDocs.map(async (doc) => {
+        const d = doc.data();
+        let email = "", displayName = "";
+        try {
+          const userRecord = await getAuth().getUser(doc.id);
+          email = userRecord.email || "";
+          displayName = userRecord.displayName || "";
+        } catch { email = doc.id; }
+
+        return {
+          uid: doc.id,
+          email,
+          displayName,
+          status: d.status || "free",
+          expiresAt: d.expiresAt || null,
+          lastPaymentAt: d.lastPaymentAt || null,
+          amount: d.amount || 0,
+          billingKey: d.billingKey === "manual_admin" ? "수동" : d.billingKey ? "카카오페이" : "-",
+        };
+      }));
+
+      res.status(200).json({ users, total, page, limit, totalPages: Math.ceil(total / limit) });
+    } catch (error) {
+      console.error("adminListUsers error:", error);
+      res.status(500).json({ error: "유저 목록 조회 실패" });
+    }
+  }
+);
+
+/**
  * POST /adminLogs
  * Admin only: 최근 활성화 이력 조회
  */
