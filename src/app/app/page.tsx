@@ -24,6 +24,11 @@ import { loadUserProfile } from "@/utils/userProfile";
 import { useSafeArea } from "@/hooks/useSafeArea";
 import { trackEvent } from "@/utils/analytics";
 
+const getDisplayName = (user: import("firebase/auth").User | null, fallback = "회원") => {
+  const raw = user?.displayName?.split(" ")[0] || fallback;
+  return raw.slice(0, 10);
+};
+
 const lazyGenerateWorkout = async (...args: Parameters<typeof import("@/constants/workout").generateAdaptiveWorkout>) => {
   const { generateAdaptiveWorkout } = await import("@/constants/workout");
   return generateAdaptiveWorkout(...args);
@@ -399,7 +404,7 @@ export default function Home() {
       case "prediction_report":
         return (
           <FitnessReading
-            userName={user?.displayName?.split(" ")[0] || "회원"}
+            userName={getDisplayName(user)}
             onComplete={() => {}}
             onPremium={() => setShowPaywall(true)}
             isPremium={subStatus === "active"}
@@ -417,7 +422,7 @@ export default function Home() {
           <ConditionCheck
             onComplete={handleConditionComplete}
             onBack={() => { setView("home"); setActiveTab("home"); }}
-            userName={user?.displayName?.split(" ")[0] || undefined}
+            userName={getDisplayName(user, "")}
             isGuest={!isLoggedIn}
           />
         );
@@ -557,7 +562,7 @@ export default function Home() {
         // 홈 화면: 로그인/비로그인 모두 진입 가능
         return (
           <HomeScreen
-            userName={user?.displayName?.split(" ")[0] || undefined}
+            userName={getDisplayName(user, "")}
             onStartWorkout={() => {
               if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
                 setShowLoginModal(true);
@@ -608,7 +613,7 @@ export default function Home() {
         {/* Loading Overlay */}
         {isLoading && (
           <PlanLoadingOverlay
-            userName={user?.displayName?.split(" ")[0] || "회원"}
+            userName={getDisplayName(user)}
             bodyPart={currentCondition?.bodyPart}
             goal={currentGoal}
             sessionMode={currentSession?.sessionMode}
