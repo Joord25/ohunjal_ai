@@ -885,7 +885,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
   const { regression: reg, points } = ex;
 
   const targetLine = profile.bodyWeight * 1.0;
-  const targetLabel = `중급 ${Math.round(targetLine)}kg`;
+  const targetLabel = locale === "en" ? `Inter. ${Math.round(targetLine)}kg` : `중급 ${Math.round(targetLine)}kg`;
   const lastX = points[points.length - 1].x;
   const predX = lastX + 28;
   const predY = Math.round(Math.max(0, reg.predict(predX)) * 10) / 10;
@@ -912,7 +912,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
       {/* 종목 탭 */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <p className="text-xs font-bold text-[#1B4332]">{ex.label} e1RM 예측</p>
+          <p className="text-xs font-bold text-[#1B4332]">{locale === "en" ? ex.label.replace(/.*\(([^)]+)\).*/, "$1") : ex.label} {locale === "en" ? "e1RM Prediction" : "e1RM 예측"}</p>
         </div>
         <p className="text-[9px] text-gray-400">R² = {Math.round(reg.r2 * 100)}% ({r2Explain})</p>
       </div>
@@ -926,7 +926,7 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
                 i === activeIdx % byEx.length ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
               }`}
             >
-              {ex.label}
+              {locale === "en" ? ex.label.replace(/.*\(([^)]+)\).*/, "$1") : ex.label}
             </button>
           ))}
         </div>
