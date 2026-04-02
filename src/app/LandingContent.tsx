@@ -155,7 +155,7 @@ export default function LandingContent() {
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(to bottom, #0a1a14 0%, #0f2a1f 30%, #143728 60%, #1B4332 85%, #FAFBF9 100%)" }}>
         {/* Nav */}
         <nav className="sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
             <div className="flex items-center gap-2">
               <img src="/favicon.png" alt="오운잘 AI" className="w-8 h-8 rounded-lg" />
               <span className="font-bold text-[#10B981] text-lg">오운잘 AI</span>

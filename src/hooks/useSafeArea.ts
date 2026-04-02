@@ -24,14 +24,17 @@ export function useSafeArea() {
       const envValue = parseInt(getComputedStyle(test).paddingBottom) || 0;
       document.body.removeChild(test);
 
-      if (envValue > 0) {
-        // iOS or device with proper safe-area support
+      if (isStandalone) {
+        // PWA 모드: iOS/Android 모두 고정값 사용
+        // iOS: env(safe-area-inset-bottom)은 ~34px로 너무 커서 네비 바가 붕 뜸
+        const isIOS = (navigator as unknown as { standalone?: boolean }).standalone === true
+          || /iPhone|iPad|iPod/.test(navigator.userAgent);
         document.documentElement.style.setProperty(
           "--safe-area-bottom",
-          `env(safe-area-inset-bottom)`
+          isIOS ? "12px" : "24px"
         );
-      } else if (isStandalone) {
-        // Android PWA: 고정값 사용 (JS 계산 타이밍 문제 제거)
+      } else if (envValue > 0) {
+        // 브라우저 모드 + safe-area 지원 기기: 축소 적용
         document.documentElement.style.setProperty(
           "--safe-area-bottom",
           "12px"

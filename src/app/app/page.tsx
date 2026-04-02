@@ -432,6 +432,7 @@ export default function Home() {
             onIntensityChange={handleIntensityChange}
             currentIntensity={recommendedIntensity}
             recommendedIntensity={recommendedIntensity}
+            goal={currentGoal || undefined}
           />
         );
 
