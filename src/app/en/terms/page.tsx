@@ -64,8 +64,20 @@ Article 12 (Limitation of Liability)
 3. The Company is not liable for failure to achieve expected workout results.
 4. The Company is not legally liable for injuries or damages resulting from errors or inaccuracies in AI-generated content (workout plans, growth predictions, calorie analysis, estimated 1RM, strength assessments, etc.).
 
-Article 13 (Governing Law and Jurisdiction)
-Disputes related to the Service shall be governed by the laws of the Republic of Korea, with jurisdiction at the court of the Company's registered address.
+Article 13 (Intellectual Property and Usage Restrictions)
+All intellectual property related to the Service, including AI algorithms, workout plans, UI design, and content, belongs to the Company. Members may not copy, modify, distribute, or commercially exploit any Service content without prior written consent. Unauthorized crawling, scraping, or automated access to the Service is prohibited.
+
+Article 14 (Service Restriction and Account Suspension)
+The Company may restrict or suspend a Member's account in the following cases: violation of these Terms, interference with Service operations, impersonation, distribution of false information, or any activity that threatens other Members' use of the Service. The Company will provide prior notice where possible, except in urgent cases.
+
+Article 15 (Termination and Withdrawal)
+Members may terminate their agreement and withdraw from the Service at any time through the account deletion feature. Upon withdrawal, personal information is processed in accordance with the Privacy Policy and destroyed after the legally required retention period.
+
+Article 16 (Governing Law and Jurisdiction)
+Disputes related to the Service shall be governed by the laws of the Republic of Korea, with jurisdiction at the court of the Company's registered address. Disputes between the Company and Members may also be submitted for mediation to the Korea Consumer Agency.
+
+Article 17 (Severability)
+If any provision of these Terms is found to be invalid or unenforceable under applicable law, the remaining provisions shall remain in full force and effect.
 
 Supplementary Provisions
 These Terms shall be effective from March 1, 2026.`;
