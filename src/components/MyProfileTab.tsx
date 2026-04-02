@@ -562,13 +562,13 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
             <button type="button" onClick={() => setShowRefund(true)} className="text-[10px] text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors">{t("my.refund")}</button>
           </div>
           <div className="flex flex-col gap-1 text-[10px] text-gray-500 leading-relaxed text-center">
-            <p className="font-medium text-gray-600">주드(Joord) · 대표 임주용</p>
-            <p>사업자등록번호 623-36-01460</p>
-            <p>통신판매 2026-서울관악-0647</p>
-            <p>서울특별시 관악구 은천로35길 40-6, 404호</p>
+            <p className="font-medium text-gray-600">{t("my.footer.company")}</p>
+            <p>{t("my.footer.bizNum")}</p>
+            <p>{t("my.footer.salesNum")}</p>
+            <p>{t("my.footer.address")}</p>
             <p>H.P 010-4824-2869</p>
             <p>ounjal.ai.app@gmail.com</p>
-            <p className="mt-2">Copyright © 2026 오운잘 AI. All rights reserved.</p>
+            <p className="mt-2">Copyright © 2026 ohunjal AI. All rights reserved.</p>
           </div>
         </div>
       </div>

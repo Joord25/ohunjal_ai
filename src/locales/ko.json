@@ -260,6 +260,11 @@
   "plan.intensity.desc.moderate": "60-79% 1RM · 7-12회 · 근비대",
   "plan.intensity.desc.low": "~60% 1RM · 13회+ · 근지구력",
 
+  "my.footer.company": "주드(Joord) · 대표 임주용",
+  "my.footer.bizNum": "사업자등록번호 623-36-01460",
+  "my.footer.salesNum": "통신판매 2026-서울관악-0647",
+  "my.footer.address": "서울특별시 관악구 은천로35길 40-6, 404호",
+
   "delete.confirm": "이 기록을 삭제할까요?",
   "exit.confirm": "앱을 나가시겠습니까?",
   "exit.confirm.desc": "운동 중인 세션이 있으면 기록이 사라질 수 있어요"
