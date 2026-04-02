@@ -85,6 +85,7 @@
   "home.coachTitle": "AI Coach",
   "home.prediction.title": "Growth Preview",
 
+  "condition.step.prefix": "AI Analysis • Step",
   "condition.suffix.name": ",",
   "condition.title.bodyCheck": "How does your body feel today?",
   "condition.title.weightInput": "Enter your weight",

@@ -176,7 +176,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
               </svg>
             </button>
             <span className="text-[#2D6A4F] font-bold tracking-[0.2em] uppercase text-xs">
-              AI 분석 • 단계 {step === "body_check" ? "1" : step === "weight_input" ? "2" : "3"}
+              {t("condition.step.prefix")} {step === "body_check" ? "1" : step === "weight_input" ? "2" : "3"}
             </span>
           </div>
           <h1 className="text-3xl font-black mt-2 leading-tight text-[#1B4332] whitespace-pre-line">
