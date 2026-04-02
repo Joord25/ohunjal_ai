@@ -24,6 +24,7 @@ import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from
 import { syncExpFromFirestore } from "@/utils/questSystem";
 import { useSafeArea } from "@/hooks/useSafeArea";
 import { trackEvent } from "@/utils/analytics";
+import { I18nProvider } from "@/hooks/useTranslation";
 
 const getDisplayName = (user: import("firebase/auth").User | null, fallback = "회원") => {
   const raw = user?.displayName?.split(" ")[0] || fallback;
@@ -580,6 +581,7 @@ export default function Home() {
   };
 
   return (
+    <I18nProvider>
     <PhoneFrame pullToRefresh={view === "home"}>
       <div className="h-full w-full relative overflow-hidden">
         <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : ""}`} style={view === "login" || view === "workout_session" ? undefined : { paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" }}>
@@ -710,5 +712,6 @@ export default function Home() {
         )}
       </div>
     </PhoneFrame>
+    </I18nProvider>
   );
 }
