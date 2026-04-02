@@ -11,7 +11,7 @@ const translations: Record<Locale, Record<string, string>> = { ko, en };
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, fallback?: string) => string;
+  t: (key: string, vars?: Record<string, string>) => string;
 }
 
 const I18nContext = createContext<I18nContextType>({
@@ -31,8 +31,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("alpha_language", newLocale);
   }, []);
 
-  const t = useCallback((key: string, fallback?: string): string => {
-    return translations[locale]?.[key] || translations.ko[key] || fallback || key;
+  const t = useCallback((key: string, vars?: Record<string, string>) => {
+    let text = translations[locale]?.[key] || translations.ko[key] || key;
+    if (vars) {
+      Object.entries(vars).forEach(([k, v]) => {
+        text = text.replace(new RegExp(`\\{${k}\\}`, "g"), v);
+      });
+    }
+    return text;
   }, [locale]);
 
   return (

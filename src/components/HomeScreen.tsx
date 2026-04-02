@@ -5,6 +5,7 @@ import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface HomeScreenProps {
   userName?: string;
@@ -26,6 +27,7 @@ interface FitnessProfile {
 
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout, onShowPrediction }) => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<WorkoutHistory[]>([]);
   const [questData, setQuestData] = useState<ReturnType<typeof getOrCreateWeeklyQuests> | null>(null);
   const [savedGoal, setSavedGoal] = useState<WorkoutGoal | null>(null);
@@ -108,7 +110,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return days.size;
   })();
 
-  const displayName = userName || "회원";
+  const displayName = userName || t("home.defaultName");
 
   // 오늘 운동 했는지
   const didWorkoutToday = history.some(h => new Date(h.date).toDateString() === new Date().toDateString());
@@ -117,17 +119,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   const greetingMsg = (() => {
     const hour = new Date().getHours();
     if (didWorkoutToday) {
-      if (hour < 12) return "아침부터 해치웠네요!";
-      if (hour < 17) return "오늘도 해냈군요!";
-      return "고생 많았어요!";
+      if (hour < 12) return t("home.greeting.done.morning");
+      if (hour < 17) return t("home.greeting.done.afternoon");
+      return t("home.greeting.done.evening");
     }
-    if (hour < 6) return "새벽 각 제대로네요!";
-    if (hour < 10) return "미라클 모닝 가시죠!";
-    if (hour < 12) return "점심 전에 한판 해요!";
-    if (hour < 15) return "식후엔 근육이 답이죠!";
-    if (hour < 18) return "오후 한방 가시죠!";
-    if (hour < 21) return "스트레스 여기서 털어요!";
-    return "잘 때 우린 성장하죠!";
+    if (hour < 6) return t("home.greeting.dawn");
+    if (hour < 10) return t("home.greeting.morning");
+    if (hour < 12) return t("home.greeting.preLunch");
+    if (hour < 15) return t("home.greeting.lunch");
+    if (hour < 18) return t("home.greeting.afternoon");
+    if (hour < 21) return t("home.greeting.evening");
+    return t("home.greeting.night");
   })();
 
   // 날짜 포맷
@@ -261,11 +263,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
   // AI 코치 메시지: 최근 3개 기록 분석 → 안 한 부위 추천
   const coachMessage = (() => {
-    if (history.length === 0) return "오늘 첫 운동을 시작해볼까요?";
+    if (history.length === 0) return t("home.coach.firstVisit");
     if (didWorkoutToday) {
       const last = history[history.length - 1];
       const desc = last.sessionData.description || last.sessionData.title || "";
-      return desc ? `오늘 ${desc} 완료! 내일도 이 페이스 유지해봐요` : "오늘도 해냈어요! 내일도 힘내봐요";
+      return desc ? t("home.coach.doneToday", { desc }) : t("home.coach.doneTodayDefault");
     }
 
     // 최근 3개 기록에서 한 부위 추출
