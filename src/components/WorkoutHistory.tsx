@@ -120,8 +120,8 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
       {months.length > 0 && (
         <div className="px-6 pb-3 flex items-center justify-center gap-4 shrink-0">
           <button
-            onClick={() => goMonth(-1)}
-            disabled={!canGoNewer}
+            onClick={() => goMonth(1)}
+            disabled={!canGoOlder}
             className="p-1.5 disabled:opacity-20"
           >
             <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -132,8 +132,8 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
             {currentMonth ? formatMonthLabel(currentMonth) : ""}
           </span>
           <button
-            onClick={() => goMonth(1)}
-            disabled={!canGoOlder}
+            onClick={() => goMonth(-1)}
+            disabled={!canGoNewer}
             className="p-1.5 disabled:opacity-20"
           >
             <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
