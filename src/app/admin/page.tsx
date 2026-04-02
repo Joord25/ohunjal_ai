@@ -5,6 +5,13 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { onAuthStateChanged, signInWithPopup, User } from "firebase/auth";
 
 const ADMIN_UIDS = ["jDkXqeAFCMgJj8cFbRZITpokS2H2"];
+
+function useBodyScroll() {
+  useEffect(() => {
+    document.body.style.overflow = "auto";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+}
 const GA4_URL = "https://analytics.google.com/analytics/web/#/p/G-BVD88DPW9E";
 
 type Tab = "dashboard" | "users" | "analytics" | "history";
@@ -67,6 +74,7 @@ const FUNNEL_EVENTS = [
 ];
 
 export default function AdminPage() {
+  useBodyScroll();
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
