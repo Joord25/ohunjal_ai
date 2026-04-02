@@ -1652,7 +1652,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                             .replace("건강 지표 현황", "Health metrics status")
                             .replace("주간 균형 분석", "Weekly balance analysis")
                             .replace("맞춤 운동 추천", "Personalized recommendations")
-                            .replace("현재 근력 수준 평가", "Current strength level")
+                            .replace("현재 근력 수준 평가", "Current strength assessment")
                             .replace("현재 기초체력 등급", "Current fitness grade")
                             .replace("다음 등급 도달 예상 기간", "Next grade timeline")
                             .replace("2단계 상위 등급 도달 예상 기간", "2nd tier grade timeline")
