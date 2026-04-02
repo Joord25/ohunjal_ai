@@ -148,6 +148,10 @@
   "proof.noRecord.desc": "첫 운동을 시작해보세요!",
   "proof.sessions": "회 운동",
   "proof.thisMonth": "이번 달의 기록",
+  "proof.monthRecord": "월의 기록",
+  "proof.level.advanced": "고수",
+  "proof.level.intermediate": "중수",
+  "proof.level.beginner": "뉴비",
 
   "my.profile": "프로필",
   "my.bodyInfo": "Body Info",

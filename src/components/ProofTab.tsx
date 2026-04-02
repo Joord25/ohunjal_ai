@@ -7,6 +7,7 @@ import { loadWorkoutHistory, deleteWorkoutHistory } from "@/utils/workoutHistory
 import { updateWeightLog } from "@/utils/userProfile";
 import { estimateTrainingLevelDetailed, getOptimalLoadBand } from "@/utils/workoutMetrics";
 import { SwipeToDelete } from "./SwipeToDelete";
+import { useTranslation } from "@/hooks/useTranslation";
 import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWeeklyQuests, TIERS, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { WorkoutReport } from "./WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
@@ -42,6 +43,7 @@ function DaySessionItem({ session, timeStr, onTap, onDelete }: {
 }
 
 export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<WorkoutHistoryType[]>([]);
   const [view, setView] = useState<ViewState>("dashboard");
   const [selectedHistory, setSelectedHistory] = useState<WorkoutHistoryType | null>(null);
@@ -269,7 +271,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               onClick={() => weightSelectMode ? exitSelectMode() : setWeightSelectMode(true)}
               className="text-sm font-bold text-[#2D6A4F] active:opacity-60"
             >
-              {weightSelectMode ? "완료" : "편집"}
+              {weightSelectMode ? t("common.complete") : t("common.edit")}
             </button>
           ) : (
             <div className="w-10" />
@@ -482,7 +484,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           {monthHistory.length > 0 ? (
             <>
               <h1 className="text-4xl font-black text-[#1B4332]">{monthHistory.length}<span className="text-lg font-bold text-[#2D6A4F]/50 ml-1">회 운동</span></h1>
-              <p className="text-[12px] font-medium text-gray-400 mt-1">{isCurrentMonth ? "이번 달의 기록" : `${viewMonth + 1}월의 기록`}</p>
+              <p className="text-[12px] font-medium text-gray-400 mt-1">{isCurrentMonth ? t("proof.thisMonth") : `${viewMonth + 1}${t("proof.monthRecord")}`}</p>
             </>
           ) : isCurrentMonth ? (
             <>
@@ -857,7 +859,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                     <div className="flex justify-between mt-1.5">
                       <span className="text-[11px] font-bold" style={{ color: tierResult.tier.color }}>{seasonExp.totalExp} EXP</span>
                       <span className="text-[11px] text-gray-400">
-                        {tierResult.nextTier ? `${tierResult.nextTier.name}까지 ${tierResult.remaining} EXP` : "최고 티어!"}
+                        {tierResult.nextTier ? t("report.tierRemaining", { next: tierResult.nextTier.name, remaining: `${tierResult.remaining} EXP` }) : t("report.maxTier")}
                       </span>
                     </div>
                   </div>
@@ -925,7 +927,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             const bw = !isNaN(savedBodyWeight) ? savedBodyWeight : undefined;
             const g = savedGender;
             const levelEst = estimateTrainingLevelDetailed(history, bw, g);
-            const lvlLabel = levelEst.level === "advanced" ? "고수" : levelEst.level === "intermediate" ? "중수" : "뉴비";
+            const lvlLabel = levelEst.level === "advanced" ? t("proof.level.advanced") : levelEst.level === "intermediate" ? t("proof.level.intermediate") : t("proof.level.beginner");
             const lvlGradient = levelEst.level === "advanced"
               ? "from-amber-500 to-orange-400"
               : levelEst.level === "intermediate"
@@ -957,7 +959,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                         const accent = d.level === "advanced" ? "border-amber-400 text-amber-500 bg-amber-50"
                           : d.level === "intermediate" ? "border-emerald-400 text-emerald-600 bg-emerald-50"
                           : "border-gray-300 text-gray-400 bg-gray-50";
-                        const nm = d.level === "advanced" ? "고수" : d.level === "intermediate" ? "중수" : "뉴비";
+                        const nm = d.level === "advanced" ? t("proof.level.advanced") : d.level === "intermediate" ? t("proof.level.intermediate") : t("proof.level.beginner");
                         return (
                           <div key={i} className="flex items-center gap-4 py-4 first:pt-1 last:pb-1">
                             <div className={`w-1 h-12 rounded-full ${accent.split(" ")[0].replace("border", "bg")}`} />

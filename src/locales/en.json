@@ -148,6 +148,10 @@
   "proof.noRecord.desc": "Start your first workout!",
   "proof.sessions": "workouts",
   "proof.thisMonth": "This month's record",
+  "proof.monthRecord": " record",
+  "proof.level.advanced": "Advanced",
+  "proof.level.intermediate": "Intermediate",
+  "proof.level.beginner": "Beginner",
 
   "my.profile": "Profile",
   "my.bodyInfo": "Body Info",
