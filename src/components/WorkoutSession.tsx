@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { trackEvent } from "@/utils/analytics";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
@@ -16,6 +17,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   onComplete,
   onBack,
 }) => {
+  const { t } = useTranslation();
   // Initialize exercises with a deep copy to allow mutations for adaptive logic
   const [exercises, setExercises] = useState<ExerciseStep[]>(() => 
     JSON.parse(JSON.stringify(sessionData.exercises))
@@ -218,7 +220,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       count: `${addSets}세트 / ${addReps}회`,
       sets: addSets,
       reps: addReps,
-      weight: "적당한 무게",
+      weight: t("fit.moderateWeight"),
     };
     setExercises(prev => [...prev, newExercise]);
     setCurrentIndex(exercises.length);
@@ -338,7 +340,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
                 type="text"
                 value={addSearch}
                 onChange={(e) => setAddSearch(e.target.value)}
-                placeholder="운동 또는 부위 검색 (예: 등, 벤치프레스)"
+                placeholder={t("fit.searchExercise")}
                 className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-3 sticky top-0 z-10"
               />
               {isSearching ? (

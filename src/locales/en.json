@@ -113,6 +113,13 @@
   "fit.weight.confirm": "Confirm Weight",
   "fit.weight.recommended": "Recommended",
   "fit.addSet": "Add Set",
+  "fit.searchExercise": "Search exercises...",
+  "fit.skipRestFull": "Skip rest",
+  "fit.lastSetNext": "Last set done! Next exercise",
+  "fit.bodyweight": "Bodyweight",
+  "fit.interval.sprint": "SPRINT",
+  "fit.interval.recovery": "RECOVERY",
+  "fit.moderateWeight": "Moderate weight",
 
   "report.title": "Workout Complete!",
   "report.aiCoach": "ohunjal AI Coach",

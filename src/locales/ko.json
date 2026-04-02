@@ -113,6 +113,13 @@
   "fit.weight.confirm": "무게 확인",
   "fit.weight.recommended": "추천 무게",
   "fit.addSet": "세트 추가",
+  "fit.searchExercise": "운동 검색...",
+  "fit.skipRestFull": "휴식 건너뛰기",
+  "fit.lastSetNext": "마지막 세트였어요! 다음 운동으로",
+  "fit.bodyweight": "맨몸",
+  "fit.interval.sprint": "전력 SPRINT",
+  "fit.interval.recovery": "회복 RECOVERY",
+  "fit.moderateWeight": "적당한 무게",
 
   "report.title": "운동 끝!",
   "report.aiCoach": "오운잘 AI 코치",

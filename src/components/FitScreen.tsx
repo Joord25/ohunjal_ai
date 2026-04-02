@@ -5,6 +5,7 @@ import { THEME } from "@/constants/theme";
 import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { AiCoachChat } from "@/components/AiCoachChat";
 import { getVideoEmbedUrl, getYoutubeSearchUrl, getExerciseKoreanName } from "@/constants/exerciseVideos";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
 
@@ -52,6 +53,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   nextExerciseName,
   lastSessionRecord,
 }) => {
+  const { t } = useTranslation();
   const [showSwapMenu, setShowSwapMenu] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
   const [swapFilter, setSwapFilter] = useState<string | null>(null);
@@ -883,7 +885,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 type="text"
                 value={swapSearch}
                 onChange={(e) => setSwapSearch(e.target.value)}
-                placeholder="운동 검색..."
+                placeholder={t("fit.searchExercise")}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
               />
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
@@ -1117,7 +1119,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         ? "bg-red-100 text-red-600"
                         : "bg-emerald-100 text-emerald-700"
                     }`}>
-                      {intervalPhase === "sprint" ? "전력 SPRINT" : "회복 RECOVERY"}
+                      {intervalPhase === "sprint" ? t("fit.interval.sprint") : t("fit.interval.recovery")}
                     </div>
                     {/* 카운트다운 */}
                     <p className={`text-6xl font-black tracking-tighter tabular-nums ${
@@ -1160,7 +1162,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 )}
                 {!hasWeight && exercise.weight && (
                   <span className={`font-black text-[#2D6A4F] ${isBodyweight ? valueSize : "text-2xl"}`}>
-                    {isBodyweight ? "맨몸" : setInfo.targetWeight}
+                    {isBodyweight ? t("fit.bodyweight") : setInfo.targetWeight}
                   </span>
                 )}
 
@@ -1296,12 +1298,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <p className="text-sm font-bold text-[#2D6A4F] mt-2">
             {(() => {
               const desc = (exercise.name || "").toLowerCase();
-              if (/가슴|푸시|chest|push|벤치/.test(desc)) return "거울 앞 어깨 라인이 달라지고 있어요";
-              if (/등|풀|back|pull|로우|랫/.test(desc)) return "자세가 펴지고 등이 단단해지고 있어요";
-              if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(desc)) return "계단이 가뿐해지는 날이 올 거예요";
-              if (/코어|복근|core|ab|플랭크/.test(desc)) return "허리가 덜 뻐근해지는 중이에요";
-              if (/러닝|유산소|cardio|run|hiit/.test(desc)) return "일상이 가벼워지고 있어요";
-              return "꾸준함이 최고의 무기예요";
+              if (/가슴|푸시|chest|push|벤치/.test(desc)) return t("exp.general_fitness.chest");
+              if (/등|풀|back|pull|로우|랫/.test(desc)) return t("exp.general_fitness.back");
+              if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(desc)) return t("exp.general_fitness.lower");
+              if (/코어|복근|core|ab|플랭크/.test(desc)) return t("exp.general_fitness.core");
+              if (/러닝|유산소|cardio|run|hiit/.test(desc)) return t("exp.general_fitness.cardio");
+              return t("exp.general_fitness.default");
             })()}
           </p>
         </div>
@@ -1322,7 +1324,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               type="text"
               value={swapSearch}
               onChange={(e) => setSwapSearch(e.target.value)}
-              placeholder="운동 검색..."
+              placeholder={t("fit.searchExercise")}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
             />
             <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
@@ -1584,13 +1586,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     onClick={handleSkipLocalRest}
                     className="px-4 py-2 bg-emerald-500 rounded-full text-xs font-bold text-white tracking-widest hover:bg-emerald-400 active:scale-95 transition-all"
                   >
-                    {feedbackGiven ? "건너뛰기" : "휴식 건너뛰기"}
+                    {feedbackGiven ? t("fit.skipRest") : t("fit.skipRestFull")}
                   </button>
                 </div>
               </div>
               <p className="text-[11px] font-bold text-emerald-300/50 mt-2">
                 {setInfo.current >= setInfo.total
-                  ? "마지막 세트였어요! 다음 운동으로"
+                  ? t("fit.lastSetNext")
                   : setInfo.current >= setInfo.total - 1
                     ? `${setInfo.current}/${setInfo.total} 세트 완료! 마지막 하나 남았어요`
                     : `${setInfo.current}/${setInfo.total} 세트 완료! ${setInfo.total - setInfo.current}세트 남았어요`}
