@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 function useAuthRedirect() {
   const router = useRouter();
@@ -138,16 +139,7 @@ export default function ZhLandingPage() {
               <span className="font-bold text-[#10B981] text-lg">ohunjal AI</span>
             </div>
             <div className="flex items-center gap-3">
-              <select
-                onChange={(e) => { if (e.target.value !== "/zh") window.location.href = e.target.value; }}
-                defaultValue="/zh"
-                className="bg-transparent text-white/70 text-sm font-medium border border-white/20 rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none"
-              >
-                <option value="/" className="text-gray-800">🇰🇷 한국어</option>
-                <option value="/en" className="text-gray-800">🇺🇸 English</option>
-                <option value="/ja" className="text-gray-800">🇯🇵 日本語</option>
-                <option value="/zh" className="text-gray-800">🇨🇳 中文</option>
-              </select>
+              <LanguageSelector current="/zh" />
               <a href="/app" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">开始使用</a>
             </div>
           </div>
