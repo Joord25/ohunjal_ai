@@ -87,15 +87,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     } catch { /* ignore */ }
   }, []);
 
-  // 연속 운동일 계산
+  // 연속 운동일 계산 (이번 달 범위만)
   const streak = (() => {
     if (history.length === 0) return 0;
     let count = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const dayMs = 24 * 60 * 60 * 1000;
     for (let i = 0; ; i++) {
       const checkDate = new Date(today.getTime() - i * dayMs);
+      if (checkDate < monthStart) break;
       const checkStr = checkDate.toDateString();
       if (history.some(h => new Date(h.date).toDateString() === checkStr)) {
         count++;
