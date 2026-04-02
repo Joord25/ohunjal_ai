@@ -389,10 +389,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
   // 퀘스트 타입별 과학적 맥락
   const questScienceNote: Record<string, string> = {
-    intensity_high: "ACSM: 주 1-2회 고강도 훈련이 근력 향상에 효과적",
-    intensity_moderate: "ACSM: 중강도 훈련은 근비대와 체력 향상의 핵심",
-    intensity_low: "NSCA: 저강도 회복 세션이 과훈련을 예방합니다",
-    consistency: "WHO: 주 150분 이상 운동 시 만성질환 위험 감소",
+    intensity_high: t("home.quest.highDesc"),
+    intensity_moderate: t("home.quest.modDesc"),
+    intensity_low: t("home.quest.lowDesc"),
+    consistency: t("home.quest.consistencyDesc"),
     bonus_streak: t("home.quest.streakDesc"),
     bonus_new_exercise: t("home.quest.newExDesc"),
   };
@@ -538,7 +538,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
                   </div>
                 )}
               </div>
-              <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{preview.label}</p>
+              <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{locale === "en" && preview.label ? preview.label.replace(/.*\(([^)]+)\).*/, "$1") : preview.label}</p>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="text-center">
                   <p className="text-[10px] font-bold text-gray-400 mb-0.5">{t("home.prediction.current")}</p>
