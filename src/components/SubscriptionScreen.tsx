@@ -598,7 +598,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <span className="text-[11px] tracking-[0.3em] uppercase font-serif font-medium text-[#2D6A4F]">구독/결제</span>
+        <span className="text-[11px] tracking-[0.3em] uppercase font-serif font-medium text-[#2D6A4F]">{t("sub.title")}</span>
         <div className="w-9" />
       </div>
 
@@ -685,9 +685,9 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#2D6A4F] text-white text-xs font-bold rounded-full whitespace-nowrap">{t("sub.earlyBird")}</div>
               <div className="mb-5 mt-2">
                 <div className="flex items-baseline justify-center gap-2">
-                  <span className="text-lg text-gray-400 line-through">₩9,900</span>
-                  <span className="text-4xl font-black text-[#1B4332]">₩6,900</span>
-                  <span className="text-base font-medium text-gray-400">/월</span>
+                  <span className="text-lg text-gray-400 line-through">{t("my.premium.originalPrice")}</span>
+                  <span className="text-4xl font-black text-[#1B4332]">{locale === "en" ? "$4.99" : "₩6,900"}</span>
+                  <span className="text-base font-medium text-gray-400">{t("sub.perMonth")}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 mt-2">
                   <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{t("sub.discount")}</span>
