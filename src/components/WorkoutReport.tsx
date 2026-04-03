@@ -5,7 +5,7 @@ import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory } from
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore } from "@/utils/workoutHistory";
-import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, processWorkoutCompletion, getOrRebuildSeasonExp } from "@/utils/questSystem";
+import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, getOrRebuildSeasonExp } from "@/utils/questSystem";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
@@ -314,6 +314,8 @@ interface WorkoutReportProps {
   onDelete?: () => void;
   onShowPrediction?: () => void;
   onAnalysisComplete?: (analysis: WorkoutAnalysis) => void;
+  precomputedExpGained?: ExpLogEntry[];
+  precomputedPrevExp?: number;
 }
 
 // Sync load of recent history from localStorage (initial render), then async update from Firestore
@@ -349,7 +351,9 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   onRestart,
   onDelete,
   onShowPrediction,
-  onAnalysisComplete
+  onAnalysisComplete,
+  precomputedExpGained,
+  precomputedPrevExp,
 }) => {
   const analysis = initialAnalysis;
   const [showLogs, setShowLogs] = useState(false);
@@ -479,21 +483,12 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
 
         {/* === RPG 리절트 화면 === */}
         {(() => {
-          // Quest-based EXP: process this workout completion and get EXP state
+          // Use precomputed EXP from completion handler (avoids re-processing on every render)
+          // For history view (sessionDate), rebuild from saved state
           const seasonState = getOrRebuildSeasonExp(recentHistory, birthYear, gender);
-          const prevExp = seasonState.totalExp;
-
-          // Build a pseudo WorkoutHistory for the current session to process quests
-          const currentSessionHistory: WorkoutHistory = {
-            id: `session-${Date.now()}`,
-            date: (sessionDate || new Date().toISOString()),
-            sessionData,
-            logs,
-            stats: { totalVolume, totalSets: isStrengthSession ? metrics.strengthSets : metrics.totalSets, totalReps: metrics.totalReps ?? 0, totalDurationSec, successRate },
-          };
-          const allHistoryWithCurrent = [...recentHistory, currentSessionHistory];
-          const expGained = processWorkoutCompletion(currentSessionHistory, allHistoryWithCurrent, birthYear, gender);
-          const currentExp = prevExp + sumExp(expGained);
+          const expGained = precomputedExpGained && !sessionDate ? precomputedExpGained : [];
+          const prevExp = precomputedPrevExp !== undefined && !sessionDate ? precomputedPrevExp : seasonState.totalExp;
+          const currentExp = sessionDate ? seasonState.totalExp : prevExp + sumExp(expGained);
 
           // ── Insight 계산 ──
           const insight: RpgInsight = {};
@@ -562,7 +557,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           }
 
           // 3. Phase 해금 알림
-          const totalWorkouts = allHistoryWithCurrent.length;
+          const totalWorkouts = sessionDate ? recentHistory.length : recentHistory.length + 1;
           const prevWorkouts = recentHistory.length;
           const phaseThresholds = [5, 10, 20];
           // 이전에는 미달이었지만 이번에 달성한 Phase 찾기

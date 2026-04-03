@@ -21,7 +21,7 @@ import { PlanLoadingOverlay } from "@/components/PlanLoadingOverlay";
 import { FitnessReading } from "@/components/FitnessReading";
 import { HomeScreen } from "@/components/HomeScreen";
 import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from "@/utils/userProfile";
-import { syncExpFromFirestore } from "@/utils/questSystem";
+import { syncExpFromFirestore, processWorkoutCompletion, getOrRebuildSeasonExp, type ExpLogEntry } from "@/utils/questSystem";
 import { useSafeArea } from "@/hooks/useSafeArea";
 import { trackEvent } from "@/utils/analytics";
 import { I18nProvider } from "@/hooks/useTranslation";
@@ -84,6 +84,8 @@ export default function Home() {
   const [currentSession, setCurrentSession] = useState<SessionSelection | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<Record<number, ExerciseLog[]>>({});
   const [workoutDurationSec, setWorkoutDurationSec] = useState<number | undefined>(undefined);
+  const [lastExpGained, setLastExpGained] = useState<ExpLogEntry[]>([]);
+  const [lastPrevExp, setLastPrevExp] = useState<number>(0);
   const [recommendedIntensity, setRecommendedIntensity] = useState<"high" | "moderate" | "low" | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
@@ -488,6 +490,13 @@ export default function Home() {
 
               saveWorkoutHistory(historyEntry);
 
+              // Process EXP once at completion (NOT in WorkoutReport render)
+              const recentHist: WorkoutHistory[] = (() => { try { return JSON.parse(localStorage.getItem("alpha_workout_history") || "[]"); } catch { return []; } })();
+              const prevSeasonState = getOrRebuildSeasonExp(recentHist, currentCondition?.birthYear, currentCondition?.gender);
+              const expGained = processWorkoutCompletion(historyEntry, [...recentHist, historyEntry], currentCondition?.birthYear, currentCondition?.gender);
+              setLastPrevExp(prevSeasonState.totalExp);
+              setLastExpGained(expGained);
+
               // 비로그인 체험 카운트 증가
               if (!isLoggedIn) incrementGuestTrial();
               setView("workout_report");
@@ -505,6 +514,8 @@ export default function Home() {
             gender={currentCondition?.gender}
             birthYear={currentCondition?.birthYear}
             savedDurationSec={workoutDurationSec}
+            precomputedExpGained={lastExpGained}
+            precomputedPrevExp={lastPrevExp}
             onClose={() => {
               setView("home");
               setActiveTab("proof");
