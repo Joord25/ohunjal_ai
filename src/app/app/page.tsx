@@ -492,7 +492,7 @@ export default function Home() {
               if (!isLoggedIn) incrementGuestTrial();
               setView("workout_report");
             }}
-            onBack={() => setView("master_plan_preview")}
+            onBack={() => { trackEvent("workout_abandon"); setView("master_plan_preview"); }}
           />
         );
 
