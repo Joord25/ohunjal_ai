@@ -90,6 +90,14 @@ body {
   animation: card-enter 0.35s ease-out forwards;
 }
 
+@keyframes thinkingDots {
+  0% { width: 0; }
+  25% { width: 6px; }
+  50% { width: 12px; }
+  75% { width: 18px; }
+  100% { width: 0; }
+}
+
 /* Quest encounter animations (Pokémon-style) */
 @keyframes quest-flash {
   0% { opacity: 0; }
