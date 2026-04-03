@@ -299,6 +299,10 @@ export default function Home() {
     // 탭 변경 시 view 리셋 (운동 세션 중에는 유지)
     if (view !== "workout_session" && view !== "login") {
       setView("home");
+      // 리포트에서 탭 전환 시 세션 리셋
+      if (view === "workout_report") {
+        setCurrentWorkoutSession(null);
+      }
     }
   };
 
