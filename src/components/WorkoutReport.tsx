@@ -9,6 +9,7 @@ import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, getOrRebuildSeasonExp 
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
+import { auth } from "@/lib/firebase";
 
 function translateDesc(desc: string, locale: string): string {
   if (locale === "ko") return desc;
@@ -26,6 +27,161 @@ function translateDesc(desc: string, locale: string): string {
     .replace(/전반적 피로 회복/g, "Fatigue recovery").replace(/최적 컨디션/g, "Optimal condition");
 }
 
+/* === 히어로 데이터 타입 === */
+type HeroType = "weightPR" | "repsPR" | "volumePR" | "perfect" | "streak" | "volume" | "first" | "running";
+interface HeroData {
+  type: HeroType;
+  label: string;
+  bigNumber: string;
+  subText?: string;
+  coachLine?: string;    // 서버에서 받아옴 (초기 undefined)
+  isDark: boolean;
+  // 서버 호출용 메타
+  exerciseName?: string;
+  exerciseType?: string;
+  vars?: Record<string, string>;
+}
+
+/** 시간대 맥락 메시지 키 반환 */
+function getTimeContextKey(): string {
+  const h = new Date().getHours();
+  if (h >= 0 && h < 5) return "report.hero.time.night";
+  if (h >= 5 && h < 8) return "report.hero.time.dawn";
+  if (h >= 8 && h < 11) return "report.hero.time.morning";
+  if (h >= 11 && h < 12) return "report.hero.time.preLunch";
+  if (h >= 12 && h < 14) return "report.hero.time.lunch";
+  if (h >= 14 && h < 18) return "report.hero.time.afternoon";
+  if (h >= 18 && h < 22) return "report.hero.time.evening";
+  return "report.hero.time.night";
+}
+
+/** 마이크로 PR 감지 — 같은 운동의 이전 최고와 비교 (2회차+) — 메시지 없이 타입만 */
+function detectMicroPR(
+  exercises: WorkoutSessionData["exercises"],
+  logs: Record<number, ExerciseLog[]>,
+  history: WorkoutHistory[],
+  t: (key: string, vars?: Record<string, string>) => string,
+  locale: string,
+): HeroData | null {
+  // 히스토리에서 운동별 최고 기록 추출
+  const historyBest: Record<string, { maxWeight: number; maxRepsAtWeight: Record<number, number>; maxVolume: number; count: number }> = {};
+  for (const h of history) {
+    if (!h.logs) continue;
+    for (const ex of h.sessionData.exercises) {
+      const exIdx = h.sessionData.exercises.indexOf(ex);
+      const exLogs = h.logs[exIdx];
+      if (!exLogs || exLogs.length === 0) continue;
+      const name = ex.name;
+      if (!historyBest[name]) historyBest[name] = { maxWeight: 0, maxRepsAtWeight: {}, maxVolume: 0, count: 0 };
+      historyBest[name].count++;
+      let exVol = 0;
+      for (const l of exLogs) {
+        const w = parseFloat(l.weightUsed || "0");
+        if (w > historyBest[name].maxWeight) historyBest[name].maxWeight = w;
+        if (w > 0) {
+          const prevMax = historyBest[name].maxRepsAtWeight[w] || 0;
+          if (l.repsCompleted > prevMax) historyBest[name].maxRepsAtWeight[w] = l.repsCompleted;
+        }
+        exVol += (w || 0) * l.repsCompleted;
+      }
+      if (exVol > historyBest[name].maxVolume) historyBest[name].maxVolume = exVol;
+    }
+  }
+
+  // 우선순위 1: 무게 PR
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    const exLogs = logs[i];
+    if (!exLogs || exLogs.length === 0) continue;
+    const best = historyBest[ex.name];
+    if (!best || best.count < 1) continue;
+    for (const l of exLogs) {
+      const w = parseFloat(l.weightUsed || "0");
+      if (w > 0 && w > best.maxWeight && best.maxWeight > 0) {
+        const displayName = getExerciseName(ex.name, locale).split("(")[0].trim();
+        return {
+          type: "weightPR", label: t("report.hero.pr"), isDark: true,
+          bigNumber: `${best.maxWeight} → ${w} kg`, subText: displayName,
+          exerciseName: ex.name, exerciseType: ex.type,
+          vars: { name: displayName, weight: String(w), prev: String(best.maxWeight) },
+        };
+      }
+    }
+  }
+
+  // 우선순위 2: 렙수 PR
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    const exLogs = logs[i];
+    if (!exLogs || exLogs.length === 0) continue;
+    const best = historyBest[ex.name];
+    if (!best || best.count < 1) continue;
+    for (const l of exLogs) {
+      const w = parseFloat(l.weightUsed || "0");
+      if (w > 0 && best.maxRepsAtWeight[w] && l.repsCompleted > best.maxRepsAtWeight[w]) {
+        const displayName = getExerciseName(ex.name, locale).split("(")[0].trim();
+        const diff = l.repsCompleted - best.maxRepsAtWeight[w];
+        return {
+          type: "repsPR", label: t("report.hero.pr"), isDark: true,
+          bigNumber: `${best.maxRepsAtWeight[w]} → ${l.repsCompleted}`, subText: `${displayName} · ${w}kg`,
+          exerciseName: ex.name, exerciseType: ex.type,
+          vars: { name: displayName, diff: String(diff), prev: String(best.maxRepsAtWeight[w]), current: String(l.repsCompleted) },
+        };
+      }
+    }
+  }
+
+  // 우선순위 3: 볼륨 PR
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    const exLogs = logs[i];
+    if (!exLogs || exLogs.length === 0) continue;
+    const best = historyBest[ex.name];
+    if (!best || best.count < 1) continue;
+    let todayVol = 0;
+    for (const l of exLogs) todayVol += (parseFloat(l.weightUsed || "0") || 0) * l.repsCompleted;
+    if (todayVol > best.maxVolume && best.maxVolume > 0) {
+      const displayName = getExerciseName(ex.name, locale).split("(")[0].trim();
+      return {
+        type: "volumePR", label: t("report.hero.sessionRecord"), isDark: true,
+        bigNumber: `${best.maxVolume.toLocaleString()} → ${todayVol.toLocaleString()} kg`, subText: displayName,
+        exerciseName: ex.name, exerciseType: ex.type,
+        vars: { name: displayName },
+      };
+    }
+  }
+
+  return null;
+}
+
+/** 서버에서 코치 멘트 가져오기 */
+async function fetchCoachMessage(hero: HeroData, dateSeed: string, historyCount: number, locale: string): Promise<string> {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No user");
+    const token = await user.getIdToken();
+    const res = await fetch("/api/getCoachMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({
+        heroType: hero.type,
+        exerciseName: hero.exerciseName,
+        exerciseType: hero.exerciseType,
+        dateSeed,
+        historyCount,
+        locale,
+        vars: hero.vars,
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.result?.text || "";
+  } catch {
+    // 오프라인 폴백
+    return locale === "ko" ? "오늘도 같이 해서 좋았어요" : "Glad we trained together today";
+  }
+}
+
 /* === RPG 리절트 카드 === */
 interface RpgInsight {
   goalLine?: string;       // 1. 목표 연결 한 줄
@@ -35,267 +191,201 @@ interface RpgInsight {
   volumeCompare?: string;  // 4. vs 지난 세션 비교
 }
 
-function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress, onShowPrediction, skipAnimation, insight, sessionDesc }: {
+function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress, onShowPrediction, skipAnimation, insight, sessionDesc, hero, timeContext, streak, nextWorkoutName, dateSeed, historyCount }: {
   totalDurationSec: number; totalSets?: number; totalVolume: number; successRate: number;
   isStrengthSession: boolean; seasonExp: number; prevSeasonExp: number; expGained: ExpLogEntry[];
   intensityLevel: "high" | "moderate" | "low";
   formatDuration: (s: number) => string; onHelpPress: () => void; onShowPrediction?: () => void; skipAnimation?: boolean;
   insight?: RpgInsight; sessionDesc?: string;
+  hero: HeroData; timeContext: string; streak: number; nextWorkoutName?: string;
+  dateSeed: string; historyCount: number;
 }) {
   const { t, locale } = useTranslation();
-  const [visibleChars, setVisibleChars] = useState<number[]>([]);
-  const [currentLine, setCurrentLine] = useState(skipAnimation ? 999 : -1);
   const current = getTierFromExp(seasonExp);
   const prev = getTierFromExp(prevSeasonExp);
   const tierUp = current.tierIdx > prev.tierIdx;
   const totalExpGained = sumExp(expGained);
 
   const intensityLabel = t(`report.intensity.${intensityLevel}`);
-  const gradeMsg = successRate >= 95 ? t("report.grade.perfect")
-    : successRate >= 80 ? t("report.grade.great")
-    : successRate >= 60 ? t("report.grade.good")
-    : successRate >= 40 ? t("report.grade.tough")
-    : t("report.grade.showed");
+  const sessionInfo = `${translateDesc(sessionDesc || "", locale)} · ${intensityLabel} · ${formatDuration(totalDurationSec)}`;
 
-  // 볼륨 경험 번역
-  const volumeExpMsg = (() => {
-    if (!isStrengthSession || totalVolume <= 0) return null;
-    const desc = (sessionDesc || "").toLowerCase();
-    if (/가슴|푸시|chest|push|벤치/.test(desc)) return t("report.exp.chest");
-    if (/등|풀|back|pull|로우|랫/.test(desc)) return t("report.exp.back");
-    if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(desc)) return t("report.exp.legs");
-    if (/코어|복근|core|ab|플랭크/.test(desc)) return t("report.exp.core");
-    if (/러닝|유산소|cardio|run|hiit|서킷/.test(desc)) return t("report.exp.cardio");
-    return t("report.exp.default");
-  })();
+  // 코치 멘트: 서버에서 비동기 로드
+  const [coachText, setCoachText] = useState<string | null>(skipAnimation ? (hero.coachLine || null) : null);
+  const [isThinking, setIsThinking] = useState(!skipAnimation);
+  const [typedChars, setTypedChars] = useState(0);
+  const [showRichCard, setShowRichCard] = useState(skipAnimation);
 
-  type ReportLine = { text: string; bold?: boolean; highlight?: boolean; onTap?: () => void };
-
-  // 코치카드 블록 구성
-  const block1 = { // 감정 + 세션 요약
-    gradeMsg,
-    sessionInfo: `${translateDesc(sessionDesc || "", locale)} · ${intensityLabel} · ${formatDuration(totalDurationSec)}`,
-  };
-
-  const block2Lines: string[] = [ // 경험 번역 (최대 2줄)
-    ...(volumeExpMsg ? [volumeExpMsg] : []),
-    ...(insight?.weightPR ? [t("report.exp.weightPR")] : []),
-  ].slice(0, 2);
-
-  // goalLine 경험 번역
-  const goalExpMsg = (() => {
-    if (!insight?.goalLine) return null;
-    const gl = insight.goalLine;
-    if (/kcal/.test(gl)) return t("report.exp.goal.fatLoss");
-    if (/1RM/.test(gl)) return t("report.exp.goal.muscleGain");
-    if (/WHO/.test(gl)) return t("report.exp.goal.health");
-    return null;
-  })();
-  if (goalExpMsg && block2Lines.length < 2) block2Lines.push(goalExpMsg);
-
-  const block3Lines: string[] = [ // 수치 보조 (압축)
-    ...(insight?.volumeCompare ? [insight.volumeCompare] : []),
-    ...(insight?.weightPR ? [insight.weightPR] : []),
-    ...(insight?.goalLine && !goalExpMsg ? [insight.goalLine] : []),
-  ];
-
-  // 타이핑 애니메이션용 전체 라인
-  const coachLines: ReportLine[] = [
-    { text: block1.gradeMsg, bold: true },
-    { text: block1.sessionInfo },
-    ...block2Lines.map(txt => ({ text: txt, highlight: true })),
-    ...block3Lines.map(txt => ({ text: txt })),
-  ];
-
-  // 카드2: 게이미피케이션 라인
-  const gameLines: ReportLine[] = [
-    ...expGained
-      .filter(e => e.source !== "workout")
-      .map(e => ({ text: `${e.detail}! +${e.amount} EXP`, bold: true, highlight: true })),
-    ...(totalExpGained > 0 ? [{ text: t("report.expGained", { exp: String(totalExpGained) }), bold: true }] : []),
-    ...(tierUp
-      ? [{ text: t("report.tierUp", { prev: prev.tier.name, current: current.tier.name }), bold: true, highlight: true }]
-      : current.nextTier
-        ? [{ text: t("report.tierProgress", { current: current.tier.name, next: current.nextTier.name, remaining: String(current.remaining) }) }]
-        : [{ text: t("report.tierMax", { current: current.tier.name }), bold: true, highlight: true }]),
-    ...(insight?.phaseUnlock ? [{ text: insight.phaseUnlock + (insight.phaseJustUnlocked ? " →" : ""), bold: !!insight.phaseJustUnlocked, highlight: !!insight.phaseJustUnlocked, onTap: insight.phaseJustUnlocked && onShowPrediction ? onShowPrediction : undefined }] : []),
-  ];
-
-  // 합쳐서 타이핑 애니메이션용 (코치 → 게임 순)
-  const lines = [...coachLines, ...gameLines];
-
+  // 서버에서 코치 멘트 가져오기
   useEffect(() => {
-    if (skipAnimation) {
-      // 히스토리 뷰: 즉시 전체 표시
-      setVisibleChars(lines.map(l => l.text.length));
+    if (skipAnimation && hero.coachLine) {
+      setCoachText(hero.coachLine);
+      setIsThinking(false);
+      setTypedChars(hero.coachLine.length);
       return;
     }
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let baseDelay = 300;
-    const charSpeed = 20; // ms per character
-    const linePause = 250; // pause between lines
-
-    lines.forEach((line, lineIdx) => {
-      // Start this line
-      timers.push(setTimeout(() => setCurrentLine(lineIdx), baseDelay));
-
-      // Type each character
-      for (let c = 0; c <= line.text.length; c++) {
-        timers.push(setTimeout(() => {
-          setVisibleChars(prev => {
-            const next = [...prev];
-            next[lineIdx] = c;
-            return next;
-          });
-        }, baseDelay + c * charSpeed));
-      }
-
-      baseDelay += line.text.length * charSpeed + linePause;
+    fetchCoachMessage(hero, dateSeed, historyCount, locale).then(text => {
+      setCoachText(text);
+      setIsThinking(false);
     });
-
-    return () => timers.forEach(clearTimeout);
   }, []);
+
+  // 멘트 도착 후 타이핑 애니메이션
+  useEffect(() => {
+    if (!coachText || skipAnimation || isThinking) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const charSpeed = 22;
+    for (let c = 0; c <= coachText.length; c++) {
+      timers.push(setTimeout(() => setTypedChars(c), c * charSpeed));
+    }
+    timers.push(setTimeout(() => setShowRichCard(true), coachText.length * charSpeed + 300));
+    return () => timers.forEach(clearTimeout);
+  }, [coachText, isThinking]);
+
+  // EXP 요약
+  const expSummary = totalExpGained > 0
+    ? `+${totalExpGained} EXP${tierUp ? t("report.tierUpShort", { tier: current.tier.name }) : ""}`
+    : current.tier.name;
 
   return (
     <div className="mb-5 flex flex-col gap-3">
-      {/* 카드1: AI 코치 리포트 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-hidden">
+      {/* AI 코치 카드 — 채팅 스타일 */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden px-4 pt-4 pb-4">
+        {/* 헤더 */}
         <div className="flex items-center gap-2 mb-3">
           <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
           <span className="text-[11px] font-bold text-gray-400">{t("report.aiCoach")}</span>
         </div>
 
-        {/* 블록1: 감정 + 세션 요약 */}
-        {(() => {
-          const line0Chars = visibleChars[0] ?? 0;
-          const line1Chars = visibleChars[1] ?? 0;
-          return (
-            <div className="mb-3">
-              {0 <= currentLine && (
-                <p className="text-[16px] font-black text-[#1B4332] leading-relaxed">
-                  {block1.gradeMsg.slice(0, line0Chars)}
-                  {0 === currentLine && line0Chars < block1.gradeMsg.length && <span className="inline-block w-0.5 h-4 bg-[#2D6A4F] ml-0.5 animate-pulse align-middle" />}
-                </p>
-              )}
-              {1 <= currentLine && (
-                <p className="text-[13px] font-medium text-gray-400 mt-0.5">
-                  {block1.sessionInfo.slice(0, line1Chars)}
-                  {1 === currentLine && line1Chars < block1.sessionInfo.length && <span className="inline-block w-0.5 h-3 bg-gray-300 ml-0.5 animate-pulse align-middle" />}
-                </p>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* 블록2: 경험 번역 */}
-        {block2Lines.length > 0 && (() => {
-          const startIdx = 2;
-          const anyVisible = startIdx <= currentLine;
-          if (!anyVisible) return null;
-          return (
-            <div className="bg-[#2D6A4F]/5 rounded-xl px-4 py-3 mb-3">
-              {block2Lines.map((text, bi) => {
-                const lineIdx = startIdx + bi;
-                if (lineIdx > currentLine) return null;
-                const chars = visibleChars[lineIdx] ?? 0;
-                return (
-                  <p key={bi} className={`${bi === 0 ? "text-[15px] font-bold" : "text-[13px]"} text-[#2D6A4F] leading-relaxed`}>
-                    {text.slice(0, chars)}
-                    {lineIdx === currentLine && chars < text.length && <span className="inline-block w-0.5 h-4 bg-[#2D6A4F] ml-0.5 animate-pulse align-middle" />}
-                  </p>
-                );
-              })}
-            </div>
-          );
-        })()}
-
-        {/* 블록3: 수치 보조 */}
-        {block3Lines.length > 0 && (() => {
-          const startIdx = 2 + block2Lines.length;
-          const anyVisible = startIdx <= currentLine;
-          if (!anyVisible) return null;
-          return (
-            <div className="flex flex-col gap-0.5">
-              {block3Lines.map((text, bi) => {
-                const lineIdx = startIdx + bi;
-                if (lineIdx > currentLine) return null;
-                const chars = visibleChars[lineIdx] ?? 0;
-                return (
-                  <p key={bi} className="text-[12px] text-gray-400 font-medium">
-                    {text.slice(0, chars)}
-                    {lineIdx === currentLine && chars < text.length && <span className="inline-block w-0.5 h-3 bg-gray-300 ml-0.5 animate-pulse align-middle" />}
-                  </p>
-                );
-              })}
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* 카드2: 게이미피케이션 (접힌 상태) */}
-      {gameLines.length > 0 && (() => {
-        const [gameOpen, setGameOpen] = React.useState(false);
-        const expSummary = totalExpGained > 0
-          ? `+${totalExpGained} EXP${tierUp ? t("report.tierUpShort", { tier: current.tier.name }) : ""}`
-          : current.tier.name;
-        return (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <button
-              onClick={() => setGameOpen(!gameOpen)}
-              className="w-full flex items-center justify-between px-5 py-4 active:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: current.tier.color }}>
-                  <span className="text-[8px] font-black text-white">⚔</span>
-                </div>
-                <span className="text-[13px] font-bold text-[#1B4332]">{expSummary}</span>
+        {/* 감정 버블 — thinking dots → 타이핑 */}
+        <div className="flex items-start gap-2.5 mb-3">
+          <img src="/favicon_backup.png" alt="" className="w-7 h-7 rounded-full shrink-0 mt-0.5" />
+          <div className="max-w-[85%] bg-[#2D6A4F]/5 rounded-2xl rounded-tl-sm px-4 py-3">
+            {isThinking ? (
+              /* Thinking dots — Claude Code 스타일 */
+              <div className="flex items-center gap-1.5 py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]/40 animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1s" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]/40 animate-bounce" style={{ animationDelay: "150ms", animationDuration: "1s" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]/40 animate-bounce" style={{ animationDelay: "300ms", animationDuration: "1s" }} />
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onHelpPress(); }}
-                  className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center"
-                >
-                  <span className="text-[9px] font-black text-gray-400">?</span>
-                </button>
-                <svg className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${gameOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            ) : coachText ? (
+              <p className="text-[14px] font-medium text-[#1B4332] leading-relaxed">
+                {coachText.slice(0, typedChars)}
+                {typedChars < coachText.length && (
+                  <span className="inline-block w-0.5 h-3.5 bg-[#2D6A4F] ml-0.5 animate-pulse align-middle" />
+                )}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {/* 결과 리치 카드 (감정 버블 타이핑 후 등장) */}
+        {showRichCard && (
+          <div className={`ml-9.5 rounded-2xl p-4 animate-slide-up ${hero.isDark ? "bg-[#1B4332]" : "bg-gray-50"}`}>
+            <p className={`text-[7px] font-black uppercase tracking-[0.3em] mb-2 ${hero.isDark ? "text-emerald-300/60" : "text-gray-400"}`}>
+              {hero.label}
+            </p>
+            {hero.subText && (
+              <p className={`text-[13px] font-medium mb-1 ${hero.isDark ? "text-white/70" : "text-gray-500"}`}>
+                {hero.subText}
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <p className={`text-[26px] font-black leading-none tracking-tight ${hero.isDark ? "text-white" : "text-[#1B4332]"}`}>
+                {hero.bigNumber}
+              </p>
+              {hero.isDark && (
+                <svg className="w-5 h-5 text-emerald-300/80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-              </div>
-            </button>
-
-            <div className="px-5 pb-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-bold" style={{ color: current.tier.color }}>{current.tier.name} {seasonExp} EXP</span>
-                <span className="text-[11px] text-gray-400">
-                  {current.nextTier ? t("report.tierRemaining", { next: current.nextTier.name, remaining: String(current.remaining) }) : t("report.maxTier")}
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-1000"
-                  style={{ width: `${current.progress * 100}%`, backgroundColor: current.tier.color }}
-                />
-              </div>
+              )}
             </div>
-
-            <div className={`overflow-hidden transition-all duration-300 ${gameOpen ? "max-h-[300px]" : "max-h-0"}`}>
-              <div className="px-5 pb-4 pt-1 border-t border-gray-100 flex flex-col gap-1.5">
-                {gameLines.map((line, gi) => (
-                  <p
-                    key={gi}
-                    className={`text-[13px] leading-relaxed ${
-                      line.highlight ? "text-[#2D6A4F] font-black" : line.bold ? "text-[#1B4332] font-bold" : "text-gray-500"
-                    } ${line.onTap ? "underline underline-offset-2 cursor-pointer active:opacity-70" : ""}`}
-                    onClick={line.onTap}
-                  >
-                    {line.text}
-                  </p>
-                ))}
-              </div>
+            <div className={`border-t mt-3 pt-2.5 ${hero.isDark ? "border-emerald-300/20" : "border-gray-200"}`}>
+              <p className={`text-[11px] font-medium ${hero.isDark ? "text-emerald-300/50" : "text-gray-400"}`}>
+                {timeContext} · {new Date().toLocaleTimeString(locale === "ko" ? "ko-KR" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}
+              </p>
+              <p className={`text-[11px] font-medium mt-0.5 ${hero.isDark ? "text-emerald-300/50" : "text-gray-400"}`}>
+                {sessionInfo}
+              </p>
             </div>
           </div>
-        );
-      })()}
+        )}
+      </div>
+
+      {/* EXP + 스트릭 (항상 펼침) */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-4">
+          {/* EXP 헤더 */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: current.tier.color }}>
+                <span className="text-[8px] font-black text-white">&#9876;</span>
+              </div>
+              <span className="text-[13px] font-bold text-[#1B4332]">{expSummary}</span>
+            </div>
+            <button
+              onClick={onHelpPress}
+              className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center"
+            >
+              <span className="text-[9px] font-black text-gray-400">?</span>
+            </button>
+          </div>
+
+          {/* 프로그레스바 */}
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold" style={{ color: current.tier.color }}>{current.tier.name} {seasonExp} EXP</span>
+            <span className="text-[11px] text-gray-400">
+              {current.nextTier ? t("report.tierRemaining", { next: current.nextTier.name, remaining: String(current.remaining) }) : t("report.maxTier")}
+            </span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-1000"
+              style={{ width: `${current.progress * 100}%`, backgroundColor: current.tier.color }}
+            />
+          </div>
+
+          {/* 스트릭 + 다음 예정 */}
+          <div className="mt-3 flex items-center justify-between">
+            {streak >= 2 && (
+              <div className="flex items-center gap-1.5">
+                <div className="flex">
+                  {Array.from({ length: Math.min(streak, 7) }).map((_, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full bg-[#2D6A4F] mr-0.5" style={{ opacity: 0.4 + (i / Math.min(streak, 7)) * 0.6 }} />
+                  ))}
+                </div>
+                <span className="text-[11px] font-bold text-[#2D6A4F]">
+                  {t("report.hero.streakLabel", { days: String(streak) })}
+                </span>
+              </div>
+            )}
+            {nextWorkoutName && (
+              <span className="text-[11px] text-gray-400 font-medium">
+                {t("report.streak.next", { name: nextWorkoutName })}
+              </span>
+            )}
+          </div>
+
+          {/* 티어업 / 보너스 EXP 상세 */}
+          {(tierUp || expGained.filter(e => e.source !== "workout").length > 0 || insight?.phaseUnlock) && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-1">
+              {expGained.filter(e => e.source !== "workout").map((e, i) => (
+                <p key={i} className="text-[12px] font-bold text-[#2D6A4F]">{e.detail} +{e.amount} EXP</p>
+              ))}
+              {tierUp && (
+                <p className="text-[12px] font-black text-[#2D6A4F]">{t("report.tierUp", { prev: prev.tier.name, current: current.tier.name })}</p>
+              )}
+              {insight?.phaseUnlock && (
+                <p
+                  className={`text-[12px] font-medium ${insight.phaseJustUnlocked ? "text-[#2D6A4F] font-bold cursor-pointer" : "text-gray-400"}`}
+                  onClick={insight.phaseJustUnlocked && onShowPrediction ? onShowPrediction : undefined}
+                >
+                  {insight.phaseUnlock}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -596,6 +686,75 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             }
           }
 
+          // ── 히어로 데이터 계산 (coachLine 없이 — 서버에서 받음) ──
+          const dateSeed = sessionDate || new Date().toISOString().slice(0, 10);
+          const microPR = detectMicroPR(sessionData.exercises, logs, recentHistory, t, locale);
+
+          // 스트릭 계산
+          const heroStreak = (() => {
+            if (recentHistory.length === 0) return 0;
+            let count = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dayMs = 24 * 60 * 60 * 1000;
+            for (let i = 0; ; i++) {
+              const checkDate = new Date(today.getTime() - i * dayMs);
+              const checkStr = checkDate.toDateString();
+              if (recentHistory.some(h => new Date(h.date).toDateString() === checkStr)) {
+                count++;
+              } else if (i === 0) {
+                count++;
+                continue;
+              } else {
+                break;
+              }
+            }
+            return count;
+          })();
+
+          // 폴백 체인: microPR > 러닝 > 완주율100% > 스트릭3+ > 총볼륨 > 첫운동
+          const hero: HeroData = microPR ?? (() => {
+            const totalWorkouts = recentHistory.length;
+            const isRunning = sessionData.exercises.some(e => e.type === "cardio");
+
+            if (isRunning) {
+              return { type: "running" as HeroType, label: t("report.hero.todaysWork"), bigNumber: formatDuration(totalDurationSec), subText: translateDesc(sessionData.description || "", locale), isDark: false };
+            }
+            if (successRate >= 100 && isStrengthSession) {
+              return { type: "perfect" as HeroType, label: t("report.hero.perfectSession"), bigNumber: t("report.hero.perfectDesc"), isDark: false };
+            }
+            if (heroStreak >= 3) {
+              return { type: "streak" as HeroType, label: t("report.hero.streakLabel", { days: String(heroStreak) }), bigNumber: t("report.hero.streakDesc"), isDark: false, vars: { days: String(heroStreak) } };
+            }
+            if (totalVolume > 0) {
+              return { type: "volume" as HeroType, label: t("report.hero.todaysWork"), bigNumber: `${totalVolume.toLocaleString()} kg`, subText: t("report.hero.totalVolume"), isDark: false };
+            }
+            if (totalWorkouts === 0) {
+              return { type: "first" as HeroType, label: t("report.hero.firstWorkout"), bigNumber: t("report.hero.firstComplete"), isDark: false };
+            }
+            return { type: "volume" as HeroType, label: t("report.hero.todaysWork"), bigNumber: formatDuration(totalDurationSec), subText: translateDesc(sessionData.description || "", locale), isDark: false };
+          })();
+
+          const heroTimeContext = t(getTimeContextKey());
+
+          // 다음 운동 예고 (요일 기반 스케줄에서 추출)
+          const nextWorkout = (() => {
+            try {
+              const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+              const schedule = fp.weeklySchedule as string[] | undefined;
+              if (!schedule) return undefined;
+              const today = new Date().getDay(); // 0=Sun
+              for (let i = 1; i <= 7; i++) {
+                const nextDay = (today + i) % 7;
+                const label = schedule[nextDay === 0 ? 6 : nextDay - 1]; // schedule is Mon-indexed
+                if (label && label !== "rest" && label !== "휴식") {
+                  return translateDesc(label, locale);
+                }
+              }
+            } catch {}
+            return undefined;
+          })();
+
           return (
             <RpgResultCard
               totalDurationSec={totalDurationSec}
@@ -613,6 +772,12 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               skipAnimation={!!sessionDate}
               insight={insight}
               sessionDesc={sessionData.description || sessionData.title || ""}
+              hero={hero}
+              timeContext={heroTimeContext}
+              streak={heroStreak}
+              nextWorkoutName={nextWorkout}
+              dateSeed={dateSeed}
+              historyCount={recentHistory.length}
             />
           );
         })()}

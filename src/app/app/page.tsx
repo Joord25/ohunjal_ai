@@ -31,9 +31,50 @@ const getDisplayName = (user: import("firebase/auth").User | null, fallback = "�
   return raw.slice(0, 10);
 };
 
-const lazyGenerateWorkout = async (...args: Parameters<typeof import("@/constants/workout").generateAdaptiveWorkout>) => {
-  const { generateAdaptiveWorkout } = await import("@/constants/workout");
-  return generateAdaptiveWorkout(...args);
+const lazyGenerateWorkout = async (
+  dayIndex: number,
+  condition: import("@/constants/workout").UserCondition,
+  goal: import("@/constants/workout").WorkoutGoal,
+  selectedSessionType?: string,
+  intensityOverride?: "high" | "moderate" | "low" | null,
+  sessionMode?: import("@/constants/workout").SessionMode,
+  targetMuscle?: import("@/constants/workout").TargetMuscle,
+  runType?: import("@/constants/workout").RunType,
+): Promise<import("@/constants/workout").WorkoutSessionData> => {
+  const { auth } = await import("@/lib/firebase");
+  const user = auth.currentUser;
+  if (!user) throw new Error("Not authenticated");
+  const token = await user.getIdToken();
+
+  // Push/Pull 교대 상태를 localStorage에서 읽어서 서버에 전달
+  const lastUpperType = (typeof window !== "undefined" ? localStorage.getItem("alpha_last_upper_type") as "push" | "pull" : null) || undefined;
+
+  const res = await fetch("/api/planSession", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({
+      dayIndex,
+      condition,
+      goal,
+      selectedSessionType,
+      intensityOverride,
+      sessionMode,
+      targetMuscle,
+      runType,
+      lastUpperType,
+    }),
+  });
+
+  if (!res.ok) throw new Error(`planSession failed: ${res.status}`);
+  const session = await res.json();
+
+  // 서버 응답 후 Push/Pull 교대 상태 저장
+  if (typeof window !== "undefined" && sessionMode === "balanced") {
+    const currentUpper = lastUpperType === "push" ? "pull" : "push";
+    localStorage.setItem("alpha_last_upper_type", currentUpper);
+  }
+
+  return session;
 };
 
 type ViewState =

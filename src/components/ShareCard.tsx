@@ -90,7 +90,10 @@ export const ShareCard: React.FC<ShareCardProps> = ({
       const origIdx = sessionData.exercises.indexOf(ex);
       const exLogs = logs[origIdx] || [];
       const completedSets = exLogs.filter(l => (l.repsCompleted ?? 0) > 0).length;
-      return { name: ex.name, displayName: getExerciseName(ex.name, locale), sets: completedSets, type: ex.type };
+      // 공유카드: ko일 때 한글명만 (영문 괄호 제거)
+      const fullName = getExerciseName(ex.name, locale);
+      const displayName = locale === "ko" ? fullName.split("(")[0].trim() : fullName;
+      return { name: ex.name, displayName, sets: completedSets, type: ex.type };
     })
     .filter(e => e.sets > 0 && e.type === "strength");
 
@@ -281,7 +284,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                   <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
                     <div>
                       <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                        {getExerciseName(topPR.exerciseName, locale)}
+                        {locale === "ko" ? getExerciseName(topPR.exerciseName, locale).split("(")[0].trim() : getExerciseName(topPR.exerciseName, locale)}
                       </p>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                         <span style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
@@ -295,7 +298,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                     {prs.slice(1, 3).map((pr, i) => (
                       <div key={i}>
                         <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                          {getExerciseName(pr.exerciseName, locale)}
+                          {locale === "ko" ? getExerciseName(pr.exerciseName, locale).split("(")[0].trim() : getExerciseName(pr.exerciseName, locale)}
                         </p>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                           <span style={{ color: "white", fontSize: 28, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>

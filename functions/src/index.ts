@@ -4,6 +4,8 @@ import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { GoogleGenAI } from "@google/genai";
+import { getEquipmentType, getTimeBand, getRepBand, pickMessage, WEIGHT_PR, REPS_PR, PERFECT_SESSION, VOLUME_DEFAULT, FIRST_WORKOUT, RUNNING, VOLUME_PR, STREAK } from "./coachMessages";
+import { generateAdaptiveWorkout } from "./workoutEngine";
 
 const app = initializeApp();
 const db = getFirestore(app);
@@ -1115,6 +1117,181 @@ export const adminLogs = onRequest(
     } catch (error) {
       console.error("adminLogs error:", error);
       res.status(500).json({ error: "이력 조회에 실패했습니다." });
+    }
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Coach Message — 코치 전우애 멘트 (서버사이드)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const getCoachMessage = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    try {
+      await verifyAuth(req.headers.authorization);
+    } catch {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const {
+      heroType,
+      exerciseName,
+      exerciseType,
+      dateSeed,
+      historyCount,
+      locale,
+      vars,
+    } = req.body as {
+      heroType: string;
+      exerciseName?: string;
+      exerciseType?: string;
+      dateSeed: string;
+      historyCount: number;
+      locale: string;
+      vars?: Record<string, string>;
+    };
+
+    if (!heroType || !dateSeed) {
+      res.status(400).json({ error: "Missing heroType or dateSeed" });
+      return;
+    }
+
+    try {
+      // 메시지 풀 선택
+      let pool;
+      switch (heroType) {
+        case "weightPR": {
+          const equip = exerciseName ? getEquipmentType(exerciseName, exerciseType) : "general";
+          pool = WEIGHT_PR[equip]?.length > 0 ? WEIGHT_PR[equip] : WEIGHT_PR.general;
+          break;
+        }
+        case "repsPR": {
+          const equip = exerciseName ? getEquipmentType(exerciseName, exerciseType) : "general";
+          const reps = vars?.current ? parseInt(vars.current) : 10;
+          const band = equip === "bodyweight" ? "bodyweight" as const : getRepBand(reps);
+          pool = REPS_PR[band];
+          break;
+        }
+        case "volumePR":
+          pool = VOLUME_PR;
+          break;
+        case "perfect":
+          pool = PERFECT_SESSION;
+          break;
+        case "streak":
+          pool = STREAK;
+          break;
+        case "running":
+          pool = RUNNING;
+          break;
+        case "first":
+          pool = FIRST_WORKOUT;
+          break;
+        case "volume":
+        default: {
+          const hour = new Date().getHours();
+          const band = getTimeBand(hour);
+          pool = VOLUME_DEFAULT[band]?.length > 0 ? VOLUME_DEFAULT[band] : VOLUME_DEFAULT.general;
+          break;
+        }
+      }
+
+      const msg = pickMessage(pool, dateSeed, historyCount || 0);
+      let text = locale === "en" ? msg.en : msg.ko;
+
+      // 변수 치환
+      if (vars) {
+        for (const [k, v] of Object.entries(vars)) {
+          text = text.replace(new RegExp(`\\{${k}\\}`, "g"), v);
+        }
+      }
+
+      // AI 응답처럼 보이는 랜덤 딜레이 (150~400ms)
+      await new Promise(r => setTimeout(r, 150 + Math.random() * 250));
+
+      res.status(200).json({
+        result: { text },
+        model: "coach-v1",
+      });
+    } catch (error) {
+      console.error("getCoachMessage error:", error);
+      res.status(500).json({ error: "Failed to generate coach message" });
+    }
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Plan Session — 운동 플랜 생성 (서버사이드 룰베이스)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const planSession = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    try {
+      await verifyAuth(req.headers.authorization);
+    } catch {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const {
+      dayIndex,
+      condition,
+      goal,
+      selectedSessionType,
+      intensityOverride,
+      sessionMode,
+      targetMuscle,
+      runType,
+      lastUpperType,
+    } = req.body;
+
+    if (condition === undefined || goal === undefined) {
+      res.status(400).json({ error: "Missing condition or goal" });
+      return;
+    }
+
+    try {
+      const session = generateAdaptiveWorkout(
+        dayIndex ?? new Date().getDay(),
+        condition,
+        goal,
+        selectedSessionType,
+        intensityOverride,
+        sessionMode,
+        targetMuscle,
+        runType,
+        lastUpperType,
+      );
+
+      // 응답 랜덤 변형: main phase 내 마지막 2개 운동 순서 미세 셔플 (보안: 패턴 감지 방지)
+      const mainIndices: number[] = [];
+      session.exercises.forEach((e, i) => { if ((e.phase || e.type) === "main") mainIndices.push(i); });
+      if (mainIndices.length >= 3 && Math.random() > 0.5) {
+        const a = mainIndices[mainIndices.length - 1];
+        const b = mainIndices[mainIndices.length - 2];
+        [session.exercises[a], session.exercises[b]] = [session.exercises[b], session.exercises[a]];
+      }
+
+      // AI 응답처럼 보이는 딜레이
+      await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
+
+      res.status(200).json(session);
+    } catch (error) {
+      console.error("planSession error:", error);
+      res.status(500).json({ error: "Failed to generate workout plan" });
     }
   }
 );

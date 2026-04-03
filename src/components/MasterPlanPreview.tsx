@@ -91,8 +91,8 @@ function rebuildCount(ex: ExerciseStep, t?: (key: string, vars?: Record<string, 
       return ex.count;
     }
   }
-  // Strength/core with sets > 1
-  if (ex.sets > 1) {
+  // Strength/core with sets >= 1
+  if (ex.sets >= 1) {
     const repsStr = typeof ex.reps === "number" ? String(ex.reps) : String(ex.reps);
     if (t) return t("plan.sets_reps", { sets: String(ex.sets), reps: repsStr });
     return `${ex.sets}세트 / ${repsStr}회`;

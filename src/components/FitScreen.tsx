@@ -1578,6 +1578,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="w-full rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.2)] animate-slide-up flex flex-col relative z-10 bg-white px-4 sm:px-6 pt-6" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}>
              <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
+            {/* 마지막 세트: 다음 운동 미리보기 */}
+            {nextExerciseName && setInfo.current === setInfo.total && (
+              <div className="mb-3 bg-gray-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] shrink-0">NEXT</p>
+                <p className="text-[13px] font-semibold text-gray-600 truncate">{getExerciseName(nextExerciseName, locale)}</p>
+              </div>
+            )}
+
             {/* Rest Timer + 격려 */}
             <div className="mb-5 bg-[#1B4332] rounded-2xl px-5 py-4">
               <div className="flex items-center justify-between">

@@ -666,5 +666,38 @@
   "report.log.repsCount": "{count} reps",
   "report.btn.share": "Share",
   "report.btn.complete": "Done",
-  "report.help.confirm": "OK"
+  "report.help.confirm": "OK",
+
+  "report.hero.pr": "PERSONAL RECORD",
+  "report.hero.sessionRecord": "SESSION RECORD",
+  "report.hero.perfectSession": "PERFECT SESSION",
+  "report.hero.todaysWork": "TODAY'S WORK",
+  "report.hero.firstWorkout": "FIRST WORKOUT",
+  "report.hero.firstComplete": "First workout complete",
+  "report.hero.totalVolume": "Total Volume",
+  "report.hero.perfectDesc": "All sets completed perfectly",
+  "report.hero.streakLabel": "{days}-day streak",
+  "report.hero.streakDesc": "Consistency builds strength",
+
+  "report.hero.weightPR": "{name} {prev}kg → {current}kg",
+  "report.hero.repsPR": "{name} {prev} → {current} reps at {weight}kg",
+  "report.hero.volumePR": "{name} volume {prev} → {current}kg",
+
+  "report.hero.coach.weightPR": "You broke through {current}kg. Your strength is clearly improving",
+  "report.hero.coach.repsPR": "{diff} more reps at the same weight — endurance is growing",
+  "report.hero.coach.volumePR": "Total workload increased. Your body is handling more stimulus",
+  "report.hero.coach.perfect": "You completed everything planned. This consistency will pay off",
+  "report.hero.coach.streak": "{days} days straight — it's already a habit. Your body remembers",
+  "report.hero.coach.volume": "You showed up. Every session adds up to real change",
+  "report.hero.coach.first": "Starting is half the battle. Today's data becomes tomorrow's benchmark",
+
+  "report.hero.time.dawn": "Crushed it at dawn",
+  "report.hero.time.morning": "Starting the day strong",
+  "report.hero.time.preLunch": "Done before lunch",
+  "report.hero.time.lunch": "Squeezed in at lunch",
+  "report.hero.time.afternoon": "Afternoon grind",
+  "report.hero.time.evening": "Ending the day right",
+  "report.hero.time.night": "Late night hustle",
+
+  "report.streak.next": "Next up: {name}"
 }

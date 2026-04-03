@@ -666,5 +666,38 @@
   "report.log.repsCount": "{count}회",
   "report.btn.share": "공유",
   "report.btn.complete": "완료",
-  "report.help.confirm": "확인"
+  "report.help.confirm": "확인",
+
+  "report.hero.pr": "PERSONAL RECORD",
+  "report.hero.sessionRecord": "SESSION RECORD",
+  "report.hero.perfectSession": "PERFECT SESSION",
+  "report.hero.todaysWork": "TODAY'S WORK",
+  "report.hero.firstWorkout": "FIRST WORKOUT",
+  "report.hero.firstComplete": "첫 도전 완료",
+  "report.hero.totalVolume": "총 볼륨",
+  "report.hero.perfectDesc": "전 세트 완벽 수행",
+  "report.hero.streakLabel": "연속 {days}일",
+  "report.hero.streakDesc": "꾸준함이 만드는 변화",
+
+  "report.hero.weightPR": "{name} {prev}kg → {current}kg",
+  "report.hero.repsPR": "{name} {weight}kg에서 {prev}회 → {current}회",
+  "report.hero.volumePR": "{name} 볼륨 {prev} → {current}kg",
+
+  "report.hero.coach.weightPR": "{current}kg 벽을 넘었어요. 근력이 확실히 올라왔습니다",
+  "report.hero.coach.repsPR": "같은 무게에서 {diff}개 더 — 근지구력이 늘고 있어요",
+  "report.hero.coach.volumePR": "총 작업량이 늘었어요. 몸이 더 많은 자극을 소화하는 중",
+  "report.hero.coach.perfect": "계획한 걸 전부 해냈어요. 이 꾸준함이 바꿔놓을 거예요",
+  "report.hero.coach.streak": "{days}일 연속이면 이미 습관이에요. 몸이 기억하기 시작합니다",
+  "report.hero.coach.volume": "오늘도 했어요. 이 한 번이 쌓여서 변화가 됩니다",
+  "report.hero.coach.first": "시작이 반이에요. 오늘 데이터가 내일의 기준이 됩니다",
+
+  "report.hero.time.dawn": "새벽에 해냈습니다",
+  "report.hero.time.morning": "아침을 열며",
+  "report.hero.time.preLunch": "점심 전에 해냈습니다",
+  "report.hero.time.lunch": "점심시간 쪼개서",
+  "report.hero.time.afternoon": "오후 시간을 투자해서",
+  "report.hero.time.evening": "하루를 마무리하며",
+  "report.hero.time.night": "남들 자는 시간에",
+
+  "report.streak.next": "다음 예정: {name}"
 }
