@@ -45,20 +45,20 @@ type ViewState =
   | "workout_session"
   | "workout_report";
 
+// Sync detect ?lang= BEFORE render so I18nProvider reads correct locale
+if (typeof window !== "undefined") {
+  const params = new URLSearchParams(window.location.search);
+  const lang = params.get("lang");
+  if (lang && ["en", "ko", "ja", "zh"].includes(lang)) {
+    localStorage.setItem("alpha_language", lang);
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+}
+
 export default function Home() {
   useSafeArea();
 
-  // Detect ?lang= from landing pages and set locale
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const lang = params.get("lang");
-    if (lang && ["en", "ko", "ja", "zh"].includes(lang)) {
-      localStorage.setItem("alpha_language", lang);
-      // Clean URL without reload
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, []);
-
+  const locale = typeof window !== "undefined" ? (localStorage.getItem("alpha_language") || "ko") : "ko";
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [autoEdit1RM, setAutoEdit1RM] = useState(false);
@@ -659,12 +659,12 @@ export default function Home() {
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl p-6 mx-6 shadow-xl max-w-[320px] w-full">
               <div className="flex flex-col items-center gap-1 mb-5">
-                <img src="/login-logo-kor2.png" alt="오운잘 AI" className="w-32 h-auto mb-2" />
+                <img src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"} alt="Ohunjal AI" className="w-32 h-auto mb-2" />
                 <p className="text-center text-gray-800 font-bold text-base">
-                  로그인하고 계속하기
+                  {locale === "ko" ? "로그인하고 계속하기" : "Sign in to continue"}
                 </p>
                 <p className="text-center text-gray-500 text-sm">
-                  운동 기록 저장, 성장 분석 등<br />모든 기능을 이용할 수 있어요
+                  {locale === "ko" ? <>운동 기록 저장, 성장 분석 등<br />모든 기능을 이용할 수 있어요</> : <>Save workout records, growth analysis<br />and unlock all features</>}
                 </p>
               </div>
               <button
@@ -683,13 +683,13 @@ export default function Home() {
                 <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                   <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-3.5 h-3.5" />
                 </div>
-                <span className="font-bold text-white text-sm">Google로 3초 가입</span>
+                <span className="font-bold text-white text-sm">{locale === "ko" ? "Google로 3초 가입" : "Sign in with Google"}</span>
               </button>
               <button
                 onClick={() => setShowLoginModal(false)}
                 className="w-full py-2.5 text-gray-400 text-sm font-medium hover:text-gray-600 transition-colors"
               >
-                나중에
+                {locale === "ko" ? "나중에" : "Later"}
               </button>
             </div>
           </div>
