@@ -204,18 +204,18 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "고관절 이완": "_Jpt-x6bpkA",
 
   // ── 모빌리티 (상체) ──
-  "상체 이완 플로우": "",
-  "월 앵글": "",
+  "상체 이완 플로우": "6uLDaKHtaBo",
+  "월 앵글": "OmJ6vNfZwYQ",
   "밴드 페이스 풀": "1s-0WtJMsu8",
-  "동적 흉근 스트레칭": "",
-  "능동적 어깨 서클": "",
-  "통증 완화 마사지": "",
+  "동적 흉근 스트레칭": "hBAFhsjkRJA",
+  "능동적 어깨 서클": "XbUrBpY-LAg",
+  "통증 완화 마사지": "niuFKgNLT5E",
   "어깨 돌리기": "0Tx2HnKa2s0",
 
   // ── 모빌리티 (하체) ──
-  "나비 자세 심화": "",
+  "나비 자세 심화": "QV-PKq5sz5Y",
   "고관절 굴곡근 스트레칭": "7lGIfjasuNo",
-  "만세 스쿼트 홀드 프라잉": "",
+  "오버헤드 스쿼트 홀딩": "xU-5OAMm43M",
   "고관절 회전": "C4MDREc9ERg",
 
   // ── 모빌리티 (전신) ──
