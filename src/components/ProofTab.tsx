@@ -14,8 +14,8 @@ import { WorkoutHistory } from "./WorkoutHistory";
 
 const GRASS_COLORS = [
   { bg: "bg-gray-50", text: "text-gray-300", shadow: "" },
-  { bg: "bg-[#D1FAE5]", text: "text-gray-700", shadow: "shadow-sm shadow-[#D1FAE5]/40" },
-  { bg: "bg-[#6EE7B7]", text: "text-gray-800", shadow: "shadow-sm shadow-[#6EE7B7]/40" },
+  { bg: "bg-[#C2D8C2]", text: "text-gray-700", shadow: "shadow-sm shadow-[#C2D8C2]/40" },
+  { bg: "bg-[#7BA57B]", text: "text-white", shadow: "shadow-sm shadow-[#7BA57B]/40" },
   { bg: "bg-[#2D6A4F]", text: "text-white", shadow: "shadow-md shadow-[#2D6A4F]/20" },
   { bg: "bg-[#1B4332]", text: "text-white", shadow: "shadow-md shadow-[#1B4332]/30" },
 ];
