@@ -287,13 +287,13 @@ export default function Home() {
 
   const handleTabChange = (id: TabId) => {
     setActiveTab(id);
-    // 탭 변경 시 view 리셋 (운동 세션 중에는 유지)
-    if (view !== "workout_session" && view !== "login") {
-      setView("home");
-    }
-    // 탭 전환 시 항상 세션 리셋 (운동 세션 중 제외)
-    if (view !== "workout_session") {
+    const workoutFlow = ["condition_check", "master_plan_preview", "workout_session"];
+    // 운동 플로우 중에는 탭 변경 무시
+    if (workoutFlow.includes(view)) return;
+    // 리포트/기타에서 탭 변경 시 리셋
+    if (view !== "login") {
       setCurrentWorkoutSession(null);
+      setView("home");
     }
   };
 
