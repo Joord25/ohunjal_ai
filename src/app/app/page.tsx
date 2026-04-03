@@ -558,6 +558,7 @@ export default function Home() {
             precomputedExpGained={lastExpGained}
             precomputedPrevExp={lastPrevExp}
             onClose={() => {
+              setCurrentWorkoutSession(null);
               setView("home");
               setActiveTab("proof");
             }}
