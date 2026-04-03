@@ -66,13 +66,7 @@ const lazyGenerateWorkout = async (
   });
 
   if (!res.ok) {
-    // 서버 실패 시 Gemini AI 경로로 폴백
-    console.warn(`planSession API failed (${res.status}), falling back to AI generation`);
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const { generateAIWorkoutPlan } = await import("@/utils/gemini");
-    const aiSession = await generateAIWorkoutPlan(condition, goal, days[new Date().getDay()], selectedSessionType);
-    if (aiSession) return aiSession;
-    throw new Error(`planSession failed: ${res.status}`);
+    throw new Error(`planSession failed: ${res.status}. Run "cd functions && npm run serve" for local development.`);
   }
   const session = await res.json();
 
