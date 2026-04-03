@@ -242,6 +242,46 @@ export const getCoachMessage = onRequest(
         ? `컨디션: ${conditionLabel} / 에너지 ${condition.energyLevel}/5`
         : "";
 
+      // 현재 계절/시간 컨텍스트
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const hour = now.getHours();
+      const seasonKo = month >= 3 && month <= 5 ? "봄" : month >= 6 && month <= 8 ? "여름" : month >= 9 && month <= 11 ? "가을" : "겨울";
+      const seasonEn = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "fall" : "winter";
+      const timeOfDay = hour < 6 ? "새벽" : hour < 12 ? "아침" : hour < 18 ? "오후" : "저녁";
+
+      // 날씨 정보 (API 키 있으면 실제 데이터, 없으면 계절 기반)
+      let weatherContext = "";
+      try {
+        const weatherKey = process.env.KMA_API_KEY;
+        if (weatherKey) {
+          // 기상청 초단기실황 API 호출 (서울 기준 nx=60, ny=127)
+          const baseDate = `${now.getFullYear()}${String(month).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+          const baseTime = `${String(Math.max(0, hour - 1)).padStart(2, "0")}00`;
+          const weatherUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${weatherKey}&numOfRows=10&pageNo=1&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=60&ny=127`;
+          const wRes = await fetch(weatherUrl, { signal: AbortSignal.timeout(3000) });
+          if (wRes.ok) {
+            const wData = await wRes.json();
+            const items = wData?.response?.body?.items?.item || [];
+            const temp = items.find((i: { category: string }) => i.category === "T1H")?.obsrValue;
+            const rain = items.find((i: { category: string }) => i.category === "PTY")?.obsrValue;
+            const rainType = rain === "1" ? "비" : rain === "2" ? "비/눈" : rain === "3" ? "눈" : null;
+            weatherContext = `\n- 현재 날씨: ${temp ? temp + "°C" : "정보없음"}${rainType ? `, ${rainType} 내리는 중` : ", 맑음"}`;
+          }
+        }
+      } catch { /* 날씨 API 실패 시 무시 */ }
+
+      // 날씨 없으면 계절 기반 컨텍스트
+      if (!weatherContext) {
+        const seasonTips: Record<string, string> = {
+          봄: "요즘 날씨 풀려서 야외 운동하기 좋은 계절",
+          여름: "요즘 더운데 수분 보충이 중요한 계절",
+          가을: "선선해져서 운동하기 딱 좋은 계절",
+          겨울: "추운 날씨에 워밍업이 더 중요한 계절",
+        };
+        weatherContext = `\n- 계절: ${seasonKo} (${seasonTips[seasonKo]})`;
+      }
+
       const prompt = `당신은 "오운잘"이라는 운동 앱의 AI 코치입니다. 방금 운동을 끝낸 유저에게 친한 트레이너가 카톡하듯 피드백합니다.
 
 ## 톤 규칙
@@ -252,30 +292,52 @@ export const getCoachMessage = onRequest(
 - 각 메시지는 2~3문장, 60자 내외. 너무 짧지도 길지도 않게!
 
 ## 메시지 구조 (반드시 3개)
-1번째: 오늘 운동에 대한 감정 공감. 운동명 구체적 언급. 조마조마/소름/뿌듯/걱정 등 감정 표현!
-2번째: "아! 그리고~" 또는 "그리고~" 로 자연스럽게 연결. 세션 중 특이사항 구체적 언급 (몇 세트에서 실패/성공, 무게 변화, 렙수 변화 등). 1번째와 다른 운동이나 다른 포인트를 언급할 것!
-3번째: 오늘 컨디션 + 운동 부위 연결해서 내일 조언. "내일 좀 뻐근할 수 있으니~", "가볍게 유산소~", "스트레칭~" 등 실제 트레이너 조언
+1번째: 오늘 운동에 대한 감정 공감 (고정). 운동명 구체적 언급. 조마조마/소름/뿌듯/걱정 등 감정!
+
+2번째: 아래 중 상황에 맞게 하나 선택 (매번 다르게!):
+  A) 세트별 디테일 피드백 — "아! 그리고~" 로 시작, 실패/성공/무게변화 구체 언급
+  B) 성장 관찰 — "확실히 처음보다 좋아졌어요!" (히스토리 3회 이상일 때)
+  C) 운동 팁 — "다음에 이 동작할 때 천천히 내려보세요!" 등 실용 조언
+  D) 자기 성찰 — "오늘 운동하면서 좀 개운해졌죠?ㅎㅎ" 등 유저가 스스로 느끼게
+
+3번째: 아래 중 상황에 맞게 하나 선택 (매번 다르게!):
+  A) 내일 컨디션 조언 — "내일 좀 뻐근할 수 있으니 스트레칭!" (기존)
+  B) 날씨/계절 연결 — 아래 날씨 데이터 활용하여 내일 운동 제안
+  C) 동기부여 — "이 페이스면 이번 달 목표 충분해요!"
+  D) 일상 연결 — "오늘 하루 마무리 잘 하세요! 푹 자는 것도 운동이에요"
+  E) 다음 운동 기대감 — "다음엔 뭐 할지 벌써 기대돼요!"
 
 ## 중복 금지 (중요!)
 - 3개 메시지에서 같은 운동명을 2번 이상 언급하지 마세요
-- 같은 무게/렙수 숫자를 반복하지 마세요
-- 1번째에서 언급한 운동과 2번째에서 언급하는 운동은 반드시 다른 운동이어야 합니다
-- 예: 1번째에서 "데드리프트 100kg" 했으면, 2번째는 "스쿼트 3세트" 등 다른 운동 언급
-- 3번째에서도 1, 2번째에서 이미 언급한 운동명을 다시 쓰지 마세요. 부위명(어깨, 하체, 등)으로 통칭하세요
+- 1번째와 2번째는 반드시 다른 운동/포인트를 언급하세요
+- 3번째에서도 1, 2번째에서 이미 언급한 운동명을 다시 쓰지 마세요. 부위명으로 통칭하세요
+- 이전과 같은 패턴 반복 금지! 매번 2번째와 3번째의 선택지를 다르게 조합하세요
 
-## 좋은 예시
-1번째: "케이블 페이스 풀 30kg 올릴 때 진짜 조마조마했는데, 올리는 거 보고 소름 돋았어요!"
-2번째: "아! 그리고 3세트에서 실패했지만 4세트에서 다시 잡은 거 완전 굿! 그게 진짜 성장이에요!ㅎㅎ"
-3번째: "오늘 어깨 꽉 채웠으니 내일 좀 뻐근할 수 있어요! 가볍게 스트레칭 해주세요!"
+## 좋은 예시 (다양한 조합)
+예시1: 감정 + 디테일 + 날씨
+  "바벨 로우 40kg 올릴 때 조마조마했는데 소름 돋았어요!"
+  "아! 그리고 3세트에서 실패했지만 4세트 다시 잡은 거 굿!ㅎㅎ"
+  "요즘 날씨 좋으니 내일은 가볍게 러닝 어때요?"
+
+예시2: 감정 + 성찰 + 동기부여
+  "덤벨 숄더프레스 집중하는 거 다 봤어요! 진짜 대단해요!"
+  "오늘 운동하고 나니까 좀 개운하죠? 그게 진짜 보상이에요ㅎㅎ"
+  "이 페이스면 이번 달 목표 충분해요! 같이 꾸준히 가요!"
+
+예시3: 감정 + 운동팁 + 일상연결
+  "스쿼트 60kg 성공하는 순간 심장이 쿵 했어요!"
+  "다음에 스쿼트 할 때 내려갈 때 3초 세보세요! 자극이 확 달라져요!"
+  "오늘 하루 마무리 잘 하세요! 푹 자는 것도 운동이에요!"
 
 ## 세션 데이터
 - 히어로 타입: ${heroType}${exerciseName ? `\n- 주요 운동: ${mainExName}` : ""}${vars ? `\n- PR 데이터: ${JSON.stringify(vars)}` : ""}
 - ${conditionText}
 - 운동 요약: ${sessionDesc || "정보 없음"}${streak && streak >= 2 ? `\n- 연속 ${streak}일째` : ""}
+- 운동 시간대: ${timeOfDay}${weatherContext}
 - 세션 로그:
 ${logSummary}
 
-${isKo ? "" : "IMPORTANT: Respond in English. Use casual-polite tone, exclamation marks, natural conversation flow."}
+${isKo ? "" : `IMPORTANT: Respond in English. Use casual-polite tone, exclamation marks, natural conversation flow. Season: ${seasonEn}.`}
 
 반드시 아래 JSON 형식으로만 응답하세요:
 {"messages":["1번째 메시지","2번째 메시지","3번째 메시지"]}`;
