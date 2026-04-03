@@ -280,18 +280,18 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   // ══════════════════════════════════
   // ── 카디오/러닝 ──
   // ══════════════════════════════════
-  "추가 유산소: 중강도 러닝": "ppmeLjrx6UE",
+  "추가 유산소: 중강도 러닝": "Gn5t6izrn5Y",
   "추가 유산소: 가벼운 걷기": "S3s7E6Nb3AY",
-  "추가 유산소: 가벼운 조깅 또는 걷기": "ppmeLjrx6UE",
+  "추가 유산소: 가벼운 조깅 또는 걷기": "Gn5t6izrn5Y",
   "추가 유산소: 인클라인 워킹": "JGzA6FPzZS8",
-  "추가 유산소: 조깅": "ppmeLjrx6UE",
+  "추가 유산소: 조깅": "Gn5t6izrn5Y",
   "추가 유산소: 쿨다운 스트레칭 및 이완": "i6TzP2COtow",
   "추가 추천: 동적 스트레칭 및 이완": "FCkMI5lRcLM",
   "추가 추천: 이완 스트레칭 및 심호흡": "0dCwcVJBjlY",
   "추가 추천: 전신 스트레칭 및 폼롤링": "KibUgcGXMTY",
   "추가 추천: 편안한 속도 걷기 또는 가벼운 스트레칭": "Tj3YVlL3yQk",
   "추가 활동: 가벼운 걷기 또는 스트레칭": "dgp4dMUi8ek",
-  "준비 런: 가벼운 조깅": "ppmeLjrx6UE",
+  "준비 런: 가벼운 조깅": "Gn5t6izrn5Y",
   "준비 조깅": "ppmeLjrx6UE",
   "이지 런: 대화 가능 속도": "plREYzvF9tI",
   "인터벌 러닝": "Ph1fmsFkCkw",
@@ -300,8 +300,8 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "장거리 러닝": "eS-1btTU9oQ",
   "LSD 러닝: 페이스 유지": "eS-1btTU9oQ",
   "회복 러닝: 존 2 유지": "P9baLtlyieg",
-  "마무리 조깅": "ppmeLjrx6UE",
-  "걷기 또는 가벼운 조깅": "ppmeLjrx6UE",
+  "마무리 조깅": "Gn5t6izrn5Y",
+  "걷기 또는 가벼운 조깅": "Gn5t6izrn5Y",
 };
 
 /** 동의어 → 대표 이름 정규화 */
