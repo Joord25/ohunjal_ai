@@ -286,13 +286,19 @@ export default function Home() {
   };
 
   const handleTabChange = (id: TabId) => {
-    setActiveTab(id);
     const workoutFlow = ["condition_check", "master_plan_preview", "workout_session"];
     // 운동 플로우 중에는 탭 변경 무시
     if (workoutFlow.includes(view)) return;
+    setActiveTab(id);
     // 리포트/기타에서 탭 변경 시 리셋
     if (view !== "login") {
       setCurrentWorkoutSession(null);
+      // 운동 완료 상태 해제 (리포트 재표시 방지)
+      if (completedRitualIds.includes("workout")) {
+        const newCompleted = completedRitualIds.filter(rid => rid !== "workout");
+        setCompletedRitualIds(newCompleted);
+        localStorage.setItem("alpha_completed_rituals", JSON.stringify(newCompleted));
+      }
       setView("home");
     }
   };
