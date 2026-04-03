@@ -12,6 +12,14 @@ import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWee
 import { WorkoutReport } from "./WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 
+const GRASS_COLORS = [
+  { bg: "bg-gray-50", text: "text-gray-300", shadow: "" },
+  { bg: "bg-[#D1FAE5]", text: "text-gray-700", shadow: "shadow-sm shadow-[#D1FAE5]/40" },
+  { bg: "bg-[#6EE7B7]", text: "text-gray-800", shadow: "shadow-sm shadow-[#6EE7B7]/40" },
+  { bg: "bg-[#2D6A4F]", text: "text-white", shadow: "shadow-md shadow-[#2D6A4F]/20" },
+  { bg: "bg-[#1B4332]", text: "text-white", shadow: "shadow-md shadow-[#1B4332]/30" },
+];
+
 function tQuestLabel(label: string, locale: string): string {
   if (locale === "ko") return label;
   return label
@@ -602,14 +610,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                 : totalMin < 50 ? 3
                 : 4;
 
-              const grassColors = [
-                { bg: "bg-gray-50", text: "text-gray-300", shadow: "" },
-                { bg: "bg-[#D1FAE5]", text: "text-gray-700", shadow: "shadow-sm shadow-[#D1FAE5]/40" },
-                { bg: "bg-[#6EE7B7]", text: "text-gray-800", shadow: "shadow-sm shadow-[#6EE7B7]/40" },
-                { bg: "bg-[#2D6A4F]", text: "text-white", shadow: "shadow-md shadow-[#2D6A4F]/20" },
-                { bg: "bg-[#1B4332]", text: "text-white", shadow: "shadow-md shadow-[#1B4332]/30" },
-              ];
-              const g = grassColors[grassLevel];
+              const g = GRASS_COLORS[grassLevel];
 
               return (
                 <div
