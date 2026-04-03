@@ -1598,7 +1598,12 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                 </div>
                 <p className="text-[#1B4332] text-sm font-bold leading-relaxed whitespace-pre-line">
                   {(() => {
-                    const msg = reading.message;
+                    // 선택된 목표에 따라 멘트 변경
+                    const activeGoal = selectedGoalKey || fp.goal;
+                    const activeMsg = activeGoal !== fp.goal
+                      ? computeReading({ ...fp, goal: activeGoal as FitnessProfile["goal"] }, workoutCount, workoutHistory, weightLog).message
+                      : reading.message;
+                    const msg = activeMsg;
                     const isEn = locale === "en";
                     // 날짜 기반 시드 (같은 날 = 같은 멘트)
                     const daySeed = new Date().getDate();
