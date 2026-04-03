@@ -131,6 +131,16 @@ Post-workout report uses a **3-bubble chat interface** powered by Gemini:
 
 **Prompt versioning:** `functions/src/ai/PROMPT_HISTORY.md` tracks all prompt versions (v1~v5). Roll back by copying previous version's prompt into `coach.ts`.
 
+### Growth Prediction Coach Mentoring
+
+`FitnessReading.tsx` shows goal-specific coach messages with dynamic data:
+- **Fat Loss:** "4주 뒤 약 {weight}kg! 8주 뒤 {weight8w}kg!" — calorie-based prediction
+- **Muscle Gain:** "3대 합계 {total}kg! {level}까지 {remaining}kg!" — e1RM-based
+- **Endurance:** "주 {min}분! 체력 {grade}! {nextGrade}까지 {remaining}분!" — weekly minutes, military/national team tone
+- **Health:** "총 {count}회! 주 {freq}회씩 {weeks}주째!" — consistency-based
+
+Each goal has 5 message variants, selected by day-seed (same day = same message). Coach message changes when user switches goal tabs. Fitness test uses ACSM/국민체력100 standards (최우수/우수/양호/보통/미흡).
+
 ### Intensity System
 
 Three-tier intensity (`"high" | "moderate" | "low"`) based on ACSM guidelines flows through the app:
@@ -219,6 +229,10 @@ Firebase Auth with Google sign-in (real auth, not mocked). The `onAuthStateChang
 - `WorkoutReport` uses `sessionDate` prop to distinguish history view (share button only, saved coach messages) from current session (Gemini call, share + complete buttons)
 - Bottom sheets in `FitScreen` use `rounded-[2rem]` with `bottom-2 left-2 right-2` floating style (no nav bar present, unlike `MasterPlanPreview`)
 - **State change rule:** When modifying any React state, grep for ALL locations that read that state to prevent side effects
+- **Workout flow protection:** During `master_plan_preview` and `workout_session`, tab changes are blocked. On `workout_report` close, `completedRitualIds` removes "workout" to prevent stale report on HOME.
+- **Cold start handling:** `lazyGenerateWorkout` retries once after 1.5s on first failure (Cloud Function cold start)
+- **Coach messages persistence:** Gemini 3-bubble messages saved to `WorkoutHistory.coachMessages` (localStorage + Firestore). History view loads saved messages instantly.
+- **Exercise videos:** All exercises mapped to YouTube Shorts IDs in `exerciseVideos.ts`. Zero empty entries.
 
 ## Deployment Checklist
 
