@@ -330,10 +330,8 @@ export default function Home() {
         }
     } catch (e) {
         console.error("Error generating workout:", e);
-        const dayIndex = new Date().getDay();
-        const scheduleIndex = dayIndex === 0 ? 6 : dayIndex - 1;
-        const session = await lazyGenerateWorkout(scheduleIndex, condition, goal, sessionType, intensityLevel, sessionSel?.sessionMode, sessionSel?.targetMuscle, sessionSel?.runType);
-        setCurrentWorkoutSession(session);
+        // 에러 시 사용자에게 알림 (재시도 유도)
+        alert(typeof e === "object" && e && "message" in e ? (e as Error).message : "운동 플랜 생성에 실패했습니다. 다시 시도해주세요.");
     } finally {
         // sessionMode path: onComplete callback handles isLoading
         if (!pendingSessionRef.current) {
