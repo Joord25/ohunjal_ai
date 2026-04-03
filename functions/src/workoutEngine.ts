@@ -725,7 +725,10 @@ function buildWarmup(condition: UserCondition, isRun = false): ExerciseStep[] {
   }));
 }
 
-function buildCore(isoRepsKo: string, isoRepsVal: number): ExerciseStep[] {
+function buildCore(_isoRepsKo: string, _isoRepsVal: number): ExerciseStep[] {
+  // 코어/복근 운동은 최소 20회 시작
+  const coreRepsKo = "20회";
+  const coreRepsVal = 20;
   const doubleDynamic = Math.random() < 0.5;
   if (doubleDynamic) {
     const pool = [...CORE_EXERCISES.dynamic];
@@ -733,13 +736,13 @@ function buildCore(isoRepsKo: string, isoRepsVal: number): ExerciseStep[] {
     const remaining = pool.filter(e => e !== first);
     const second = pick(remaining);
     return [
-      { type: "core", phase: "core", name: first, count: formatCountKo(3, isoRepsKo), sets: 3, reps: isoRepsVal },
-      { type: "core", phase: "core", name: second, count: formatCountKo(3, isoRepsKo), sets: 3, reps: isoRepsVal },
+      { type: "core", phase: "core", name: first, count: formatCountKo(3, coreRepsKo), sets: 3, reps: coreRepsVal },
+      { type: "core", phase: "core", name: second, count: formatCountKo(3, coreRepsKo), sets: 3, reps: coreRepsVal },
     ];
   }
   return [
     { type: "core", phase: "core", name: pick(CORE_EXERCISES.plank), count: formatCountKo(3, "30-45초 유지"), sets: 3, reps: 1 },
-    { type: "core", phase: "core", name: pick(CORE_EXERCISES.dynamic), count: formatCountKo(3, isoRepsKo), sets: 3, reps: isoRepsVal },
+    { type: "core", phase: "core", name: pick(CORE_EXERCISES.dynamic), count: formatCountKo(3, coreRepsKo), sets: 3, reps: coreRepsVal },
   ];
 }
 
