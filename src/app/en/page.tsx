@@ -145,7 +145,7 @@ export default function EnLandingPage() {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSelector current="/en" />
-              <a href="/app" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">Get Started</a>
+              <a href="/app?lang=en" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">Get Started</a>
             </div>
           </div>
         </nav>
@@ -165,7 +165,7 @@ export default function EnLandingPage() {
               Pick your condition. Get today&apos;s workout in 3 seconds.
             </p>
             <div className="mt-10">
-              <a href="/app" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:shadow-[0_8px_40px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+              <a href="/app?lang=en" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:shadow-[0_8px_40px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
                 Get today&apos;s workout free
               </a>
             </div>
@@ -428,7 +428,7 @@ export default function EnLandingPage() {
                   <li className="flex items-start gap-2"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="mt-0.5 shrink-0"><path d="M4 9L7.5 12.5L14 6" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>Weight tracking</li>
                   <li className="flex items-start gap-2"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="mt-0.5 shrink-0"><path d="M4 9L7.5 12.5L14 6" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>Workout history</li>
                 </ul>
-                <a href="/app" className="block text-center w-full py-3 rounded-xl border border-gray-200 text-[#1B4332] font-bold text-sm hover:bg-gray-50 transition-colors">Start Free</a>
+                <a href="/app?lang=en" className="block text-center w-full py-3 rounded-xl border border-gray-200 text-[#1B4332] font-bold text-sm hover:bg-gray-50 transition-colors">Start Free</a>
               </div>
             </RevealSection>
             <RevealSection>
@@ -449,7 +449,7 @@ export default function EnLandingPage() {
                   <li className="flex items-start gap-2"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="mt-0.5 shrink-0"><path d="M4 9L7.5 12.5L14 6" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>Growth predictions</li>
                   <li className="flex items-start gap-2"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="mt-0.5 shrink-0"><path d="M4 9L7.5 12.5L14 6" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>Weekly quests &amp; tier system</li>
                 </ul>
-                <a href="/app" className="block text-center w-full py-3 rounded-xl bg-[#1B4332] text-white font-bold text-sm hover:bg-[#143728] transition-colors">Start Premium</a>
+                <a href="/app?lang=en" className="block text-center w-full py-3 rounded-xl bg-[#1B4332] text-white font-bold text-sm hover:bg-[#143728] transition-colors">Start Premium</a>
               </div>
             </RevealSection>
           </div>
@@ -478,7 +478,7 @@ export default function EnLandingPage() {
           <RevealSection>
             <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332] mb-4">Ready to stop guessing?</h2>
             <p className="text-base sm:text-lg text-gray-500 mb-8">Your first workout is free. No sign-up required.</p>
-            <a href="/app" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:shadow-[0_8px_40px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+            <a href="/app?lang=en" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:shadow-[0_8px_40px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
               Get today&apos;s workout free
             </a>
           </RevealSection>

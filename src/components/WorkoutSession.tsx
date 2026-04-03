@@ -5,6 +5,13 @@ import { FitScreen, FeedbackType } from "@/components/FitScreen";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getExerciseName } from "@/utils/exerciseName";
+
+const MUSCLE_GROUP_EN: Record<string, string> = {
+  "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
+  "등": "Back", "후면 어깨": "Rear Delts", "이두": "Biceps", "하체": "Legs",
+  "종아리": "Calves", "전신": "Full Body", "코어": "Core", "가동성": "Mobility",
+};
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
@@ -17,7 +24,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   onComplete,
   onBack,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   // Initialize exercises with a deep copy to allow mutations for adaptive logic
   const [exercises, setExercises] = useState<ExerciseStep[]>(() => 
     JSON.parse(JSON.stringify(sessionData.exercises))
@@ -269,8 +276,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
               {formatElapsed(elapsedSec)}
             </span>
           </div>
-          <h1 className="text-3xl font-black text-[#1B4332] tracking-tight mb-1">오늘 운동 끝!</h1>
-          <p className="text-sm text-gray-400 font-medium">추가로 더 하고 싶은 운동이 있나요?</p>
+          <h1 className="text-3xl font-black text-[#1B4332] tracking-tight mb-1">{t("session.done")}</h1>
+          <p className="text-sm text-gray-400 font-medium">{t("session.addMore")}</p>
         </div>
 
         {pendingExercise ? (
@@ -278,15 +285,12 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
           <div className="flex-1 flex flex-col px-6">
             <div className="flex-1 flex flex-col items-center justify-center gap-6">
               <div className="text-center">
-                <h2 className="text-2xl font-black text-[#1B4332]">{pendingExercise.split('(')[0].trim()}</h2>
-                {pendingExercise.includes('(') && (
-                  <p className="text-sm text-gray-400 mt-1">{pendingExercise.split('(')[1]?.replace(')', '').trim()}</p>
-                )}
+                <h2 className="text-2xl font-black text-[#1B4332]">{getExerciseName(pendingExercise, locale)}</h2>
               </div>
 
               {/* Sets */}
               <div className="flex flex-col items-center gap-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">세트</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{t("session.sets")}</p>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setAddSets(Math.max(1, addSets - 1))}
@@ -302,7 +306,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
 
               {/* Reps */}
               <div className="flex flex-col items-center gap-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">횟수</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{t("session.reps")}</p>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setAddReps(Math.max(1, addReps - 1))}
@@ -322,13 +326,13 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
                 onClick={handleConfirmAddExercise}
                 className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
               >
-                운동 시작
+                {t("session.startExercise")}
               </button>
               <button
                 onClick={() => setPendingExercise(null)}
                 className="w-full py-3 rounded-xl text-gray-400 font-bold text-sm active:scale-[0.98] transition-all"
               >
-                다른 운동 선택
+                {t("session.pickAnother")}
               </button>
             </div>
           </div>
@@ -353,14 +357,14 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
                     if (matched.length === 0) return null;
                     return (
                       <div key={group.label} className="mb-3">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1.5">{group.label}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1.5">{locale === "ko" ? group.label : (MUSCLE_GROUP_EN[group.label] || group.label)}</p>
                         {matched.map((ex: string) => (
                           <button
                             key={ex}
                             onClick={() => handleSelectExercise(ex)}
                             className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all mb-1.5"
                           >
-                            {ex.split('(')[0].trim()}
+                            {getExerciseName(ex, locale)}
                           </button>
                         ))}
                       </div>
@@ -374,8 +378,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
                       onClick={() => setAddSearch(group.keywords[0])}
                       className="w-full text-left px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
                     >
-                      {group.label}
-                      <span className="text-[11px] text-gray-400 ml-2">{group.exercises.length}개 운동</span>
+                      {locale === "ko" ? group.label : (MUSCLE_GROUP_EN[group.label] || group.label)}
+                      <span className="text-[11px] text-gray-400 ml-2">{t("session.exerciseCount", { count: String(group.exercises.length) })}</span>
                     </button>
                   </div>
                 ))
@@ -387,7 +391,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
                 onClick={handleFinishWorkout}
                 className="w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
               >
-                운동 종료
+                {t("session.finish")}
               </button>
             </div>
           </>

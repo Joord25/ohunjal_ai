@@ -7,6 +7,22 @@ import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 
+function translateDesc(desc: string, locale: string): string {
+  if (locale === "ko") return desc;
+  return desc
+    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
+    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
+    .replace(/상체\(밀기\(Push\)\)/g, "Upper (Push)").replace(/상체\(당기기\(Pull\)\)/g, "Upper (Pull)")
+    .replace(/(\d+)종/g, "$1 exercises").replace(/(\d+)세트/g, "$1 sets")
+    .replace(/근비대/g, "Hypertrophy").replace(/근력 강화/g, "Strength")
+    .replace(/체지방 감량/g, "Fat Loss").replace(/전반적 체력 향상/g, "General Fitness")
+    .replace(/집중 운동/g, "Focus")
+    .replace(/인터벌 러닝/g, "Interval Running").replace(/이지 런/g, "Easy Run").replace(/장거리 러닝/g, "Long Distance Run")
+    .replace(/러너 코어/g, "Runner Core").replace(/맨몸 \+ 덤벨 전신 서킷/g, "Bodyweight + Dumbbell Circuit")
+    .replace(/상체 뻣뻣함 개선/g, "Upper stiffness relief").replace(/하체 무거움 완화/g, "Lower heaviness relief")
+    .replace(/전반적 피로 회복/g, "Fatigue recovery").replace(/최적 컨디션/g, "Optimal condition");
+}
+
 interface HomeScreenProps {
   userName?: string;
   onStartWorkout: () => void;
@@ -216,7 +232,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
         previews.push({
           current: `${ex.lastE1RM}kg`,
           predicted: `${pred4w}kg`,
-          timeline: lowConfidence ? `${timelineMsg} (데이터 부족)` : timelineMsg,
+          timeline: lowConfidence ? `${timelineMsg} (${t("home.prediction.lowData")})` : timelineMsg,
           label: ex.label,
         });
       }
@@ -287,7 +303,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     if (didWorkoutToday) {
       const last = history[history.length - 1];
       const desc = last.sessionData.description || last.sessionData.title || "";
-      return desc ? t("home.coach.doneToday", { desc }) : t("home.coach.doneTodayDefault");
+      return desc ? t("home.coach.doneToday", { desc: translateDesc(desc, locale) }) : t("home.coach.doneTodayDefault");
     }
 
     // 최근 3개 기록에서 한 부위 추출
@@ -314,7 +330,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     }
     const last = history[history.length - 1];
     const desc = last.sessionData.description || last.sessionData.title || "";
-    return desc ? t("home.coach.lastSession", { desc }) : t("home.coach.default");
+    return desc ? t("home.coach.lastSession", { desc: translateDesc(desc, locale) }) : t("home.coach.default");
   })();
 
   const prevCoachRef = useRef("");
@@ -361,17 +377,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       <div className="flex flex-col h-full bg-white">
         <div className="flex-1 flex flex-col items-center justify-center px-8 gap-8">
           <img
-            src="/login-logo-kor2.png"
+            src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"}
             alt="오운잘 AI"
             className="w-48 object-contain"
           />
 
           <div className="text-center">
             <h1 className="text-2xl font-black text-[#1B4332] mb-2 leading-tight">
-              {displayName}님,<br />반갑습니다
+              {locale === "ko" ? <>{displayName}님,<br />반갑습니다</> : <>Welcome,<br />{displayName}</>}
             </h1>
             <p className="text-sm text-gray-500 font-medium">
-              오운잘과 함께 첫 운동을 시작해볼까요?
+              {locale === "ko" ? "오운잘과 함께 첫 운동을 시작해볼까요?" : "Ready to start your first workout?"}
             </p>
           </div>
 
@@ -379,12 +395,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
             onClick={onStartWorkout}
             className="w-40 h-40 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center shadow-xl active:scale-95 transition-all"
           >
-            <span className="text-lg font-black tracking-tight">첫 운동</span>
-            <span className="text-sm font-bold text-emerald-200 mt-1">시작하기</span>
+            <span className="text-lg font-black tracking-tight">{locale === "ko" ? "첫 운동" : "Start"}</span>
+            <span className="text-sm font-bold text-emerald-200 mt-1">{locale === "ko" ? "시작하기" : "Workout"}</span>
           </button>
 
           <p className="text-xs text-gray-400 font-medium text-center">
-            운동 목표와 컨디션을 선택하면<br />맞춤 플랜이 자동으로 만들어져요
+            {locale === "ko" ? <>운동 목표와 컨디션을 선택하면<br />맞춤 플랜이 자동으로 만들어져요</> : <>Pick your goal and condition<br />AI builds your custom plan</>}
           </p>
         </div>
       </div>
@@ -542,7 +558,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
                   </div>
                 )}
               </div>
-              <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{locale === "en" && preview.label ? preview.label.replace(/.*\(([^)]+)\).*/, "$1") : preview.label}</p>
+              <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{locale !== "ko" ? ({"벤치프레스": "Bench Press", "스쿼트": "Squat", "데드리프트": "Deadlift"}[preview.label] || preview.label.replace(/.*\(([^)]+)\).*/, "$1")) : preview.label}</p>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="text-center">
                   <p className="text-[10px] font-bold text-gray-400 mb-0.5">{t("home.prediction.current")}</p>

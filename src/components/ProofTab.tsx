@@ -12,6 +12,17 @@ import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWee
 import { WorkoutReport } from "./WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 
+function tQuestLabel(label: string, locale: string): string {
+  if (locale === "ko") return label;
+  return label
+    .replace(/고강도 운동 (\d+)회/, "High intensity × $1")
+    .replace(/중강도 운동 (\d+)회/, "Moderate intensity × $1")
+    .replace(/저강도 운동 (\d+)회/, "Low intensity × $1")
+    .replace(/이번 주 (\d+)일 운동/, "$1 days this week")
+    .replace(/(\d+)일 연속 운동/, "$1-day streak")
+    .replace(/새 운동 (\d+)종목 시도/, "Try $1 new exercises");
+}
+
 interface ProofTabProps {
   lockedRuleIds: string[]; // Not used in this version, but kept for compatibility
   onShowPrediction?: () => void;
@@ -24,6 +35,7 @@ function DaySessionItem({ session, timeStr, onTap, onDelete }: {
   session: WorkoutHistoryType; timeStr: string;
   onTap: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <SwipeToDelete onDelete={onDelete}>
       <button
@@ -33,7 +45,7 @@ function DaySessionItem({ session, timeStr, onTap, onDelete }: {
         <div className="text-left">
           <p className="text-sm font-bold text-[#1B4332]">{session.sessionData.title}</p>
           <p className="text-xs text-[#6B7280] mt-0.5">
-            {session.stats.totalSets}세트 · {session.stats.totalVolume.toLocaleString()}kg
+            {t("proof.setsVolume", { sets: String(session.stats.totalSets), volume: session.stats.totalVolume.toLocaleString() })}
           </p>
         </div>
         <span className="text-xs font-medium text-[#6B7280]">{timeStr}</span>
@@ -43,7 +55,7 @@ function DaySessionItem({ session, timeStr, onTap, onDelete }: {
 }
 
 export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [history, setHistory] = useState<WorkoutHistoryType[]>([]);
   const [view, setView] = useState<ViewState>("dashboard");
   const [selectedHistory, setSelectedHistory] = useState<WorkoutHistoryType | null>(null);
@@ -117,7 +129,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth();
   const isCurrentMonth = monthOffset === 0;
-  const currentMonthLabel = viewDate.toLocaleString('ko-KR', { year: 'numeric', month: 'long' });
+  const currentMonthLabel = viewDate.toLocaleString(locale === "ko" ? "ko-KR" : "en-US", { year: "numeric", month: "long" });
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -265,7 +277,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg sm:text-xl font-serif font-medium text-[#1B4332] uppercase tracking-wide">체중 기록</h1>
+          <h1 className="text-lg sm:text-xl font-serif font-medium text-[#1B4332] uppercase tracking-wide">{t("proof.weightLog")}</h1>
           {sortedLog.length > 0 ? (
             <button
               onClick={() => weightSelectMode ? exitSelectMode() : setWeightSelectMode(true)}
@@ -294,14 +306,14 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   </svg>
                 )}
               </div>
-              전체 선택
+              {t("proof.selectAll")}
             </button>
             {selectedWeightIdxs.size > 0 && (
               <button
                 onClick={() => setShowBulkDeleteConfirm(true)}
                 className="text-sm font-bold text-red-500 active:opacity-60"
               >
-                {selectedWeightIdxs.size}개 삭제
+                {t("proof.deleteN", { count: String(selectedWeightIdxs.size) })}
               </button>
             )}
           </div>
@@ -318,13 +330,13 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
       >
           {sortedLog.length === 0 ? (
             <div className="text-center py-10 text-gray-400">
-              <p>체중 기록이 없습니다.</p>
+              <p>{t("proof.noWeightRecords")}</p>
             </div>
           ) : (
             <div className="space-y-4">
               {sortedLog.map((entry, idx) => {
                 const dateObj = new Date(entry.date + "T00:00:00");
-                const dateLabel = dateObj.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
+                const dateLabel = dateObj.toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
                 const prevEntry = sortedLog[idx + 1]; // older entry (sorted newest first)
                 const diff = prevEntry ? entry.weight - prevEntry.weight : null;
 
@@ -376,22 +388,22 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         {showBulkDeleteConfirm && selectedWeightIdxs.size > 0 && (
           <div className="absolute inset-0 bg-black/40 z-50 flex items-center justify-center animate-fade-in px-8">
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-              <h3 className="text-lg font-black text-[#1B4332] mb-2">기록 삭제</h3>
+              <h3 className="text-lg font-black text-[#1B4332] mb-2">{t("proof.deleteRecords")}</h3>
               <p className="text-sm text-gray-500 mb-6">
-                {selectedWeightIdxs.size}개의 체중 기록을 삭제하시겠습니까?<br/>삭제된 기록은 복구할 수 없습니다.
+                {t("proof.deleteWeightConfirm", { count: String(selectedWeightIdxs.size) })}<br/>{t("proof.deleteIrreversible")}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowBulkDeleteConfirm(false)}
                   className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm active:scale-95 transition-all"
                 >
-                  취소
+                  {t("proof.cancel")}
                 </button>
                 <button
                   onClick={handleBulkDelete}
                   className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-all"
                 >
-                  삭제
+                  {t("proof.delete")}
                 </button>
               </div>
             </div>
@@ -404,11 +416,11 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setShowAddWeight(false)} />
             <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}>
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-              <h3 className="text-lg font-black text-[#1B4332] mb-5">체중 기록 추가</h3>
+              <h3 className="text-lg font-black text-[#1B4332] mb-5">{t("proof.addWeightRecord")}</h3>
 
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">날짜</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">{t("proof.date")}</label>
                   <input
                     type="date"
                     value={newWeightDate}
@@ -418,7 +430,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">체중 (kg)</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">{t("proof.weightKg")}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -437,14 +449,14 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   onClick={() => setShowAddWeight(false)}
                   className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm active:scale-95 transition-all"
                 >
-                  취소
+                  {t("proof.cancel")}
                 </button>
                 <button
                   onClick={handleAddWeight}
                   disabled={!newWeightValue || parseFloat(newWeightValue) <= 0}
                   className="flex-1 py-3 rounded-xl bg-[#1B4332] text-white font-bold text-sm active:scale-95 transition-all disabled:opacity-40"
                 >
-                  저장
+                  {t("proof.save")}
                 </button>
               </div>
             </div>
@@ -483,18 +495,18 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         <div className="mt-3">
           {monthHistory.length > 0 ? (
             <>
-              <h1 className="text-4xl font-black text-[#1B4332]">{monthHistory.length}<span className="text-lg font-bold text-[#2D6A4F]/50 ml-1">회 운동</span></h1>
+              <h1 className="text-4xl font-black text-[#1B4332]">{monthHistory.length}<span className="text-lg font-bold text-[#2D6A4F]/50 ml-1">{t("proof.workoutCount")}</span></h1>
               <p className="text-[12px] font-medium text-gray-400 mt-1">{isCurrentMonth ? t("proof.thisMonth") : `${viewMonth + 1}${t("proof.monthRecord")}`}</p>
             </>
           ) : isCurrentMonth ? (
             <>
-              <h1 className="text-xl font-black text-[#1B4332]">첫 기록을 만들어보세요</h1>
-              <p className="text-[12px] font-medium text-gray-400 mt-1">오늘 시작하면 여기에 쌓여요</p>
+              <h1 className="text-xl font-black text-[#1B4332]">{t("proof.createFirstRecord")}</h1>
+              <p className="text-[12px] font-medium text-gray-400 mt-1">{t("proof.startToday")}</p>
             </>
           ) : (
             <>
-              <h1 className="text-xl font-black text-gray-300">기록이 없어요</h1>
-              <p className="text-[12px] font-medium text-gray-400 mt-1">{viewMonth + 1}월</p>
+              <h1 className="text-xl font-black text-gray-300">{t("proof.noRecordsMonth")}</h1>
+              <p className="text-[12px] font-medium text-gray-400 mt-1">{t("proof.monthLabel", { month: String(viewMonth + 1) })}</p>
             </>
           )}
         </div>
@@ -547,7 +559,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               proofView === "calendar" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
             }`}
           >
-            캘린더
+            {t("proof.calendar")}
           </button>
           <button
             onClick={() => setProofView("quest")}
@@ -555,14 +567,14 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               proofView === "quest" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
             }`}
           >
-            퀘스트
+            {t("proof.quests")}
           </button>
         </div>
 
         {proofView === "calendar" ? (
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
           <div className="grid grid-cols-7 gap-2">
-            {['일', '월', '화', '수', '목', '금', '토'].map((day, i) => (
+            {(locale === "ko" ? ['일', '월', '화', '수', '목', '금', '토'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map((day, i) => (
               <div key={i} className={`text-center text-xs font-bold mb-2 ${
                 i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'
               }`}>
@@ -625,8 +637,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             return (
               <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-black text-[#1B4332]">이번 주 퀘스트</h3>
-                  <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{doneCount}/{questDefs.length} 완료</span>
+                  <h3 className="text-sm font-black text-[#1B4332]">{t("proof.weeklyQuests")}</h3>
+                  <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{t("proof.questComplete", { done: String(doneCount), total: String(questDefs.length) })}</span>
                 </div>
                 <div className="space-y-3">
                   {coreQs.map(q => {
@@ -636,7 +648,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                       <div key={q.id}>
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-700"}`}>
-                            {p.completed ? "✓ " : ""}{q.label}
+                            {p.completed ? "✓ " : ""}{tQuestLabel(q.label, locale)}
                           </span>
                           <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
                         </div>
@@ -658,7 +670,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                           <div key={q.id} className="opacity-60">
                             <div className="flex items-center justify-between mb-1">
                               <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-500"}`}>
-                                {p.completed ? "✓ " : "☆ "}{q.label}
+                                {p.completed ? "✓ " : "☆ "}{tQuestLabel(q.label, locale)}
                               </span>
                               <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
                             </div>
@@ -675,7 +687,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   )}
                   {coreDone && !qs.weeklyBonusClaimed && (
                     <div className="mt-2 p-3 bg-[#2D6A4F]/10 rounded-xl text-center">
-                      <span className="text-[12px] font-black text-[#2D6A4F]">올클리어 보너스 +5 EXP!</span>
+                      <span className="text-[12px] font-black text-[#2D6A4F]">{t("proof.allClearBonus")}</span>
                     </div>
                   )}
                 </div>
@@ -687,8 +699,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         {/* 기록 없을 때 안내 */}
         {history.length === 0 && (
           <div className="mt-4 rounded-2xl bg-[#2D6A4F]/5 border border-[#2D6A4F]/10 px-5 py-6 text-center">
-            <p className="text-[15px] font-bold text-[#1B4332] mb-1">아직 운동 기록이 없어요</p>
-            <p className="text-[12px] text-gray-400">첫 운동을 완료하면 여기에 기록이 쌓여요</p>
+            <p className="text-[15px] font-bold text-[#1B4332] mb-1">{t("proof.noRecordYet")}</p>
+            <p className="text-[12px] text-gray-400">{t("proof.firstWorkoutHere")}</p>
           </div>
         )}
 
@@ -714,7 +726,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible transition-all">
                 <div className="flex justify-between items-baseline mb-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">체중 변화</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.weightTrend")}</p>
                   </div>
                   <button
                     type="button"
@@ -734,7 +746,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   <span className="text-base sm:text-lg text-[#2D6A4F]/50">kg</span>
                 </div>
                 <p className="text-[12px] font-bold text-[#2D6A4F] mb-3">
-                  {diff <= -1 ? "목표에 한 발짝 가까워지고 있어요!" : diff <= -0.3 ? "조금씩 변화가 시작되고 있어요" : diff >= 0.5 ? "근육이 붙으면서 체중이 오를 수 있어요" : "꾸준히 기록하면 변화가 보여요"}
+                  {diff <= -1 ? t("proof.weightMsg.losing") : diff <= -0.3 ? t("proof.weightMsg.starting") : diff >= 0.5 ? t("proof.weightMsg.gaining") : t("proof.weightMsg.steady")}
                 </p>
 
                 <div className="relative h-36 sm:h-32 mt-2 sm:mt-1 mb-2 mx-5">
@@ -816,8 +828,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-[#1B4332]">성장 예측 리포트</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">감량 · 근력 · 체력 변화 예측</p>
+                  <p className="text-sm font-bold text-[#1B4332]">{t("proof.growthPrediction")}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{t("proof.growthPrediction.desc")}</p>
                 </div>
               </div>
               <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -846,7 +858,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   onClick={() => setExpLogOpen(v => !v)}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1">{seasonInfo.label}</p>
+                    <p className="text-[10px] font-bold text-gray-400 mb-1">{locale === "ko" ? seasonInfo.label : seasonInfo.label.replace("시즌", "Season")}</p>
                     <button onClick={(e) => { e.stopPropagation(); setHelpCard("tierSystem"); }} className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center -mt-1 -mr-1">
                       <span className="text-[10px] font-black text-gray-400">?</span>
                     </button>
@@ -864,7 +876,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <p className="text-[11px] text-gray-400">이번 시즌 {seasonSessions}회 운동</p>
+                    <p className="text-[11px] text-gray-400">{t("proof.seasonWorkouts", { count: String(seasonSessions) })}</p>
                     <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${expLogOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                   </div>
                 </div>
@@ -873,7 +885,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                 <div className={`overflow-hidden transition-all duration-300 ${expLogOpen ? "max-h-[300px]" : "max-h-0"}`}>
                   <div className="px-6 py-3 border-t overflow-y-auto max-h-[280px]" style={{ borderColor: `${tierResult.tier.color}15` }}>
                     {expLog.length === 0 ? (
-                      <p className="text-[11px] text-gray-400 text-center py-2">아직 경험치 내역이 없어요</p>
+                      <p className="text-[11px] text-gray-400 text-center py-2">{t("proof.noExpYet")}</p>
                     ) : (
                       <div className="flex flex-col gap-2">
                         {expLog.map((entry, i) => (
@@ -882,7 +894,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                               <span className="text-[10px] text-gray-400 w-12 shrink-0">
                                 {entry.date.slice(5, 10).replace("-", ".")}
                               </span>
-                              <span className="text-[11px] text-gray-600">{entry.detail}</span>
+                              <span className="text-[11px] text-gray-600">{locale === "ko" ? entry.detail : entry.detail.replace("운동 완료", "Workout").replace("완료", "Complete").replace("주간 올클리어", "Weekly All Clear")}</span>
                             </div>
                             <span className="text-[11px] font-bold shrink-0 ml-2" style={{ color: tierResult.tier.color }}>+{entry.amount}</span>
                           </div>
@@ -901,13 +913,13 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm w-full text-left active:scale-[0.98] transition-all group"
           >
             <div className="flex justify-between items-center mb-1">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">총 운동 횟수</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.totalWorkouts")}</p>
                 <svg className="w-5 h-5 text-gray-300 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
             </div>
-            <h3 className="text-3xl font-black text-[#1B4332]">{history.length} <span className="text-lg text-[#2D6A4F]/50">세션</span></h3>
-            <p className="text-xs text-gray-400 mt-2 font-medium">클릭하여 기록 상세보기</p>
+            <h3 className="text-3xl font-black text-[#1B4332]">{history.length} <span className="text-lg text-[#2D6A4F]/50">{t("proof.sessionUnit")}</span></h3>
+            <p className="text-xs text-gray-400 mt-2 font-medium">{t("proof.clickToDetail")}</p>
           </button>
 
           {/* === Collapsible Advanced Stats === */}
@@ -915,7 +927,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             onClick={() => setShowAdvancedStats(v => !v)}
             className="flex items-center justify-center gap-1.5 w-full py-3 text-[12px] font-bold text-gray-400 active:opacity-60 transition-opacity"
           >
-            운동 과학 데이터
+            {t("proof.scienceData")}
             <svg className={`w-3.5 h-3.5 transition-transform ${showAdvancedStats ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
@@ -939,7 +951,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                 <div className={`bg-gradient-to-r ${lvlGradient} px-6 py-4`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-white">내 운동 등급</h3>
+                      <h3 className="text-base font-black text-white">{t("proof.myGrade")}</h3>
                       <button onClick={() => setHelpCard("trainingLevel")} className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                         <span className="text-[10px] font-black text-white/80">?</span>
                       </button>
@@ -947,12 +959,12 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                     <span className="text-xl font-black text-white tracking-tight">{lvlLabel}</span>
                   </div>
                   {levelEst.decayed && (
-                    <p className="text-[10px] text-white/70 mt-1">최근 운동이 뜸해서 등급이 내려갔어요</p>
+                    <p className="text-[10px] text-white/70 mt-1">{t("proof.gradeDecayed")}</p>
                   )}
                 </div>
                 <div className="bg-white px-5 py-4">
                   {levelEst.source === "default" ? (
-                    <p className="text-[12px] text-gray-400 leading-relaxed py-2">아직 기록이 부족해서 뉴비로 시작해요. 운동을 기록하면 자동으로 등급이 올라가요!</p>
+                    <p className="text-[12px] text-gray-400 leading-relaxed py-2">{t("proof.gradeDefault")}</p>
                   ) : (
                     <div className="divide-y divide-gray-100">
                       {levelEst.details.map((d, i) => {
@@ -965,7 +977,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                             <div className={`w-1 h-12 rounded-full ${accent.split(" ")[0].replace("border", "bg")}`} />
                             <p className="flex-1 min-w-0 text-[14px] text-gray-700 font-bold">{d.exercise}</p>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-gray-400 font-medium">최고 무게</span>
+                              <span className="text-[10px] text-gray-400 font-medium">{t("proof.maxWeight")}</span>
                               <span className="text-[20px] font-black text-[#1B4332] leading-none">{d.value}</span>
                               <span className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${accent.split(" ").slice(1).join(" ")}`}>{nm}</span>
                             </div>
@@ -1011,7 +1023,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             return (
               <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">4주 운동량 변화</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.4weekVolume")}</p>
                   <button onClick={() => setHelpCard("loadTimeline")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-[10px] font-black text-gray-400">?</span>
                   </button>
@@ -1085,9 +1097,9 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   <span>&nbsp;</span>
                 </div>
                 <div className="flex justify-center gap-2 text-[9px] text-gray-300 font-medium mt-1">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-50 border border-amber-200 rounded-sm inline-block" /> 많음</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-100 rounded-sm inline-block" /> 딱 좋음</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#2D6A4F] rounded-full inline-block" /> 운동량</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-50 border border-amber-200 rounded-sm inline-block" /> {t("proof.zoneHigh")}</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-100 rounded-sm inline-block" /> {t("proof.zoneOptimal")}</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#2D6A4F] rounded-full inline-block" /> {t("proof.zoneVolume")}</span>
                 </div>
                 {/* Load verdict */}
                 {(() => {
@@ -1095,15 +1107,15 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   const isOverload = latest > loadBand.overload;
                   const isHigh = latest > loadBand.high && !isOverload;
                   const isOptimal = latest >= loadBand.low && latest <= loadBand.high;
-                  const label = isOverload ? "너무 많아요" : isHigh ? "조금 많아요" : isOptimal ? "딱 좋아요" : "조금 적어요";
+                  const label = isOverload ? t("proof.loadOverload") : isHigh ? t("proof.loadHigh") : isOptimal ? t("proof.loadOptimal") : t("proof.loadLow");
                   const color = "text-gray-500";
                   const comment = isOverload
-                    ? "오늘 좀 무리했어요! 다음엔 가볍게 하는 게 좋겠어요."
+                    ? t("proof.loadOverload.desc")
                     : isHigh
-                    ? "살짝 많았지만 가끔은 괜찮아요. 자주 이러면 몸이 힘들 수 있어요."
+                    ? t("proof.loadHigh.desc")
                     : isOptimal
-                    ? "딱 좋은 운동량이에요! 이 페이스 유지하면 성장해요."
-                    : "운동량이 적었어요. 쉬는 날엔 괜찮지만 계속되면 아쉬워요.";
+                    ? t("proof.loadOptimal.desc")
+                    : t("proof.loadLow.desc");
                   return (
                     <div className="mt-4 pt-4 border-t border-gray-100 text-center">
                       <p className="text-2xl font-black text-[#1B4332]">{latest.toFixed(1)} <span className={`text-base ${color}`}>— {label}</span></p>
@@ -1124,8 +1136,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             if (sessionsWithVolume.length === 0) {
               return (
                 <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">이번 달 운동량</p>
-                  <h3 className="text-xl font-black text-gray-300">기록 없음</h3>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">{t("proof.monthVolume")}</p>
+                  <h3 className="text-xl font-black text-gray-300">{t("proof.noVolume")}</h3>
                 </div>
               );
             }
@@ -1134,7 +1146,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             const dateGroups: { dateStr: string; sessions: { volume: number; idx: number }[] }[] = [];
             let globalIdx = 0;
             sessionsWithVolume.forEach(h => {
-              const dateStr = new Date(h.date).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" });
+              const dateStr = new Date(h.date).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { month: "numeric", day: "numeric" });
               const vol = h.stats.totalVolume || 0;
               const last = dateGroups[dateGroups.length - 1];
               if (last && last.dateStr === dateStr) {
@@ -1189,8 +1201,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             return (
               <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible">
                 <div className="flex justify-between items-baseline mb-3 sm:mb-4">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">이번 달 운동량</p>
-                  <span className="text-[9px] font-black text-gray-300">최근 {recentGroups.length}일</span>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.monthVolume")}</p>
+                  <span className="text-[9px] font-black text-gray-300">{t("proof.recentDays", { count: String(recentGroups.length) })}</span>
                 </div>
 
                 <div className="relative h-36 sm:h-32 mt-5 sm:mt-4 mb-2 mx-5">
@@ -1273,19 +1285,19 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             <div className="flex-1 overflow-y-auto scrollbar-hide">
             {helpCard === "tierSystem" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">시즌 티어 시스템</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{t("proof.help.tierSystem")}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>운동하면 <span className="font-bold text-[#1B4332]">경험치(EXP)</span>가 쌓여요. EXP가 쌓이면 티어가 올라가요!</p>
+                  <p dangerouslySetInnerHTML={{ __html: t("proof.help.tierDesc1") }} />
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-gray-500">EXP를 얻는 방법</p>
+                    <p className="text-[11px] font-bold text-gray-500">{t("proof.help.howToGetExp")}</p>
                     <div className="space-y-1.5 text-[11px]">
-                      <p>운동 완료 → <span className="font-bold text-[#2D6A4F]">+1 EXP</span></p>
-                      <p>주간 퀘스트 완료 → <span className="font-bold text-[#2D6A4F]">+2~5 EXP</span></p>
-                      <p>주간 올클리어 → <span className="font-bold text-[#2D6A4F]">+5 EXP 보너스</span></p>
+                      <p>{t("proof.help.expWorkout")} <span className="font-bold text-[#2D6A4F]">+1 EXP</span></p>
+                      <p>{t("proof.help.expQuest")} <span className="font-bold text-[#2D6A4F]">+2~5 EXP</span></p>
+                      <p>{t("proof.help.expAllClear")} <span className="font-bold text-[#2D6A4F]">+5 EXP</span></p>
                     </div>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-gray-500">티어 구간</p>
+                    <p className="text-[11px] font-bold text-gray-500">{t("proof.help.tierRanges")}</p>
                     <div className="space-y-1.5">
                       {TIERS.map((t, i) => {
                         const next = TIERS[i + 1];
@@ -1298,69 +1310,69 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                       })}
                     </div>
                   </div>
-                  <p>시즌은 <span className="font-bold text-[#1B4332]">4개월마다 리셋</span>돼요 (1~4월, 5~8월, 9~12월). 새 시즌이 시작되면 Iron부터 다시 도전!</p>
-                  <p>주 3회 꾸준히 + 퀘스트 달성하면 시즌 내 <span className="font-bold text-[#1B4332]">Diamond</span>까지 갈 수 있어요.</p>
+                  <p dangerouslySetInnerHTML={{ __html: t("proof.help.tierReset") }} />
+                  <p dangerouslySetInnerHTML={{ __html: t("proof.help.tierGoal") }} />
                 </div>
               </>
             )}
             {helpCard === "loadTimeline" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">4주 운동량 변화</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{t("proof.help.4weekTitle")}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>최근 4주 동안 <span className="font-bold text-[#1B4332]">얼마나 운동했는지</span> 그래프로 보여줘요. 점 하나가 운동 한 번이에요.</p>
+                  <p dangerouslySetInnerHTML={{ __html: t("proof.help.4weekDesc") }} />
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded-sm inline-block shrink-0" />
-                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">초록색 = 딱 좋은 운동량</span></p>
+                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">{t("proof.help.zoneGreenLabel")}</span></p>
                     </div>
-                    <p className="text-[11px] text-gray-500 ml-5">내 등급에 맞는 적정 운동량이에요. 여기 안에 있으면 잘하고 있는 거예요!</p>
+                    <p className="text-[11px] text-gray-500 ml-5">{t("proof.help.zoneGreenDesc")}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="w-3 h-3 bg-amber-50 border border-amber-200 rounded-sm inline-block shrink-0" />
-                      <p className="text-[11px]"><span className="font-bold text-amber-600">노란색 = 좀 많았어요</span></p>
+                      <p className="text-[11px]"><span className="font-bold text-amber-600">{t("proof.help.zoneYellowLabel")}</span></p>
                     </div>
-                    <p className="text-[11px] text-gray-500 ml-5">가끔은 괜찮지만 계속 넘으면 몸이 힘들 수 있어요.</p>
+                    <p className="text-[11px] text-gray-500 ml-5">{t("proof.help.zoneYellowDesc")}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="w-3 h-3 bg-[#2D6A4F] rounded-full inline-block shrink-0" />
-                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">점 = 그날 운동량</span></p>
+                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">{t("proof.help.dotLabel")}</span></p>
                     </div>
-                    <p className="text-[11px] text-gray-500 ml-5">들어올린 무게 × 횟수의 합이에요. 점을 터치하면 수치를 볼 수 있어요.</p>
+                    <p className="text-[11px] text-gray-500 ml-5">{t("proof.help.dotDesc")}</p>
                   </div>
-                  <p>초록 영역 안에 점이 꾸준히 찍히면 <span className="font-bold text-[#2D6A4F]">성장하고 있다는 뜻</span>이에요!</p>
-                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM, Schoenfeld et al. (2017), NSCA</p>
+                  <p dangerouslySetInnerHTML={{ __html: t("proof.help.zoneConclusion") }} />
+                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">ACSM, Schoenfeld et al. (2017), NSCA</p>
                 </div>
               </>
             )}
             {helpCard === "trainingLevel" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">내 운동 등급</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{t("proof.help.gradeTitle")}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>운동 기록을 보고 <span className="font-bold text-[#1B4332]">자동으로 등급을 매겨줘요</span>. 이 등급에 따라 운동량 기준이 달라져요.</p>
+                  <p dangerouslySetInnerHTML={{ __html: t("proof.help.gradeDesc") }} />
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-gray-500">어떻게 판정하나요?</p>
+                    <p className="text-[11px] font-bold text-gray-500">{t("proof.help.howToGrade")}</p>
                     <div className="space-y-1.5">
                       <div className="flex items-start gap-2">
-                        <span className="text-[10px] font-black text-[#2D6A4F] mt-0.5 shrink-0">1순위</span>
-                        <p className="text-[11px]"><span className="font-bold">3대 운동</span>(스쿼트/벤치프레스/데드리프트)에서 들 수 있는 최고 무게를 체중과 비교</p>
+                        <span className="text-[10px] font-black text-[#2D6A4F] mt-0.5 shrink-0">{t("proof.help.gradePriority1")}</span>
+                        <p className="text-[11px]" dangerouslySetInnerHTML={{ __html: t("proof.help.gradePriority1Desc") }} />
                       </div>
                       <div className="flex items-start gap-2">
-                        <span className="text-[10px] font-black text-[#2D6A4F] mt-0.5 shrink-0">2순위</span>
-                        <p className="text-[11px]"><span className="font-bold">맨몸 운동</span>(푸쉬업/풀업) 몇 개 하는지</p>
+                        <span className="text-[10px] font-black text-[#2D6A4F] mt-0.5 shrink-0">{t("proof.help.gradePriority2")}</span>
+                        <p className="text-[11px]" dangerouslySetInnerHTML={{ __html: t("proof.help.gradePriority2Desc") }} />
                       </div>
                     </div>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">등급 기준 (남성 · 최고 무게/체중)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{t("proof.help.gradeStandardMale")}</p>
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px]">
-                        <span className="font-medium text-gray-500">종목</span>
+                        <span className="font-medium text-gray-500">{t("proof.help.exercise")}</span>
                         <div className="flex gap-3">
-                          <span className="font-bold text-gray-400 w-10 text-center">뉴비</span>
-                          <span className="font-bold text-[#2D6A4F] w-10 text-center">중수</span>
-                          <span className="font-bold text-amber-600 w-10 text-center">고수</span>
+                          <span className="font-bold text-gray-400 w-10 text-center">{t("proof.level.beginner")}</span>
+                          <span className="font-bold text-[#2D6A4F] w-10 text-center">{t("proof.level.intermediate")}</span>
+                          <span className="font-bold text-amber-600 w-10 text-center">{t("proof.level.advanced")}</span>
                         </div>
                       </div>
                       <div className="flex justify-between text-[10px]">
-                        <span className="text-gray-600">스쿼트</span>
+                        <span className="text-gray-600">{t("proof.help.squat")}</span>
                         <div className="flex gap-3">
                           <span className="text-gray-400 w-10 text-center">~0.75x</span>
                           <span className="text-[#2D6A4F] w-10 text-center">0.75x</span>
@@ -1368,7 +1380,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                         </div>
                       </div>
                       <div className="flex justify-between text-[10px]">
-                        <span className="text-gray-600">벤치프레스</span>
+                        <span className="text-gray-600">{t("proof.help.benchPress")}</span>
                         <div className="flex gap-3">
                           <span className="text-gray-400 w-10 text-center">~0.50x</span>
                           <span className="text-[#2D6A4F] w-10 text-center">0.50x</span>
@@ -1376,7 +1388,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                         </div>
                       </div>
                       <div className="flex justify-between text-[10px]">
-                        <span className="text-gray-600">데드리프트</span>
+                        <span className="text-gray-600">{t("proof.help.deadlift")}</span>
                         <div className="flex gap-3">
                           <span className="text-gray-400 w-10 text-center">~0.75x</span>
                           <span className="text-[#2D6A4F] w-10 text-center">0.75x</span>
@@ -1386,24 +1398,24 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                     </div>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">맨몸 운동 기준 (남성)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{t("proof.help.bodyweightMale")}</p>
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px]">
-                        <span className="text-gray-600">푸쉬업</span>
-                        <span className="text-gray-500">~10회 뉴비 · 10~25회 중수 · 25회+ 고수</span>
+                        <span className="text-gray-600">{t("proof.help.pushup")}</span>
+                        <span className="text-gray-500">{t("proof.help.pushupRange")}</span>
                       </div>
                       <div className="flex justify-between text-[10px]">
-                        <span className="text-gray-600">풀업</span>
-                        <span className="text-gray-500">~1회 뉴비 · 1~8회 중수 · 8회+ 고수</span>
+                        <span className="text-gray-600">{t("proof.help.pullup")}</span>
+                        <span className="text-gray-500">{t("proof.help.pullupRange")}</span>
                       </div>
                     </div>
                   </div>
                   <div className="bg-amber-50 rounded-xl p-3">
-                    <p className="text-[11px] font-bold text-amber-700 mb-1">등급 유지 조건</p>
-                    <p className="text-[10px] text-amber-600">최고 기록으로 등급이 올라가지만, 최근 4주간 운동을 안 하면 한 단계 내려가요. 꾸준히 해야 유지돼요!</p>
+                    <p className="text-[11px] font-bold text-amber-700 mb-1">{t("proof.help.gradeKeep")}</p>
+                    <p className="text-[10px] text-amber-600">{t("proof.help.gradeKeepDesc")}</p>
                   </div>
-                  <p>여성은 기준이 조금 다르게 적용돼요.</p>
-                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: NSCA, Rippetoe & Kilgore (2006)</p>
+                  <p>{t("proof.help.femaleNote")}</p>
+                  <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">NSCA, Rippetoe & Kilgore (2006)</p>
                 </div>
               </>
             )}
@@ -1412,7 +1424,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               onClick={() => setHelpCard(null)}
               className="w-full py-3 mt-5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm active:scale-[0.98] transition-all shrink-0"
             >
-              확인
+              {t("proof.help.confirm")}
             </button>
           </div>
         </div>
@@ -1427,7 +1439,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           >
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
             <h3 className="text-[#1B4332] text-base font-bold mb-4">
-              {viewMonth + 1}월 {dayPickerSessions.day}일 운동 기록
+              {t("proof.dayRecord", { month: String(viewMonth + 1), day: String(dayPickerSessions.day) })}
             </h3>
             <div className="flex flex-col gap-2">
               {dayPickerSessions.sessions.map((session, idx) => {

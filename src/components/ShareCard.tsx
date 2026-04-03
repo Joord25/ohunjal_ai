@@ -3,6 +3,8 @@
 import React, { useRef, useState } from "react";
 import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory } from "@/constants/workout";
 import { WorkoutMetrics } from "@/utils/workoutMetrics";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getExerciseName } from "@/utils/exerciseName";
 
 interface ShareCardProps {
   sessionData: WorkoutSessionData;
@@ -61,6 +63,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
   recentHistory = [],
   onClose,
 }) => {
+  const { locale } = useTranslation();
   const [currentCard, setCurrentCard] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const [mode, setMode] = useState<"transparent" | "filled">("transparent");
@@ -87,7 +90,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
       const origIdx = sessionData.exercises.indexOf(ex);
       const exLogs = logs[origIdx] || [];
       const completedSets = exLogs.filter(l => (l.repsCompleted ?? 0) > 0).length;
-      return { name: ex.name, nameKo: ex.name.replace(/\s*\(.*\)$/, ""), sets: completedSets, type: ex.type };
+      return { name: ex.name, displayName: getExerciseName(ex.name, locale), sets: completedSets, type: ex.type };
     })
     .filter(e => e.sets > 0 && e.type === "strength");
 
@@ -121,7 +124,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
       if (!blob) return;
       if (navigator.share && navigator.canShare?.({ files: [new File([blob], "ohunjal.png", { type: "image/png" })] })) {
         const file = new File([blob], "ohunjal-workout.png", { type: "image/png" });
-        await navigator.share({ files: [file], title: "오운잘 운동 기록" });
+        await navigator.share({ files: [file], title: locale === "ko" ? "오운잘 운동 기록" : "Ohunjal Workout" });
       } else {
         downloadBlob(blob);
       }
@@ -168,7 +171,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
   // Brand footer (shared)
   const BrandFooter = () => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
-      <img src="/share.logo.png" alt="오운잘 AI" style={{ height: 100 }} />
+      <img src="/share.logo.png" alt="Ohunjal AI" style={{ height: 100 }} />
     </div>
   );
 
@@ -181,7 +184,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
         </svg>
       </button>
 
-      <p className="text-white/60 text-xs font-bold mb-4 tracking-wider uppercase">운동 기록 공유</p>
+      <p className="text-white/60 text-xs font-bold mb-4 tracking-wider uppercase">{locale === "ko" ? "운동 기록 공유" : "Share Workout"}</p>
 
       {/* Card preview */}
       <div
@@ -227,7 +230,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                       lineHeight: 1.4,
                       textShadow: shadow,
                     }}>
-                      {ex.nameKo}
+                      {ex.displayName}
                     </p>
                   ))}
                   {mainExercises.length > 6 && (
@@ -278,7 +281,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                   <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
                     <div>
                       <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                        {topPR.exerciseName.replace(/\s*\(.*\)$/, "")}
+                        {getExerciseName(topPR.exerciseName, locale)}
                       </p>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                         <span style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
@@ -292,7 +295,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                     {prs.slice(1, 3).map((pr, i) => (
                       <div key={i}>
                         <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                          {pr.exerciseName.replace(/\s*\(.*\)$/, "")}
+                          {getExerciseName(pr.exerciseName, locale)}
                         </p>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                           <span style={{ color: "white", fontSize: 28, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
@@ -316,7 +319,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                 <div style={{ textAlign: "center" }}>
                   <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Sets</p>
                   <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
-                    {totalSetsCount}<span style={{ color: labelColor, fontSize: 16, fontWeight: 700, marginLeft: 4 }}>세트</span>
+                    {totalSetsCount}<span style={{ color: labelColor, fontSize: 16, fontWeight: 700, marginLeft: 4 }}>{locale === "ko" ? "세트" : "sets"}</span>
                   </p>
                 </div>
 
@@ -393,7 +396,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
           </div>
-          <span className="text-white/50 text-[10px] font-bold">저장</span>
+          <span className="text-white/50 text-[10px] font-bold">{locale === "ko" ? "저장" : "Save"}</span>
         </button>
         <button onClick={handleShare} disabled={isCapturing} className="flex flex-col items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
           <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
@@ -401,7 +404,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
           </div>
-          <span className="text-white/50 text-[10px] font-bold">공유</span>
+          <span className="text-white/50 text-[10px] font-bold">{locale === "ko" ? "공유" : "Share"}</span>
         </button>
       </div>
 

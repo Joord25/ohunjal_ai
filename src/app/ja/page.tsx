@@ -140,7 +140,7 @@ export default function JaLandingPage() {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSelector current="/ja" />
-              <a href="/app" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">始める</a>
+              <a href="/app?lang=en" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">始める</a>
             </div>
           </div>
         </nav>
@@ -159,7 +159,7 @@ export default function JaLandingPage() {
               コンディションを選ぶだけ。AIが3秒で今日のメニューを作ります。
             </p>
             <div className="mt-10">
-              <a href="/app" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+              <a href="/app?lang=en" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
                 今日のメニューを無料で受け取る
               </a>
             </div>
@@ -335,7 +335,7 @@ export default function JaLandingPage() {
           <RevealSection>
             <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332] mb-4">もう迷わなくていい</h2>
             <p className="text-base sm:text-lg text-gray-500 mb-8">最初のワークアウトは無料。登録不要です。</p>
-            <a href="/app" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+            <a href="/app?lang=en" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
               今日のメニューを無料で受け取る
             </a>
           </RevealSection>

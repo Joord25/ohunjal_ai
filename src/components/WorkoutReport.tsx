@@ -8,6 +8,23 @@ import { loadRecentHistory as loadRecentHistoryFromStore } from "@/utils/workout
 import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, processWorkoutCompletion, getOrRebuildSeasonExp } from "@/utils/questSystem";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getExerciseName } from "@/utils/exerciseName";
+
+function translateDesc(desc: string, locale: string): string {
+  if (locale === "ko") return desc;
+  return desc
+    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
+    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
+    .replace(/상체\(밀기\(Push\)\)/g, "Upper (Push)").replace(/상체\(당기기\(Pull\)\)/g, "Upper (Pull)")
+    .replace(/(\d+)종/g, "$1 exercises").replace(/(\d+)세트/g, "$1 sets")
+    .replace(/집중 운동/g, "Focus")
+    .replace(/인터벌 러닝/g, "Interval Running").replace(/이지 런/g, "Easy Run").replace(/장거리 러닝/g, "Long Distance Run")
+    .replace(/러너 코어/g, "Runner Core").replace(/맨몸 \+ 덤벨 전신 서킷/g, "Bodyweight + Dumbbell Circuit")
+    .replace(/근비대/g, "Hypertrophy").replace(/근력 강화/g, "Strength")
+    .replace(/체지방 감량/g, "Fat Loss").replace(/전반적 체력 향상/g, "General Fitness")
+    .replace(/상체 뻣뻣함 개선/g, "Upper stiffness relief").replace(/하체 무거움 완화/g, "Lower heaviness relief")
+    .replace(/전반적 피로 회복/g, "Fatigue recovery").replace(/최적 컨디션/g, "Optimal condition");
+}
 
 /* === RPG 리절트 카드 === */
 interface RpgInsight {
@@ -25,7 +42,7 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
   formatDuration: (s: number) => string; onHelpPress: () => void; onShowPrediction?: () => void; skipAnimation?: boolean;
   insight?: RpgInsight; sessionDesc?: string;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [visibleChars, setVisibleChars] = useState<number[]>([]);
   const [currentLine, setCurrentLine] = useState(skipAnimation ? 999 : -1);
   const current = getTierFromExp(seasonExp);
@@ -44,12 +61,12 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
   const volumeExpMsg = (() => {
     if (!isStrengthSession || totalVolume <= 0) return null;
     const desc = (sessionDesc || "").toLowerCase();
-    if (/가슴|푸시|chest|push|벤치/.test(desc)) return "거울 앞에서 어깨 라인이 달라지는 걸 곧 느끼게 돼요";
-    if (/등|풀|back|pull|로우|랫/.test(desc)) return "자세가 펴지고 등이 단단해지는 걸 느끼게 돼요";
-    if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(desc)) return "계단 3층쯤은 숨 안 차고 올라가는 날이 올 거예요";
-    if (/코어|복근|core|ab|플랭크/.test(desc)) return "오래 앉아 일해도 허리가 덜 뻐근해지는 중이에요";
-    if (/러닝|유산소|cardio|run|hiit|서킷/.test(desc)) return "일상에서 몸이 가벼워지는 걸 곧 느끼게 돼요";
-    return "꾸준히 하면 일상에서 몸이 달라지는 걸 느끼게 돼요";
+    if (/가슴|푸시|chest|push|벤치/.test(desc)) return t("report.exp.chest");
+    if (/등|풀|back|pull|로우|랫/.test(desc)) return t("report.exp.back");
+    if (/하체|레그|스쿼트|leg|squat|런지|데드/.test(desc)) return t("report.exp.legs");
+    if (/코어|복근|core|ab|플랭크/.test(desc)) return t("report.exp.core");
+    if (/러닝|유산소|cardio|run|hiit|서킷/.test(desc)) return t("report.exp.cardio");
+    return t("report.exp.default");
   })();
 
   type ReportLine = { text: string; bold?: boolean; highlight?: boolean; onTap?: () => void };
@@ -57,21 +74,21 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
   // 코치카드 블록 구성
   const block1 = { // 감정 + 세션 요약
     gradeMsg,
-    sessionInfo: `${sessionDesc || ""} · ${intensityLabel} · ${formatDuration(totalDurationSec)}`,
+    sessionInfo: `${translateDesc(sessionDesc || "", locale)} · ${intensityLabel} · ${formatDuration(totalDurationSec)}`,
   };
 
   const block2Lines: string[] = [ // 경험 번역 (최대 2줄)
     ...(volumeExpMsg ? [volumeExpMsg] : []),
-    ...(insight?.weightPR ? ["무거운 짐도 가뿐해지는 날이 가까워지고 있어요"] : []),
+    ...(insight?.weightPR ? [t("report.exp.weightPR")] : []),
   ].slice(0, 2);
 
   // goalLine 경험 번역
   const goalExpMsg = (() => {
     if (!insight?.goalLine) return null;
     const gl = insight.goalLine;
-    if (/kcal/.test(gl)) return "이 페이스면 4주 뒤 체중계 숫자가 달라져요";
-    if (/1RM/.test(gl)) return "같은 무게가 점점 가벼워지고 있어요";
-    if (/WHO/.test(gl)) return "건강한 삶의 기준을 넘어서고 있어요";
+    if (/kcal/.test(gl)) return t("report.exp.goal.fatLoss");
+    if (/1RM/.test(gl)) return t("report.exp.goal.muscleGain");
+    if (/WHO/.test(gl)) return t("report.exp.goal.health");
     return null;
   })();
   if (goalExpMsg && block2Lines.length < 2) block2Lines.push(goalExpMsg);
@@ -86,8 +103,8 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
   const coachLines: ReportLine[] = [
     { text: block1.gradeMsg, bold: true },
     { text: block1.sessionInfo },
-    ...block2Lines.map(t => ({ text: t, highlight: true })),
-    ...block3Lines.map(t => ({ text: t })),
+    ...block2Lines.map(txt => ({ text: txt, highlight: true })),
+    ...block3Lines.map(txt => ({ text: txt })),
   ];
 
   // 카드2: 게이미피케이션 라인
@@ -95,12 +112,12 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
     ...expGained
       .filter(e => e.source !== "workout")
       .map(e => ({ text: `${e.detail}! +${e.amount} EXP`, bold: true, highlight: true })),
-    ...(totalExpGained > 0 ? [{ text: `+${totalExpGained} EXP 획득!`, bold: true }] : []),
+    ...(totalExpGained > 0 ? [{ text: t("report.expGained", { exp: String(totalExpGained) }), bold: true }] : []),
     ...(tierUp
-      ? [{ text: `${prev.tier.name} → ${current.tier.name} 승급!`, bold: true, highlight: true }]
+      ? [{ text: t("report.tierUp", { prev: prev.tier.name, current: current.tier.name }), bold: true, highlight: true }]
       : current.nextTier
-        ? [{ text: `${current.tier.name}  ${current.nextTier.name}까지 ${current.remaining} EXP` }]
-        : [{ text: `${current.tier.name}  최고 티어 달성!`, bold: true, highlight: true }]),
+        ? [{ text: t("report.tierProgress", { current: current.tier.name, next: current.nextTier.name, remaining: String(current.remaining) }) }]
+        : [{ text: t("report.tierMax", { current: current.tier.name }), bold: true, highlight: true }]),
     ...(insight?.phaseUnlock ? [{ text: insight.phaseUnlock + (insight.phaseJustUnlocked ? " →" : ""), bold: !!insight.phaseJustUnlocked, highlight: !!insight.phaseJustUnlocked, onTap: insight.phaseJustUnlocked && onShowPrediction ? onShowPrediction : undefined }] : []),
   ];
 
@@ -145,7 +162,7 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-hidden">
         <div className="flex items-center gap-2 mb-3">
           <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
-          <span className="text-[11px] font-bold text-gray-400">오운잘 AI 코치</span>
+          <span className="text-[11px] font-bold text-gray-400">{t("report.aiCoach")}</span>
         </div>
 
         {/* 블록1: 감정 + 세션 요약 */}
@@ -219,7 +236,7 @@ function RpgResultCard({ totalDurationSec, totalVolume, successRate, isStrengthS
       {gameLines.length > 0 && (() => {
         const [gameOpen, setGameOpen] = React.useState(false);
         const expSummary = totalExpGained > 0
-          ? `+${totalExpGained} EXP${tierUp ? ` · ${current.tier.name} 승급!` : ""}`
+          ? `+${totalExpGained} EXP${tierUp ? t("report.tierUpShort", { tier: current.tier.name }) : ""}`
           : current.tier.name;
         return (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -344,7 +361,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const [e1rmIndex, setE1rmIndex] = useState(0);
   const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>(getRecentHistorySync);
 
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   useEffect(() => { trackEvent("report_view"); }, []);
 
   const metrics = buildWorkoutMetrics(sessionData.exercises, logs, bodyWeightKg, savedDurationSec);
@@ -367,9 +384,14 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   })();
 
   const formatDuration = (sec: number) => {
-    if (sec >= 3600) return `${Math.floor(sec / 3600)}시간 ${Math.floor((sec % 3600) / 60)}분`;
-    if (sec >= 60) return `${Math.floor(sec / 60)}분 ${sec % 60 > 0 ? `${sec % 60}초` : ""}`.trim();
-    return `${sec}초`;
+    if (sec >= 3600) return t("report.formatDuration.hm", { h: String(Math.floor(sec / 3600)), m: String(Math.floor((sec % 3600) / 60)) });
+    if (sec >= 60) {
+      const s = sec % 60;
+      return s > 0
+        ? t("report.formatDuration.ms", { m: String(Math.floor(sec / 60)), s: String(s) })
+        : t("report.formatDuration.mOnly", { m: String(Math.floor(sec / 60)) });
+    }
+    return t("report.formatDuration.sOnly", { s: String(sec) });
   };
 
   const historyStats = get28dAvgVolume(recentHistory);
@@ -421,7 +443,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const loadRatio = avgGraphLoad > 0 ? loadScore / avgGraphLoad : null;
 
   // 레벨 표시명
-  const levelLabel = trainingLevel === "advanced" ? "상급" : trainingLevel === "intermediate" ? "중급" : "초급";
+  const levelLabel = t(`report.level.${trainingLevel === "advanced" ? "advanced" : trainingLevel === "intermediate" ? "intermediate" : "beginner"}`);
 
   return (
     <div className="flex flex-col h-full bg-[#FAFAFA] animate-fade-in relative">
@@ -432,7 +454,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <span className="text-[11px] font-medium text-gray-400">{(sessionDate ? new Date(sessionDate) : new Date()).toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</span>
+        <span className="text-[11px] font-medium text-gray-400">{(sessionDate ? new Date(sessionDate) : new Date()).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { month: "long", day: "numeric", weekday: "short" })}</span>
         {sessionDate ? (
           <div className="flex items-center gap-1 -mr-2">
             <button onClick={() => setShowShare(true)} className="p-2 active:scale-95 transition-all">
@@ -492,7 +514,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 const weeklyCal = sessionCal * freq;
                 const weeklyLossKg = Math.round((weeklyCal / 7700) * 100) / 100;
                 const pred4w = Math.round((bw - weeklyLossKg * 4) * 10) / 10;
-                insight.goalLine = `이번 운동 ~${sessionCal}kcal 소모 → 4주 후 예상 ${pred4w}kg`;
+                insight.goalLine = t("report.insight.goalLine.fatLoss", { cal: String(sessionCal), weight: String(pred4w) });
               } else if (goal === "muscle_gain") {
                 const bestVal = bestE1RM?.value ?? 0;
                 const target = Math.round(bw * 1.0);
@@ -501,13 +523,13 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                   const eNameFull = bestE1RM!.exerciseName.split("(")[0].trim();
                   const eName = eNameFull.length > 6 ? eNameFull.slice(0, 6) + ".." : eNameFull;
                   const pct = Math.min(100, Math.round((bestVal / target) * 100));
-                  insight.goalLine = `${eName} 추정1RM ${rounded}kg (중급 ${pct}%)`;
+                  insight.goalLine = t("report.insight.goalLine.muscleGain", { name: eName, value: String(rounded), pct: String(pct) });
                 }
               } else if (goal === "endurance" || goal === "health") {
                 const whoMin = 150;
                 const weeklyMin = freq * (sessionMin || 45);
                 const pct = Math.min(200, Math.round((weeklyMin / whoMin) * 100));
-                insight.goalLine = `이번 주 WHO 권장량 ${pct}% 달성 중`;
+                insight.goalLine = t("report.insight.goalLine.health", { pct: String(pct) });
               }
             }
           } catch {}
@@ -534,7 +556,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 }
               }
               if (todayMaxWeight > historyMaxWeight && historyMaxWeight > 0) {
-                insight.weightPR = `최고 무게 신기록! ${historyMaxWeight}kg → ${todayMaxWeight}kg`;
+                insight.weightPR = t("report.insight.weightPR", { prev: String(historyMaxWeight), current: String(todayMaxWeight) });
               }
             }
           }
@@ -544,15 +566,15 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           const prevWorkouts = recentHistory.length;
           const phaseThresholds = [5, 10, 20];
           // 이전에는 미달이었지만 이번에 달성한 Phase 찾기
-          const justUnlockedPhase = phaseThresholds.find(t => prevWorkouts < t && totalWorkouts >= t);
+          const justUnlockedPhase = phaseThresholds.find(th => prevWorkouts < th && totalWorkouts >= th);
           if (justUnlockedPhase) {
-            insight.phaseUnlock = `${justUnlockedPhase}회 달성! 새로운 예측이 해금되었습니다`;
+            insight.phaseUnlock = t("report.insight.phaseUnlock", { count: String(justUnlockedPhase) });
             insight.phaseJustUnlocked = true;
           } else {
-            const nextPhase = phaseThresholds.find(t => totalWorkouts < t);
+            const nextPhase = phaseThresholds.find(th => totalWorkouts < th);
             if (nextPhase) {
               const remaining = nextPhase - totalWorkouts;
-              insight.phaseUnlock = `다음 예측 해금까지 ${remaining}회 남음`;
+              insight.phaseUnlock = t("report.insight.phaseRemaining", { remaining: String(remaining) });
             }
           }
 
@@ -570,11 +592,11 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             if (lastVol > 0) {
               const diff = Math.round(((totalVolume - lastVol) / lastVol) * 100);
               if (diff > 0) {
-                insight.volumeCompare = `총 볼륨 ${totalVolume.toLocaleString()}kg (지난번 대비 +${diff}%)`;
+                insight.volumeCompare = t("report.insight.volumeUp", { volume: totalVolume.toLocaleString(), diff: String(diff) });
               } else if (diff < 0) {
-                insight.volumeCompare = `총 볼륨 ${totalVolume.toLocaleString()}kg (지난번 대비 ${diff}%)`;
+                insight.volumeCompare = t("report.insight.volumeDown", { volume: totalVolume.toLocaleString(), diff: String(diff) });
               } else {
-                insight.volumeCompare = `총 볼륨 ${totalVolume.toLocaleString()}kg (지난번과 동일)`;
+                insight.volumeCompare = t("report.insight.volumeSame", { volume: totalVolume.toLocaleString() });
               }
             }
           }
@@ -610,8 +632,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           >
             <div className="flex items-center gap-2">
               <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-              <span className="text-sm font-bold text-[#1B4332]">운동 과학 데이터</span>
-              <span className="text-[10px] text-gray-400 font-medium">1RM · 부하 · 강도 · 피로</span>
+              <span className="text-sm font-bold text-[#1B4332]">{t("report.scienceData")}</span>
+              <span className="text-[10px] text-gray-400 font-medium">{t("report.scienceSub")}</span>
             </div>
             <svg className={`w-4 h-4 text-gray-400 transition-transform ${showDetail ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
@@ -628,7 +650,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               {/* Top Lift */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.4s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">예상 최고 중량(1RM)</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.e1rm")}</p>
                   <button onClick={() => setHelpCard("topLift")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-[10px] font-black text-gray-400">?</span>
                   </button>
@@ -640,13 +662,10 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
 
                   return (
                     <>
-                      <div className="flex items-baseline gap-2">
-                        {currentBwRatio !== null && (
-                          <span className="text-[10px] font-bold text-gray-400">체중의</span>
-                        )}
+                      <div className="flex items-baseline gap-1.5 flex-wrap">
                         <p className="text-2xl font-black text-[#1B4332] leading-none">
                           {currentBwRatio !== null
-                            ? `${currentBwRatio.toFixed(1)}배`
+                            ? t("report.card.bwTimes", { ratio: currentBwRatio.toFixed(1) })
                             : current ? `${Math.round(current.value)}kg` : "-"}
                         </p>
                         {currentBwRatio !== null && (
@@ -657,14 +676,14 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                                 ? "bg-emerald-50 text-[#2D6A4F]"
                                 : "bg-gray-100 text-gray-500"
                           }`}>
-                            {currentBwRatio >= 1.2 ? "상급" : currentBwRatio >= 0.8 ? "중급" : "초급"}
+                            {currentBwRatio >= 1.2 ? t("report.level.advanced") : currentBwRatio >= 0.8 ? t("report.level.intermediate") : t("report.level.beginner")}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
                         <p className="text-[9px] text-gray-400 font-medium leading-tight truncate flex-1">
                           {current
-                            ? `${current.exerciseName.replace(/\s*\(.*\)$/, '')} ${Math.round(current.value)}kg`
+                            ? `${getExerciseName(current.exerciseName, locale)} ${Math.round(current.value)}kg`
                             : "-"}
                         </p>
                         {big4Combined.length > 1 && (
@@ -686,7 +705,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               {/* Load Status */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.5s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">부하 상태</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.loadStatus")}</p>
                   <button onClick={() => setHelpCard("loadStatus")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-[10px] font-black text-gray-400">?</span>
                   </button>
@@ -713,34 +732,34 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                   }`}>
                     {loadRatio !== null
                       ? (loadRatio >= bandLowRatio && loadRatio <= bandHighRatio
-                          ? (sessionIntensity.level === "low" ? "저강도 적정" : sessionIntensity.level === "high" ? "고강도 성장" : "성장 구간")
-                          : loadRatio > bandOverloadRatio ? "과부하" : loadRatio > bandHighRatio ? "고부하"
-                          : (sessionIntensity.level === "low" ? "회복 세션" : "볼륨 부족"))
-                      : "첫 세션"}
+                          ? (sessionIntensity.level === "low" ? t("report.load.lowOptimal") : sessionIntensity.level === "high" ? t("report.load.highGrowth") : t("report.load.growth"))
+                          : loadRatio > bandOverloadRatio ? t("report.load.overload") : loadRatio > bandHighRatio ? t("report.load.highLoad")
+                          : (sessionIntensity.level === "low" ? t("report.load.recovery") : t("report.load.deficit")))
+                      : t("report.load.first")}
                   </span>
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
                   {loadRatio !== null
-                    ? (loadRatio > bandOverloadRatio ? "상한 초과 · 다음엔 줄여보세요"
-                      : loadRatio > bandHighRatio ? "적정보다 많아요 · 조절해보세요"
+                    ? (loadRatio > bandOverloadRatio ? t("report.load.overloadTip")
+                      : loadRatio > bandHighRatio ? t("report.load.highTip")
                       : loadRatio < bandLowRatio
-                        ? (sessionIntensity.level === "low" ? "저강도 회복 · 계획대로 진행 중" : "적정보다 적어요 · 늘려보세요")
-                        : (sessionIntensity.level === "low" ? "저강도 적정 · 회복에 집중" : sessionIntensity.level === "high" ? "고강도 적정 · 좋은 페이스예요" : "성장 구간 · 좋은 페이스예요"))
-                    : (historyStats ? `${levelLabel} · ACSM 기준` : `${levelLabel} · 기록 누적 중`)}
+                        ? (sessionIntensity.level === "low" ? t("report.load.lowRecovery") : t("report.load.deficitTip"))
+                        : (sessionIntensity.level === "low" ? t("report.load.lowOptimalTip") : sessionIntensity.level === "high" ? t("report.load.highGrowthTip") : t("report.load.growthTip")))
+                    : (historyStats ? t("report.load.acsmBasis", { level: levelLabel }) : t("report.load.accumulating", { level: levelLabel }))}
                 </p>
               </div>
 
               {/* Session Intensity */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.6s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">운동 강도</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.intensity")}</p>
                   <button onClick={() => setHelpCard("intensity")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-[10px] font-black text-gray-400">?</span>
                   </button>
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <p className="text-2xl font-black text-[#1B4332] leading-none">
-                    {sessionIntensity.level === "high" ? "고강도" : sessionIntensity.level === "moderate" ? "중강도" : "저강도"}
+                    {t(`report.intensityLabel.${sessionIntensity.level}`)}
                   </p>
                   <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
                     sessionIntensity.level === "high" ? "bg-red-50 text-red-500"
@@ -749,18 +768,18 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                   }`}>
                     {sessionIntensity.basis === "percent_1rm" && sessionIntensity.avgPercentile1RM
                       ? `${sessionIntensity.avgPercentile1RM}% 1RM`
-                      : `평균 ${sessionIntensity.avgRepsPerSet}회`}
+                      : t("report.intensityAvgReps", { reps: String(sessionIntensity.avgRepsPerSet) })}
                   </span>
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
-                  이번 주: 고{intensityRec.weekSummary.high} · 중{intensityRec.weekSummary.moderate} · 저{intensityRec.weekSummary.low}
+                  {t("report.intensityWeek", { high: String(intensityRec.weekSummary.high), moderate: String(intensityRec.weekSummary.moderate), low: String(intensityRec.weekSummary.low) })}
                 </p>
               </div>
 
               {/* Fatigue Drop */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.7s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">피로 신호</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.fatigue")}</p>
                   <button onClick={() => setHelpCard("fatigueDrop")} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-[10px] font-black text-gray-400">?</span>
                   </button>
@@ -777,14 +796,14 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                           ? "bg-amber-50 text-amber-600"
                           : "bg-red-50 text-red-500"
                     }`}>
-                      {fatigueDrop > -15 ? "안정" : fatigueDrop > -25 ? "주의" : "위험"}
+                      {fatigueDrop > -15 ? t("report.fatigue.stable") : fatigueDrop > -25 ? t("report.fatigue.caution") : t("report.fatigue.danger")}
                     </span>
                   )}
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
                   {fatigueDrop !== null
-                    ? `필요회복시간 ${fatigueDrop >= 0 ? "12" : fatigueDrop > -15 ? "24" : fatigueDrop > -25 ? "48" : "72"}시간`
-                    : "후반 reps 변화"}
+                    ? t("report.fatigue.recoveryTime", { hours: fatigueDrop >= 0 ? "12" : fatigueDrop > -15 ? "24" : fatigueDrop > -25 ? "48" : "72" })
+                    : t("report.fatigue.repsChange")}
                 </p>
               </div>
             </>
@@ -793,52 +812,52 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               {/* Cardio/Mobility: Total Duration */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.4s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">총 운동 시간</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.totalTime")}</p>
                 </div>
                 <p className="text-2xl font-black text-[#1B4332] leading-none">
                   {formatDuration(totalDurationSec)}
                 </p>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
-                  {sessionCategory === "cardio" ? "유산소 세션" : "가동성 세션"}
+                  {sessionCategory === "cardio" ? t("report.card.cardioSession") : t("report.card.mobilitySession")}
                 </p>
               </div>
 
               {/* Completion Rate */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.5s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">완료율</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.completionRate")}</p>
                 </div>
                 <p className="text-2xl font-black text-[#1B4332] leading-none">
                   {successRate}%
                 </p>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
-                  {metrics.totalSets}개 항목 중 {Math.round(metrics.totalSets * successRate / 100)}개 완료
+                  {t("report.card.completionDetail", { total: String(metrics.totalSets), done: String(Math.round(metrics.totalSets * successRate / 100)) })}
                 </p>
               </div>
 
               {/* Total Exercises */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.6s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">수행 종목</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.exercises")}</p>
                 </div>
                 <p className="text-2xl font-black text-[#1B4332] leading-none">
-                  {sessionData.exercises.length}개
+                  {t("report.card.exerciseCount", { count: String(sessionData.exercises.length) })}
                 </p>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
-                  {sessionCategory === "cardio" ? "러닝 + 코어" : "스트레칭 + 가동성"}
+                  {sessionCategory === "cardio" ? t("report.card.cardioDesc") : t("report.card.mobilityDesc")}
                 </p>
               </div>
 
               {/* Session Type */}
               <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative animate-count-up" style={{ animationDelay: "0.7s" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">세션 타입</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.sessionType")}</p>
                 </div>
                 <p className="text-2xl font-black text-[#1B4332] leading-none">
                   {sessionCategory === "cardio" ? "🏃" : "🧘"}
                 </p>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
-                  {sessionCategory === "cardio" ? "유산소 / 달리기" : "회복 / 가동성"}
+                  {sessionCategory === "cardio" ? t("report.card.cardioType") : t("report.card.mobilityType")}
                 </p>
               </div>
             </>
@@ -852,30 +871,30 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           {isStrengthSession ? (
             <>
               <div className="flex-1 bg-white rounded-xl border border-gray-100 py-3 px-3 text-center shadow-sm">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">총 볼륨</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.summary.totalVolume")}</p>
                 <p className="text-base font-black text-[#1B4332]">{totalVolume.toLocaleString()}<span className="text-[10px] text-gray-400 ml-0.5">kg</span></p>
               </div>
               <div className="flex-1 bg-white rounded-xl border border-gray-100 py-3 px-3 text-center shadow-sm">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">총 세트</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.summary.totalSets")}</p>
                 <p className="text-base font-black text-[#1B4332]">{metrics.strengthSets}</p>
               </div>
               <div className="flex-1 bg-white rounded-xl border border-gray-100 py-3 px-3 text-center shadow-sm">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">총 렙수</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.summary.totalReps")}</p>
                 <p className="text-base font-black text-[#1B4332]">{metrics.totalReps}</p>
               </div>
             </>
           ) : (
             <>
               <div className="flex-1 bg-white rounded-xl border border-gray-100 py-3 px-3 text-center shadow-sm">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">운동 시간</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.summary.duration")}</p>
                 <p className="text-base font-black text-[#1B4332]">{formatDuration(totalDurationSec)}</p>
               </div>
               <div className="flex-1 bg-white rounded-xl border border-gray-100 py-3 px-3 text-center shadow-sm">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">총 항목</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.summary.totalItems")}</p>
                 <p className="text-base font-black text-[#1B4332]">{metrics.totalSets}</p>
               </div>
               <div className="flex-1 bg-white rounded-xl border border-gray-100 py-3 px-3 text-center shadow-sm">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">완료율</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.summary.completionRate")}</p>
                 <p className="text-base font-black text-[#1B4332]">{successRate}%</p>
               </div>
             </>
@@ -912,10 +931,10 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                   return (
                     <div key={idx} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
                       <div className="flex justify-between items-baseline">
-                        <h3 className="font-bold text-gray-800 text-sm text-left">{ex.name}</h3>
+                        <h3 className="font-bold text-gray-800 text-sm text-left">{getExerciseName(ex.name, locale)}</h3>
                         <span className="text-[9px] text-gray-400 uppercase font-black tracking-widest bg-gray-50 px-2 py-0.5 rounded">{ex.type}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-2">{ex.count} · {exerciseLogs.length}세트 완료</p>
+                      <p className="text-xs text-gray-400 mt-2">{t("report.log.setsComplete", { count: locale !== "ko" ? ex.count.replace(/(\d+)분/g, "$1 min").replace(/(\d+)초/g, "$1 sec").replace(/(\d+)세트/g, "$1 sets").replace(/(\d+)회/g, "$1 reps") : ex.count, sets: String(exerciseLogs.length) })}</p>
                     </div>
                   );
                 }
@@ -931,7 +950,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 return (
                   <div key={idx} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
                     <div className="flex justify-between items-baseline mb-3">
-                      <h3 className="font-bold text-gray-800 text-sm text-left">{ex.name}</h3>
+                      <h3 className="font-bold text-gray-800 text-sm text-left">{getExerciseName(ex.name, locale)}</h3>
                       <span className="text-[9px] text-gray-400 uppercase font-black tracking-widest bg-gray-50 px-2 py-0.5 rounded">{ex.type}</span>
                     </div>
 
@@ -940,7 +959,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                       {/* Weight Graph */}
                       {hasWeight && (
                         <>
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">중량 (kg)</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("report.log.weight")}</p>
                           <div className="relative h-16 mb-3">
                             {exerciseLogs.length > 1 && (
                               <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -994,7 +1013,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                       )}
 
                       {/* Reps Graph */}
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">반복 횟수</p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("report.log.reps")}</p>
                       <div className="relative h-16">
                         {exerciseLogs.length > 1 && (
                           <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -1028,7 +1047,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                             >
                               {isActive && (
                                 <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
-                                  {log.repsCompleted}회
+                                  {t("report.log.repsCount", { count: String(log.repsCompleted) })}
                                 </span>
                               )}
                               <div className={`w-2.5 h-2.5 bg-white border-[2.5px] rounded-full transition-transform ${isActive ? "scale-150" : ""} ${
@@ -1072,181 +1091,181 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             <div className="flex-1 overflow-y-auto scrollbar-hide">
             {helpCard === "topLift" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">예상 최고 중량(1RM)</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "예상 최고 중량(1RM)" : "Estimated 1-Rep Max (1RM)"}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>오늘 운동 기록으로 <span className="font-bold text-[#1B4332]">내가 1회 최대로 들 수 있는 무게(1RM)</span>를 추정하고, 체중 대비 몇 배인지 보여줘요.</p>
-                  <p>예를 들어 <span className="font-bold">1.1배</span>면 체중의 1.1배를 들 수 있다는 뜻이에요.</p>
-                  <p>▶ 버튼으로 <span className="font-bold">4대 운동</span>(스쿼트 · 데드리프트 · 벤치프레스 · 오버헤드프레스)의 기록을 넘겨볼 수 있어요.</p>
+                  <p>{locale === "ko" ? <>오늘 운동 기록으로 <span className="font-bold text-[#1B4332]">내가 1회 최대로 들 수 있는 무게(1RM)</span>를 추정하고, 체중 대비 몇 배인지 보여줘요.</> : <>Based on today&apos;s workout, we estimate <span className="font-bold text-[#1B4332]">the maximum weight you can lift for 1 rep (1RM)</span> and show how it compares to your body weight.</>}</p>
+                  <p>{locale === "ko" ? <>예를 들어 <span className="font-bold">1.1배</span>면 체중의 1.1배를 들 수 있다는 뜻이에요.</> : <>For example, <span className="font-bold">1.1x</span> means you can lift 1.1 times your body weight.</>}</p>
+                  <p>{locale === "ko" ? <>▶ 버튼으로 <span className="font-bold">4대 운동</span>(스쿼트 · 데드리프트 · 벤치프레스 · 오버헤드프레스)의 기록을 넘겨볼 수 있어요.</> : <>Use the ▶ button to browse your <span className="font-bold">Big 4 lifts</span> (Squat, Deadlift, Bench Press, Overhead Press).</>}</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">체중 대비 기준 ({gender === "female" ? "여성" : "남성"} · 벤치프레스 기준)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? <>체중 대비 기준 ({gender === "female" ? "여성" : "남성"} · 벤치프레스 기준)</> : <>BW Ratio Standards ({gender === "female" ? "Female" : "Male"} · Bench Press)</>}</p>
                     {gender === "female" ? (
                       <div className="flex gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">~0.5배 초급</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">0.5~0.8배 중급</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">0.8배+ 상급</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">{locale === "ko" ? "~0.5배 초급" : "~0.5x Beginner"}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">{locale === "ko" ? "0.5~0.8배 중급" : "0.5–0.8x Intermediate"}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">{locale === "ko" ? "0.8배+ 상급" : "0.8x+ Advanced"}</span>
                       </div>
                     ) : (
                       <div className="flex gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">~0.8배 초급</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">0.8~1.2배 중급</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">1.2배+ 상급</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-200 text-gray-600 rounded">{locale === "ko" ? "~0.8배 초급" : "~0.8x Beginner"}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">{locale === "ko" ? "0.8~1.2배 중급" : "0.8–1.2x Intermediate"}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">{locale === "ko" ? "1.2배+ 상급" : "1.2x+ Advanced"}</span>
                       </div>
                     )}
                   </div>
-                  <p><span className="font-bold">1RM</span>은 오늘 세트 기록(무게 × 횟수)에서 Epley 공식으로 추정한 값이에요. 실제 1회 최대 시도 없이도 내 근력 수준을 알 수 있어요.</p>
+                  <p>{locale === "ko" ? <><span className="font-bold">1RM</span>은 오늘 세트 기록(무게 × 횟수)에서 Epley 공식으로 추정한 값이에요. 실제 1회 최대 시도 없이도 내 근력 수준을 알 수 있어요.</> : <><span className="font-bold">1RM</span> is estimated from today&apos;s sets (weight x reps) using the Epley formula. You can gauge your strength level without actually attempting a max lift.</>}</p>
                   <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: NSCA Essentials of S&C (4th ed.), Epley (1985)</p>
                 </div>
               </>
             )}
             {helpCard === "loadStatus" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">부하 상태</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "부하 상태" : "Load Status"}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>오늘 운동량이 <span className="font-bold text-[#1B4332]">내 레벨에 맞는 적정 볼륨인지</span> 보여줘요.</p>
-                  <p>오늘 부하는 최근 4주 평균 대비 <span className="font-bold text-[#1B4332]">{loadRatio !== null ? `${loadRatio >= 1 ? "+" : ""}${Math.round((loadRatio - 1) * 100)}%` : "-"}</span>예요. 0%면 평균과 같은 양이고, 현재 레벨(<span className="font-bold">{levelLabel}</span>)에 맞는 기준으로 판정해요.</p>
+                  <p>{locale === "ko" ? <>오늘 운동량이 <span className="font-bold text-[#1B4332]">내 레벨에 맞는 적정 볼륨인지</span> 보여줘요.</> : <>Shows whether today&apos;s volume is <span className="font-bold text-[#1B4332]">appropriate for your level</span>.</>}</p>
+                  <p>{locale === "ko" ? <>오늘 부하는 최근 4주 평균 대비 <span className="font-bold text-[#1B4332]">{loadRatio !== null ? `${loadRatio >= 1 ? "+" : ""}${Math.round((loadRatio - 1) * 100)}%` : "-"}</span>예요. 0%면 평균과 같은 양이고, 현재 레벨(<span className="font-bold">{levelLabel}</span>)에 맞는 기준으로 판정해요.</> : <>Today&apos;s load is <span className="font-bold text-[#1B4332]">{loadRatio !== null ? `${loadRatio >= 1 ? "+" : ""}${Math.round((loadRatio - 1) * 100)}%` : "-"}</span> compared to your 4-week average. 0% means the same as average, judged against your current level (<span className="font-bold">{levelLabel}</span>).</>}</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-gray-500">볼륨 구간 안내 ({levelLabel})</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? `볼륨 구간 안내 (${levelLabel})` : `Volume Zones (${levelLabel})`}</p>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">볼륨 부족</span>
-                        <span className="text-[10px] text-gray-500">성장에 필요한 최소 자극에 못 미쳐요</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">{locale === "ko" ? "볼륨 부족" : "Under"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "성장에 필요한 최소 자극에 못 미쳐요" : "Below the minimum stimulus needed for growth"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded shrink-0">성장 구간</span>
-                        <span className="text-[10px] text-gray-500">근성장에 가장 좋은 볼륨이에요</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded shrink-0">{locale === "ko" ? "성장 구간" : "Growth Zone"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "근성장에 가장 좋은 볼륨이에요" : "Optimal volume for muscle growth"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded shrink-0">고부하</span>
-                        <span className="text-[10px] text-gray-500">가끔은 괜찮지만 자주 넘으면 주의</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded shrink-0">{locale === "ko" ? "고부하" : "High Load"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "가끔은 괜찮지만 자주 넘으면 주의" : "Okay occasionally, but watch out if frequent"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded shrink-0">과부하</span>
-                        <span className="text-[10px] text-gray-500">쉬어가는 게 좋아요</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded shrink-0">{locale === "ko" ? "과부하" : "Overload"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "쉬어가는 게 좋아요" : "Time to take a rest"}</span>
                       </div>
                     </div>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">레벨별 기준 (세션 볼륨 / 체중)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "레벨별 기준 (세션 볼륨 / 체중)" : "Standards by Level (Session Volume / BW)"}</p>
                     <div className="space-y-1 text-[10px]">
-                      <div className="flex justify-between"><span className="text-gray-500">초급</span><span className="font-bold text-gray-600">최소 15 · 최적 55 · 상한 70</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">중급</span><span className="font-bold text-gray-600">최소 40 · 최적 110 · 상한 140</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">상급</span><span className="font-bold text-gray-600">최소 70 · 최적 180 · 상한 220</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "초급" : "Beginner"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "최소 15 · 최적 55 · 상한 70" : "Min 15 · Optimal 55 · Max 70"}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "중급" : "Intermediate"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "최소 40 · 최적 110 · 상한 140" : "Min 40 · Optimal 110 · Max 140"}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "상급" : "Advanced"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "최소 70 · 최적 180 · 상한 220" : "Min 70 · Optimal 180 · Max 220"}</span></div>
                     </div>
                   </div>
-                  <p><span className="font-bold text-[#2D6A4F]">성장 구간</span>을 꾸준히 유지하면 가장 효과적이에요. 기록이 쌓이면 내 데이터에 맞게 조정돼요.</p>
+                  <p>{locale === "ko" ? <><span className="font-bold text-[#2D6A4F]">성장 구간</span>을 꾸준히 유지하면 가장 효과적이에요. 기록이 쌓이면 내 데이터에 맞게 조정돼요.</> : <>Staying consistently in the <span className="font-bold text-[#2D6A4F]">Growth Zone</span> is most effective. As your history builds up, the targets adjust to your data.</>}</p>
                   <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM (2009), Israetel RP Strength, NSCA Volume Load</p>
                 </div>
               </>
             )}
             {helpCard === "intensity" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">운동 강도</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "운동 강도" : "Workout Intensity"}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>오늘 운동이 <span className="font-bold text-[#1B4332]">고강도·중강도·저강도</span> 중 어디에 해당하는지 보여줘요.</p>
-                  <p>세트별 사용 중량을 예상 1RM 대비 비율(%1RM)로 환산해서 판정해요. 중량 데이터가 없으면 세트당 평균 반복수로 판정해요.</p>
+                  <p>{locale === "ko" ? <>오늘 운동이 <span className="font-bold text-[#1B4332]">고강도·중강도·저강도</span> 중 어디에 해당하는지 보여줘요.</> : <>Shows whether today&apos;s workout falls under <span className="font-bold text-[#1B4332]">High, Moderate, or Low</span> intensity.</>}</p>
+                  <p>{locale === "ko" ? "세트별 사용 중량을 예상 1RM 대비 비율(%1RM)로 환산해서 판정해요. 중량 데이터가 없으면 세트당 평균 반복수로 판정해요." : "Each set's weight is compared to your estimated 1RM (%1RM). If no weight data is available, average reps per set are used instead."}</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">강도 분류 기준 (ACSM + NSCA)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "강도 분류 기준 (ACSM + NSCA)" : "Intensity Classification (ACSM + NSCA)"}</p>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded shrink-0">고강도</span>
-                        <span className="text-[10px] text-gray-500">80%+ 1RM · 1-6회 · 최대근력</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded shrink-0">{locale === "ko" ? "고강도" : "High"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "80%+ 1RM · 1-6회 · 최대근력" : "80%+ 1RM · 1-6 reps · Max Strength"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded shrink-0">중강도</span>
-                        <span className="text-[10px] text-gray-500">60-79% 1RM · 7-12회 · 근비대</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded shrink-0">{locale === "ko" ? "중강도" : "Moderate"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "60-79% 1RM · 7-12회 · 근비대" : "60-79% 1RM · 7-12 reps · Hypertrophy"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">저강도</span>
-                        <span className="text-[10px] text-gray-500">60% 미만 1RM · 13회+ · 근지구력</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">{locale === "ko" ? "저강도" : "Low"}</span>
+                        <span className="text-[10px] text-gray-500">{locale === "ko" ? "60% 미만 1RM · 13회+ · 근지구력" : "<60% 1RM · 13+ reps · Endurance"}</span>
                       </div>
                     </div>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">주간 권장 배분 ({gender === "female" ? "여성" : "남성"} · 연령별)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? <>주간 권장 배분 ({gender === "female" ? "여성" : "남성"} · 연령별)</> : <>Weekly Distribution ({gender === "female" ? "Female" : "Male"} · By Age)</>}</p>
                     {gender === "female" ? (
                       <div className="space-y-1 text-[10px]">
-                        <div className="flex justify-between"><span className="text-gray-500">20-39세</span><span className="font-bold text-gray-600">고 2회 · 중 2회 · 저 1회</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">40-59세</span><span className="font-bold text-gray-600">고 2회 · 중 2회 · 저 1회 (골밀도)</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">60세+</span><span className="font-bold text-gray-600">고 1회 · 중 2회 · 저 1회</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "20-39세" : "20-39"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "고 2회 · 중 2회 · 저 1회" : "High 2x · Mod 2x · Low 1x"}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "40-59세" : "40-59"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "고 2회 · 중 2회 · 저 1회 (골밀도)" : "High 2x · Mod 2x · Low 1x (bone density)"}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "60세+" : "60+"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "고 1회 · 중 2회 · 저 1회" : "High 1x · Mod 2x · Low 1x"}</span></div>
                       </div>
                     ) : (
                       <div className="space-y-1 text-[10px]">
-                        <div className="flex justify-between"><span className="text-gray-500">20-39세</span><span className="font-bold text-gray-600">고 2회 · 중 2회 · 저 1회</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">40-59세</span><span className="font-bold text-gray-600">고 1회 · 중 3회 · 저 1회</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">60세+</span><span className="font-bold text-gray-600">고 1회 · 중 2회 · 저 1회</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "20-39세" : "20-39"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "고 2회 · 중 2회 · 저 1회" : "High 2x · Mod 2x · Low 1x"}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "40-59세" : "40-59"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "고 1회 · 중 3회 · 저 1회" : "High 1x · Mod 3x · Low 1x"}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "60세+" : "60+"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "고 1회 · 중 2회 · 저 1회" : "High 1x · Mod 2x · Low 1x"}</span></div>
                       </div>
                     )}
                   </div>
                   {gender === "female" && (
-                    <p className="text-[11px] text-gray-500"><span className="font-bold text-[#2D6A4F]">여성 참고</span>: 에스트로겐의 항염증 효과로 회복이 ~15% 빠르며, 40대 이후 골밀도 유지를 위해 고강도 비중을 유지하는 것이 권장돼요 (ACSM 폐경 후 가이드라인).</p>
+                    <p className="text-[11px] text-gray-500">{locale === "ko" ? <><span className="font-bold text-[#2D6A4F]">여성 참고</span>: 에스트로겐의 항염증 효과로 회복이 ~15% 빠르며, 40대 이후 골밀도 유지를 위해 고강도 비중을 유지하는 것이 권장돼요 (ACSM 폐경 후 가이드라인).</> : <><span className="font-bold text-[#2D6A4F]">Note for women</span>: Estrogen&apos;s anti-inflammatory effect speeds recovery by ~15%. After 40, maintaining high-intensity sessions is recommended to preserve bone density (ACSM postmenopausal guidelines).</>}</p>
                   )}
-                  <p>고·중·저를 <span className="font-bold text-[#2D6A4F]">골고루 배분</span>하면 과훈련을 방지하고 성장 효율이 가장 높아요. 이번 주 배분을 확인하고 다음 세션 강도를 조절해보세요.</p>
+                  <p>{locale === "ko" ? <>고·중·저를 <span className="font-bold text-[#2D6A4F]">골고루 배분</span>하면 과훈련을 방지하고 성장 효율이 가장 높아요. 이번 주 배분을 확인하고 다음 세션 강도를 조절해보세요.</> : <><span className="font-bold text-[#2D6A4F]">Balancing</span> high, moderate, and low intensity prevents overtraining and maximizes growth. Check this week&apos;s distribution and adjust your next session accordingly.</>}</p>
                   <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM Resistance Exercise Guidelines (2025), WHO Physical Activity Guidelines (2020, PMC 7719906), Schoenfeld et al. (2019, PMC 6303131)</p>
                 </div>
               </>
             )}
             {helpCard === "loadTimeline" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">4주 부하 타임라인</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "4주 부하 타임라인" : "4-Week Load Timeline"}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>최근 4주간의 <span className="font-bold text-[#1B4332]">운동 부하(볼륨)를 그래프로</span> 보여줘요. 점 하나가 운동 한 번이에요.</p>
+                  <p>{locale === "ko" ? <>최근 4주간의 <span className="font-bold text-[#1B4332]">운동 부하(볼륨)를 그래프로</span> 보여줘요. 점 하나가 운동 한 번이에요.</> : <>Shows your <span className="font-bold text-[#1B4332]">training load (volume) over the past 4 weeks</span> as a chart. Each dot is one session.</>}</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded-sm inline-block shrink-0" />
-                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">초록색 영역 = 성장 구간</span></p>
+                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">{locale === "ko" ? "초록색 영역 = 성장 구간" : "Green Zone = Growth Zone"}</span></p>
                     </div>
-                    <p className="text-[11px] text-gray-500 ml-5">{levelLabel} 레벨과 연령에 맞춘 적정 볼륨 구간이에요. 이 안에 있으면 잘하고 있는 거예요.</p>
+                    <p className="text-[11px] text-gray-500 ml-5">{locale === "ko" ? <>{levelLabel} 레벨과 연령에 맞춘 적정 볼륨 구간이에요. 이 안에 있으면 잘하고 있는 거예요.</> : <>The optimal volume range for your {levelLabel} level and age. Staying inside means you&apos;re on track.</>}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="w-3 h-3 bg-amber-50 border border-amber-200 rounded-sm inline-block shrink-0" />
-                      <p className="text-[11px]"><span className="font-bold text-amber-600">노란색 영역 = 고부하 주의</span></p>
+                      <p className="text-[11px]"><span className="font-bold text-amber-600">{locale === "ko" ? "노란색 영역 = 고부하 주의" : "Yellow Zone = High Load Warning"}</span></p>
                     </div>
-                    <p className="text-[11px] text-gray-500 ml-5">적정 범위를 넘은 구간이에요. 가끔은 괜찮지만 자주 넘으면 조절이 필요해요.</p>
+                    <p className="text-[11px] text-gray-500 ml-5">{locale === "ko" ? "적정 범위를 넘은 구간이에요. 가끔은 괜찮지만 자주 넘으면 조절이 필요해요." : "Beyond the optimal range. Okay once in a while, but frequent visits mean you should dial back."}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="w-3 h-3 bg-[#2D6A4F] rounded-full inline-block shrink-0" />
-                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">점 = 세션별 부하</span></p>
+                      <p className="text-[11px]"><span className="font-bold text-[#2D6A4F]">{locale === "ko" ? "점 = 세션별 부하" : "Dot = Session Load"}</span></p>
                     </div>
-                    <p className="text-[11px] text-gray-500 ml-5">총 볼륨(무게 × 횟수)을 체중으로 나눈 값이에요. 높을수록 강하게 운동한 거예요. 점을 터치하면 수치를 확인할 수 있어요.</p>
+                    <p className="text-[11px] text-gray-500 ml-5">{locale === "ko" ? "총 볼륨(무게 × 횟수)을 체중으로 나눈 값이에요. 높을수록 강하게 운동한 거예요. 점을 터치하면 수치를 확인할 수 있어요." : "Total volume (weight x reps) divided by body weight. Higher means a harder session. Tap a dot to see the exact number."}</p>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">레벨별 구간 수치 (볼륨 / 체중)</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "레벨별 구간 수치 (볼륨 / 체중)" : "Zone Values by Level (Volume / BW)"}</p>
                     <div className="space-y-1 text-[10px]">
-                      <div className="flex justify-between"><span className="text-gray-500">초급</span><span className="font-bold text-gray-600">적정 15~55 · 주의 55~70 · 상한 70+</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">중급</span><span className="font-bold text-gray-600">적정 40~110 · 주의 110~140 · 상한 140+</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">상급</span><span className="font-bold text-gray-600">적정 70~180 · 주의 180~220 · 상한 220+</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "초급" : "Beginner"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "적정 15~55 · 주의 55~70 · 상한 70+" : "Optimal 15–55 · Caution 55–70 · Max 70+"}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "중급" : "Intermediate"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "적정 40~110 · 주의 110~140 · 상한 140+" : "Optimal 40–110 · Caution 110–140 · Max 140+"}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "상급" : "Advanced"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "적정 70~180 · 주의 180~220 · 상한 220+" : "Optimal 70–180 · Caution 180–220 · Max 220+"}</span></div>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1">예: 체중 70kg, 총 볼륨 4,200kg → Load Score = 60</p>
+                    <p className="text-[10px] text-gray-400 mt-1">{locale === "ko" ? "예: 체중 70kg, 총 볼륨 4,200kg → Load Score = 60" : "e.g. BW 70kg, total volume 4,200kg → Load Score = 60"}</p>
                   </div>
-                  <p>꾸준히 초록 영역 안에 점이 찍히면 <span className="font-bold text-[#2D6A4F]">잘 관리되고 있는 거예요</span>. 노란 영역 위로 자주 벗어나면 볼륨 조절이 필요해요.</p>
+                  <p>{locale === "ko" ? <>꾸준히 초록 영역 안에 점이 찍히면 <span className="font-bold text-[#2D6A4F]">잘 관리되고 있는 거예요</span>. 노란 영역 위로 자주 벗어나면 볼륨 조절이 필요해요.</> : <>If your dots consistently land in the green zone, <span className="font-bold text-[#2D6A4F]">you&apos;re managing well</span>. Frequently going above the yellow zone means it&apos;s time to adjust your volume.</>}</p>
                   <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: ACSM 점진적 과부하 원칙, Schoenfeld et al. (2017), Israetel RP Strength, NSCA</p>
                 </div>
               </>
             )}
             {helpCard === "fatigueDrop" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">피로 신호</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "피로 신호" : "Fatigue Signal"}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>운동 <span className="font-bold text-[#1B4332]">전반부와 후반부의 반복 횟수 차이</span>를 비교한 거예요.</p>
-                  <p>예를 들어 <span className="font-bold">-12%</span>이면, 후반에 반복 횟수가 12% 줄어든 거예요. 약간의 피로는 자연스러운 거예요.</p>
+                  <p>{locale === "ko" ? <>운동 <span className="font-bold text-[#1B4332]">전반부와 후반부의 반복 횟수 차이</span>를 비교한 거예요.</> : <>Compares <span className="font-bold text-[#1B4332]">rep counts between the first and second half</span> of your workout.</>}</p>
+                  <p>{locale === "ko" ? <>예를 들어 <span className="font-bold">-12%</span>이면, 후반에 반복 횟수가 12% 줄어든 거예요. 약간의 피로는 자연스러운 거예요.</> : <>For example, <span className="font-bold">-12%</span> means your reps dropped 12% in the second half. Some fatigue is completely normal.</>}</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[11px] font-bold text-gray-500">피로 신호 기준</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "피로 신호 기준" : "Fatigue Thresholds"}</p>
                     <div className="flex gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">-15%까지 안정</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">-15~25% 주의</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">-25%+ 위험</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#2D6A4F] rounded">{locale === "ko" ? "-15%까지 안정" : "Up to -15% Stable"}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded">{locale === "ko" ? "-15~25% 주의" : "-15–25% Caution"}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">{locale === "ko" ? "-25%+ 위험" : "-25%+ Warning"}</span>
                     </div>
                   </div>
-                  <p>피로가 크면 다음 세션에서 볼륨을 줄이거나 휴식을 더 가져야 해요. 꾸준히 안정 구간이면 잘 관리되고 있는 거예요.</p>
+                  <p>{locale === "ko" ? "피로가 크면 다음 세션에서 볼륨을 줄이거나 휴식을 더 가져야 해요. 꾸준히 안정 구간이면 잘 관리되고 있는 거예요." : "If fatigue is high, reduce volume or take more rest next session. Staying consistently in the stable zone means you're managing well."}</p>
                   <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">근거: Morán-Navarro et al. (2017), NSCA 세트간 피로 가이드라인, ACSM 회복 권장</p>
                 </div>
               </>
             )}
             {helpCard === "levelSystem" && (
               <>
-                <h3 className="text-lg font-black text-[#1B4332] mb-3">시즌 티어 시스템</h3>
+                <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "시즌 티어 시스템" : "Season Tier System"}</h3>
                 <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
-                  <p>운동을 완료할 때마다 <span className="font-bold text-[#1B4332]">경험치(EXP)</span>가 쌓이고, 일정 횟수를 채우면 티어가 올라가요.</p>
+                  <p>{locale === "ko" ? <>운동을 완료할 때마다 <span className="font-bold text-[#1B4332]">경험치(EXP)</span>가 쌓이고, 일정 횟수를 채우면 티어가 올라가요.</> : <>Every completed workout earns <span className="font-bold text-[#1B4332]">experience points (EXP)</span>, and you rank up once you hit the threshold.</>}</p>
                   <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-gray-500">시즌 티어 구간</p>
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "시즌 티어 구간" : "Season Tier Brackets"}</p>
                     <div className="space-y-1.5">
                       {TIERS.map((t, i) => {
                         const next = TIERS[i + 1];
@@ -1259,8 +1278,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                       })}
                     </div>
                   </div>
-                  <p>시즌은 <span className="font-bold text-[#1B4332]">4개월마다 리셋</span>돼요 (1~4월, 5~8월, 9~12월). 새 시즌이 시작되면 Iron부터 다시 도전!</p>
-                  <p>주 3회 꾸준히 하면 시즌 내 Diamond까지 갈 수 있어요.</p>
+                  <p>{locale === "ko" ? <>시즌은 <span className="font-bold text-[#1B4332]">4개월마다 리셋</span>돼요 (1~4월, 5~8월, 9~12월). 새 시즌이 시작되면 Iron부터 다시 도전!</> : <>Seasons <span className="font-bold text-[#1B4332]">reset every 4 months</span> (Jan–Apr, May–Aug, Sep–Dec). Each new season, you start fresh from Iron!</>}</p>
+                  <p>{locale === "ko" ? "주 3회 꾸준히 하면 시즌 내 Diamond까지 갈 수 있어요." : "Work out 3 times a week consistently and you can reach Diamond within a single season."}</p>
                 </div>
               </>
             )}
@@ -1269,7 +1288,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               onClick={() => setHelpCard(null)}
               className="w-full py-3 mt-5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm active:scale-[0.98] transition-all shrink-0"
             >
-              확인
+              {t("report.help.confirm")}
             </button>
           </div>
         </div>
@@ -1294,13 +1313,13 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              공유
+              {t("report.btn.share")}
             </button>
             <button
               onClick={() => { setCloseAfterShare(true); setShowShare(true); }}
               className="flex-1 py-3 rounded-2xl bg-[#1B4332] text-white font-bold text-base shadow-xl shadow-[#1B4332]/20 active:scale-95 transition-all"
             >
-              완료
+              {t("report.btn.complete")}
             </button>
           </div>
         </div>

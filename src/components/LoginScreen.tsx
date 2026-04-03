@@ -227,7 +227,7 @@ Google LLC: 맞춤형 운동 플랜 및 리포트 생성을 위한 AI 연동(Gem
 본 방침은 2026년 3월 1일부터 시행합니다.`;
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
@@ -276,7 +276,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
         <div className="flex flex-col items-center gap-6">
           <div className="w-[280px] sm:w-[360px] flex items-center justify-center">
             <img
-              src="/login-logo-kor2.png"
+              src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"}
               alt="Ohunjal AI"
               className="w-full h-auto"
             />
@@ -326,7 +326,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
           )}
 
           <p className="text-[10px] text-gray-400 font-medium text-center tracking-widest">
-            {t("login.agreePrefix")} <button type="button" onClick={() => setShowTerms(true)} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.terms")}</button> {t("login.agreeAnd")} <button type="button" onClick={() => setShowPrivacy(true)} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.privacy")}</button>{t("login.agreeSuffix")}
+            {t("login.agreePrefix")} <button type="button" onClick={() => locale === "ko" ? setShowTerms(true) : window.open("/en/terms", "_blank")} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.terms")}</button> {t("login.agreeAnd")} <button type="button" onClick={() => locale === "ko" ? setShowPrivacy(true) : window.open("/en/privacy", "_blank")} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.privacy")}</button>{t("login.agreeSuffix")}
           </p>
         </div>
       </div>
@@ -339,7 +339,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowTerms(false)}>
           <div className="bg-white rounded-2xl mx-4 max-w-[360px] w-full max-h-[80vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()} {...preventCopy}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1B4332]">이용약관</h2>
+              <h2 className="text-base font-bold text-[#1B4332]">{locale === "ko" ? "이용약관" : "Terms of Service"}</h2>
               <button type="button" onClick={() => setShowTerms(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
@@ -349,7 +349,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
             </div>
             <div className="px-5 py-3 border-t border-gray-100">
               <button type="button" onClick={() => setShowTerms(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">
-                확인
+                {locale === "ko" ? "확인" : "OK"}
               </button>
             </div>
           </div>
@@ -361,7 +361,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPrivacy(false)}>
           <div className="bg-white rounded-2xl mx-4 max-w-[360px] w-full max-h-[80vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()} {...preventCopy}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1B4332]">개인정보 처리방침</h2>
+              <h2 className="text-base font-bold text-[#1B4332]">{locale === "ko" ? "개인정보 처리방침" : "Privacy Policy"}</h2>
               <button type="button" onClick={() => setShowPrivacy(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#666" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
@@ -371,7 +371,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
             </div>
             <div className="px-5 py-3 border-t border-gray-100">
               <button type="button" onClick={() => setShowPrivacy(false)} className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-sm font-bold hover:bg-[#143728] transition-colors">
-                확인
+                {locale === "ko" ? "확인" : "OK"}
               </button>
             </div>
           </div>

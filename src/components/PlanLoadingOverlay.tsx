@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { UserCondition, WorkoutGoal, SessionMode, TargetMuscle } from "@/constants/workout";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PlanLoadingOverlayProps {
   userName: string;
@@ -12,12 +13,12 @@ interface PlanLoadingOverlayProps {
   onComplete?: () => void;
 }
 
-const STEPS = [
-  "컨디션 · 운동 이력 분석",
-  "ACSM 가이드라인 대조",
-  "운동 조합 · 볼륨 최적화",
-  "세트 · 반복 수 · 무게 산출",
-  "최종 플랜 생성 중",
+const STEP_KEYS = [
+  "loading.step1",
+  "loading.step2",
+  "loading.step3",
+  "loading.step4",
+  "loading.step5",
 ];
 
 export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
@@ -28,16 +29,16 @@ export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
   targetMuscle,
   onComplete,
 }) => {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     let elapsed = 0;
-    STEPS.forEach((_, i) => {
+    STEP_KEYS.forEach((_, i) => {
       elapsed += i === 0 ? 0 : 200 + Math.random() * 300;
       timers.push(setTimeout(() => setActiveStep(i), elapsed));
     });
-    // 모든 스텝 완료 후 1초 뒤에 onComplete
     if (onComplete) {
       timers.push(setTimeout(onComplete, elapsed + 400));
     }
@@ -45,20 +46,20 @@ export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
   }, [onComplete]);
 
   const conditionText =
-    bodyPart === "upper_stiff" ? "상체가 뻐근하시군요"
-    : bodyPart === "lower_heavy" ? "하체가 무거우시군요"
-    : bodyPart === "full_fatigue" ? "좀 피곤하신 날이네요"
-    : "컨디션이 좋으시네요";
+    bodyPart === "upper_stiff" ? t("loading.condition.upper_stiff")
+    : bodyPart === "lower_heavy" ? t("loading.condition.lower_heavy")
+    : bodyPart === "full_fatigue" ? t("loading.condition.full_fatigue")
+    : t("loading.condition.good");
 
-    const muscleLabel: Record<string, string> = { chest: "가슴", back: "등", shoulders: "어깨", arms: "팔", legs: "하체" };
-    const goalText =
-      sessionMode === "split" && targetMuscle ? `${muscleLabel[targetMuscle] || "부위별"} 집중`
-      : sessionMode === "running" ? "러닝에 맞춘"
-      : sessionMode === "home_training" ? "홈트에 맞춘"
-      : goal === "fat_loss" ? "체지방 연소에 최적화된"
-      : goal === "muscle_gain" ? "근비대에 집중하는"
-      : goal === "strength" ? "최대근력을 끌어올리는"
-      : "맞춤";
+  const goalText =
+    sessionMode === "split" && targetMuscle
+      ? `${t(`loading.muscle.${targetMuscle}`) || t("loading.goal.split_default")} ${t("loading.goal.split")}`
+      : sessionMode === "running" ? t("loading.goal.running")
+      : sessionMode === "home_training" ? t("loading.goal.home_training")
+      : goal === "fat_loss" ? t("loading.goal.fat_loss")
+      : goal === "muscle_gain" ? t("loading.goal.muscle_gain")
+      : goal === "strength" ? t("loading.goal.strength")
+      : t("loading.goal.default");
 
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center animate-fade-in">
@@ -75,15 +76,15 @@ export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
 
       {/* Personalized greeting */}
       <p className="text-lg font-bold text-gray-800 text-center px-8">
-        {userName}님, {conditionText}
+        {t("loading.greeting", { userName, conditionText })}
       </p>
       <p className="text-sm text-gray-500 mt-1 text-center px-8">
-        {goalText} 플랜을 구성하고 있어요
+        {t("loading.building", { goalText })}
       </p>
 
       {/* Step-by-step progress — centered */}
       <div className="mt-8 flex flex-col gap-2.5 items-center">
-        {STEPS.map((text, i) => (
+        {STEP_KEYS.map((key, i) => (
           <div
             key={i}
             className={`flex items-center gap-2 transition-all duration-500 ${
@@ -108,7 +109,7 @@ export const PlanLoadingOverlay: React.FC<PlanLoadingOverlayProps> = ({
             <span className={`text-[12px] font-medium transition-colors duration-300 ${
               i < activeStep ? "text-[#2D6A4F]" : i === activeStep ? "text-gray-700" : "text-gray-300"
             }`}>
-              {text}
+              {t(key)}
             </span>
           </div>
         ))}

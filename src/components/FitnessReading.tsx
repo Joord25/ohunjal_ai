@@ -1216,7 +1216,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
               }`}
             >
               <img
-                src="/login-logo-kor2.png"
+                src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"}
                 alt="오운잘"
                 className="h-24 object-contain"
               />
@@ -1833,7 +1833,7 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                   onClick={() => onComplete(profile as FitnessProfile)}
                   className="w-full py-4 rounded-2xl font-bold text-white bg-[#2D6A4F] active:scale-95 transition-all"
                 >
-                  첫 운동 시작하기
+                  {locale === "ko" ? "첫 운동 시작하기" : "Start First Workout"}
                 </button>
               </div>
             )}

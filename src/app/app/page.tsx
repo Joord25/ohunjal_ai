@@ -47,6 +47,18 @@ type ViewState =
 
 export default function Home() {
   useSafeArea();
+
+  // Detect ?lang= from landing pages and set locale
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get("lang");
+    if (lang && ["en", "ko", "ja", "zh"].includes(lang)) {
+      localStorage.setItem("alpha_language", lang);
+      // Clean URL without reload
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [autoEdit1RM, setAutoEdit1RM] = useState(false);

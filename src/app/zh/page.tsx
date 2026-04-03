@@ -140,7 +140,7 @@ export default function ZhLandingPage() {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSelector current="/zh" />
-              <a href="/app" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">开始使用</a>
+              <a href="/app?lang=en" className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors">开始使用</a>
             </div>
           </div>
         </nav>
@@ -159,7 +159,7 @@ export default function ZhLandingPage() {
               选择你的状态，AI 3秒生成今天的训练计划。
             </p>
             <div className="mt-10">
-              <a href="/app" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+              <a href="/app?lang=en" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
                 免费获取今日训练
               </a>
             </div>
@@ -335,7 +335,7 @@ export default function ZhLandingPage() {
           <RevealSection>
             <h2 className="text-2xl sm:text-4xl font-black text-[#1B4332] mb-4">别再纠结了</h2>
             <p className="text-base sm:text-lg text-gray-500 mb-8">第一次训练免费，无需注册。</p>
-            <a href="/app" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+            <a href="/app?lang=en" className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
               免费获取今日训练
             </a>
           </RevealSection>

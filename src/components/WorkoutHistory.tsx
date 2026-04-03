@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
 import { SwipeToDelete } from "./SwipeToDelete";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface WorkoutHistoryProps {
   history: WorkoutHistoryType[];
@@ -16,9 +17,39 @@ function getMonthKey(dateStr: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function formatMonthLabel(key: string): string {
+function formatMonthLabel(key: string, locale: string): string {
   const [y, m] = key.split("-");
+  if (locale !== "ko") {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[parseInt(m) - 1]} ${y}`;
+  }
   return `${y}년 ${parseInt(m)}월`;
+}
+
+function translateDesc(desc: string, locale: string): string {
+  if (locale === "ko") return desc;
+  return desc
+    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
+    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
+    .replace(/상체\(밀기\(Push\)\)/g, "Upper (Push)").replace(/상체\(당기기\(Pull\)\)/g, "Upper (Pull)")
+    .replace(/(\d+)종/g, "$1 ex").replace(/(\d+)세트/g, "$1 sets")
+    .replace(/집중 운동/g, "Focus")
+    .replace(/근비대/g, "Hypertrophy").replace(/근력 강화/g, "Strength")
+    .replace(/체지방 감량/g, "Fat Loss").replace(/전반적 체력 향상/g, "Fitness");
+}
+
+function translateTitle(title: string, locale: string): string {
+  if (locale === "ko") return title;
+  return title
+    .replace(/살 빼기/g, "Fat Loss").replace(/근육 키우기/g, "Muscle Gain")
+    .replace(/힘 세지기/g, "Strength").replace(/기초체력/g, "Fitness")
+    .replace(/기초체력강화/g, "Fitness")
+    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
+    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
+    .replace(/밀기/g, "Push").replace(/당기기/g, "Pull")
+    .replace(/집중 운동/g, "Focus").replace(/홈트레이닝/g, "Home Training")
+    .replace(/러닝/g, "Running").replace(/인터벌/g, "Interval")
+    .replace(/이지 런/g, "Easy Run").replace(/장거리/g, "Long Distance");
 }
 
 export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
@@ -27,6 +58,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
   onBack,
   onDelete
 }) => {
+  const { locale } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -109,7 +141,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
             onClick={() => isEditing ? exitEditing() : setIsEditing(true)}
             className="text-sm font-bold text-[#2D6A4F] active:opacity-60"
           >
-            {isEditing ? "완료" : "편집"}
+            {isEditing ? (locale === "ko" ? "완료" : "Done") : (locale === "ko" ? "편집" : "Edit")}
           </button>
         ) : (
           <div className="w-10" />
@@ -129,7 +161,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
             </svg>
           </button>
           <span className="text-sm font-bold text-[#1B4332] min-w-[100px] text-center">
-            {currentMonth ? formatMonthLabel(currentMonth) : ""}
+            {currentMonth ? formatMonthLabel(currentMonth, locale) : ""}
           </span>
           <button
             onClick={() => goMonth(-1)}
@@ -159,14 +191,14 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                 </svg>
               )}
             </div>
-            전체 선택
+            {locale === "ko" ? "전체 선택" : "Select All"}
           </button>
           {selected.size > 0 && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="text-sm font-bold text-red-500 active:opacity-60"
             >
-              {selected.size}개 삭제
+              {locale === "ko" ? `${selected.size}개 삭제` : `Delete ${selected.size}`}
             </button>
           )}
         </div>
@@ -202,10 +234,10 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                 >
                   <div className="flex-1 min-w-0 mr-3">
                     <p className="text-xs font-bold text-gray-400 mb-1">
-                      {new Date(session.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      {new Date(session.date).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
-                    <h3 className="text-lg font-black text-[#1B4332] mb-1">{session.sessionData.title}</h3>
-                    <p className="text-sm text-gray-500 line-clamp-1">{session.sessionData.description}</p>
+                    <h3 className="text-lg font-black text-[#1B4332] mb-1">{translateTitle(session.sessionData.title, locale)}</h3>
+                    <p className="text-sm text-gray-500 line-clamp-1">{translateDesc(session.sessionData.description, locale)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                      <span className="text-lg font-black text-[#2D6A4F]">
@@ -224,7 +256,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
 
           {filteredHistory.length === 0 && (
               <div className="text-center py-10 text-gray-400">
-                  <p>{history.length === 0 ? "운동 기록이 없습니다." : "이 달의 기록이 없습니다."}</p>
+                  <p>{history.length === 0 ? (locale === "ko" ? "운동 기록이 없습니다." : "No workout records yet.") : (locale === "ko" ? "이 달의 기록이 없습니다." : "No records for this month.")}</p>
               </div>
           )}
         </div>
@@ -234,22 +266,24 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
       {showDeleteConfirm && selected.size > 0 && (
         <div className="absolute inset-0 bg-black/40 z-50 flex items-center justify-center animate-fade-in px-8">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-lg font-black text-[#1B4332] mb-2">기록 삭제</h3>
+            <h3 className="text-lg font-black text-[#1B4332] mb-2">{locale === "ko" ? "기록 삭제" : "Delete Records"}</h3>
             <p className="text-sm text-gray-500 mb-6">
-              {selected.size}개의 운동 기록을 삭제하시겠습니까?<br/>삭제된 기록은 복구할 수 없습니다.
+              {locale === "ko"
+                ? <>{selected.size}개의 운동 기록을 삭제하시겠습니까?<br/>삭제된 기록은 복구할 수 없습니다.</>
+                : <>Delete {selected.size} workout record{selected.size > 1 ? "s" : ""}?<br/>This cannot be undone.</>}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm active:scale-95 transition-all"
               >
-                취소
+                {locale === "ko" ? "취소" : "Cancel"}
               </button>
               <button
                 onClick={handleDelete}
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-all"
               >
-                삭제
+                {locale === "ko" ? "삭제" : "Delete"}
               </button>
             </div>
           </div>

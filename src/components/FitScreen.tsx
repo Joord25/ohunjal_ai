@@ -4,9 +4,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { THEME } from "@/constants/theme";
 import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { AiCoachChat } from "@/components/AiCoachChat";
-import { getVideoEmbedUrl, getYoutubeSearchUrl, getExerciseKoreanName } from "@/constants/exerciseVideos";
+import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
+
+const MUSCLE_GROUP_EN: Record<string, string> = {
+  "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
+  "등": "Back", "후면 어깨": "Rear Delts", "이두": "Biceps", "하체": "Legs",
+  "종아리": "Calves", "전신": "Full Body", "코어": "Core", "가동성": "Mobility",
+};
+function tLabel(label: string, locale: string): string {
+  return locale === "ko" ? label : (MUSCLE_GROUP_EN[label] || label);
+}
 
 export type FeedbackType = "fail" | "target" | "easy" | "too_easy";
 
@@ -736,12 +745,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     className="w-full h-full pointer-events-none scale-[1.15] origin-center"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     tabIndex={-1}
-                    title="자세 미리보기"
+                    title={t("fit.formGuide")}
                   />
                   <div className="absolute inset-0 flex items-end justify-end p-2">
                     <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm flex items-center gap-1">
                       <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                      <span className="text-[9px] font-bold text-white">크게 보기</span>
+                      <span className="text-[9px] font-bold text-white">{t("fit.watchFull")}</span>
                     </div>
                   </div>
                 </button>
@@ -757,7 +766,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                   </svg>
                 </div>
-                <span className="text-xs font-bold text-gray-500">자세 보기</span>
+                <span className="text-xs font-bold text-gray-500">{t("fit.formGuide")}</span>
               </button>
             );
           })()}
@@ -806,13 +815,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             onClick={confirmWeight}
             className="flex-1 py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-lg shadow-xl active:scale-[0.98] transition-all"
           >
-            {selectedWeight}kg 으로 시작
+            {t("fit.startWith", { weight: String(selectedWeight) })}
           </button>
           <button
             onClick={() => setShowAiTip(true)}
             className="w-14 h-14 rounded-2xl bg-[#2D6A4F]/10 flex items-center justify-center active:scale-90 transition-all shrink-0"
           >
-            <img src="/favicon_backup.png" alt="AI 코치" className="w-7 h-7 rounded-full" />
+            <img src="/favicon_backup.png" alt="AI Coach" className="w-7 h-7 rounded-full" />
           </button>
         </div>
 
@@ -828,9 +837,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                     </svg>
-                    <p className="text-sm font-black text-[#1B4332]">{getExerciseKoreanName(exercise.name)} 자세 가이드</p>
+                    <p className="text-sm font-black text-[#1B4332]">{t("fit.formGuideTitle", { name: getExerciseName(exercise.name, locale) })}</p>
                   </div>
-                  <button onClick={() => setShowVideoGuide(false)} className="text-sm text-gray-400 font-bold active:scale-95 transition-all">닫기</button>
+                  <button onClick={() => setShowVideoGuide(false)} className="text-sm text-gray-400 font-bold active:scale-95 transition-all">{t("fit.close")}</button>
                 </div>
               </div>
               <div className="flex-1 px-4 pb-4 min-h-0">
@@ -843,7 +852,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         className="w-full h-full rounded-2xl bg-black"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        title={`${getExerciseKoreanName(exercise.name)} 자세 가이드`}
+                        title={`${t("fit.formGuideTitle", { name: getExerciseName(exercise.name, locale) })}`}
                       />
                     );
                   }
@@ -854,7 +863,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         className="w-full flex-1 rounded-2xl bg-gray-50 border border-gray-100"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        title={`${getExerciseKoreanName(exercise.name)} 검색 결과`}
+                        title={`${getExerciseName(exercise.name, locale)} search`}
                       />
                       <button
                         onClick={() => window.open(getYoutubeSearchUrl(exercise.name), "_blank")}
@@ -863,7 +872,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
-                        <span className="text-xs font-bold text-gray-600">유튜브에서 더 보기</span>
+                        <span className="text-xs font-bold text-gray-600">{t("fit.youtubeMore")}</span>
                       </button>
                     </div>
                   );
@@ -880,8 +889,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             <div className="absolute bottom-2 left-2 right-2 bg-white rounded-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
-                <button onClick={closeSwap} className="text-sm text-gray-400 font-bold">닫기</button>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("fit.swapTitle")}</p>
+                <button onClick={closeSwap} className="text-sm text-gray-400 font-bold">{t("fit.close")}</button>
               </div>
               <input
                 type="text"
@@ -896,7 +905,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
                     swapFilter === null ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                   }`}
-                >추천</button>
+                >{t("fit.recommended")}</button>
                 {LABELED_EXERCISE_POOLS.map(p => (
                   <button
                     key={p.label}
@@ -904,7 +913,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
                       swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                     }`}
-                  >{p.label}</button>
+                  >{tLabel(p.label, locale)}</button>
                 ))}
               </div>
               <div className="h-[30vh] overflow-y-auto space-y-1.5">
@@ -917,7 +926,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     const list = pool.exercises
                       .filter(e => e !== exercise.name)
                       .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
-                    if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>;
+                    if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("fit.noResults")}</p>;
                     return list.map((alt: string) => (
                       <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
                         className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all ${
@@ -926,7 +935,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     ));
                   }
                   if (!isSearching) {
-                    if (alternatives.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭에서 선택해 주세요</p>;
+                    if (alternatives.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("fit.selectTab")}</p>;
                     return alternatives.map((alt: string) => (
                       <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
                         className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
@@ -940,7 +949,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     if (matched.length === 0) return null;
                     return (
                       <div key={group.label}>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{tLabel(group.label, locale)}</p>
                         {matched.map((alt: string) => (
                           <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
                             className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
@@ -960,7 +969,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         {showAiTip && (
           <AiCoachChat
             record={lastSessionRecord?.maxWeight ? lastSessionRecord : null}
-            exerciseName={exercise.name.split("(")[0].trim()}
+            exerciseName={exercise.name}
             gender={(localStorage.getItem("alpha_gender") as "male" | "female") || "male"}
             onClose={() => setShowAiTip(false)}
           />
@@ -1013,7 +1022,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               onClick={() => onSetComplete(0, "easy")}
               className="absolute right-6 z-10 text-xs font-black text-gray-400 tracking-widest hover:text-gray-600 transition-colors bg-gray-100 px-3 py-1.5 rounded-full"
             >
-              건너뛰기
+              {t("fit.skip")}
             </button>
         )}
 
@@ -1066,12 +1075,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                           className="w-full h-full pointer-events-none scale-[1.15] origin-center"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           tabIndex={-1}
-                          title="자세 미리보기"
+                          title={t("fit.formGuide")}
                         />
                         <div className="absolute inset-0 flex items-end justify-end p-2">
                           <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm flex items-center gap-1">
                             <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                            <span className="text-[9px] font-bold text-white">크게 보기</span>
+                            <span className="text-[9px] font-bold text-white">{t("fit.watchFull")}</span>
                           </div>
                         </div>
                       </button>
@@ -1087,7 +1096,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                           <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                         </svg>
                       </div>
-                      <span className="text-xs font-bold text-gray-500">자세 보기</span>
+                      <span className="text-xs font-bold text-gray-500">{t("fit.formGuide")}</span>
                       <svg className="w-3.5 h-3.5 text-gray-300 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
@@ -1105,9 +1114,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
              <div className="flex flex-col items-center">
                 {timerCompleted && !isDistanceMode ? (
                   <div className="flex flex-col items-center animate-fade-in">
-                    <p className="text-5xl font-black text-[#2D6A4F]">완료</p>
+                    <p className="text-5xl font-black text-[#2D6A4F]">{t("fit.complete")}</p>
                     {isIntervalMode && intervalConfig && (
-                      <p className="text-sm font-bold text-gray-500 mt-1">{intervalConfig.rounds}라운드 완료</p>
+                      <p className="text-sm font-bold text-gray-500 mt-1">{t("fit.roundComplete", { rounds: String(intervalConfig.rounds) })}</p>
                     )}
                   </div>
                 ) : isIntervalMode && intervalConfig ? (
@@ -1164,7 +1173,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   </button>
                 )}
                 {!hasWeight && exercise.weight && (
-                  <span className={`font-black text-[#2D6A4F] ${isBodyweight ? valueSize : "text-2xl"}`}>
+                  <span className={`font-black text-[#2D6A4F] ${isBodyweight ? "text-3xl" : "text-2xl"}`}>
                     {isBodyweight ? t("fit.bodyweight") : setInfo.targetWeight}
                   </span>
                 )}
@@ -1189,7 +1198,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     repsStopwatch > 0 && !repsStopwatchRunning ? "visible" : "invisible"
                   }`}
                 >
-                  초기화
+                  RESET
                 </button>
               </div>
             </>
@@ -1201,7 +1210,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         {nextExerciseName && setInfo.current === setInfo.total && (
           <div className="absolute -top-8 -right-6 bg-gray-100 rounded-l-xl px-3 py-1.5 max-w-[100px]">
             <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">NEXT</p>
-            <p className="text-[11px] font-semibold text-gray-600 leading-snug text-right max-w-[150px] truncate">{nextExerciseName}</p>
+            <p className="text-[11px] font-semibold text-gray-600 leading-snug text-right max-w-[150px] truncate">{getExerciseName(nextExerciseName, locale)}</p>
           </div>
         )}
         {isTimerMode ? (
@@ -1214,7 +1223,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <svg className="w-7 h-7 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="font-black text-base tracking-wider">완 료</span>
+                    <span className="font-black text-base tracking-wider">{t("fit.done")}</span>
                   </button>
                 ) : !isPlaying && elapsedTime > 0 ? (
                   <div className="flex items-center gap-6">
@@ -1228,7 +1237,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         onClick={handleDoneClick}
                         className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <span className="font-black text-base tracking-wider">완료</span>
+                        <span className="font-black text-base tracking-wider">{t("fit.complete")}</span>
                       </button>
                   </div>
                 ) : !isPlaying && elapsedTime === 0 && !timerCompleted ? (
@@ -1250,7 +1259,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         onClick={handleDoneClick}
                         className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                       >
-                        <span className="font-black text-base tracking-wider">완료</span>
+                        <span className="font-black text-base tracking-wider">{t("fit.complete")}</span>
                       </button>
                   </div>
                 )}
@@ -1282,7 +1291,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   </svg>
                 ) : (
                   <span className="text-white text-base font-black tracking-wider">
-                    완 료
+                    {t("fit.done")}
                   </span>
                 )}
               </button>
@@ -1296,7 +1305,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
        {isDoneAnimating && isLastExercise && setInfo.current === setInfo.total && (
         <div className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center z-50 animate-fade-in">
           <p className="text-2xl font-black" style={{ color: THEME.textMain }}>
-            오늘도 해냈다!
+            {t("fit.youDidIt")}
           </p>
           <p className="text-sm font-bold text-[#2D6A4F] mt-2">
             {(() => {
@@ -1320,8 +1329,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
-              <button onClick={closeSwap} className="text-sm text-gray-400 font-bold">닫기</button>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("fit.swapTitle")}</p>
+              <button onClick={closeSwap} className="text-sm text-gray-400 font-bold">{t("fit.close")}</button>
             </div>
             <input
               type="text"
@@ -1336,7 +1345,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
                   swapFilter === null ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                 }`}
-              >추천</button>
+              >{t("fit.recommended")}</button>
               {LABELED_EXERCISE_POOLS.map(p => (
                 <button
                   key={p.label}
@@ -1344,7 +1353,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${
                     swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                   }`}
-                >{p.label}</button>
+                >{tLabel(p.label, locale)}</button>
               ))}
             </div>
             <div className="h-[30vh] overflow-y-auto space-y-1.5">
@@ -1357,7 +1366,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   const list = pool.exercises
                     .filter(e => e !== exercise.name)
                     .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
-                  if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>;
+                  if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("fit.noResults")}</p>;
                   return list.map((alt: string) => (
                     <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
                       className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all ${
@@ -1366,7 +1375,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   ));
                 }
                 if (!isSearching) {
-                  if (alternatives.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭에서 선택해 주세요</p>;
+                  if (alternatives.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("fit.selectTab")}</p>;
                   return alternatives.map((alt: string) => (
                     <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
                       className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
@@ -1380,7 +1389,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   if (matched.length === 0) return null;
                   return (
                     <div key={group.label}>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{tLabel(group.label, locale)}</p>
                       {matched.map((alt: string) => (
                         <button key={alt} onClick={() => { onSwapExercise?.(alt); closeSwap(); }}
                           className={`w-full text-left px-4 py-3 rounded-xl bg-white border text-[13px] font-bold active:scale-[0.98] transition-all mb-1.5 ${
@@ -1402,7 +1411,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowWeightEdit(false)} />
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center mb-4">무게 변경</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center mb-4">{t("fit.changeWeight")}</p>
             <div className="flex items-center justify-center gap-4 mb-6">
               <button
                 onPointerDown={() => startLongPress("down")}
@@ -1440,7 +1449,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               onClick={confirmWeight}
               className="w-full py-3.5 rounded-2xl bg-[#1B4332] text-white font-bold text-base active:scale-[0.98] transition-all"
             >
-              확인
+              {t("fit.confirm")}
             </button>
           </div>
         </div>
@@ -1452,7 +1461,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowRepsEdit(false)} />
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center mb-4">반복 수 변경</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center mb-4">{t("fit.changeReps")}</p>
             <div className="flex items-center justify-center gap-4 mb-6">
               <button
                 onClick={() => setAdjustedReps(Math.max(1, adjustedReps - 1))}
@@ -1460,7 +1469,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               >
                 -
               </button>
-              <span className="text-5xl font-black text-[#1B4332] tabular-nums">{adjustedReps}<span className="text-lg text-gray-400 ml-1">회</span></span>
+              <span className="text-5xl font-black text-[#1B4332] tabular-nums">{adjustedReps}<span className="text-lg text-gray-400 ml-1">{t("fit.repsUnit")}</span></span>
               <button
                 onClick={() => setAdjustedReps(adjustedReps + 1)}
                 className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl active:scale-95"
@@ -1484,7 +1493,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     adjustedReps === r ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                   }`}
                 >
-                  {r}회
+                  {r}{locale === "ko" ? "회" : ""}
                 </button>
               ))}
             </div>
@@ -1495,7 +1504,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               }}
               className="w-full py-3.5 rounded-2xl bg-[#1B4332] text-white font-bold text-base active:scale-[0.98] transition-all"
             >
-              확인
+              {t("fit.confirm")}
             </button>
           </div>
         </div>
@@ -1514,9 +1523,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                   </svg>
-                  <p className="text-sm font-black text-[#1B4332]">{getExerciseKoreanName(exercise.name)} 자세 가이드</p>
+                  <p className="text-sm font-black text-[#1B4332]">{t("fit.formGuideTitle", { name: getExerciseName(exercise.name, locale) })}</p>
                 </div>
-                <button onClick={() => setShowVideoGuide(false)} className="text-sm text-gray-400 font-bold active:scale-95 transition-all">닫기</button>
+                <button onClick={() => setShowVideoGuide(false)} className="text-sm text-gray-400 font-bold active:scale-95 transition-all">{t("fit.close")}</button>
               </div>
             </div>
             <div className="flex-1 px-4 pb-4 min-h-0">
@@ -1530,7 +1539,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                       className="w-full h-full rounded-2xl bg-black"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
-                      title={`${getExerciseKoreanName(exercise.name)} 자세 가이드`}
+                      title={`${t("fit.formGuideTitle", { name: getExerciseName(exercise.name, locale) })}`}
                     />
                   );
                 }
@@ -1542,7 +1551,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                       className="w-full flex-1 rounded-2xl bg-gray-50 border border-gray-100"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
-                      title={`${getExerciseKoreanName(exercise.name)} 검색 결과`}
+                      title={`${getExerciseName(exercise.name, locale)} search`}
                     />
                     <button
                       onClick={() => window.open(getYoutubeSearchUrl(exercise.name), "_blank")}
@@ -1551,7 +1560,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                       <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
-                      <span className="text-xs font-bold text-gray-600">유튜브에서 더 보기</span>
+                      <span className="text-xs font-bold text-gray-600">{t("fit.youtubeMore")}</span>
                     </button>
                   </div>
                 );
@@ -1583,7 +1592,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     onClick={() => setLocalRestSec(prev => prev + 30)}
                     className="px-3 py-2 bg-white/10 rounded-full text-xs font-bold text-white active:scale-95 transition-all"
                   >
-                    +30초
+                    {t("fit.plus30sec")}
                   </button>
                   <button
                     onClick={handleSkipLocalRest}
@@ -1597,8 +1606,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 {setInfo.current >= setInfo.total
                   ? t("fit.lastSetNext")
                   : setInfo.current >= setInfo.total - 1
-                    ? `${setInfo.current}/${setInfo.total} 세트 완료! 마지막 하나 남았어요`
-                    : `${setInfo.current}/${setInfo.total} 세트 완료! ${setInfo.total - setInfo.current}세트 남았어요`}
+                    ? t("fit.setComplete.last", { current: String(setInfo.current), total: String(setInfo.total) })
+                    : t("fit.setComplete.remaining", { current: String(setInfo.current), total: String(setInfo.total), remaining: String(setInfo.total - setInfo.current) })}
               </p>
             </div>
 
@@ -1609,8 +1618,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 onClick={() => { setAutoFeedbackToast(false); setFeedbackGiven(false); }}
                 className="mb-4 w-full py-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center active:scale-[0.98] transition-all"
               >
-                <p className="text-[14px] font-bold text-[#1B4332]">좋아요! 다음 세트 준비 👌</p>
-                <p className="text-[10px] text-[#2D6A4F]/60 mt-0.5">탭하면 피드백 수정 가능</p>
+                <p className="text-[14px] font-bold text-[#1B4332]">{t("fit.autoFeedback")}</p>
+                <p className="text-[10px] text-[#2D6A4F]/60 mt-0.5">{t("fit.autoFeedbackSub")}</p>
               </button>
             )}
 
@@ -1619,7 +1628,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               <>
                 <div className="text-center mb-3">
                   <h2 className="text-lg font-black tracking-tight" style={{ color: THEME.textMain }}>
-                    이번 세트 어땠어요?
+                    {t("fit.howWasSet")}
                   </h2>
                 </div>
 
@@ -1628,8 +1637,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   <div className="w-full p-4 rounded-2xl text-white shadow-lg overflow-hidden bg-[#1B4332]">
                     <div className="flex items-center justify-between">
                        <div className="flex flex-col items-start">
-                        <span className="font-bold text-base">{easyExtraReps}개 더 가능</span>
-                        <span className="text-[10px] text-emerald-300 font-medium tracking-wide">다음엔 횟수 올려요 ▲</span>
+                        <span className="font-bold text-base">{t("fit.couldDoMore", { count: String(easyExtraReps) })}</span>
+                        <span className="text-[10px] text-emerald-300 font-medium tracking-wide">{t("fit.couldDoMoreSub")} ▲</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center bg-[#2D6A4F]/50 rounded-lg px-1.5">
@@ -1648,8 +1657,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   <button onClick={() => submitFeedback("target", adjustedReps)} className="w-full p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-100 active:scale-[0.98] transition-all">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col items-start">
-                        <span className="font-bold text-base text-[#1B4332]">딱 좋아요!</span>
-                        <span className="text-[10px] font-bold tracking-wide text-[#2D6A4F]/70">이 강도 유지해요</span>
+                        <span className="font-bold text-base text-[#1B4332]">{t("fit.justRight")}</span>
+                        <span className="text-[10px] font-bold tracking-wide text-[#2D6A4F]/70">{t("fit.justRightSub")}</span>
                       </div>
                       <span className="text-xl">👌</span>
                     </div>
@@ -1658,8 +1667,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   {/* Option: FAIL */}
                   <div className="w-full p-4 rounded-2xl bg-red-50 border-2 border-red-100 flex items-center justify-between">
                       <div className="flex flex-col items-start shrink-0">
-                        <span className="font-bold text-base text-red-500">여기서 실패했어요</span>
-                        <span className="text-[10px] text-red-300 font-bold tracking-wide">실패 횟수</span>
+                        <span className="font-bold text-base text-red-500">{t("fit.failedHere")}</span>
+                        <span className="text-[10px] text-red-300 font-bold tracking-wide">{t("fit.failedReps")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center bg-red-100/60 rounded-lg px-1.5">
@@ -1679,7 +1688,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     onClick={() => { onAddSet(); setView("active"); setLocalRestSec(0); }}
                     className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-center active:scale-[0.98] transition-all"
                   >
-                    <span className="text-sm font-bold text-gray-500">+ 1세트 추가</span>
+                    <span className="text-sm font-bold text-gray-500">{t("fit.addOneSet")}</span>
                   </button>
                 )}
               </>

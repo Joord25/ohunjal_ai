@@ -19,17 +19,93 @@ interface MasterPlanPreviewProps {
   goal?: WorkoutGoal;
 }
 
+const MUSCLE_GROUP_EN: Record<string, string> = {
+  "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
+  "등": "Back", "후면 어깨": "Rear Delts", "이두": "Biceps", "하체": "Legs",
+  "종아리": "Calves", "전신": "Full Body", "코어": "Core", "가동성": "Mobility",
+};
+function tLabel(label: string, locale: string): string {
+  return locale === "ko" ? label : (MUSCLE_GROUP_EN[label] || label);
+}
+
+/** Translate Korean description to English at render time */
+function translateDescription(desc: string, locale: string): string {
+  if (locale === "ko") return desc;
+  return desc
+    .replace(/하체/g, "Lower")
+    .replace(/가슴/g, "Chest")
+    .replace(/등/g, "Back")
+    .replace(/어깨/g, "Shoulders")
+    .replace(/팔/g, "Arms")
+    .replace(/상체\(밀기\(Push\)\)/g, "Upper (Push)")
+    .replace(/상체\(당기기\(Pull\)\)/g, "Upper (Pull)")
+    .replace(/(\d+)종/g, "$1 exercises")
+    .replace(/(\d+)세트/g, "$1 sets")
+    .replace(/집중 운동/g, "Focus")
+    .replace(/인터벌 러닝/g, "Interval Running")
+    .replace(/이지 런/g, "Easy Run")
+    .replace(/장거리 러닝/g, "Long Distance Run")
+    .replace(/러너 코어/g, "Runner Core")
+    .replace(/맨몸 \+ 덤벨 전신 서킷/g, "Bodyweight + Dumbbell Full-body Circuit")
+    .replace(/근비대/g, "Hypertrophy")
+    .replace(/근력 강화/g, "Strength")
+    .replace(/체지방 감량/g, "Fat Loss")
+    .replace(/전반적 체력 향상/g, "General Fitness")
+    .replace(/상체 뻣뻣함 개선/g, "Upper body stiffness relief")
+    .replace(/하체 무거움 완화/g, "Lower body heaviness relief")
+    .replace(/전반적 피로 회복/g, "Fatigue recovery")
+    .replace(/최적 컨디션/g, "Optimal condition");
+}
+
+/** Translate Korean weight guide to English at render time */
+const WEIGHT_MAP: Record<string, string> = {
+  "가능한 최대 무게": "Go heavy",
+  "적당한 무게": "Moderate",
+  "가벼운 무게": "Light",
+  "중간 무게": "Medium",
+  "가벼운~중간 무게": "Light–Med",
+  "점진적 증량": "Add weight",
+  "도전적인 무게": "Challenge",
+  "맨몸": "Bodyweight",
+  "맨몸 또는 가벼운 무게": "Bodyweight or light",
+};
+function translateWeight(weight: string, locale: string): string {
+  if (locale === "ko") return weight;
+  return WEIGHT_MAP[weight] || weight;
+}
+
 /** Rebuild count string from sets/reps to ensure consistency */
-function rebuildCount(ex: ExerciseStep): string {
+function rebuildCount(ex: ExerciseStep, t?: (key: string, vars?: Record<string, string>) => string, locale?: string): string {
   // Timer-based exercises (warmup, cardio, mobility with time-based counts)
   if (ex.type === "warmup" || ex.type === "cardio" || ex.type === "mobility") {
-    // If count already looks like a time string, keep it
-    if (/분|초|min|sec/i.test(ex.count)) return ex.count;
+    if (/분|초|min|sec/i.test(ex.count)) {
+      if (locale && locale !== "ko") {
+        return ex.count
+          .replace(/(\d+)분/g, "$1 min")
+          .replace(/(\d+)초/g, "$1 sec")
+          .replace(/유지/g, "hold")
+          .replace(/운동/g, "work")
+          .replace(/휴식/g, "rest")
+          .replace(/이상/g, "+");
+      }
+      return ex.count;
+    }
   }
   // Strength/core with sets > 1
   if (ex.sets > 1) {
-    const repsStr = typeof ex.reps === "number" ? `${ex.reps}회` : String(ex.reps);
-    return `${ex.sets}세트 / ${repsStr}`;
+    const repsStr = typeof ex.reps === "number" ? String(ex.reps) : String(ex.reps);
+    if (t) return t("plan.sets_reps", { sets: String(ex.sets), reps: repsStr });
+    return `${ex.sets}세트 / ${repsStr}회`;
+  }
+  // Fallback: translate Korean units in count string
+  if (locale && locale !== "ko") {
+    return ex.count
+      .replace(/(\d+)세트/g, "$1 sets")
+      .replace(/(\d+)회/g, "$1 reps")
+      .replace(/(\d+)분/g, "$1 min")
+      .replace(/(\d+)초/g, "$1 sec")
+      .replace(/유지/g, "hold")
+      .replace(/이상/g, "+");
   }
   return ex.count;
 }
@@ -42,9 +118,9 @@ const PHASE_CONFIG = [
 ] as const;
 
 const INTENSITY_OPTIONS = [
-  { level: "high" as const, label: "고강도", desc: "80%+ 1RM · 1-6회 · 고중량", color: "bg-red-500", border: "border-red-300", bg: "bg-red-50", text: "text-red-600" },
-  { level: "moderate" as const, label: "중강도", desc: "60-79% 1RM · 7-12회 · 근비대", color: "bg-amber-500", border: "border-amber-300", bg: "bg-amber-50", text: "text-amber-700" },
-  { level: "low" as const, label: "저강도", desc: "~60% 1RM · 13회+ · 근지구력", color: "bg-blue-500", border: "border-blue-300", bg: "bg-blue-50", text: "text-blue-600" },
+  { level: "high" as const, labelKey: "plan.intensity.high", descKey: "plan.intensity.high_desc", color: "bg-red-500", border: "border-red-300", bg: "bg-red-50", text: "text-red-600" },
+  { level: "moderate" as const, labelKey: "plan.intensity.moderate", descKey: "plan.intensity.moderate_desc", color: "bg-amber-500", border: "border-amber-300", bg: "bg-amber-50", text: "text-amber-700" },
+  { level: "low" as const, labelKey: "plan.intensity.low", descKey: "plan.intensity.low_desc", color: "bg-blue-500", border: "border-blue-300", bg: "bg-blue-50", text: "text-blue-600" },
 ] as const;
 
 export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
@@ -60,15 +136,15 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   const { t, locale } = useTranslation();
   // Local mutable copy of exercises (for set count adjustments)
   const [localExercises, setLocalExercises] = useState<ExerciseStep[]>(() =>
-    sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex) }))
+    sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex, t, locale) }))
   );
 
   useEffect(() => { trackEvent("plan_preview_view", { exercise_count: sessionData.exercises.length }); }, []);
 
   // Sync when sessionData changes (e.g. after regenerate)
   useEffect(() => {
-    setLocalExercises(sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex) })));
-  }, [sessionData]);
+    setLocalExercises(sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex, t, locale) })));
+  }, [sessionData, t]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
@@ -161,7 +237,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
       const newSets = Math.max(1, Math.min(10, ex.sets + delta));
       if (newSets === ex.sets) return ex;
       const updated = { ...ex, sets: newSets };
-      updated.count = rebuildCount(updated);
+      updated.count = rebuildCount(updated, t, locale);
       return updated;
     }));
   };
@@ -235,11 +311,11 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
       type: info.type,
       phase: info.phase,
       name,
-      count: info.type === "warmup" ? "1세트" : "3 x 12",
+      count: info.type === "warmup" ? t("plan.set_single") : "3 x 12",
       sets: info.type === "warmup" ? 1 : 3,
       reps: info.type === "warmup" ? 1 : 12,
     };
-    newEx.count = rebuildCount(newEx);
+    newEx.count = rebuildCount(newEx, t, locale);
 
     // Insert after last exercise of the target phase
     setLocalExercises(prev => {
@@ -302,24 +378,24 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
           {/* AI 코치 + 강도 */}
           <div ref={descRef} className="flex items-center gap-2 mb-3">
             <img src="/favicon_backup.png" alt="AI" className="w-5 h-5 rounded-full shrink-0" />
-            <span className="text-[11px] font-bold text-gray-400">오운잘 AI 코치</span>
+            <span className="text-[11px] font-bold text-gray-400">{t("plan.ai_coach")}</span>
             {currentIntensity && (
               <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
                 currentIntensity === "high" ? "bg-red-100 text-red-600"
                   : currentIntensity === "moderate" ? "bg-amber-100 text-amber-700"
                   : "bg-blue-100 text-blue-600"
               }`}>
-                {currentIntensity === "high" ? "고강도" : currentIntensity === "moderate" ? "중강도" : "저강도"}
+                {t(`plan.intensity.${currentIntensity}`)}
               </span>
             )}
           </div>
 
           {/* Title */}
           <h1 className="text-2xl font-black text-[#1B4332] leading-tight tracking-tight mb-2">
-            오늘의 운동 플랜
+            {t("plan.title")}
           </h1>
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-2">
-            {sessionData.description}
+            {translateDescription(sessionData.description, locale)}
           </p>
           {/* 경험 메시지 — 목표 × 부위 매트릭스 (i18n) */}
           <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed">
@@ -398,10 +474,10 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     <div className="flex justify-between items-center gap-2">
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-bold block leading-snug text-gray-900">
-                          {ex.name}
+                          {getExerciseName(ex.name, locale)}
                         </span>
-                        {ex.weight && ex.weight !== "Bodyweight" && (
-                          <span className="text-xs text-[#2D6A4F] font-bold mt-1 block">{ex.weight}</span>
+                        {ex.weight && ex.weight !== "Bodyweight" && ex.weight !== "맨몸" && (
+                          <span className="text-xs text-[#2D6A4F] font-bold mt-1 block">{translateWeight(ex.weight, locale)}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 ml-2 shrink-0">
@@ -458,7 +534,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                           <svg className="w-4 h-4 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                           </svg>
-                          <span className="text-xs font-bold text-gray-600">자세 가이드</span>
+                          <span className="text-xs font-bold text-gray-600">{t("plan.form_guide")}</span>
                         </button>
                         {hasSwap && (
                           <button
@@ -468,7 +544,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
                             </svg>
-                            <span className="text-xs font-bold">운동 교체</span>
+                            <span className="text-xs font-bold">{t("plan.swap")}</span>
                           </button>
                         )}
                         {phase.exercises.length > 1 && (
@@ -507,7 +583,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" d="M12 5v14M5 12h14" />
                   </svg>
-                  <span className="text-[11px] font-bold">운동 추가</span>
+                  <span className="text-[11px] font-bold">{t("plan.add_exercise")}</span>
                 </button>
               </div>
             </div>
@@ -525,13 +601,13 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             <svg className="w-5 h-5 text-[#1B4332]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            <span className="text-[#1B4332] font-black text-sm">공유</span>
+            <span className="text-[#1B4332] font-black text-sm">{t("plan.share")}</span>
           </button>
           <button
             onClick={() => onStart({ ...sessionData, exercises: localExercises })}
             className="flex-1 h-14 rounded-2xl bg-[#1B4332] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-xl shadow-[#1B4332]/20 hover:bg-[#2D6A4F]"
           >
-            <span className="text-white font-black text-base tracking-wide">운동 시작</span>
+            <span className="text-white font-black text-base tracking-wide">{t("plan.start")}</span>
             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
             </svg>
@@ -546,8 +622,8 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
 
-            <h3 className="text-lg font-black text-[#1B4332] tracking-tight mb-1">플랜 조정</h3>
-            <p className="text-[11px] text-gray-400 font-medium mb-5">강도를 변경하면 같은 구성에서 세트·반복수·무게가 조절돼요</p>
+            <h3 className="text-lg font-black text-[#1B4332] tracking-tight mb-1">{t("plan.adjust")}</h3>
+            <p className="text-[11px] text-gray-400 font-medium mb-5">{t("plan.adjust_desc")}</p>
 
             {/* Intensity Options */}
             <div className="space-y-2.5 mb-5">
@@ -569,12 +645,12 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     <div className={`w-3 h-8 rounded-full ${opt.color} shrink-0`} />
                     <div className="text-left flex-1">
                       <div className="flex items-center gap-1.5">
-                        <p className={`font-black text-sm ${isActive ? opt.text : "text-gray-700"}`}>{opt.label}</p>
+                        <p className={`font-black text-sm ${isActive ? opt.text : "text-gray-700"}`}>{t(opt.labelKey)}</p>
                         {isRec && !isActive && (
-                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-[#2D6A4F]">추천</span>
+                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-[#2D6A4F]">{t("plan.recommended")}</span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{t(opt.descKey)}</p>
                     </div>
                     {isActive && (
                       <div className={`w-6 h-6 rounded-full ${opt.color} flex items-center justify-center shrink-0`}>
@@ -597,7 +673,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
                 </svg>
-                다른 구성으로 다시 생성
+                {t("plan.regenerate")}
               </button>
             )}
 
@@ -609,7 +685,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
               </svg>
-              처음부터 다시
+              {t("plan.restart")}
             </button>
           </div>
         </div>
@@ -623,15 +699,15 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">운동 추가</p>
-              <button onClick={() => setAddToPhase(null)} className="text-sm text-gray-400 font-bold">닫기</button>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("plan.add_exercise")}</p>
+              <button onClick={() => setAddToPhase(null)} className="text-sm text-gray-400 font-bold">{t("plan.close")}</button>
             </div>
 
             <input
               type="text"
               value={swapSearch}
               onChange={(e) => setSwapSearch(e.target.value)}
-              placeholder="운동 검색..."
+              placeholder={t("plan.search")}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
             />
 
@@ -644,7 +720,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}
                 >
-                  {p.label}
+                  {tLabel(p.label, locale)}
                 </button>
               ))}
             </div>
@@ -661,19 +737,19 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                   const list = pool.exercises
                     .filter(e => !existingNames.has(e))
                     .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
-                  if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>;
+                  if (list.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("plan.no_results")}</p>;
                   return list.map((name: string) => (
                     <button
                       key={name}
                       onClick={() => handleAddExercise(name)}
                       className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-gray-600 active:scale-[0.98] transition-all"
                     >
-                      {name.split("(")[0].trim()}
+                      {getExerciseName(name, locale)}
                     </button>
                   ));
                 }
 
-                if (!isSearching) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭을 선택하거나 검색해 주세요</p>;
+                if (!isSearching) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("plan.select_tab")}</p>;
 
                 return LABELED_EXERCISE_POOLS
                   .map((group) => {
@@ -684,14 +760,14 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     if (matched.length === 0) return null;
                     return (
                       <div key={group.label}>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{tLabel(group.label, locale)}</p>
                         {matched.map((name: string) => (
                           <button
                             key={name}
                             onClick={() => handleAddExercise(name)}
                             className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-gray-600 active:scale-[0.98] transition-all mb-1.5"
                           >
-                            {name.split("(")[0].trim()}
+                            {getExerciseName(name, locale)}
                           </button>
                         ))}
                       </div>
@@ -710,11 +786,11 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">대체 운동 선택</p>
-              <button onClick={() => setSwapExercise(null)} className="text-sm text-gray-400 font-bold">닫기</button>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("plan.swap_title")}</p>
+              <button onClick={() => setSwapExercise(null)} className="text-sm text-gray-400 font-bold">{t("plan.close")}</button>
             </div>
             <p className="text-[10px] font-bold text-gray-500 mb-3">
-              현재: <span className="text-[#1B4332]">{getExerciseName(swapExercise.exercise.name, locale).split("(")[0].trim()}</span>
+              {t("plan.current")} <span className="text-[#1B4332]">{getExerciseName(swapExercise.exercise.name, locale)}</span>
             </p>
 
             {/* Search Input */}
@@ -722,7 +798,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
               type="text"
               value={swapSearch}
               onChange={(e) => setSwapSearch(e.target.value)}
-              placeholder="운동 검색..."
+              placeholder={t("plan.search")}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-[#1B4332] font-medium placeholder-gray-300 outline-none focus:border-[#2D6A4F] transition-colors mb-2"
             />
 
@@ -734,7 +810,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                   swapFilter === null ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                 }`}
               >
-                추천
+                {t("plan.recommended")}
               </button>
               {LABELED_EXERCISE_POOLS.map(p => (
                 <button
@@ -744,7 +820,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     swapFilter === p.label ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}
                 >
-                  {p.label}
+                  {tLabel(p.label, locale)}
                 </button>
               ))}
             </div>
@@ -765,7 +841,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     .filter(e => e !== currentName)
                     .filter(e => !isSearching || e.replace(/\s/g, "").toLowerCase().includes(q));
                   if (list.length === 0) return (
-                    <p className="text-center text-sm text-gray-400 font-medium py-6">검색 결과가 없어요</p>
+                    <p className="text-center text-sm text-gray-400 font-medium py-6">{t("plan.no_results")}</p>
                   );
                   return list.map((alt: string) => (
                     <button
@@ -775,21 +851,21 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                         sameGroup.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
                       }`}
                     >
-                      {alt.split("(")[0].trim()}
+                      {getExerciseName(alt, locale)}
                     </button>
                   ));
                 }
 
                 // Default "추천" tab: same muscle group (no search) or grouped search
                 if (!isSearching) {
-                  if (sameGroup.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">부위 탭에서 선택해 주세요</p>;
+                  if (sameGroup.length === 0) return <p className="text-center text-sm text-gray-400 font-medium py-6">{t("plan.select_from_tab")}</p>;
                   return sameGroup.map((alt: string) => (
                     <button
                       key={alt}
                       onClick={() => handleSwapExercise(swapExercise.index, alt)}
                       className="w-full text-left px-4 py-3 rounded-xl bg-white border border-gray-200 text-[13px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
                     >
-                      {alt.split("(")[0].trim()}
+                      {getExerciseName(alt, locale)}
                     </button>
                   ));
                 }
@@ -804,7 +880,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                     if (matched.length === 0) return null;
                     return (
                       <div key={group.label}>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{group.label}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2 mb-1">{tLabel(group.label, locale)}</p>
                         {matched.map((alt: string) => (
                           <button
                             key={alt}
@@ -813,7 +889,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                               sameGroup.includes(alt) ? "border-[#2D6A4F] text-[#1B4332]" : "border-gray-200 text-gray-600"
                             }`}
                           >
-                            {alt.split("(")[0].trim()}
+                            {getExerciseName(alt, locale)}
                           </button>
                         ))}
                       </div>
@@ -843,9 +919,9 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             <div className="bg-white rounded-2xl px-5 py-5 shadow-2xl mx-2 relative">
               <div className="absolute -top-2 left-8 w-4 h-4 bg-white rotate-45 rounded-sm" />
               <p className="text-[12.5px] text-gray-600 leading-relaxed">
-                ACSM 국제 공인 스포츠의학 기관 및 건강운동관리사 가이드라인과 최근 5년 내 <span className="font-bold text-[#2D6A4F]">500건 이상</span>의 SCI급 연구 논문들을 기반으로, 컨디션 · 체력 · 휴식까지 고려한 요일별 맞춤 프로그램입니다.
+                {t("plan.tip_intro")}
               </p>
-              <p className="text-[10px] text-gray-400 mt-3 font-medium">탭하여 닫기</p>
+              <p className="text-[10px] text-gray-400 mt-3 font-medium">{t("plan.tip_dismiss")}</p>
             </div>
           </div>
         </div>
@@ -866,9 +942,9 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             <div className="mt-3 mr-1 bg-white rounded-2xl px-5 py-4 shadow-2xl max-w-[240px] relative">
               <div className="absolute -top-2 right-4 w-4 h-4 bg-white rotate-45 rounded-sm" />
               <p className="text-sm font-bold text-[#1B4332] leading-relaxed">
-                강도 변경이나 다시 생성을<br/>원하시면 여기서 조절할 수 있어요
+                {t("plan.tip_settings")}
               </p>
-              <p className="text-[11px] text-gray-400 mt-2 font-medium">탭하여 닫기</p>
+              <p className="text-[11px] text-gray-400 mt-2 font-medium">{t("plan.tip_dismiss")}</p>
             </div>
           </div>
         </div>
@@ -889,9 +965,9 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             <div className="bg-white rounded-2xl px-5 py-4 shadow-2xl mx-2 relative">
               <div className="absolute -top-2 left-8 w-4 h-4 bg-white rotate-45 rounded-sm" />
               <p className="text-sm font-bold text-[#1B4332] leading-relaxed">
-                운동 카드를 탭하면<br/>자세 가이드와 운동 교체를 할 수 있어요
+                {t("plan.tip_card")}
               </p>
-              <p className="text-[11px] text-gray-400 mt-2 font-medium">탭하여 닫기</p>
+              <p className="text-[11px] text-gray-400 mt-2 font-medium">{t("plan.tip_dismiss")}</p>
             </div>
           </div>
         </div>
@@ -944,10 +1020,10 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
               </div>
             </div>
 
-            {guideExercise.weight && guideExercise.weight !== "Bodyweight" && (
+            {guideExercise.weight && guideExercise.weight !== "Bodyweight" && guideExercise.weight !== "맨몸" && (
               <div className="bg-emerald-50 rounded-xl p-3 mb-6 border border-emerald-100 text-center">
                 <p className="text-[9px] font-black text-[#2D6A4F] uppercase tracking-widest mb-0.5">Weight</p>
-                <p className="text-sm font-black text-[#1B4332]">{guideExercise.weight}</p>
+                <p className="text-sm font-black text-[#1B4332]">{translateWeight(guideExercise.weight, locale)}</p>
               </div>
             )}
 
@@ -963,14 +1039,14 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
               <svg className="w-5 h-5 text-red-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
               </svg>
-              <span className="font-black text-sm text-gray-700 tracking-wide">YouTube에서 자세 가이드 보기</span>
+              <span className="font-black text-sm text-gray-700 tracking-wide">{t("plan.youtube_guide")}</span>
             </button>
 
             <button
               onClick={() => setGuideExercise(null)}
               className="w-full p-3 mt-2 rounded-xl text-gray-400 font-bold text-sm active:scale-[0.98] transition-all"
             >
-              닫기
+              {t("plan.close")}
             </button>
           </div>
         </div>

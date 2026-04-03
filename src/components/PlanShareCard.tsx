@@ -2,6 +2,8 @@
 
 import React, { useRef, useState } from "react";
 import { ExerciseStep } from "@/constants/workout";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getExerciseName } from "@/utils/exerciseName";
 
 interface PlanShareCardProps {
   exercises: ExerciseStep[];
@@ -24,13 +26,22 @@ function getPhaseKey(ex: ExerciseStep): string {
   return "main";
 }
 
-function rebuildCount(ex: ExerciseStep): string {
+function rebuildCount(ex: ExerciseStep, locale: string): string {
   if (ex.type === "warmup" || ex.type === "cardio" || ex.type === "mobility") {
-    if (/분|초|min|sec/i.test(ex.count)) return ex.count;
+    if (/분|초|min|sec/i.test(ex.count)) {
+      if (locale !== "ko") {
+        return ex.count.replace(/(\d+)분/g, "$1 min").replace(/(\d+)초/g, "$1 sec");
+      }
+      return ex.count;
+    }
   }
   if (ex.sets > 1) {
-    const repsStr = typeof ex.reps === "number" ? `${ex.reps}회` : String(ex.reps);
-    return `${ex.sets}세트 × ${repsStr}`;
+    const repsStr = typeof ex.reps === "number" ? String(ex.reps) : String(ex.reps);
+    if (locale !== "ko") return `${ex.sets} sets × ${repsStr}`;
+    return `${ex.sets}세트 × ${repsStr}회`;
+  }
+  if (locale !== "ko") {
+    return ex.count.replace(/(\d+)세트/g, "$1 sets").replace(/(\d+)회/g, "$1 reps").replace(/(\d+)분/g, "$1 min").replace(/(\d+)초/g, "$1 sec");
   }
   return ex.count;
 }
@@ -40,6 +51,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
   currentIntensity,
   onClose,
 }) => {
+  const { locale } = useTranslation();
   const [isCapturing, setIsCapturing] = useState(false);
   const [mode, setMode] = useState<"dark" | "light">("dark");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -60,7 +72,9 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
   const totalExercises = exercises.length;
   const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets || 1), 0);
 
-  const intensityLabel = currentIntensity === "high" ? "고강도" : currentIntensity === "moderate" ? "중강도" : currentIntensity === "low" ? "저강도" : null;
+  const intensityLabel = currentIntensity === "high" ? (locale === "ko" ? "고강도" : "High")
+    : currentIntensity === "moderate" ? (locale === "ko" ? "중강도" : "Moderate")
+    : currentIntensity === "low" ? (locale === "ko" ? "저강도" : "Low") : null;
   const intensityColor = currentIntensity === "high" ? "#EF4444" : currentIntensity === "moderate" ? "#F59E0B" : "#3B82F6";
 
   const isDark = mode === "dark";
@@ -98,7 +112,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
       if (!blob) return;
       if (navigator.share && navigator.canShare?.({ files: [new File([blob], "plan.png", { type: "image/png" })] })) {
         const file = new File([blob], "ohunjal-plan.png", { type: "image/png" });
-        await navigator.share({ files: [file], title: "오운잘 운동 플랜" });
+        await navigator.share({ files: [file], title: locale === "ko" ? "오운잘 운동 플랜" : "Ohunjal Workout Plan" });
       } else {
         downloadBlob(blob);
       }
@@ -140,7 +154,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
         </svg>
       </button>
 
-      <p className="text-white/60 text-xs font-bold mb-3 mt-10 tracking-wider uppercase shrink-0">플랜 공유</p>
+      <p className="text-white/60 text-xs font-bold mb-3 mt-10 tracking-wider uppercase shrink-0">{locale === "ko" ? "플랜 공유" : "Share Plan"}</p>
 
       {/* Card Preview — auto height, fixed width, scrollable */}
       <div ref={scrollRef} className="relative w-[270px] rounded-2xl overflow-y-auto max-w-[85vw] flex-1 min-h-0">
@@ -180,7 +194,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
               )}
             </div>
             <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.2, letterSpacing: "-0.02em" }}>
-              오늘의 운동 플랜
+              {locale === "ko" ? "오늘의 운동 플랜" : "Today's Workout Plan"}
             </p>
             <p style={{ fontSize: 10, color: textSecondary, marginTop: 4, fontWeight: 600 }}>
               {dateStr}
@@ -190,11 +204,11 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
           {/* Stats Row */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             <div style={{ background: pillBg, borderRadius: 10, padding: "6px 12px", flex: 1, textAlign: "center" }}>
-              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const }}>종목</p>
+              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const }}>{locale === "ko" ? "종목" : "EXERCISES"}</p>
               <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.3 }}>{totalExercises}</p>
             </div>
             <div style={{ background: pillBg, borderRadius: 10, padding: "6px 12px", flex: 1, textAlign: "center" }}>
-              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const }}>총 세트</p>
+              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const }}>{locale === "ko" ? "총 세트" : "TOTAL SETS"}</p>
               <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.3 }}>{totalSets}</p>
             </div>
           </div>
@@ -221,10 +235,10 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
                     marginLeft: 9,
                   }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: textPrimary, flex: 1 }}>
-                      {ex.name.split("(")[0].trim()}
+                      {getExerciseName(ex.name, locale)}
                     </span>
                     <span style={{ fontSize: 9, fontWeight: 700, color: textSecondary, marginLeft: 8, whiteSpace: "nowrap", textAlign: "right", minWidth: 65 }}>
-                      {rebuildCount(ex)}
+                      {rebuildCount(ex, locale)}
                     </span>
                   </div>
                 ))}
@@ -234,7 +248,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
 
           {/* Brand Footer */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 12 }}>
-            <img src="/share.logo.png" alt="오운잘 AI" style={{ height: 60 }} />
+            <img src="/share.logo.png" alt="Ohunjal AI" style={{ height: 60 }} />
           </div>
         </div>
       </div>
@@ -269,7 +283,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
           </div>
-          <span className="text-white/50 text-[10px] font-bold">저장</span>
+          <span className="text-white/50 text-[10px] font-bold">{locale === "ko" ? "저장" : "Save"}</span>
         </button>
         <button onClick={handleShare} disabled={isCapturing} className="flex flex-col items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
           <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
@@ -277,7 +291,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
           </div>
-          <span className="text-white/50 text-[10px] font-bold">공유</span>
+          <span className="text-white/50 text-[10px] font-bold">{locale === "ko" ? "공유" : "Share"}</span>
         </button>
         </div>
       </div>

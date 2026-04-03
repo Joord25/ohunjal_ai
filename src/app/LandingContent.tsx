@@ -164,7 +164,7 @@ export default function LandingContent() {
             <div className="flex items-center gap-3">
               <LanguageSelector current="/" />
               <a
-                href="/app"
+                href="/app?lang=ko"
                 className="px-5 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors"
               >
                 시작하기
@@ -211,7 +211,7 @@ export default function LandingContent() {
             </p>
             <div className="mt-10">
               <a
-                href="/app"
+                href="/app?lang=ko"
                 className="inline-block px-10 py-4 bg-[#059669] text-white font-bold text-base rounded-2xl shadow-[0_4px_24px_rgba(5,150,105,0.4)] hover:shadow-[0_8px_40px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
               >
                 3초 만에 오늘 운동 받기
@@ -536,7 +536,7 @@ export default function LandingContent() {
                   </li>
                 </ul>
                 <a
-                  href="/app"
+                  href="/app?lang=ko"
                   className="block text-center w-full py-3 rounded-xl border border-gray-200 text-[#1B4332] font-bold text-sm hover:bg-gray-50 transition-colors"
                 >
                   무료로 시작
@@ -596,7 +596,7 @@ export default function LandingContent() {
                   </li>
                 </ul>
                 <a
-                  href="/app"
+                  href="/app?lang=ko"
                   className="block text-center w-full py-3 rounded-xl bg-[#1B4332] text-white font-bold text-sm hover:bg-[#143728] transition-colors"
                 >
                   프리미엄 시작
@@ -810,7 +810,7 @@ export default function LandingContent() {
               AI 운동 추천부터 헬스 루틴 생성까지, 지금 무료로 시작하세요.
             </p>
             <a
-              href="/app"
+              href="/app?lang=ko"
               className="inline-block px-10 py-4 bg-[#1B4332] text-white font-bold text-base rounded-2xl shadow-[0_4px_16px_rgba(27,67,50,0.35)] hover:shadow-[0_8px_28px_rgba(27,67,50,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
             >
               무료로 시작하기
