@@ -302,14 +302,50 @@ function computeReading(
     typeEmoji = "";
   }
 
-  const message =
-    p.weeklyFrequency === 0
-      ? "growth.coach.beginner"
-      : acsmPct >= 150
-        ? "growth.coach.fast"
-        : acsmPct >= 100
-          ? "growth.coach.good"
-          : "growth.coach.start";
+  // 목표별 동적 코치 멘트 (룰베이스 + 변수 치환)
+  const message = (() => {
+    if (p.weeklyFrequency === 0) return "growth.coach.beginner";
+
+    const sessionCals = estimateSessionCalories(p.bodyWeight, p.sessionMinutes, p.goal);
+    const weeklyCalBurn = Math.round(((sessionCals.low + sessionCals.high) / 2) * p.weeklyFrequency);
+
+    if (p.goal === "fat_loss") {
+      const weeklyLossKg = Math.round((weeklyCalBurn / 7700) * 100) / 100;
+      const pred4w = Math.round((p.bodyWeight - weeklyLossKg * 4) * 10) / 10;
+      return `growth.coach.fatLoss:${pred4w}:${weeklyCalBurn}`;
+    }
+    if (p.goal === "muscle_gain") {
+      // 3대 합계 추정 (히스토리에서 best e1RM 합산)
+      let total1RM = 0;
+      if (history && history.length > 0) {
+        const best1RMs: Record<string, number> = {};
+        for (const h of history) {
+          if (h.stats?.bestE1RM && h.sessionData?.exercises) {
+            for (const ex of h.sessionData.exercises) {
+              const name = ex.name.split("(")[0].trim();
+              if (/벤치|스쿼트|데드/.test(name)) {
+                if (!best1RMs[name] || (h.stats.bestE1RM > best1RMs[name])) {
+                  best1RMs[name] = h.stats.bestE1RM;
+                }
+              }
+            }
+          }
+        }
+        total1RM = Math.round(Object.values(best1RMs).reduce((s, v) => s + v, 0));
+      }
+      if (total1RM > 0) {
+        const levelLabel = total1RM >= 500 ? "엘리트" : total1RM >= 400 ? "상급" : total1RM >= 300 ? "중급" : "입문";
+        return `growth.coach.muscleGain:${total1RM}:${levelLabel}`;
+      }
+      return "growth.coach.muscleGainStart";
+    }
+    if (p.goal === "endurance") {
+      const grade = acsmPct >= 200 ? "특급" : acsmPct >= 150 ? "상급" : acsmPct >= 100 ? "우수" : "성장중";
+      return `growth.coach.endurance:${acsmPct}:${grade}`;
+    }
+    // health
+    return `growth.coach.health:${p.weeklyFrequency}:${acsmPct}`;
+  })();
 
   // 항목 선택
   const isBeginner = p.weeklyFrequency <= 2;
@@ -1561,7 +1597,41 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                   <span className="text-[11px] font-bold text-gray-400">{t("home.coachTitle")}</span>
                 </div>
                 <p className="text-[#1B4332] text-sm font-bold leading-relaxed whitespace-pre-line">
-                  {t(reading.message)}
+                  {(() => {
+                    const msg = reading.message;
+                    const isEn = locale === "en";
+                    if (msg === "growth.coach.beginner") return t(msg);
+                    if (msg.startsWith("growth.coach.fatLoss:")) {
+                      const [, weight] = msg.split(":");
+                      return isEn
+                        ? `At this pace, you could be ${weight}kg in 4 weeks!\nJust focus on your diet — I've got the workouts covered!`
+                        : `이 기세면 4주 뒤 약 ${weight}kg!\n운동은 제가 책임질게요, 식단만 더 신경쓰자!ㅎㅎ`;
+                    }
+                    if (msg.startsWith("growth.coach.muscleGain:")) {
+                      const [, total, level] = msg.split(":");
+                      return isEn
+                        ? `Estimated Big 3 total: ${total}kg!\n${level} level is right around the corner!`
+                        : `3대 합계 추정 ${total}kg!\n${level} 코앞이에요! 같이 가즈아!`;
+                    }
+                    if (msg === "growth.coach.muscleGainStart") {
+                      return isEn
+                        ? `Let's build your strength records together!\nEvery session is laying the foundation!`
+                        : `같이 기록을 만들어가요!\n매 세션이 근력의 기반이 됩니다!`;
+                    }
+                    if (msg.startsWith("growth.coach.endurance:")) {
+                      const [, pct, grade] = msg.split(":");
+                      return isEn
+                        ? `WHO recommendation ${pct}% achieved!\nEndurance grade: ${grade}!`
+                        : `WHO 권장량 ${pct}% 달성!\n기초체력 ${grade}이라니! 대단해요!`;
+                    }
+                    if (msg.startsWith("growth.coach.health:")) {
+                      const [, freq, pct] = msg.split(":");
+                      return isEn
+                        ? `${freq}x per week — your health is in great shape!\nWHO standard ${pct}% — keep it up!`
+                        : `주 ${freq}회 꾸준히 하시니 건강은 걱정 없어요!\nWHO 권장 ${pct}% 달성, 이대로 쭉!`;
+                    }
+                    return t(msg);
+                  })()}
                 </p>
               </div>
 
