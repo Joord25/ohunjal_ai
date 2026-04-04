@@ -1642,6 +1642,9 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                   <img src="/favicon_backup.png" alt="AI" className="w-5 h-5 rounded-full shrink-0" />
                   <span className="text-[11px] font-bold text-gray-400">{t("home.coachTitle")}</span>
                 </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-7 shrink-0" />
+                  <div className="bg-[#2D6A4F]/5 rounded-2xl px-4 py-3">
                 <p className="text-[#1B4332] text-sm font-bold leading-relaxed whitespace-pre-line">
                   {(() => {
                     // 선택된 목표에 따라 멘트 변경
@@ -1743,6 +1746,8 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                     return t(msg);
                   })()}
                 </p>
+                  </div>
+                </div>
               </div>
 
               {/* My goal card (always visible) + other goal buttons */}
