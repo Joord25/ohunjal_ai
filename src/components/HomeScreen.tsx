@@ -7,7 +7,6 @@ import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 
-// translateDesc 제거됨 — 홈 코치 멘트가 2버블 전우애 톤으로 전면 교체
 
 interface HomeScreenProps {
   userName?: string;
@@ -48,6 +47,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   const [, setIntensityLabel] = useState<string>("중간");
   const [showAllQuests, setShowAllQuests] = useState(false);
   const [previewIdx, setPreviewIdx] = useState(0);
+  const [ctaPulse, setCtaPulse] = useState(false);
+
+  // 5초 후 CTA 버튼 pulse 시작
+  useEffect(() => {
+    const timer = setTimeout(() => setCtaPulse(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [profile, setProfile] = useState<FitnessProfile | null>(null);
   const isFirstVisit = history.length === 0;
@@ -160,12 +166,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     }
     return `${month}월 ${date}일 (${days[now.getDay()]})`;
   })();
-
-  // 개인 성장 인사이트
-  // growthInsight 제거 — 2버블 코치 멘트가 동일 역할 수행
-
-
-  // 헤드라인: "이전 → 오늘" 연결 (항상 표시 — AI가 나를 안다)
 
 
     // 성장 예측 프리뷰 (여러 경로 수집 → 자동 슬라이드)
@@ -337,8 +337,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   })();
 
 
-  // 타이핑 애니메이션 제거 — 2버블은 즉시 표시
-
   // 성장 예측 프리뷰 자동 슬라이드 (4초 간격)
   useEffect(() => {
     if (sortedPreviews.length <= 1) return;
@@ -489,8 +487,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
             </div>
           </div>
           <button
-            onClick={onStartWorkout}
-            className="w-full py-3.5 rounded-xl bg-[#1B4332] text-white font-bold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg"
+            onClick={() => { setCtaPulse(false); onStartWorkout(); }}
+            className={`w-full py-3.5 rounded-xl bg-[#1B4332] text-white font-bold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg ${ctaPulse ? "animate-pulse ring-2 ring-[#2D6A4F]/30 ring-offset-2" : ""}`}
           >
             {didWorkoutToday ? t("home.coach.oneMore") : t("home.coach.startToday")}
           </button>
@@ -516,7 +514,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
           </div>
         </div>
 
-        {/* 성장 인사이트 제거 — 2버블 코치 멘트가 동일 역할 */}
 
         {/* 성장 예측 프리뷰 (분리된 카드) */}
         {sortedPreviews.length > 0 && (() => {
