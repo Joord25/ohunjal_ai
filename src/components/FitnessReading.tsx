@@ -773,12 +773,14 @@ function RegressionChart({ goal, history, weightLog, profile }: {
   const chartH = H - PAD.top - PAD.bottom;
 
   const isFatLoss = goal === "fat_loss";
-  const allY = [...points.map(p => p.y), predY, ...(targetLine ? [targetLine] : [])];
+  // fat_loss: targetLine(-38500)은 스케일 계산에서 제외 (너무 큰 값)
+  const dataY = [...points.map(p => p.y), predY];
+  const allY = [...dataY, ...(targetLine && !isFatLoss ? [targetLine] : [])];
 
   let minY: number, maxY: number;
   if (isFatLoss) {
-    // fat_loss: 0을 중앙에 배치, 양쪽 대칭
-    const absMax = Math.max(Math.abs(Math.min(...allY)), Math.abs(Math.max(...allY)), 1000) * 1.1;
+    // fat_loss: 0을 중앙에 배치, 데이터 범위 기준 대칭
+    const absMax = Math.max(Math.abs(Math.min(...dataY)), Math.abs(Math.max(...dataY)), 500) * 1.2;
     minY = -absMax;
     maxY = absMax;
   } else {
