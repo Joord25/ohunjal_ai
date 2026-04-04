@@ -847,7 +847,7 @@ function generateBalancedWorkout(
   exercises.push(...buildAdditionalCardio(condition));
 
   const goalLabel = goal === "fat_loss" ? "살 빼기" : goal === "muscle_gain" ? "근육 키우기" : goal === "strength" ? "힘 세지기" : "기초체력";
-  const upperLabel = upperType === "push" ? "밀기(Push)" : "당기기(Pull)";
+  const upperLabel = upperType === "push" ? "밀기" : "당기기";
 
   return {
     title: `${goalLabel} · 하체 + ${upperLabel}`,
