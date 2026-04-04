@@ -320,20 +320,11 @@ function computeReading(
     if (p.goal === "muscle_gain") {
       let total1RM = 0;
       if (history && history.length > 0) {
-        const best1RMs: Record<string, number> = {};
-        for (const h of history) {
-          if (h.stats?.bestE1RM && h.sessionData?.exercises) {
-            for (const ex of h.sessionData.exercises) {
-              const name = ex.name.split("(")[0].trim();
-              if (/벤치|스쿼트|데드/.test(name)) {
-                if (!best1RMs[name] || (h.stats.bestE1RM > best1RMs[name])) {
-                  best1RMs[name] = h.stats.bestE1RM;
-                }
-              }
-            }
-          }
+        // 운동별 정확한 e1RM 추출 (calcE1RMTrendByExercise 사용)
+        const byEx = calcE1RMTrendByExercise(history);
+        for (const ex of byEx) {
+          total1RM += Math.round(ex.lastE1RM);
         }
-        total1RM = Math.round(Object.values(best1RMs).reduce((s, v) => s + v, 0));
       }
       if (total1RM > 0) {
         const levelLabel = total1RM >= 500 ? "엘리트" : total1RM >= 400 ? "상급" : total1RM >= 300 ? "중급" : "입문";
@@ -969,8 +960,12 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
   const targetLine = profile.bodyWeight * 1.0;
   const targetLabel = locale === "en" ? `Inter. ${Math.round(targetLine)}kg` : `중급 ${Math.round(targetLine)}kg`;
   const lastX = points[points.length - 1].x;
+  const lastY = points[points.length - 1].y;
   const predX = lastX + 28;
-  const predY = Math.round(Math.max(0, reg.predict(predX)) * 10) / 10;
+  // 예측값 클램핑: 현재값의 1.5배 또는 체중의 3배 중 큰 값을 상한으로
+  const maxReasonable = Math.max(lastY * 1.5, profile.bodyWeight * 3);
+  const rawPredY = reg.predict(predX);
+  const predY = Math.round(Math.max(0, Math.min(rawPredY, maxReasonable)) * 10) / 10;
 
   const W = 300, H = 160, PAD = { top: 20, right: 15, bottom: 30, left: 40 };
   const chartW = W - PAD.left - PAD.right;
@@ -1047,7 +1042,12 @@ function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; 
         <text x={toSvgX(lastX)} y={H - 5} textAnchor="middle" className="fill-gray-400" fontSize="7">{locale === "en" ? "Now" : "현재"}</text>
       </svg>
       <p className="text-[9px] text-gray-400 mt-1 text-right">
-        {ex.growthPerWeek > 0 ? "▲" : ex.growthPerWeek < 0 ? "▼" : "—"} {locale === "en" ? `+${ex.growthPerWeek}kg/wk` : `주간 +${ex.growthPerWeek}kg/주`}
+        {(() => {
+          // 주간 변화량 클램핑: ±20kg/주 초과는 비현실적
+          const clamped = Math.max(-20, Math.min(20, ex.growthPerWeek));
+          const symbol = clamped > 0 ? "▲" : clamped < 0 ? "▼" : "—";
+          return locale === "en" ? `${symbol} ${clamped > 0 ? "+" : ""}${clamped}kg/wk` : `${symbol} 주간 ${clamped > 0 ? "+" : ""}${clamped}kg/주`;
+        })()}
       </p>
     </div>
   );
