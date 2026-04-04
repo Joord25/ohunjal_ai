@@ -1027,22 +1027,37 @@ function generateRunningWorkout(
 
   switch (runType) {
     case "interval":
-      exercises.push(
-        { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
-        { type: "cardio", phase: "main", name: pick([
-          "인터벌 스프린트 (Interval Sprints)",
-          "변속주 (Fartlek Run)",
-          "템포런 (Tempo Run)",
-        ]), count: "30초 전력 / 90초 회복 × 8-10", sets: 1, reps: 1 },
-        { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
-      );
+      // 랜덤으로 인터벌/변속주/템포런 중 선택
+      const intervalType = pick(["sprint", "fartlek", "tempo", "walkrun"] as const);
+      if (intervalType === "tempo") {
+        // 템포런: 단순 타이머 (인터벌 모드 아님)
+        exercises.push(
+          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "템포런: 대화 약간 힘든 속도 (Tempo Run)", count: "20-30분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+        );
+      } else if (intervalType === "walkrun") {
+        // 워크-런: 인터벌 모드 (걷기/달리기)
+        exercises.push(
+          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 전력 / 60초 회복 × 10", sets: 1, reps: 1 },
+        );
+      } else {
+        // 인터벌 스프린트 / 변속주
+        exercises.push(
+          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: intervalType === "sprint"
+            ? "인터벌 스프린트 (Interval Sprints)"
+            : "변속주 (Fartlek Run)",
+            count: "30초 전력 / 90초 회복 × 8", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+        );
+      }
       break;
     case "easy":
       exercises.push(
         { type: "cardio", phase: "main", name: pick([
           "이지 런: 대화 가능 속도 (Conversational Pace Run)",
           "회복 러닝: 존 2 유지 (Recovery Run: Zone 2)",
-          "워크-런 인터벌 (Walk-Run Intervals)",
         ]), count: "30-40분", sets: 1, reps: 1 },
       );
       break;
