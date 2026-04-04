@@ -85,6 +85,14 @@ body {
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes cta-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.animate-cta-breathe {
+  animation: cta-breathe 2s ease-in-out infinite;
+}
+
 .animate-card-enter {
   opacity: 0;
   animation: card-enter 0.35s ease-out forwards;
