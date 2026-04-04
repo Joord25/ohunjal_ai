@@ -1,28 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 
-function translateDesc(desc: string, locale: string): string {
-  // KO: 영문 괄호 제거 (이전 데이터 호환)
-  if (locale === "ko") return desc.replace(/\(Push\)/g, "").replace(/\(Pull\)/g, "").replace(/\s{2,}/g, " ").trim();
-  return desc
-    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
-    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
-    .replace(/상체\(밀기\(Push\)\)/g, "Upper (Push)").replace(/상체\(당기기\(Pull\)\)/g, "Upper (Pull)")
-    .replace(/(\d+)종/g, "$1 exercises").replace(/(\d+)세트/g, "$1 sets")
-    .replace(/근비대/g, "Hypertrophy").replace(/근력 강화/g, "Strength")
-    .replace(/체지방 감량/g, "Fat Loss").replace(/전반적 체력 향상/g, "General Fitness")
-    .replace(/집중 운동/g, "Focus")
-    .replace(/인터벌 러닝/g, "Interval Running").replace(/이지 런/g, "Easy Run").replace(/장거리 러닝/g, "Long Distance Run")
-    .replace(/러너 코어/g, "Runner Core").replace(/맨몸 \+ 덤벨 전신 서킷/g, "Bodyweight + Dumbbell Circuit")
-    .replace(/상체 뻣뻣함 개선/g, "Upper stiffness relief").replace(/하체 무거움 완화/g, "Lower heaviness relief")
-    .replace(/전반적 피로 회복/g, "Fatigue recovery").replace(/최적 컨디션/g, "Optimal condition");
-}
+// translateDesc 제거됨 — 홈 코치 멘트가 2버블 전우애 톤으로 전면 교체
 
 interface HomeScreenProps {
   userName?: string;
@@ -62,9 +47,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   const [savedGoal, setSavedGoal] = useState<WorkoutGoal | null>(null);
   const [, setIntensityLabel] = useState<string>("중간");
   const [showAllQuests, setShowAllQuests] = useState(false);
-  const [typedText, setTypedText] = useState("");
   const [previewIdx, setPreviewIdx] = useState(0);
-  const [typingDone, setTypingDone] = useState(false);
 
   const [profile, setProfile] = useState<FitnessProfile | null>(null);
   const isFirstVisit = history.length === 0;
@@ -298,20 +281,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     })();
 
 
-  // AI 코치 메시지: 최근 3개 기록 분석 → 안 한 부위 추천
-  const coachMessage = (() => {
-    if (history.length === 0) return t("home.coach.firstVisit");
-    if (didWorkoutToday) {
-      const last = history[history.length - 1];
-      const desc = last.sessionData.description || last.sessionData.title || "";
-      return desc ? t("home.coach.doneToday", { desc: translateDesc(desc, locale) }) : t("home.coach.doneTodayDefault");
-    }
+  // AI 코치 2버블: [인사/감정, 추천/행동]
+  const coachBubbles: [string, string] = (() => {
+    const isEn = locale === "en";
+    const daySeed = new Date().getDate();
+    const pick = <T,>(arr: T[]): T => arr[daySeed % arr.length];
+    const hour = new Date().getHours();
 
-    // 최근 3개 기록에서 한 부위 추출
+    // 마지막 운동으로부터 며칠 지났는지
+    const daysSinceLast = history.length > 0
+      ? Math.floor((Date.now() - new Date(history[history.length - 1].date).getTime()) / (24 * 60 * 60 * 1000))
+      : 999;
+
+    // 최근 3개에서 안 한 부위 추출
     const allParts = [t("home.bodyPart.chest"), t("home.bodyPart.back"), t("home.bodyPart.shoulder"), t("home.bodyPart.arm"), t("home.bodyPart.lower"), t("home.bodyPart.core"), t("home.bodyPart.cardio")];
-    const recentTitles = history.slice(-3).map(h =>
-      (h.sessionData.title + " " + h.sessionData.description).toLowerCase()
-    );
+    const recentTitles = history.slice(-3).map(h => (h.sessionData.title + " " + h.sessionData.description).toLowerCase());
     const doneParts = new Set<string>();
     for (const title of recentTitles) {
       if (/가슴|푸시|chest|push|벤치/.test(title)) doneParts.add(t("home.bodyPart.chest"));
@@ -323,45 +307,68 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       if (/러닝|유산소|cardio|run|hiit|서킷/.test(title)) doneParts.add(t("home.bodyPart.cardio"));
     }
     const missing = allParts.filter(p => !doneParts.has(p));
+    const recommend = missing.length > 0 && missing.length < allParts.length ? missing.slice(0, 2).join(" · ") : "";
 
-    if (missing.length > 0 && missing.length < allParts.length) {
-      const done = [...doneParts].join(" · ");
-      const recommend = missing.slice(0, 2).join(" · ");
-      return t("home.coach.recommend", { done, recommend });
+    // === 버블 1: 인사/감정 ===
+    let bubble1: string;
+    if (history.length === 0) {
+      bubble1 = pick(isEn
+        ? ["Welcome! I'm excited to start with you!", "Hey! Let's take the first step together!"]
+        : ["어서오세요! 첫 발 같이 뗄 생각에 설레요!", "와 드디어 시작이에요! 같이 해서 두근두근!ㅎㅎ", "첫 운동이 제일 특별해요! 같이 만들어가요!"]);
+    } else if (didWorkoutToday) {
+      bubble1 = pick(isEn
+        ? ["You're back again today?! Amazing stamina!", "Already worked out and coming back? Love the energy!"]
+        : ["오늘 또 왔어요?! 체력 진짜 좋아졌다!ㅎㅎ", "아까 운동했는데 또 오다니! 이 열정 대단해요!", "벌써 오늘 한 번 했는데! 이 의지 진짜 멋있어요!"]);
+    } else if (streak >= 3) {
+      bubble1 = pick(isEn
+        ? [`${streak} days straight! Love running together!`, `Day ${streak}! At this point it's instinct!`]
+        : [`${streak}일 연속이네요! 같이 달리니까 좋아요!`, `${streak}일째! 이쯤 되면 습관 아니라 본능이에요ㅎㅎ`, `와 ${streak}일째! 저도 이 기록 깨고 싶지 않아요!ㅎㅎ`]);
+    } else if (daysSinceLast >= 3) {
+      bubble1 = pick(isEn
+        ? ["Hey! I was waiting for you!", "You're back! So glad to see you!"]
+        : ["오! 기다리고 있었어요! 반가워요!", "돌아왔네요! 보고싶었어요!ㅎㅎ", "다시 온 거 자체가 대단해요!"]);
+    } else {
+      // 시간대별
+      bubble1 = hour < 6
+        ? pick(isEn ? ["At this hour! Let's conquer the dawn!"] : ["이 시간에 오다니! 같이 새벽 정복해봐요!"])
+        : hour < 12
+        ? pick(isEn ? ["Morning workout! You've already won the day!"] : ["아침부터 운동이라니! 오늘 하루 이미 이겼어요!", "좋은 아침이에요! 같이 시작해볼까요?"])
+        : hour < 14
+        ? pick(isEn ? ["Lunch workout? That's impressive!"] : ["점심시간 쪼개서 온 거예요? 진짜 대단!"])
+        : hour < 22
+        ? pick(isEn ? ["Working out at day's end! Let's finish strong!"] : ["하루 끝에 운동하러 온 거 멋있어요! 같이 마무리해요!", "오늘도 왔네요! 저도 기다리고 있었어요!ㅎㅎ"])
+        : pick(isEn ? ["Late night grind! That dedication!"] : ["남들 쉬는 시간에 온 거잖아요! 이 열정!ㅎㅎ"]);
     }
-    const last = history[history.length - 1];
-    const desc = last.sessionData.description || last.sessionData.title || "";
-    return desc ? t("home.coach.lastSession", { desc: translateDesc(desc, locale) }) : t("home.coach.default");
+
+    // === 버블 2: 추천/행동 ===
+    let bubble2: string;
+    if (history.length === 0) {
+      bubble2 = pick(isEn
+        ? ["Shall we start light today? I'll guide you!", "I've got your first plan ready! Let's go!"]
+        : ["오늘 가볍게 시작해볼까요? 제가 안내할게요!", "첫 플랜 준비해놨어요! 같이 가요!"]);
+    } else if (didWorkoutToday) {
+      bubble2 = pick(isEn
+        ? ["Want to go again? I'm ready!", "If you want more, I won't stop you!"]
+        : ["한 번 더 하실 거예요? 저도 준비됐어요!", "더 하고 싶으면 말리진 않을게요! 같이 가요!ㅎㅎ"]);
+    } else if (recommend) {
+      bubble2 = pick(isEn
+        ? [`How about ${recommend} today? I'll set up the plan!`, `${recommend} has been resting — let's wake it up!`]
+        : [`오늘 ${recommend} 어때요? 제가 플랜 짜놓을게요!`, `${recommend} 좀 쉬었으니 오늘 깨워볼까요?ㅎㅎ`, `오늘 ${recommend} 가면 밸런스 딱이에요! 같이 가요!`]);
+    } else if (daysSinceLast >= 3) {
+      bubble2 = pick(isEn
+        ? ["Let's start easy today! No pressure!", "Shall we warm up and ease in?"]
+        : ["오늘은 부담 없이 가볍게 가요!", "몸 풀면서 천천히 시작해볼까요?ㅎㅎ"]);
+    } else {
+      bubble2 = pick(isEn
+        ? ["I've got today's plan ready! Shall we?", "Ready when you are! Let's go!"]
+        : ["오늘 플랜 준비해놨어요! 같이 가볼까요?", "준비 다 됐어요! 오늘도 같이 해요!ㅎㅎ"]);
+    }
+
+    return [bubble1, bubble2];
   })();
 
-  const prevCoachRef = useRef("");
-  useEffect(() => {
-    if (!coachMessage) return;
-    // 같은 메시지 캐시 있으면 타이핑 생략
-    const cached = sessionStorage.getItem("coach_typed");
-    if (cached === coachMessage) {
-      setTypedText(coachMessage);
-      setTypingDone(true);
-      return;
-    }
-    // 메시지가 바뀌었으면 리셋
-    if (prevCoachRef.current && prevCoachRef.current !== coachMessage) {
-      setTypedText("");
-      setTypingDone(false);
-    }
-    prevCoachRef.current = coachMessage;
-    let i = 0;
-    const timer = setInterval(() => {
-      i++;
-      setTypedText(coachMessage.slice(0, i));
-      if (i >= coachMessage.length) {
-        clearInterval(timer);
-        sessionStorage.setItem("coach_typed", coachMessage);
-        setTimeout(() => setTypingDone(true), 200);
-      }
-    }, 30);
-    return () => clearInterval(timer);
-  }, [coachMessage]);
+
+  // 타이핑 애니메이션 제거 — 2버블은 즉시 표시
 
   // 성장 예측 프리뷰 자동 슬라이드 (4초 간격)
   useEffect(() => {
@@ -488,18 +495,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
-        {/* AI 코치 카드 — 채팅 버블 */}
+        {/* AI 코치 카드 — 2버블 채팅 */}
         <div className="rounded-3xl bg-white border border-gray-100 shadow-sm px-4 pt-4 pb-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
             <span className="text-[11px] font-bold text-gray-400">{t("home.coachTitle")}</span>
           </div>
-          <div className="flex items-start gap-2.5 mb-4">
+          {/* 버블 1: 인사/감정 */}
+          <div className="flex items-start gap-2.5 mb-2">
             <img src="/favicon_backup.png" alt="" className="w-7 h-7 rounded-full shrink-0 mt-0.5" />
             <div className="max-w-[85%] bg-[#2D6A4F]/5 rounded-2xl rounded-tl-sm px-4 py-3">
               <p className="text-[14px] font-medium text-[#1B4332] leading-relaxed">
-                {typedText}
-                {!typingDone && <span className="inline-block w-0.5 h-3.5 bg-[#2D6A4F] ml-0.5 animate-pulse align-middle" />}
+                {coachBubbles[0]}
+              </p>
+            </div>
+          </div>
+          {/* 버블 2: 추천/행동 */}
+          <div className="flex items-start gap-2.5 mb-4">
+            <div className="w-7 shrink-0" />
+            <div className="max-w-[85%] bg-[#2D6A4F]/5 rounded-2xl rounded-tl-sm px-4 py-3">
+              <p className="text-[14px] font-medium text-[#1B4332] leading-relaxed">
+                {coachBubbles[1]}
               </p>
             </div>
           </div>
