@@ -779,6 +779,7 @@ function buildRunnerCore(): ExerciseStep[] {
     "데드버그 (Dead Bug)", "사이드 플랭크 (Side Plank)", "글루트 브릿지 (Glute Bridge)",
     "버드 독 (Bird Dog)", "플랭크 (Plank)", "힙 브릿지 (Hip Bridge)",
     "클램쉘 (Clamshell)", "슈퍼맨 동작 (Superman)",
+    "싱글 레그 밸런스 (Single Leg Balance)",
   ];
   const selected = pickN(runnerCorePool, 3);
   return selected.map(ex => ({
@@ -1017,6 +1018,13 @@ function generateRunningWorkout(
   const exercises: ExerciseStep[] = [];
   exercises.push(...buildWarmup(condition, true));
 
+  // 러닝 드릴 (인터벌/템포 전에)
+  if (runType === "interval") {
+    exercises.push(
+      { type: "cardio", phase: "main", name: pick(["A스킵 (A-Skip)", "B스킵 (B-Skip)", "하이니즈 (High Knees)"]), count: "2 × 30m", sets: 2, reps: 1 },
+    );
+  }
+
   switch (runType) {
     case "interval":
       exercises.push(
@@ -1024,6 +1032,7 @@ function generateRunningWorkout(
         { type: "cardio", phase: "main", name: pick([
           "인터벌 스프린트 (Interval Sprints)",
           "변속주 (Fartlek Run)",
+          "템포런 (Tempo Run)",
         ]), count: "30초 전력 / 90초 회복 × 8-10", sets: 1, reps: 1 },
         { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
       );
@@ -1033,6 +1042,7 @@ function generateRunningWorkout(
         { type: "cardio", phase: "main", name: pick([
           "이지 런: 대화 가능 속도 (Conversational Pace Run)",
           "회복 러닝: 존 2 유지 (Recovery Run: Zone 2)",
+          "워크-런 인터벌 (Walk-Run Intervals)",
         ]), count: "30-40분", sets: 1, reps: 1 },
       );
       break;
@@ -1079,7 +1089,11 @@ function generateHomeWorkout(
   const homePush = pick(["푸쉬업 (Push-ups)", "니 푸쉬업 (Knee Push-ups)", "덤벨 벤치 프레스 (Dumbbell Bench Press)", "케틀벨 플로어 프레스 (Kettlebell Floor Press)"]);
   const homePull = pick(["덤벨 로우 (Dumbbell Row)", "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)", "인버티드 로우 (Inverted Row)", "TRX 로우 (TRX Row)"]);
   const homeHinge = pick(["케틀벨 스윙 (Kettlebell Swing)", "루마니안 데드리프트 (Romanian Deadlift)", "글루트 브릿지 (Glute Bridge)"]);
-  const homeFullBody = pick(["버피 (Burpees)", "덤벨 쓰러스터 (Dumbbell Thruster)", "터키시 겟업 (Turkish Get-up)", "스텝아웃 버피 (Step-out Burpees)"]);
+  const homeFullBody = pick([
+    "버피 (Burpees)", "덤벨 쓰러스터 (Dumbbell Thruster)", "스텝아웃 버피 (Step-out Burpees)",
+    "점핑 잭 (Jumping Jacks)", "하이니즈 (High Knees)", "마운틴 클라이머 (Mountain Climber)",
+    "베어 크롤 (Bear Crawl)", "스쿼트 점프 (Squat Jump)",
+  ]);
 
   const wt = "맨몸 또는 가벼운 무게";
   exercises.push(

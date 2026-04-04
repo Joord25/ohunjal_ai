@@ -316,6 +316,11 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "장거리 러닝": "eS-1btTU9oQ",
   "LSD 러닝: 페이스 유지": "eS-1btTU9oQ",
   "회복 러닝: 존 2 유지": "Gn5t6izrn5Y",
+  "템포런": "",
+  "워크-런 인터벌": "",
+  "A스킵": "",
+  "B스킵": "",
+  "싱글 레그 밸런스": "",
   "마무리 조깅": "Gn5t6izrn5Y",
   "걷기 또는 가벼운 조깅": "Gn5t6izrn5Y",
 };
