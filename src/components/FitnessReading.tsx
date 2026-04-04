@@ -817,7 +817,7 @@ function RegressionChart({ goal, history, weightLog, profile }: {
       </div>
 
       {showHelp && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowHelp(false)}>
+        <div className="absolute inset-0 z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowHelp(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
           <div className="bg-white rounded-2xl p-5 shadow-2xl mx-8 relative z-10 max-w-[320px]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
