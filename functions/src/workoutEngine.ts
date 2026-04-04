@@ -238,7 +238,6 @@ const PUSH_EXERCISES = {
     "웨이티드 푸쉬업 (Weighted Push-ups)",
     "케틀벨 플로어 프레스 (Kettlebell Floor Press)",
     "체스트 프레스 머신 (Chest Press Machine)",
-    "클로즈그립 벤치 프레스 (Close-Grip Bench Press)",
     "인클라인 바벨 프레스 (Incline Barbell Press)",
     "스미스 머신 벤치 프레스 (Smith Machine Bench Press)",
   ],
@@ -281,6 +280,7 @@ const PUSH_EXERCISES = {
     "케이블 OH 트라이셉 익스텐션 (Cable Overhead Tricep Extension)",
     "트라이셉스 킥백 (Tricep Kickback)",
     "트라이셉스 딥스 (Tricep Dips)",
+    "클로즈그립 벤치 프레스 (Close-Grip Bench Press)",
   ],
 };
 
