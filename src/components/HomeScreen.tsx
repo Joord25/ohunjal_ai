@@ -162,38 +162,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   })();
 
   // 개인 성장 인사이트
-  const growthInsight = (() => {
-    if (history.length < 2) return null;
-
-    const now = new Date();
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const thisMonth = history.filter(h => new Date(h.date) >= thisMonthStart);
-
-    // 1RM 성장 (경험 번역)
-    const e1rmEntries = history.filter(h => h.stats.bestE1RM && h.stats.bestE1RM > 0);
-    if (e1rmEntries.length >= 2) {
-      const recent = e1rmEntries[e1rmEntries.length - 1].stats.bestE1RM!;
-      const older = e1rmEntries[0].stats.bestE1RM!;
-      const diff = recent - older;
-      if (diff > 0) {
-        return `같은 무게가 점점 가벼워지고 있어요 (1RM +${Math.round(diff)}kg)`;
-      }
-    }
-
-    // 이번 주 (경험 번역)
-    if (thisWeekCount >= 3) {
-      return t("home.insight.weekGreat", { count: String(thisWeekCount) });
-    }
-    if (thisWeekCount > 0) {
-      return t("home.insight.weekGood", { count: String(thisWeekCount) });
-    }
-    const thisMonthDays = new Set(thisMonth.map(h => new Date(h.date).toDateString())).size;
-    if (thisMonthDays > 0) {
-      return `이번 달 ${thisMonthDays}일 운동 중! 습관이 만들어지고 있어요`;
-    }
-
-    return null;
-  })();
+  // growthInsight 제거 — 2버블 코치 멘트가 동일 역할 수행
 
 
   // 헤드라인: "이전 → 오늘" 연결 (항상 표시 — AI가 나를 안다)
@@ -547,12 +516,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
           </div>
         </div>
 
-        {/* 성장 인사이트 (경험 번역) */}
-        {growthInsight && (
-          <div className="rounded-2xl bg-[#2D6A4F]/5 border border-[#2D6A4F]/10 px-4 py-3 mb-4">
-            <p className="text-[13px] font-bold text-[#2D6A4F]">{growthInsight}</p>
-          </div>
-        )}
+        {/* 성장 인사이트 제거 — 2버블 코치 멘트가 동일 역할 */}
 
         {/* 성장 예측 프리뷰 (분리된 카드) */}
         {sortedPreviews.length > 0 && (() => {
