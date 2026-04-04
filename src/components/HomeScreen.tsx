@@ -8,7 +8,8 @@ import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend,
 import { useTranslation } from "@/hooks/useTranslation";
 
 function translateDesc(desc: string, locale: string): string {
-  if (locale === "ko") return desc;
+  // KO: 영문 괄호 제거 (이전 데이터 호환)
+  if (locale === "ko") return desc.replace(/\(Push\)/g, "").replace(/\(Pull\)/g, "").replace(/\s{2,}/g, " ").trim();
   return desc
     .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
     .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
