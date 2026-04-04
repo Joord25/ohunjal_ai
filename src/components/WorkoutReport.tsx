@@ -312,9 +312,8 @@ function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seaso
 
         {/* 코치 3버블 — thinking dots → 순차 타이핑 (멘트 없는 히스토리 뷰에서는 숨김) */}
         {isThinking && !skipAnimation && (
-          <div className="flex items-start gap-2.5 mb-2">
-            <img src="/favicon_backup.png" alt="" className="w-7 h-7 rounded-full shrink-0 mt-0.5" />
-            <div className="bg-[#2D6A4F]/5 rounded-2xl rounded-tl-sm px-4 py-3">
+          <div className="mb-2">
+            <div className="bg-[#2D6A4F]/5 rounded-2xl px-4 py-3 w-fit">
               <div className="flex items-center gap-1.5">
                 <span className="text-[13px] font-medium text-[#2D6A4F]/60">
                   {locale === "ko" ? "생각 중" : "Thinking"}
@@ -331,13 +330,8 @@ function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seaso
           const chars = typedCharsPerBubble[idx] ?? 0;
           const isTyping = chars < msg.length;
           return (
-            <div key={idx} className="flex items-start gap-2.5 mb-2">
-              {idx === 0 ? (
-                <img src="/favicon_backup.png" alt="" className="w-7 h-7 rounded-full shrink-0 mt-0.5" />
-              ) : (
-                <div className="w-7 shrink-0" />
-              )}
-              <div className="max-w-[85%] bg-[#2D6A4F]/5 rounded-2xl rounded-tl-sm px-4 py-3">
+            <div key={idx} className="mb-2">
+              <div className="bg-[#2D6A4F]/5 rounded-2xl px-4 py-3">
                 <p className="text-[14px] font-medium text-[#1B4332] leading-relaxed">
                   {msg.slice(0, chars)}
                   {isTyping && (
