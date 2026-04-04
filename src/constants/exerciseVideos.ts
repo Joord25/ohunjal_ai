@@ -18,6 +18,9 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "웨이티드 푸쉬업": "z4oz6W1X10w",
   "케틀벨 플로어 프레스": "hwm_fcTRf2g",
   "체스트 프레스 머신": "2awX3rTGa1k",
+  "클로즈그립 벤치 프레스": "",
+  "인클라인 바벨 프레스": "",
+  "스미스 머신 벤치 프레스": "",
 
   // ── 가슴 (PUSH - Accessory) ──
   "인클라인 덤벨 프레스": "98HWfiRonkE",
@@ -90,6 +93,8 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "원 암 시티드 로우 머신": "1Cfjgf2FBqc",
   "백익스텐션 머신": "9V2BlUDBn1s",
   "슈퍼맨 동작": "ZH0FS5Gp_eg",
+  "랙 풀": "",
+  "바벨 슈러그": "",
   "T-W 레이즈": "HvdLRWBprws",
 
   // ── 후면 어깨 (PULL - Rear Delt) ──
@@ -139,6 +144,10 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "케이블 풀 스루": "cRszAB1yK0c",
   "레그 컬": "7F6VF0tcgwo",
   "힙 어덕션 머신": "tKMx0CVnECk",
+  "핵 스쿼트": "",
+  "스모 데드리프트": "",
+  "트랩바 데드리프트": "",
+  "바벨 힙 쓰러스트": "",
 
   // ── 하체 (LEG - Calf) ──
   "스탠딩 카프 레이즈": "SjypFUbZBCA",
@@ -177,6 +186,9 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "덤벨 사이드 벤드": "44DazvtgpGE",
   "브이 업": "saHkR_MvIdA",
   "Ab 슬라이드": "3d-19YON2nQ",
+  "바벨 롤아웃": "",
+  "웨이티드 플랭크": "",
+  "행잉 니 레이즈": "",
 
   // ══════════════════════════════════
   // ── 모빌리티/스트레칭 (코어) ──
