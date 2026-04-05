@@ -112,36 +112,37 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
       </div>
 
       {/* ── Interval Breakdown Card (라운드별 전력/회복 — 오운잘 특화) ── */}
-      {runningStats.intervalRounds.length > 0 && (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-5 py-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
-              {t("running.report.breakdown")}
-            </span>
-          </div>
+      {/* 회의 42 후속: 기록 없어도 카드 기본 양식 노출 */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-5 py-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
+          <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
+            {t("running.report.breakdown")}
+          </span>
+        </div>
 
-          {/* 전력 평균 / 회복 평균 요약 */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-gray-50 rounded-2xl p-3">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
-                {t("running.report.sprintAvg")}
-              </p>
-              <p className="text-lg font-black text-[#1B4332] leading-none tabular-nums">
-                {formatPace(runningStats.sprintAvgPace)}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-2xl p-3">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
-                {t("running.report.recoveryAvg")}
-              </p>
-              <p className="text-lg font-black text-[#1B4332] leading-none tabular-nums">
-                {formatPace(runningStats.recoveryAvgPace)}
-              </p>
-            </div>
+        {/* 전력 평균 / 회복 평균 요약 */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="bg-gray-50 rounded-2xl p-3">
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
+              {t("running.report.sprintAvg")}
+            </p>
+            <p className="text-lg font-black text-[#1B4332] leading-none tabular-nums">
+              {formatPace(runningStats.sprintAvgPace)}
+            </p>
           </div>
+          <div className="bg-gray-50 rounded-2xl p-3">
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
+              {t("running.report.recoveryAvg")}
+            </p>
+            <p className="text-lg font-black text-[#1B4332] leading-none tabular-nums">
+              {formatPace(runningStats.recoveryAvgPace)}
+            </p>
+          </div>
+        </div>
 
-          {/* 라운드별 상세 */}
+        {/* 라운드별 상세 — 데이터 있으면 리스트, 없으면 빈 상태 안내 */}
+        {runningStats.intervalRounds.length > 0 ? (
           <div className="flex flex-col gap-1.5">
             {runningStats.intervalRounds.map((round) => (
               <div key={round.round} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-b-0">
@@ -169,8 +170,18 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="py-4 text-center">
+            <p className="text-[11px] font-medium text-gray-400">
+              {runningStats.isIndoor
+                ? t("running.indoor.desc")
+                : runningStats.gpsAvailable
+                  ? t("running.gps.searching")
+                  : t("running.gps.denied")}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* ── This Week Card ── */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-5 py-5">
