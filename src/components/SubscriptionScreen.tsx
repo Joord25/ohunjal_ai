@@ -867,8 +867,10 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       )}
 
       {/* Cancel Flow Overlay */}
+      {/* 회의 29: 하단 탭바(HOME/PROOF/MY) 높이 128px 확보 — 결제내역 뷰와 동일 패턴.
+          이게 없으면 '취소 계속 진행' 버튼이 탭바 뒤로 숨음 */}
       {cancelStep > 0 && (
-        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "var(--safe-area-bottom, 0px)" }}>
+        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(128px + var(--safe-area-bottom, 0px))" }}>
           {/* Header */}
           <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0">
             <button onClick={() => setCancelStep(0)} className="p-2 -ml-2">
