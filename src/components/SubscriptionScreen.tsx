@@ -793,7 +793,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               onClick={openCancelFlow}
               className="w-full py-3 text-xs text-gray-400 underline underline-offset-2"
             >
-              구독 취소
+              {t("sub.cancel.button")}
             </button>
           </div>
         )}
@@ -876,7 +876,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <span className="text-[11px] tracking-[0.3em] uppercase font-serif font-medium text-red-400">구독 취소</span>
+            <span className="text-[11px] tracking-[0.3em] uppercase font-serif font-medium text-red-400">{t("sub.cancel.header")}</span>
             <div className="w-9" />
           </div>
 
@@ -884,7 +884,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             <div className="flex-1 px-6 pb-8">
               {/* What you'll lose */}
               <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 mb-6">
-                <h3 className="text-sm font-bold text-amber-800 mb-3">취소하면 잃게 되는 혜택</h3>
+                <h3 className="text-sm font-bold text-amber-800 mb-3">{t("sub.cancel.lostBenefits")}</h3>
                 <div className="flex flex-col gap-2">
                   {[t("sub.feature.unlimited"), t("sub.feature.prediction"), t("sub.feature.levelAnalysis"), t("sub.feature.sessionReport")].map((feature) => (
                     <div key={feature} className="flex items-center gap-2">
@@ -898,8 +898,8 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               </div>
 
               {/* Reason selection */}
-              <h3 className="text-base font-black text-gray-900 mb-1">취소 사유를 선택해 주세요</h3>
-              <p className="text-xs text-gray-400 mb-4">서비스 개선에 활용됩니다</p>
+              <h3 className="text-base font-black text-gray-900 mb-1">{t("sub.cancel.reasonHeader")}</h3>
+              <p className="text-xs text-gray-400 mb-4">{t("sub.cancel.reasonSubtitle")}</p>
               <div className="flex flex-col gap-2.5">
                 {CANCEL_REASONS.map((reason) => (
                   <button
@@ -914,11 +914,11 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                     {reason}
                   </button>
                 ))}
-                {cancelReason === "기타" && (
+                {cancelReason === t("sub.cancel.reason.etc") && (
                   <textarea
                     value={cancelReasonText}
                     onChange={(e) => setCancelReasonText(e.target.value)}
-                    placeholder="취소 사유를 알려주세요..."
+                    placeholder={t("sub.cancel.reasonPlaceholder")}
                     rows={3}
                     className="w-full px-4 py-3 rounded-2xl border border-red-200 bg-red-50/50 text-sm font-medium text-gray-900 outline-none focus:border-red-300 transition-colors resize-none"
                   />
@@ -931,13 +931,13 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                   disabled={!cancelReason}
                   className="w-full py-3 rounded-2xl text-sm font-bold text-red-400 bg-red-50 active:scale-[0.98] transition-all disabled:opacity-30"
                 >
-                  취소 계속 진행
+                  {t("sub.cancel.continueToCancel")}
                 </button>
                 <button
                   onClick={() => setCancelStep(0)}
                   className="w-full py-3 rounded-2xl text-sm font-bold text-white bg-[#2D6A4F] active:scale-[0.98] transition-all"
                 >
-                  구독 유지하기
+                  {t("sub.cancel.keep")}
                 </button>
               </div>
             </div>
@@ -945,26 +945,26 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             <div className="flex-1 px-6 pb-8">
               {/* Warning */}
               <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 mb-6">
-                <h3 className="text-base font-black text-amber-800 mb-2">환불 전 꼭 확인하세요</h3>
+                <h3 className="text-base font-black text-amber-800 mb-2">{t("sub.cancel.refundTitle")}</h3>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-start gap-2">
                     <span className="text-amber-600 mt-0.5">•</span>
-                    <span className="text-sm text-amber-700">환불은 결제일로부터 7일 이내에만 가능합니다.</span>
+                    <span className="text-sm text-amber-700">{t("sub.cancel.refundBullet1")}</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-amber-600 mt-0.5">•</span>
-                    <span className="text-sm text-amber-700">결제 후 프리미엄 기능을 사용한 경우 환불이 불가합니다.</span>
+                    <span className="text-sm text-amber-700">{t("sub.cancel.refundBullet2")}</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-amber-600 mt-0.5">•</span>
-                    <span className="text-sm text-amber-700">취소 후에도 현재 결제 기간까지는 이용 가능합니다.</span>
+                    <span className="text-sm text-amber-700">{t("sub.cancel.refundBullet3")}</span>
                   </div>
                 </div>
               </div>
 
               {/* Type to confirm */}
-              <h3 className="text-base font-black text-gray-900 mb-1">정말 취소하시겠습니까?</h3>
-              <p className="text-xs text-gray-400 mb-4">{t("sub.cancel.confirmLabel").split('"')[0]}<span className="font-bold text-red-400">&quot;{t("sub.cancel.confirmWord")}&quot;</span>{t("sub.cancel.confirmLabel").split('"').pop()}</p>
+              <h3 className="text-base font-black text-gray-900 mb-1">{t("sub.cancel.confirmTitle")}</h3>
+              <p className="text-xs text-gray-400 mb-4">{t("sub.cancel.confirmLabelPrefix")}<span className="font-bold text-red-400">&quot;{t("sub.cancel.confirmWord")}&quot;</span>{t("sub.cancel.confirmLabelSuffix")}</p>
               <input
                 type="text"
                 value={confirmInput}
@@ -985,7 +985,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                   onClick={() => setCancelStep(0)}
                   className="w-full py-3 rounded-2xl text-sm font-bold text-white bg-[#2D6A4F] active:scale-[0.98] transition-all"
                 >
-                  구독 유지하기
+                  {t("sub.cancel.keep")}
                 </button>
               </div>
             </div>
