@@ -417,24 +417,87 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // Determine if it's a distance-based measurement (LSD, km, etc.)
   const isDistanceMode = exercise.name.includes("LSD") || exercise.count.includes("km") || exercise.count.includes("Distance");
 
-  // Interval mode detection (e.g. "30초 전력 / 90초 회복 × 8-10")
-  const intervalConfig = (() => {
-    const m = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*회복\s*[×x]\s*(\d+)/i);
-    if (!m) return null;
-    return { sprintSec: parseInt(m[1]), recoverySec: parseInt(m[2]), rounds: parseInt(m[3]) };
+  // 회의 36: 인터벌 모드 3타입 지원
+  // - sprint: "N초 전력 / M초 회복 × R" (빨강/초록, sprint부터)
+  // - walkrun: "N초 걷기 / M초 달리기 × R" (파랑/주황, walk부터)
+  // - fartlek: "N초 전력 / M초 보통 × R" (빨강/초록, sprint부터)
+  type IntervalType = "sprint" | "walkrun" | "fartlek";
+  interface IntervalConfig {
+    phase1Sec: number; // 첫 페이즈 시간
+    phase2Sec: number; // 둘째 페이즈 시간
+    rounds: number;
+    type: IntervalType;
+    phase1Key: string; // i18n key
+    phase2Key: string;
+  }
+  const intervalConfig: IntervalConfig | null = (() => {
+    // Walk-run pattern — 첫 페이즈가 걷기 (안전한 회복)
+    const walkRun = exercise.count.match(/(\d+)초\s*걷기\s*\/?\s*(\d+)초\s*달리기\s*[×x]\s*(\d+)/i);
+    if (walkRun) {
+      return {
+        phase1Sec: parseInt(walkRun[1]),
+        phase2Sec: parseInt(walkRun[2]),
+        rounds: parseInt(walkRun[3]),
+        type: "walkrun" as IntervalType,
+        phase1Key: "fit.interval.walk",
+        phase2Key: "fit.interval.run",
+      };
+    }
+    // Fartlek pattern — 첫 페이즈가 전력, 둘째가 보통
+    const fartlek = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*보통\s*[×x]\s*(\d+)/i);
+    if (fartlek) {
+      return {
+        phase1Sec: parseInt(fartlek[1]),
+        phase2Sec: parseInt(fartlek[2]),
+        rounds: parseInt(fartlek[3]),
+        type: "fartlek" as IntervalType,
+        phase1Key: "fit.interval.burst",
+        phase2Key: "fit.interval.base",
+      };
+    }
+    // Sprint pattern (기존) — "N초 전력 / M초 회복 × R"
+    const sprint = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*회복\s*[×x]\s*(\d+)/i);
+    if (sprint) {
+      return {
+        phase1Sec: parseInt(sprint[1]),
+        phase2Sec: parseInt(sprint[2]),
+        rounds: parseInt(sprint[3]),
+        type: "sprint" as IntervalType,
+        phase1Key: "fit.interval.sprint",
+        phase2Key: "fit.interval.recovery",
+      };
+    }
+    return null;
   })();
   const isIntervalMode = intervalConfig !== null;
+
+  // 회의 36: 타입별 색상 매핑
+  const intervalColors = intervalConfig ? (() => {
+    if (intervalConfig.type === "walkrun") {
+      return {
+        phase1Bg: "bg-blue-100", phase1Text: "text-blue-600",
+        phase2Bg: "bg-orange-100", phase2Text: "text-orange-600",
+        phase1Timer: "text-blue-500", phase2Timer: "text-orange-600",
+      };
+    }
+    // sprint / fartlek 공통 (기존 색상)
+    return {
+      phase1Bg: "bg-red-100", phase1Text: "text-red-600",
+      phase2Bg: "bg-emerald-100", phase2Text: "text-emerald-700",
+      phase1Timer: "text-red-500", phase2Timer: "text-emerald-600",
+    };
+  })() : null;
 
   // Interval timer state
   const [intervalRound, setIntervalRound] = useState(1);
   const [intervalPhase, setIntervalPhase] = useState<"sprint" | "recovery">("sprint");
-  const [intervalTime, setIntervalTime] = useState(intervalConfig?.sprintSec ?? 0);
+  const [intervalTime, setIntervalTime] = useState(intervalConfig?.phase1Sec ?? 0);
 
   // Interval Timer Logic
   useEffect(() => {
     if (!isPlaying || !isIntervalMode || !intervalConfig) return;
     const iv = setInterval(() => {
-      setIntervalTime(prev => {
+      setIntervalTime((prev: number) => {
         const next = prev - 1;
         if (next > 0 && next <= 3) playAlarmSound("tick");
         if (next <= 0) {
@@ -443,7 +506,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             if (curPhase === "sprint") {
               playAlarmSound("half");
               if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-              setIntervalTime(intervalConfig.recoverySec);
+              setIntervalTime(intervalConfig.phase2Sec);
               return "recovery";
             } else {
               // End of recovery → next round or done
@@ -458,7 +521,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 }
                 playAlarmSound("start");
                 if (navigator.vibrate) navigator.vibrate(100);
-                setIntervalTime(intervalConfig.sprintSec);
+                setIntervalTime(intervalConfig.phase1Sec);
                 return curRound + 1;
               });
               return "sprint";
@@ -542,7 +605,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     if (isIntervalMode && intervalConfig) {
         setIntervalRound(1);
         setIntervalPhase("sprint");
-        setIntervalTime(intervalConfig.sprintSec);
+        setIntervalTime(intervalConfig.phase1Sec);
         setElapsedTime(0);
     } else if (isTimerMode) {
         if (isDistanceMode) {
@@ -1119,29 +1182,31 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                       <p className="text-sm font-bold text-gray-500 mt-1">{t("fit.roundComplete", { rounds: String(intervalConfig.rounds) })}</p>
                     )}
                   </div>
-                ) : isIntervalMode && intervalConfig ? (
+                ) : isIntervalMode && intervalConfig && intervalColors ? (
                   <div className="flex flex-col items-center">
                     {/* 라운드 표시 */}
                     <p className="text-xs font-bold text-gray-400 tracking-wider mb-3">
                       ROUND {intervalRound} / {intervalConfig.rounds}
                     </p>
-                    {/* 현재 페이즈 */}
+                    {/* 현재 페이즈 (회의 36: 타입별 색상/라벨) */}
                     <div className={`px-4 py-1 rounded-full text-xs font-black tracking-wider mb-2 ${
                       intervalPhase === "sprint"
-                        ? "bg-red-100 text-red-600"
-                        : "bg-emerald-100 text-emerald-700"
+                        ? `${intervalColors.phase1Bg} ${intervalColors.phase1Text}`
+                        : `${intervalColors.phase2Bg} ${intervalColors.phase2Text}`
                     }`}>
-                      {intervalPhase === "sprint" ? t("fit.interval.sprint") : t("fit.interval.recovery")}
+                      {intervalPhase === "sprint" ? t(intervalConfig.phase1Key) : t(intervalConfig.phase2Key)}
                     </div>
                     {/* 카운트다운 */}
                     <p className={`text-6xl font-black tracking-tighter tabular-nums ${
-                      intervalPhase === "sprint" ? "text-red-500" : "text-emerald-600"
+                      intervalPhase === "sprint" ? intervalColors.phase1Timer : intervalColors.phase2Timer
                     }`}>
                       {formatTime(intervalTime)}
                     </p>
-                    {/* 구간 정보 */}
-                    <p className="text-xs font-bold text-gray-400 mt-2">
-                      {intervalPhase === "sprint" ? `${intervalConfig.sprintSec}초 전력` : `${intervalConfig.recoverySec}초 회복`}
+                    {/* 페이즈 가이드 한 줄 (회의 36: RPE 기반 주관 강도 힌트) */}
+                    <p className="text-[11px] font-medium text-gray-500 mt-2 text-center px-4">
+                      {intervalPhase === "sprint"
+                        ? t(`${intervalConfig.phase1Key}.guide`)
+                        : t(`${intervalConfig.phase2Key}.guide`)}
                     </p>
                   </div>
                 ) : (

@@ -1042,45 +1042,66 @@ function generateRunningWorkout(
   const exercises: ExerciseStep[] = [];
   exercises.push(...buildWarmup(condition, true));
 
-  // 러닝 드릴 (인터벌/템포 전에)
-  if (runType === "interval") {
-    exercises.push(
-      { type: "cardio", phase: "main", name: pick(["A스킵 (A-Skip)", "B스킵 (B-Skip)", "하이니즈 (High Knees)"]), count: "2 × 30m", sets: 2, reps: 1 },
-    );
-  }
+  // 회의 36: 인터벌 러닝 4타입 전면 재설계
+  // - 가중 랜덤 (walkrun 40% / tempo 30% / fartlek 15% / sprint 15%) — 안전 편향
+  // - 각 타입별 스펙 + 워밍업/쿨다운 최적화 (재활의학 권장)
+  // - 유저는 MasterPlanPreview에서 4타입 중 직접 교체 가능 (회의 36 옵션 A)
 
-  // 의도 강도 결정 — runType + intervalType 기반 (회의 14/16)
-  // sprint/fartlek = high, tempo = moderate, walkrun = low
-  // easy = low, long = moderate
+  // 의도 강도 결정 — runType + intervalType 기반 (회의 14/16/36)
   let intendedIntensity: "high" | "moderate" | "low" = "moderate";
+
+  // 가중 랜덤 pick 헬퍼
+  const weightedPick = <T>(items: { value: T; weight: number }[]): T => {
+    const total = items.reduce((s, i) => s + i.weight, 0);
+    let r = Math.random() * total;
+    for (const item of items) {
+      r -= item.weight;
+      if (r <= 0) return item.value;
+    }
+    return items[items.length - 1].value;
+  };
 
   switch (runType) {
     case "interval":
-      // 랜덤으로 인터벌/변속주/템포런 중 선택
-      const intervalType = pick(["sprint", "fartlek", "tempo", "walkrun"] as const);
+      // 가중 랜덤: walkrun 40% / tempo 30% / fartlek 15% / sprint 15%
+      const intervalType = weightedPick([
+        { value: "walkrun" as const, weight: 40 },
+        { value: "tempo" as const, weight: 30 },
+        { value: "fartlek" as const, weight: 15 },
+        { value: "sprint" as const, weight: 15 },
+      ]);
       intendedIntensity = intervalType === "sprint" || intervalType === "fartlek" ? "high"
         : intervalType === "tempo" ? "moderate"
         : "low"; // walkrun
-      if (intervalType === "tempo") {
-        // 템포런: 단순 타이머 (인터벌 모드 아님)
+
+      if (intervalType === "walkrun") {
+        // 워크-런: 초보자 친화, 워밍업/쿨다운도 걷기
+        // 형식: "N초 걷기 / M초 달리기 × R" (FitScreen walkrun regex 매칭)
+        exercises.push(
+          { type: "cardio", phase: "main", name: "준비 걷기 (Warm-up Walk)", count: "3분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 걷기 / 60초 달리기 × 8", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "마무리 걷기 (Cool-down Walk)", count: "3분", sets: 1, reps: 1 },
+        );
+      } else if (intervalType === "tempo") {
+        // 템포런: 단순 타이머, 20분 고정
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "템포런: 대화 약간 힘든 속도 (Tempo Run)", count: "20-30분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "템포런 (Tempo Run)", count: "20분 템포", sets: 1, reps: 1 },
           { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
         );
-      } else if (intervalType === "walkrun") {
-        // 워크-런: 인터벌 모드 (걷기/달리기)
-        exercises.push(
-          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 전력 / 60초 회복 × 10", sets: 1, reps: 1 },
-        );
-      } else {
-        // 인터벌 스프린트 / 변속주
+      } else if (intervalType === "fartlek") {
+        // 변속주: 시간 기반 변속 "N초 전력 / M초 보통 × R"
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: intervalType === "sprint"
-            ? "인터벌 스프린트 (Interval Sprints)"
-            : "변속주 (Fartlek Run)",
-            count: "30초 전력 / 90초 회복 × 8", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+        );
+      } else {
+        // 스프린트: 8분 워밍업 (재활의 권장) + A스킵 드릴 + 1:4 비율
+        exercises.push(
+          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "8분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: pick(["A스킵 (A-Skip)", "B스킵 (B-Skip)", "하이니즈 (High Knees)"]), count: "2 × 30m", sets: 2, reps: 1 },
+          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1 },
           { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
         );
       }

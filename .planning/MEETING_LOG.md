@@ -2,6 +2,40 @@
 
 ---
 
+### 회의 36: 인터벌 러닝 4타입 전면 재설계 + 유저 타입 교체 UI
+**참석:** 대표, 러닝 전문가(서브3 12년), 국대 코치, 운동생리학자, 한체대 교수, 재활의학 교수, 기획자, 프엔/백엔 개발자, UX 디자이너, 현지화 전문가, 평가자
+**일자:** 2026-04-06
+
+**배경:** 회의 35에서 워크-런 순서 버그 발견. 대표 지시로 인터벌 러닝 전체 재검토. 유저 난이도 자동 판정 논의했으나 대표 철학 "전력은 주관적, 유저 자가 조정" 반영해 단순화.
+
+**핵심 철학 (대표):** "'전력'이라는 표현이 각자 능력에 맞게 자연스럽게 해석되는 장점이 있다. 난이도까지 우리가 판단하려는 건 과잉 엔지니어링. 기본 시간 템플릿 + 명확한 가이드만 주고 유저 스스로 강도 조절하게 하자."
+
+**최종 설계 — 4타입 스펙 + 가중 랜덤:**
+| 타입 | 스펙 | 가중치 | 의도 강도 |
+|---|---|---|---|
+| Walkrun (초보) | 3분 걷기 + 120초 걷기/60초 달리기 × 8 + 3분 걷기 | 40% | low |
+| Tempo (중급) | 5분 조깅 + 20분 템포 + 5분 조깅 | 30% | moderate |
+| Fartlek (중상급) | 5분 조깅 + 120초 전력/180초 보통 × 5 + 5분 조깅 | 15% | high |
+| Sprint (상급) | 8분 조깅 + A스킵 + 30초 전력/120초 회복 × 6 + 5분 조깅 | 15% | high |
+
+가중치 = 안전 편향 (walkrun 최다). 랜덤 결과가 맘에 안 들면 유저가 직접 교체.
+
+**구현 (3파일):**
+1. **functions/src/workoutEngine.ts** `generateRunningWorkout` — weightedPick 헬퍼 + 4타입 count 재설정
+2. **src/components/FitScreen.tsx** 인터벌 UI — IntervalConfig 일반화 (phase1Sec/phase2Sec + type + phase1Key/phase2Key), 3개 regex(walkrun/fartlek/sprint), 타입별 색상(walkrun=파랑/주황, sprint/fartlek=빨강/초록), 페이즈 가이드 텍스트 RPE 힌트
+3. **src/components/MasterPlanPreview.tsx** 러닝 타입 교체 — RUNNING_TEMPLATES 상수 + detectRunningVariant + handleRunningVariantSwap (main phase만 교체, warmup/core/cardio 유지) + 제목 밑 버튼 + 바텀시트
+
+**i18n 신규 키:** ko + en 각 10개 (fit.interval.* 가이드 + plan.running.* 타입 레이블/설명)
+
+**배포:** Frontend auto + Functions 수동 (firebase deploy --only functions:planSession)
+
+**재발 방지:**
+- 시간 기반 인터벌의 "전력/보통/회복"은 주관적 RPE임을 가이드 텍스트로 명시 (구체 km/h 금지)
+- 4타입 스펙 수정 시 workoutEngine.ts + RUNNING_TEMPLATES 동시 업데이트 필수
+- 주기화/난이도 시스템은 다음 스프린트 과제
+
+---
+
 ### 회의 30: 구독 취소 플로우 탭바 숨김 (몰입형 모달 전환)
 **참석:** 대표, 기획자, UX 디자이너, 그로스 마케터, 콘텐츠 MD, 프론트엔드 개발자, 평가자, 페르소나 유저 3명
 **일자:** 2026-04-06

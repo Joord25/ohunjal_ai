@@ -78,6 +78,72 @@ function translateDescription(desc: string, locale: string): string {
 
 // 무게 가이드 번역은 @/utils/exerciseName 의 translateWeightGuide 사용 (회의 20)
 
+// 회의 36: 4가지 러닝 인터벌 타입 템플릿 (유저가 MasterPlanPreview에서 직접 교체)
+// 서버 workoutEngine.ts의 generateRunningWorkout과 동일 스펙 유지 필수
+type RunningVariant = "walkrun" | "tempo" | "fartlek" | "sprint";
+interface RunningVariantTemplate {
+  id: RunningVariant;
+  labelKey: string;
+  descKey: string;
+  mainPhase: ExerciseStep[];
+}
+const RUNNING_TEMPLATES: Record<RunningVariant, RunningVariantTemplate> = {
+  walkrun: {
+    id: "walkrun",
+    labelKey: "plan.running.walkrun.label",
+    descKey: "plan.running.walkrun.desc",
+    mainPhase: [
+      { type: "cardio", phase: "main", name: "준비 걷기 (Warm-up Walk)", count: "3분", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 걷기 / 60초 달리기 × 8", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "마무리 걷기 (Cool-down Walk)", count: "3분", sets: 1, reps: 1 },
+    ],
+  },
+  tempo: {
+    id: "tempo",
+    labelKey: "plan.running.tempo.label",
+    descKey: "plan.running.tempo.desc",
+    mainPhase: [
+      { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "템포런 (Tempo Run)", count: "20분 템포", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+    ],
+  },
+  fartlek: {
+    id: "fartlek",
+    labelKey: "plan.running.fartlek.label",
+    descKey: "plan.running.fartlek.desc",
+    mainPhase: [
+      { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+    ],
+  },
+  sprint: {
+    id: "sprint",
+    labelKey: "plan.running.sprint.label",
+    descKey: "plan.running.sprint.desc",
+    mainPhase: [
+      { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "8분", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "A스킵 (A-Skip)", count: "2 × 30m", sets: 2, reps: 1 },
+      { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+    ],
+  },
+};
+
+/** 현재 러닝 메인 페이즈에서 어떤 variant인지 감지 */
+function detectRunningVariant(exercises: ExerciseStep[]): RunningVariant | null {
+  const mainNames = exercises
+    .filter((e) => e.phase === "main")
+    .map((e) => e.name.toLowerCase());
+  const joined = mainNames.join(" ");
+  if (joined.includes("walk-run") || joined.includes("워크-런")) return "walkrun";
+  if (joined.includes("tempo") || joined.includes("템포런")) return "tempo";
+  if (joined.includes("fartlek") || joined.includes("변속주")) return "fartlek";
+  if (joined.includes("sprint") || joined.includes("스프린트")) return "sprint";
+  return null;
+}
+
 /** Rebuild count string from sets/reps to ensure consistency */
 function rebuildCount(ex: ExerciseStep, t?: (key: string, vars?: Record<string, string>) => string, locale?: string): string {
   // Timer-based exercises (warmup, cardio, mobility with time-based counts)
@@ -156,6 +222,22 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
 
   const [guideExercise, setGuideExercise] = useState<ExerciseStep | null>(null);
   const [swapExercise, setSwapExercise] = useState<{ exercise: ExerciseStep; index: number; sameGroup: string[] } | null>(null);
+  // 회의 36: 러닝 타입 교체 바텀시트
+  const [showRunningSwap, setShowRunningSwap] = useState(false);
+  const currentRunningVariant = detectRunningVariant(localExercises);
+  const isRunningSession = currentRunningVariant !== null;
+
+  // 러닝 타입 교체: 메인 페이즈 운동만 교체, warmup/core/cardio(cooldown)는 유지
+  const handleRunningVariantSwap = (newVariant: RunningVariant) => {
+    const template = RUNNING_TEMPLATES[newVariant];
+    const nonMain = localExercises.filter((e) => e.phase !== "main");
+    const newMain = template.mainPhase.map((ex) => ({ ...ex, count: rebuildCount(ex, t, locale) }));
+    // warmup → main → core/cardio 순서 재구성
+    const warmups = nonMain.filter((e) => e.phase === "warmup");
+    const rest = nonMain.filter((e) => e.phase !== "warmup");
+    setLocalExercises([...warmups, ...newMain, ...rest]);
+    setShowRunningSwap(false);
+  };
   const [swapSearch, setSwapSearch] = useState("");
   const [swapFilter, setSwapFilter] = useState<string | null>(null); // null = 추천(같은부위), or muscle group label
   const [addToPhase, setAddToPhase] = useState<string | null>(null); // phase key for "add exercise" mode
@@ -401,6 +483,18 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-2">
             {translateDescription(sessionData.description, locale)}
           </p>
+          {/* 회의 36: 러닝 세션이면 타입 교체 버튼 */}
+          {isRunningSession && currentRunningVariant && (
+            <button
+              onClick={() => setShowRunningSwap(true)}
+              className="inline-flex items-center gap-1.5 mb-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-[#2D6A4F] active:scale-95 transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              {t(`plan.running.${currentRunningVariant}.label`)} · {t("plan.running.changeType")}
+            </button>
+          )}
           {/* 경험 메시지 — 목표 × 부위 매트릭스 (i18n) */}
           <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed">
             {(() => {
@@ -972,6 +1066,48 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                 {t("plan.tip_card")}
               </p>
               <p className="text-[11px] text-gray-400 mt-2 font-medium">{t("plan.tip_dismiss")}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 회의 36: 러닝 타입 교체 바텀시트 */}
+      {showRunningSwap && currentRunningVariant && (
+        <div className="absolute inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowRunningSwap(false)} />
+          <div className="absolute bottom-2 left-2 right-2 bg-white rounded-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <h3 className="text-lg font-black text-[#1B4332] mb-1">{t("plan.running.sheetTitle")}</h3>
+            <p className="text-xs text-gray-500 mb-4">{t("plan.running.sheetSubtitle")}</p>
+            <div className="flex flex-col gap-2.5">
+              {(["walkrun", "tempo", "fartlek", "sprint"] as const).map((variant) => {
+                const isCurrent = variant === currentRunningVariant;
+                return (
+                  <button
+                    key={variant}
+                    onClick={() => handleRunningVariantSwap(variant)}
+                    className={`w-full text-left px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                      isCurrent
+                        ? "border-[#2D6A4F] bg-emerald-50"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-black text-[#1B4332]">
+                        {t(`plan.running.${variant}.label`)}
+                      </span>
+                      {isCurrent && (
+                        <span className="text-[10px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
+                          {t("plan.running.current")}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500">
+                      {t(`plan.running.${variant}.desc`)}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
