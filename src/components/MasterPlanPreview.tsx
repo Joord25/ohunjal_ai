@@ -224,6 +224,23 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   const [swapExercise, setSwapExercise] = useState<{ exercise: ExerciseStep; index: number; sameGroup: string[] } | null>(null);
   // 회의 36: 러닝 타입 교체 바텀시트
   const [showRunningSwap, setShowRunningSwap] = useState(false);
+  const runningSwapRef = useRef<HTMLDivElement | null>(null);
+
+  // 회의 41 후속: 드롭다운 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!showRunningSwap) return;
+    const handler = (e: Event) => {
+      if (runningSwapRef.current && !runningSwapRef.current.contains(e.target as Node)) {
+        setShowRunningSwap(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [showRunningSwap]);
   const currentRunningVariant = detectRunningVariant(localExercises);
   const isRunningSession = currentRunningVariant !== null;
 
@@ -482,15 +499,48 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
               {t("plan.title")}
             </h1>
             {isRunningSession && currentRunningVariant && (
-              <button
-                onClick={() => setShowRunningSwap(true)}
-                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-[#2D6A4F] active:scale-95 transition-all mt-1"
-              >
-                <span>{t(`plan.running.${currentRunningVariant}.label`)}</span>
-                <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+              <div ref={runningSwapRef} className="relative shrink-0 mt-1">
+                <button
+                  onClick={() => setShowRunningSwap(v => !v)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-[#2D6A4F] active:scale-95 transition-all"
+                >
+                  <span>{t(`plan.running.${currentRunningVariant}.label`)}</span>
+                  <svg className={`w-3 h-3 opacity-60 transition-transform ${showRunningSwap ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {/* 회의 41 후속: 인라인 드롭다운 (버튼 바로 아래 펼침) */}
+                {showRunningSwap && (
+                  <div className="absolute right-0 top-full mt-1.5 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-2 z-50 animate-fade-in">
+                    {(["walkrun", "tempo", "fartlek", "sprint"] as const).map((variant) => {
+                      const isCurrent = variant === currentRunningVariant;
+                      return (
+                        <button
+                          key={variant}
+                          onClick={() => handleRunningVariantSwap(variant)}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl transition-all active:scale-[0.98] ${
+                            isCurrent ? "bg-emerald-50" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className={`text-[12px] font-black ${isCurrent ? "text-[#2D6A4F]" : "text-[#1B4332]"}`}>
+                              {t(`plan.running.${variant}.label`)}
+                            </span>
+                            {isCurrent && (
+                              <svg className="w-3.5 h-3.5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-gray-500 leading-snug">
+                            {t(`plan.running.${variant}.desc`)}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-2">
@@ -1078,47 +1128,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
         </div>
       )}
 
-      {/* 회의 36: 러닝 타입 교체 바텀시트 */}
-      {showRunningSwap && currentRunningVariant && (
-        <div className="absolute inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowRunningSwap(false)} />
-          <div className="absolute bottom-2 left-2 right-2 bg-white rounded-[2rem] p-6 animate-slide-up shadow-2xl" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)" }}>
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-            <h3 className="text-lg font-black text-[#1B4332] mb-1">{t("plan.running.sheetTitle")}</h3>
-            <p className="text-xs text-gray-500 mb-4">{t("plan.running.sheetSubtitle")}</p>
-            <div className="flex flex-col gap-2.5">
-              {(["walkrun", "tempo", "fartlek", "sprint"] as const).map((variant) => {
-                const isCurrent = variant === currentRunningVariant;
-                return (
-                  <button
-                    key={variant}
-                    onClick={() => handleRunningVariantSwap(variant)}
-                    className={`w-full text-left px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98] ${
-                      isCurrent
-                        ? "border-[#2D6A4F] bg-emerald-50"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-black text-[#1B4332]">
-                        {t(`plan.running.${variant}.label`)}
-                      </span>
-                      {isCurrent && (
-                        <span className="text-[10px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
-                          {t("plan.running.current")}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-gray-500">
-                      {t(`plan.running.${variant}.desc`)}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 회의 41 후속: 러닝 타입 교체는 제목 옆 버튼의 인라인 드롭다운으로 처리 (위 렌더 참고) */}
 
       {/* Exercise Guide Bottom Sheet */}
       {/* Plan Share Card */}
