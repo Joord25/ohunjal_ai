@@ -500,12 +500,15 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const phaseRef = useRef<"sprint" | "recovery">("sprint");
   const timeRef = useRef(0);
   const roundRef = useRef(1);
+  // 회의 36 v3: 각 페이즈 중간 알림 (Option B) — 페이즈당 1회만 발사
+  const halfFiredInPhaseRef = useRef(false);
 
   // state 초기화 시 refs도 함께 세팅
   useEffect(() => {
     phaseRef.current = "sprint";
     timeRef.current = intervalConfig?.phase1Sec ?? 0;
     roundRef.current = 1;
+    halfFiredInPhaseRef.current = false;
   }, [intervalConfig?.phase1Sec, intervalConfig?.rounds]);
 
   useEffect(() => {
@@ -517,13 +520,23 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
       if (t > 0 && t <= 3) playAlarmSound("tick");
 
+      // 회의 36 v3: 현재 페이즈 중간 지점 알림 (Option B)
+      const currentPhaseTotal = phaseRef.current === "sprint" ? cfg.phase1Sec : cfg.phase2Sec;
+      const midpoint = Math.floor(currentPhaseTotal / 2);
+      if (t === midpoint && midpoint > 0 && !halfFiredInPhaseRef.current) {
+        halfFiredInPhaseRef.current = true;
+        playAlarmSound("half");
+        if (navigator.vibrate) navigator.vibrate(150);
+      }
+
       if (t <= 0) {
         // 페이즈 전환
+        halfFiredInPhaseRef.current = false; // 다음 페이즈 중간 알림 재장전
         if (phaseRef.current === "sprint") {
           // sprint → recovery
           phaseRef.current = "recovery";
           timeRef.current = cfg.phase2Sec;
-          playAlarmSound("half");
+          playAlarmSound("rest_end");
           if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
           setIntervalPhase("recovery");
           setIntervalTime(cfg.phase2Sec);
@@ -622,13 +635,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     setTimerCompleted(false);
     halfAlarmFired.current = false;
     if (isIntervalMode && intervalConfig) {
-        // 회의 36 v2: state + refs 동시 초기화
+        // 회의 36 v2/v3: state + refs 동시 초기화
         setIntervalRound(1);
         setIntervalPhase("sprint");
         setIntervalTime(intervalConfig.phase1Sec);
         phaseRef.current = "sprint";
         timeRef.current = intervalConfig.phase1Sec;
         roundRef.current = 1;
+        halfFiredInPhaseRef.current = false;
         setElapsedTime(0);
     } else if (isTimerMode) {
         if (isDistanceMode) {
