@@ -224,7 +224,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
               /* 초기: 성별 + 출생연도 + 체중 동일 크기 카드 */
               <>
                 <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-card-enter" style={{ animationDelay: "0.05s", animationFillMode: "forwards" }}>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">성별</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">{t("condition.gender")}</p>
                   <div className="flex gap-3">
                     <button
                       onClick={() => setGender("male")}
@@ -232,7 +232,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
                         gender === "male" ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      남성
+                      {t("condition.gender.male")}
                     </button>
                     <button
                       onClick={() => setGender("female")}
@@ -240,12 +240,12 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
                         gender === "female" ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      여성
+                      {t("condition.gender.female")}
                     </button>
                   </div>
                 </div>
                 <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-card-enter" style={{ animationDelay: "0.1s", animationFillMode: "forwards" }}>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">출생연도</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">{t("condition.birthYear")}</p>
                   <div className="flex items-end justify-center gap-1">
                     <input
                       type="number"
@@ -258,7 +258,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
                   </div>
                 </div>
                 <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-card-enter" style={{ animationDelay: "0.15s", animationFillMode: "forwards" }}>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">체중</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">{t("condition.weight")}</p>
                   <div className="flex items-end justify-center gap-1">
                     <input
                       type="number"
@@ -304,7 +304,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
                     const currentW = parseFloat(bodyWeight || "0");
                     if (prevWeight > 0 && currentW > 0 && prevWeight !== currentW) {
                       const diff = Math.round((currentW - prevWeight) * 10) / 10;
-                      return <p className={`text-[12px] font-bold mt-1 ${diff < 0 ? "text-[#2D6A4F]" : "text-gray-400"}`}>이전 대비 {diff > 0 ? "+" : ""}{diff}kg</p>;
+                      return <p className={`text-[12px] font-bold mt-1 ${diff < 0 ? "text-[#2D6A4F]" : "text-gray-400"}`}>{t("condition.weightDiff", { diff: `${diff > 0 ? "+" : ""}${diff}` })}</p>;
                     }
                     return null;
                   })()}
@@ -316,7 +316,7 @@ export const ConditionCheck: React.FC<ConditionCheckProps> = ({ onComplete, onBa
             <p className="text-[11px] text-gray-500 text-center font-medium">
               {hasProfile ? (
                 showWeightEdit ? t("condition.weight.recording") : <button onClick={() => setShowWeightEdit(true)} className="underline underline-offset-2">{t("condition.weight.changed")}</button>
-              ) : "성별·연령·체중 기반 백분위 비교 및 AI 코칭에 활용됩니다"}
+              ) : t("condition.basicInfoHint")}
             </p>
 
             <button

@@ -114,6 +114,8 @@
   "condition.weight.changed": "체중이 바뀌었어요",
   "condition.weight.edit": "체중 변경",
   "condition.weight.recording": "변경된 체중으로 기록합니다",
+  "condition.basicInfoHint": "성별·연령·체중 기반 백분위 비교 및 AI 코칭에 활용됩니다",
+  "condition.weightDiff": "이전 대비 {diff}kg",
   "condition.goal.fatLoss": "살 빼기",
   "condition.goal.fatLoss.desc": "다이어트, 미용",
   "condition.goal.muscleGain": "근육 키우기",

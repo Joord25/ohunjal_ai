@@ -6,7 +6,7 @@ import { WorkoutSessionData, ExerciseStep, getAlternativeExercises, LABELED_EXER
 import { PlanShareCard } from "./PlanShareCard";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getExerciseName } from "@/utils/exerciseName";
+import { getExerciseName, translateWeightGuide } from "@/utils/exerciseName";
 
 interface MasterPlanPreviewProps {
   sessionData: WorkoutSessionData;
@@ -57,22 +57,7 @@ function translateDescription(desc: string, locale: string): string {
     .replace(/최적 컨디션/g, "Optimal condition");
 }
 
-/** Translate Korean weight guide to English at render time */
-const WEIGHT_MAP: Record<string, string> = {
-  "가능한 최대 무게": "Go heavy",
-  "적당한 무게": "Moderate",
-  "가벼운 무게": "Light",
-  "중간 무게": "Medium",
-  "가벼운~중간 무게": "Light–Med",
-  "점진적 증량": "Add weight",
-  "도전적인 무게": "Challenge",
-  "맨몸": "Bodyweight",
-  "맨몸 또는 가벼운 무게": "Bodyweight or light",
-};
-function translateWeight(weight: string, locale: string): string {
-  if (locale === "ko") return weight;
-  return WEIGHT_MAP[weight] || weight;
-}
+// 무게 가이드 번역은 @/utils/exerciseName 의 translateWeightGuide 사용 (회의 20)
 
 /** Rebuild count string from sets/reps to ensure consistency */
 function rebuildCount(ex: ExerciseStep, t?: (key: string, vars?: Record<string, string>) => string, locale?: string): string {
@@ -477,7 +462,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
                           {getExerciseName(ex.name, locale)}
                         </span>
                         {ex.weight && ex.weight !== "Bodyweight" && ex.weight !== "맨몸" && (
-                          <span className="text-xs text-[#2D6A4F] font-bold mt-1 block">{translateWeight(ex.weight, locale)}</span>
+                          <span className="text-xs text-[#2D6A4F] font-bold mt-1 block">{translateWeightGuide(ex.weight, locale)}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 ml-2 shrink-0">
@@ -1023,7 +1008,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             {guideExercise.weight && guideExercise.weight !== "Bodyweight" && guideExercise.weight !== "맨몸" && (
               <div className="bg-emerald-50 rounded-xl p-3 mb-6 border border-emerald-100 text-center">
                 <p className="text-[9px] font-black text-[#2D6A4F] uppercase tracking-widest mb-0.5">Weight</p>
-                <p className="text-sm font-black text-[#1B4332]">{translateWeight(guideExercise.weight, locale)}</p>
+                <p className="text-sm font-black text-[#1B4332]">{translateWeightGuide(guideExercise.weight, locale)}</p>
               </div>
             )}
 

@@ -114,6 +114,8 @@
   "condition.weight.changed": "My weight changed",
   "condition.weight.edit": "Edit weight",
   "condition.weight.recording": "Recording updated weight",
+  "condition.basicInfoHint": "Used for percentile comparison and AI coaching based on age, gender, and weight",
+  "condition.weightDiff": "{diff}kg vs previous",
   "condition.goal.fatLoss": "Lose Weight",
   "condition.goal.fatLoss.desc": "Diet & body shaping",
   "condition.goal.muscleGain": "Build Muscle",

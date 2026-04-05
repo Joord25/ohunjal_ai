@@ -2,6 +2,43 @@
 
 ---
 
+### 회의 20: EN 버전 하드코딩 한글 잔존 — 컨디션 체크 + 무게 가이드
+**참석:** 대표, 프론트엔드 개발자, 기획자, 평가자
+**일자:** 2026-04-05
+
+**증상 (대표 스샷 제보):**
+1. EN 모드에서 컨디션 체크 STEP 2(basic info) 진입 시 라벨이 한글로 뜸: "성별 / 출생연도 / 체중"
+2. 성별 선택 버튼 라벨도 한글: "남성 / 여성"
+3. 마스터 플랜의 운동 카드 무게 가이드가 한글: "15회 이상 가능한 무게", "12-15회 가능한 무게" 등
+4. (추가 발견) 기본 정보 입력 힌트 "성별·연령·체중 기반 백분위..." + "이전 대비 Nkg" 라벨도 하드코딩
+
+**프엔 진단:**
+- `ConditionCheck.tsx:227-261`에 `t()` 호출 없이 한글 리터럴 직접 사용
+- `condition.gender`, `condition.gender.male/female`, `condition.birthYear`, `condition.weight` 키는 **이미 ko/en 양쪽에 존재** — 호출만 안 하고 있었음
+- `MasterPlanPreview.tsx`의 `WEIGHT_MAP`에 일부 서버 무게 가이드 문자열 누락: `"15회 이상 가능한 무게"`, `"12-15회 가능한 무게"`, `"8회가 힘든 무게"`, `"10회가 힘든 무게"`, `"20회 이상 가능한 무게"`, `"점진적 증량 (매 세트 무게 UP)"`, `"가볍게 반복 가능한 무게"` → EN 모드에서 fallback으로 한글 그대로 출력
+- `FitScreen.tsx:1177`에서 `setInfo.targetWeight`를 번역 없이 그대로 출력 → 운동 실행 화면도 같은 버그
+
+**수정:**
+1. `ConditionCheck.tsx` 하드코딩 한글 → 기존 i18n 키로 교체 (gender/birthYear/weight 라벨 + male/female 버튼)
+2. `ko.json` + `en.json`에 2개 키 신규 추가: `condition.basicInfoHint`, `condition.weightDiff`
+3. `translateWeightGuide` 함수를 `src/utils/exerciseName.ts`로 이동 — MasterPlanPreview + FitScreen 공통 사용
+4. `WEIGHT_GUIDE_MAP`에 누락된 6개 서버 문자열 추가 (15+/20+/12-15/8-rep/10-rep/add-weight-each-set/easy-reps)
+5. `MasterPlanPreview.tsx`의 로컬 `translateWeight` 제거, `translateWeightGuide` import로 교체
+6. `FitScreen.tsx`의 `setInfo.targetWeight` 출력에 `translateWeightGuide(.., locale)` 적용
+
+**평가자 훅 체크:**
+- ✓ ko.json + en.json 동시 작업 (i18n_always 메모리 준수)
+- ✓ 기존 키 재사용 우선, 신규 키는 최소
+- ✓ 공통 헬퍼로 추출 (MasterPlanPreview/FitScreen 중복 제거)
+- ✓ 서버 리턴 문자열 커버리지: workoutEngine.ts의 getWeightGuide 함수의 모든 리턴 경로 WEIGHT_GUIDE_MAP에 포함 확인
+- ⚠️ JA/ZH 무게 가이드 번역은 이번 작업 범위 밖 (WEIGHT_GUIDE_MAP는 현재 EN만 처리) — 다음 스프린트 과제
+
+**재발 방지:**
+- 앞으로 UI 텍스트 추가 시 즉시 `t()` 호출 + ko/en 키 동시 추가 원칙 재확인
+- 서버 무게 가이드 문자열 변경 시 WEIGHT_GUIDE_MAP 동기화 의무
+
+---
+
 ### 회의 19: 다국어 랜딩 영상 매핑 버그 수정
 **참석:** 대표, 기획자, 프론트엔드 개발자, 평가자
 **일자:** 2026-04-05

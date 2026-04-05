@@ -6,7 +6,7 @@ import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@
 import { AiCoachChat } from "@/components/AiCoachChat";
 import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getExerciseName } from "@/utils/exerciseName";
+import { getExerciseName, translateWeightGuide } from "@/utils/exerciseName";
 
 const MUSCLE_GROUP_EN: Record<string, string> = {
   "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
@@ -1174,7 +1174,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 )}
                 {!hasWeight && exercise.weight && (
                   <span className={`font-black text-[#2D6A4F] ${isBodyweight ? "text-3xl" : "text-2xl"}`}>
-                    {isBodyweight ? t("fit.bodyweight") : setInfo.targetWeight}
+                    {isBodyweight ? t("fit.bodyweight") : translateWeightGuide(setInfo.targetWeight, locale)}
                   </span>
                 )}
 
