@@ -2,6 +2,57 @@
 
 ---
 
+### 회의 27: Gemini 코치 시스템 전수 감사 — 데이터 오염 원인 발견 + 원칙 수립
+**참석:** 대표, 기획자, 프론트엔드 개발자, 백엔드 개발자, 디자이너, 현지화 전문가, 프롬프트 전문가, 평가자
+**일자:** 2026-04-06
+
+**배경:** 회의 25에서 프롬프트만 영문 분기해서 "해결됐다"고 봤으나 유저 스샷으로 여전히 한글 응답 발견. 대표 지시로 전수 감사.
+
+**평가자 자기편향 반성:**
+회의 25에서 프롬프트 텍스트만 보고 "영문 분기면 끝"이라 빠르게 확신 → 데이터 파이프라인 미검증. 이번엔 데이터→프롬프트→출력 전체 파이프라인 감사.
+
+**근본 원인 (프엔 진단):**
+서버(`workoutEngine.ts`)는 운동명을 **이미 `"바벨 벤치 프레스 (Barbell Bench Press)"` 형식**으로 한글+영문 페어로 저장 중. UI는 `getExerciseName(name, locale)` 헬퍼로 올바른 언어 추출해 사용. **하지만** `fetchCoachMessages`의 L184/L199가 `.split("(")[0].trim()`으로 무조건 한글만 잘라 서버 전송. 서버가 받은 한글 데이터를 EN 프롬프트에 interpolate → Gemini가 혼합 언어 보고 혼란.
+
+**대표 질문 명확화:**
+대표: "KO 넣고 KO 받아서 EN 번역? 아니면 EN 넣고 EN 받아서 KO→EN? 어떤 로직?"
+답: **어느 것도 아님**. 현재는 "영문 프롬프트 + 한글 데이터 + 번역 단계 없음" 상태. 번역이 아예 없음.
+
+**4가지 가능 로직 비교:**
+| 방법 | 설명 | 채택 여부 |
+|---|---|---|
+| 1. 데이터 미리 EN 정제 → 순수 EN 프롬프트 → Gemini → EN 출력 | 단일 방향, 빠름, 비용 0 | ★ **채택** |
+| 2. KO 프롬프트 → KO 출력 → 번역 API → EN | 비용+지연+뉘앙스 손실 | ❌ |
+| 3. 왕복 번역 (KO→EN→KO→EN) | 실용성 없음, 손실 누적 | ❌ |
+| 4. 혼합 (현재) | 운에 맡김, 불안정 | ❌ |
+
+**전문가 합의 (현지화+프롬프트+백엔+프엔):** 방법 1. "프롬프트 언어 = 데이터 언어" LLM 현지화 1원칙.
+
+**수정 (3줄):**
+1. `sessionLogs[].exerciseName`: `ex.name.split("(")[0].trim()` → `getExerciseName(ex.name, locale)`
+2. `hero.exerciseName`: 동일 패턴 적용
+3. `sessionDesc`: `translateDesc(sessionDesc || "", locale)` 래핑 후 전송
+
+**원칙 수립 (재발 방지):**
+- 앞으로 **JA/ZH 추가 시에도 동일 원칙**: LLM 프롬프트 호출 전 모든 동적 데이터를 target locale로 sanitize
+- `isKo = locale !== "en"` 이분법 금지, `locale === "ko" / "ja" / "zh" / "en"` 명시 분기
+- `name.split("(")[0].trim()` 패턴 발견 시 즉시 `getExerciseName` 교체
+- LLM 응답 후처리 번역 금지 — 입력 단계에서 정제
+- 코드 상단 주석으로 원칙 박음 (WorkoutReport.tsx fetchCoachMessages)
+- 메모리 `feedback_llm_data_sanitization.md`에 저장 — 미래 세션 자동 참조
+
+**남은 Phase (이번 회의 범위 초과, 다음 라운드):**
+- Phase B: Gemini `systemInstruction` 필드 분리, "No Korean characters" 이중 명시
+- Phase C: 타임아웃 Promise.race 패턴으로 실효성 확보
+- Phase D: 저장된 coachMessages의 locale 재검증 로직
+- `weatherContext` 정규식 변환 제거, 처음부터 locale 분기 빌드
+
+**이번 수정 범위:** 3줄 (Phase A — 데이터 정제). 가장 치명적인 버그 즉시 해결.
+
+**배포 필요:** Frontend만 (git push 자동). Functions 배포 불필요 — 서버 코드 변경 없음.
+
+---
+
 ### 회의 26: ProofTab 캘린더 날짜 상세 시트 세션 타이틀 EN 번역
 **일자:** 2026-04-05
 

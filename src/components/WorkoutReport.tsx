@@ -177,11 +177,15 @@ async function fetchCoachMessages(
     const token = await user.getIdToken();
 
     // 세션 로그 요약 (서버에 전달)
+    // 회의 27 원칙: LLM 프롬프트에 전달하는 모든 데이터는 target locale로 sanitize.
+    // 혼합 언어(영문 프롬프트 + 한글 데이터)는 Gemini 응답 언어 불안정 유발.
+    // JA/ZH 추가 시에도 이 원칙 유지 — locale별 운동명/설명 전부 정제 후 전송.
+    // 금지 패턴: name.split("(")[0].trim() (locale 무시하고 한글만 자르는 코드)
     const sessionLogs = exercises.map((ex, i) => {
       const exLogs = logs[i];
       if (!exLogs || exLogs.length === 0) return null;
       return {
-        exerciseName: ex.name.split("(")[0].trim(),
+        exerciseName: getExerciseName(ex.name, locale),
         sets: exLogs.map(l => ({
           setNumber: l.setNumber,
           reps: l.repsCompleted,
@@ -196,12 +200,12 @@ async function fetchCoachMessages(
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify({
         heroType: hero.type,
-        exerciseName: hero.exerciseName ? hero.exerciseName.split("(")[0].trim() : undefined,
+        exerciseName: hero.exerciseName ? getExerciseName(hero.exerciseName, locale) : undefined,
         vars: hero.vars,
         locale,
         sessionLogs,
         condition,
-        sessionDesc,
+        sessionDesc: translateDesc(sessionDesc || "", locale),
         streak,
       }),
     });
