@@ -2,6 +2,67 @@
 
 ---
 
+### 회의 21: EN 모드 한글 대규모 정리 (Subscription / Quest / Description / Big3 / Grade / Add Exercise)
+**참석:** 대표, 기획자, 프론트엔드 개발자, 평가자, 현지화 전문가
+**일자:** 2026-04-05
+
+**증상 (대표 스샷 제보 9건):**
+1. Subscription "Premium Plan" 화면 — "월 정기 구독 활성화", "다음 결제일", "포함된 기능", "구독 내역", "결제 금액", "6,900원" 등 한글
+2. "결제 내역" 헤더 + 날짜 포맷 + "원" 화폐 단위
+3. WorkoutReport "Today's Work" 카드 — 세션 설명에 "상체(당기기)" 한글 잔존
+4. WorkoutReport EXP gains — "중강도 운동 2회 완료 +3 EXP", "새 운동 3종목 시도 완료 +2 EXP"
+5. ProofTab EXP 로그 — "04.03 이번 주 5일 Workout", "5일 연속 Workout", "중강도 운동 2회 Complete"
+6. ProofTab Exercise Science Data 카드 — 3대 운동 이름 "스쿼트 / 데드리프트 / 벤치프레스"
+7. FitnessReading Growth Prediction Endurance 탭 코치 멘트 — "150 min/week! Grade: 우수! 75 more min to 상급!"
+8. WorkoutSession Add Exercise 화면 — 범주 칩 클릭 시 검색창에 한글 키워드("웜업") 자동 입력
+9. (발견) ProofTab의 `tQuestLabel` 로컬 헬퍼가 regex 기반이라 새 패턴 추가 시 누락 쉬움
+
+**프엔 진단 (원인):**
+- `SubscriptionScreen.tsx` 활성 구독 뷰·결제내역 뷰에 하드코딩 한글 리터럴 다수
+- `questSystem.generateWeeklyQuests`가 Korean label을 QuestDefinition에 직접 저장 → UI가 그대로 표시
+- `calculateSessionExp`가 `"${def.label} 완료"` 형태로 Korean detail을 ExpLogEntry에 저장 → ProofTab의 regex 치환으로 "완료→Complete"만 바꿔도 label 부분이 Korean으로 남음
+- `MasterPlanPreview.translateDescription`과 `WorkoutReport.translateDesc`의 regex가 `상체\(당기기\(Pull\)\)` 패턴을 기대하지만 실제 서버 포맷은 `상체(당기기)` (Korean only) → 매칭 실패
+- `workoutMetrics.CATEGORY_LABELS`가 Korean 리터럴을 `details[].exercise`에 저장 → ProofTab이 그대로 렌더
+- `FitnessReading.tsx:1713` endurance 코치 멘트가 Korean `grade` 변수를 EN 템플릿에 그대로 interpolate
+- `WorkoutSession.tsx:380`의 범주 칩 onClick이 `group.keywords[0]` (한글)을 검색창에 세팅
+
+**수정 (9건):**
+1. `sub.active.header / sub.features.header / sub.history.header / sub.history.nextDate / sub.history.amount / sub.history.title / sub.history.empty / sub.amount.krw` 신규 키 ko+en 추가
+2. SubscriptionScreen 활성 구독 뷰 + 결제 내역 뷰 전부 `t()` 호출로 교체, date는 locale 기반 `toLocaleDateString` 분기
+3. `quest.highIntensity / moderateIntensity / lowIntensity / consistency / streak5 / newExercise3` + `quest.desc.*` + `exp.workout / weeklyBonus / questComplete / big3.*` 신규 키 ko+en 추가
+4. `questSystem.ts`에 `translateQuestLabel(q, t)`, `translateQuestDescription(q, t)`, `translateExpDetail(entry, t)` 헬퍼 export — id/type 기반 safe matching + 동적 패턴 역파싱
+5. ProofTab Quest 카드 + EXP 로그에 새 헬퍼 적용, 기존 `tQuestLabel` 로컬 헬퍼 dead code 제거
+6. WorkoutReport EXP gains 리스트에 `translateExpDetail` 적용
+7. `MasterPlanPreview.translateDescription` + `WorkoutReport.translateDesc` 체인 확장 — 실제 서버 포맷 `상체(당기기)`, `상체 + 밀기`, `당기기/밀기 단독`, 목표 라벨(살 빼기/근육 키우기/힘 세지기/기초체력), 카테고리(홈트레이닝/러닝) 추가
+8. `workoutMetrics.CATEGORY_LABELS` 값을 i18n 키(`"big3.squat"` 등)로 변경, ProofTab 렌더에서 `.startsWith("big3.")` 분기로 `t()` 적용 — 기존 캐시된 한글 값은 ko 모드에서 그대로 표시되므로 하위 호환
+9. `FitnessReading.tsx:1713` endurance 코치 멘트에 `toEnGrade` 헬퍼 추가 — 성장중/우수/상급/특급 → Growing/Excellent/Advanced/Elite 변환 후 EN 템플릿에 interpolate
+10. `WorkoutSession.tsx:380` Add Exercise 범주 칩에 locale 분기 추가 — EN 모드에서는 `keywords.find(/^[a-z]/i)`로 영문 키워드 우선 선택
+
+**평가자 훅 체크:**
+- ✓ ko+en 동시 작업 (i18n_always)
+- ✓ 기존 키 재사용 우선, 신규 키는 증상 기반으로만 추가
+- ✓ 공통 헬퍼(translateQuestLabel/ExpDetail) 추출 — ProofTab + WorkoutReport 중복 제거
+- ✓ 서버 응답 포맷 변경 없음 (클라이언트 전용 수정 — Functions 배포 불필요)
+- ✓ 과거 캐시 데이터 하위 호환 (CATEGORY_LABELS "big3.*" 키 + KO 원본 둘 다 처리)
+- ⚠️ 미처리 범위 (다음 스프린트):
+  - HomeScreen 코치 버블 다수 변형 (한국 트렌드 드립 KO 전용 유지 검토)
+  - FitnessReading 프로필 옵션/레벨 라벨 (입문/초급/중급/상급/엘리트)
+  - FitScreen MUSCLE_GROUP_EN 매핑 확장
+  - JA/ZH는 여전히 한글 fallback (이번 작업은 EN만)
+
+**현지화 전문가 QA:**
+- `sub.amount.krw = "₩{amount}"` — KRW 심볼 사용, 금액은 toLocaleString() 결과 그대로 삽입. USD 등 미래 확장 시 별도 키 필요
+- `exp.questComplete = "{label} Complete"` — 영문 어순이 "Complete X"보다 "X Complete"가 자연스러운지는 논란 있지만 기존 UI 스타일(뒤쪽 상태 배지)과 일치
+- Endurance grade 용어: Growing/Excellent/Advanced/Elite — 한국 군대/국대 드립은 EN에서 National team level/Olympic spirit 등 스포츠 메타포로 이미 변환됨 (기존 템플릿)
+- Big3 용어: Squat / Bench Press / Deadlift / Push-ups / Pull-ups — 업계 표준 용어
+
+**재발 방지:**
+- 앞으로 UI 텍스트 추가 시 `t()` 호출 + ko/en 키 동시 추가 원칙 재강조
+- 서버 응답 포맷에 의존하는 클라이언트 regex 치환은 **서버 포맷 변경 시 반드시 재확인** (MasterPlanPreview/WorkoutReport 체인이 깨진 이유)
+- questSystem 같은 공통 데이터 유틸에서는 Korean 리터럴 대신 i18n 키나 structured type을 저장하는 원칙 수립 검토
+
+---
+
 ### 회의 20: EN 버전 하드코딩 한글 잔존 — 컨디션 체크 + 무게 가이드
 **참석:** 대표, 프론트엔드 개발자, 기획자, 평가자
 **일자:** 2026-04-05

@@ -217,9 +217,10 @@ export interface LevelEstimation {
   decayed?: boolean; // 최근 4주 미활동으로 한 단계 하향 조정됨
 }
 
+// 회의 21: i18n 키로 변경 — UI에서 t()로 렌더. details[].exercise 필드에 이 키가 저장됨.
 const CATEGORY_LABELS: Record<string, string> = {
-  squat: "스쿼트", bench: "벤치프레스", deadlift: "데드리프트",
-  pushup: "푸쉬업", pullup: "풀업/턱걸이",
+  squat: "big3.squat", bench: "big3.bench", deadlift: "big3.deadlift",
+  pushup: "big3.pushup", pullup: "big3.pullup",
 };
 
 /**

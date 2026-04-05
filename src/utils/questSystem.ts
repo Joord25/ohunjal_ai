@@ -321,6 +321,86 @@ export function generateWeeklyQuests(
   return quests;
 }
 
+// ─── Quest Label / EXP Detail Translation (회의 21) ──────────────
+// 저장된 Korean 라벨을 locale에 맞게 렌더 — UI 컴포넌트에서 사용.
+// t는 useTranslation()의 번역 함수.
+type TranslateFn = (key: string, vars?: Record<string, string>) => string;
+
+/**
+ * QuestDefinition의 라벨을 현재 locale로 렌더.
+ * id/type 기반 안전 매칭으로 Korean 라벨을 i18n 키로 변환.
+ */
+export function translateQuestLabel(q: QuestDefinition, t: TranslateFn): string {
+  switch (q.type) {
+    case "intensity_high":
+      return t("quest.highIntensity", { count: String(q.target) });
+    case "intensity_moderate":
+      return t("quest.moderateIntensity", { count: String(q.target) });
+    case "intensity_low":
+      return t("quest.lowIntensity", { count: String(q.target) });
+    case "consistency":
+      return t("quest.consistency", { count: String(q.target) });
+    case "bonus_streak":
+      return t("quest.streak5");
+    case "bonus_new_exercise":
+      return t("quest.newExercise3");
+    default:
+      return q.label;
+  }
+}
+
+export function translateQuestDescription(q: QuestDefinition, t: TranslateFn): string {
+  switch (q.type) {
+    case "intensity_high": return t("quest.desc.high");
+    case "intensity_moderate": return t("quest.desc.moderate");
+    case "intensity_low": return t("quest.desc.low");
+    case "consistency": return t("quest.desc.consistency");
+    case "bonus_streak": return t("quest.desc.streak");
+    case "bonus_new_exercise": return t("quest.desc.newExercise");
+    default: return q.description;
+  }
+}
+
+/**
+ * ExpLogEntry.detail (Korean literal) → locale 번역 문자열.
+ * calculateSessionExp가 저장한 문자열을 역파싱하여 i18n 키로 매핑.
+ */
+export function translateExpDetail(entry: ExpLogEntry, t: TranslateFn): string {
+  // 확정된 리터럴
+  if (entry.detail === "운동 완료") return t("exp.workout");
+  if (entry.detail === "주간 올클리어") return t("exp.weeklyBonus");
+
+  // 동적: "${questLabel} 완료" 패턴 역파싱
+  const m = entry.detail.match(/^(.+) 완료$/);
+  if (m) {
+    const questLabel = m[1];
+    // questLabel을 로케일 라벨로 재번역 — id/type을 모르므로 패턴 매칭
+    // 고강도 운동 N회 / 중강도 운동 N회 / 저강도 운동 N회
+    const intensityMatch = questLabel.match(/^(고|중|저)강도 운동 (\d+)회$/);
+    if (intensityMatch) {
+      const key = intensityMatch[1] === "고" ? "quest.highIntensity"
+        : intensityMatch[1] === "중" ? "quest.moderateIntensity"
+        : "quest.lowIntensity";
+      const localized = t(key, { count: intensityMatch[2] });
+      return t("exp.questComplete", { label: localized });
+    }
+    // 이번 주 N일 운동
+    const consistencyMatch = questLabel.match(/^이번 주 (\d+)일 운동$/);
+    if (consistencyMatch) {
+      const localized = t("quest.consistency", { count: consistencyMatch[1] });
+      return t("exp.questComplete", { label: localized });
+    }
+    if (questLabel === "5일 연속 운동") {
+      return t("exp.questComplete", { label: t("quest.streak5") });
+    }
+    if (questLabel === "새 운동 3종목 시도") {
+      return t("exp.questComplete", { label: t("quest.newExercise3") });
+    }
+  }
+  // Unknown pattern → fallback (원본 또는 locale=ko 그대로)
+  return entry.detail;
+}
+
 // ─── Quest Progress Evaluation ───────────────────────────────────
 
 function getWeekSessions(history: WorkoutHistory[], windowStart: Date, windowEnd?: Date): WorkoutHistory[] {

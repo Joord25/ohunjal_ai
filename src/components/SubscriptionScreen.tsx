@@ -553,7 +553,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   if (showSubDetail) {
     const formatDate = (iso: string | null) => {
       if (!iso) return "-";
-      try { return new Date(iso).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }); }
+      try { return new Date(iso).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { year: "numeric", month: "long", day: "numeric" }); }
       catch { return iso; }
     };
 
@@ -565,7 +565,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg sm:text-xl font-serif font-medium text-[#1B4332] uppercase tracking-wide">결제 내역</h1>
+          <h1 className="text-lg sm:text-xl font-serif font-medium text-[#1B4332] uppercase tracking-wide">{t("sub.history.title")}</h1>
           <div className="w-10" />
         </div>
 
@@ -575,13 +575,13 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               {payments.map((p) => (
                 <div key={p.paymentId} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
                   <span className="text-sm text-gray-600">{formatDate(p.paidAt)}</span>
-                  <span className="text-sm font-bold text-[#1B4332]">{p.amount.toLocaleString()}원</span>
+                  <span className="text-sm font-bold text-[#1B4332]">{t("sub.amount.krw", { amount: p.amount.toLocaleString() })}</span>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-20">
-              <p className="text-gray-400 text-sm">결제 내역이 없습니다.</p>
+              <p className="text-gray-400 text-sm">{t("sub.history.empty")}</p>
             </div>
           )}
         </div>
@@ -621,14 +621,14 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-xl font-black text-white mb-1">월 정기 구독 활성화</h2>
+              <h2 className="text-xl font-black text-white mb-1">{t("sub.active.header")}</h2>
               <p className="text-sm text-emerald-300/70">
-                {expiresAt ? `다음 결제일: ${new Date(expiresAt).toLocaleDateString("ko-KR")}` : "프리미엄 이용 중"}
+                {expiresAt ? t("sub.active.nextPayment", { date: new Date(expiresAt).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US") }) : t("sub.active.using")}
               </p>
             </div>
 
             <div className="bg-gray-50 rounded-2xl p-5">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">포함된 기능</h3>
+              <h3 className="text-sm font-bold text-gray-900 mb-3">{t("sub.features.header")}</h3>
               <div className="flex flex-col gap-2">
                 {[t("sub.feature.unlimited"), t("sub.feature.prediction"), t("sub.feature.analysisReport"), t("sub.feature.weightTrack")].map((feature) => (
                   <div key={feature} className="flex items-center gap-2">
@@ -646,7 +646,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               className="bg-gray-50 rounded-2xl p-5 w-full text-left active:bg-gray-100 transition-colors"
             >
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900">구독 내역</h3>
+                <h3 className="text-sm font-bold text-gray-900">{t("sub.history.header")}</h3>
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
@@ -654,14 +654,14 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               <div className="flex flex-col gap-2.5">
                 {expiresAt && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">다음 결제일</span>
-                    <span className="text-sm font-medium text-[#2D6A4F]">{new Date(expiresAt).toLocaleDateString("ko-KR")}</span>
+                    <span className="text-sm text-gray-500">{t("sub.history.nextDate")}</span>
+                    <span className="text-sm font-medium text-[#2D6A4F]">{new Date(expiresAt).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US")}</span>
                   </div>
                 )}
                 {amount && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">결제 금액</span>
-                    <span className="text-sm font-medium text-gray-900">{amount.toLocaleString()}원</span>
+                    <span className="text-sm text-gray-500">{t("sub.history.amount")}</span>
+                    <span className="text-sm font-medium text-gray-900">{t("sub.amount.krw", { amount: amount.toLocaleString() })}</span>
                   </div>
                 )}
               </div>

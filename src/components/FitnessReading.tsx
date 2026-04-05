@@ -1708,9 +1708,13 @@ export const FitnessReading: React.FC<Props> = ({ userName, onComplete, onPremiu
                     }
 
                     if (msg.startsWith("growth.coach.endurance:")) {
-                      const [, weeklyMin, grade, minRemaining, nextMin] = msg.split(":");
+                      const [, weeklyMin, gradeKo, minRemaining, nextMin] = msg.split(":");
                       const hasNext = parseInt(minRemaining) > 0;
-                      const nextGrade = grade === "성장중" ? "우수" : grade === "우수" ? "상급" : grade === "상급" ? "특급" : "";
+                      const nextGradeKo = gradeKo === "성장중" ? "우수" : gradeKo === "우수" ? "상급" : gradeKo === "상급" ? "특급" : "";
+                      // 회의 21: EN 모드에서 grade 한글 라벨을 영문으로 변환
+                      const toEnGrade = (g: string) => g === "성장중" ? "Growing" : g === "우수" ? "Excellent" : g === "상급" ? "Advanced" : g === "특급" ? "Elite" : g;
+                      const grade = isEn ? toEnGrade(gradeKo) : gradeKo;
+                      const nextGrade = isEn ? toEnGrade(nextGradeKo) : nextGradeKo;
                       return pick(isEn ? [
                         `${weeklyMin} min/week! Grade: ${grade}!\n${hasNext ? `${minRemaining} more min to ${nextGrade}!` : `Top grade! National team level!`}`,
                         `${grade} grade with ${weeklyMin} min weekly!\n${hasNext ? `${nextMin} min/week unlocks ${nextGrade}!` : `Elite athlete vibes!`}`,

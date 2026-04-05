@@ -374,17 +374,23 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
                   })
                   .filter(Boolean)
               ) : (
-                LABELED_EXERCISE_POOLS.map((group) => (
-                  <div key={group.label} className="mb-3">
-                    <button
-                      onClick={() => setAddSearch(group.keywords[0])}
-                      className="w-full text-left px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
-                    >
-                      {locale === "ko" ? group.label : (MUSCLE_GROUP_EN[group.label] || group.label)}
-                      <span className="text-[11px] text-gray-400 ml-2">{t("session.exerciseCount", { count: String(group.exercises.length) })}</span>
-                    </button>
-                  </div>
-                ))
+                LABELED_EXERCISE_POOLS.map((group) => {
+                  // 회의 21: EN 모드에서는 영문 키워드로 검색 자동입력 (한글 "웜업" 방지)
+                  const primaryKeyword = locale === "ko"
+                    ? group.keywords[0]
+                    : (group.keywords.find((kw: string) => /^[a-z]/i.test(kw)) || group.keywords[0]);
+                  return (
+                    <div key={group.label} className="mb-3">
+                      <button
+                        onClick={() => setAddSearch(primaryKeyword)}
+                        className="w-full text-left px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] active:scale-[0.98] transition-all"
+                      >
+                        {locale === "ko" ? group.label : (MUSCLE_GROUP_EN[group.label] || group.label)}
+                        <span className="text-[11px] text-gray-400 ml-2">{t("session.exerciseCount", { count: String(group.exercises.length) })}</span>
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
 

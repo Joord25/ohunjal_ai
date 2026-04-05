@@ -8,7 +8,7 @@ import { updateWeightLog } from "@/utils/userProfile";
 import { estimateTrainingLevelDetailed, getOptimalLoadBand } from "@/utils/workoutMetrics";
 import { SwipeToDelete } from "./SwipeToDelete";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWeeklyQuests, TIERS, rebuildFromHistory, saveSeasonExp, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
+import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWeeklyQuests, TIERS, rebuildFromHistory, saveSeasonExp, translateQuestLabel, translateExpDetail, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { WorkoutReport } from "./WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 
@@ -19,17 +19,6 @@ const GRASS_COLORS = [
   { bg: "bg-[#2D6A4F]", text: "text-white", shadow: "shadow-md shadow-[#2D6A4F]/20" },
   { bg: "bg-[#1B4332]", text: "text-white", shadow: "shadow-md shadow-[#1B4332]/30" },
 ];
-
-function tQuestLabel(label: string, locale: string): string {
-  if (locale === "ko") return label;
-  return label
-    .replace(/고강도 운동 (\d+)회/, "High intensity × $1")
-    .replace(/중강도 운동 (\d+)회/, "Moderate intensity × $1")
-    .replace(/저강도 운동 (\d+)회/, "Low intensity × $1")
-    .replace(/이번 주 (\d+)일 운동/, "$1 days this week")
-    .replace(/(\d+)일 연속 운동/, "$1-day streak")
-    .replace(/새 운동 (\d+)종목 시도/, "Try $1 new exercises");
-}
 
 interface ProofTabProps {
   lockedRuleIds: string[]; // Not used in this version, but kept for compatibility
@@ -690,7 +679,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                       <div key={q.id}>
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-700"}`}>
-                            {p.completed ? "✓ " : ""}{tQuestLabel(q.label, locale)}
+                            {p.completed ? "✓ " : ""}{translateQuestLabel(q, t)}
                           </span>
                           <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
                         </div>
@@ -712,7 +701,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                           <div key={q.id} className="opacity-60">
                             <div className="flex items-center justify-between mb-1">
                               <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-500"}`}>
-                                {p.completed ? "✓ " : "☆ "}{tQuestLabel(q.label, locale)}
+                                {p.completed ? "✓ " : "☆ "}{translateQuestLabel(q, t)}
                               </span>
                               <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
                             </div>
@@ -936,7 +925,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                               <span className="text-[10px] text-gray-400 w-12 shrink-0">
                                 {entry.date.slice(5, 10).replace("-", ".")}
                               </span>
-                              <span className="text-[11px] text-gray-600">{locale === "ko" ? entry.detail : entry.detail.replace("운동 완료", "Workout").replace("완료", "Complete").replace("주간 올클리어", "Weekly All Clear")}</span>
+                              <span className="text-[11px] text-gray-600">{translateExpDetail(entry, t)}</span>
                             </div>
                             <span className="text-[11px] font-bold shrink-0 ml-2" style={{ color: tierResult.tier.color }}>+{entry.amount}</span>
                           </div>
@@ -1017,7 +1006,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                         return (
                           <div key={i} className="flex items-center gap-4 py-4 first:pt-1 last:pb-1">
                             <div className={`w-1 h-12 rounded-full ${accent.split(" ")[0].replace("border", "bg")}`} />
-                            <p className="flex-1 min-w-0 text-[14px] text-gray-700 font-bold">{d.exercise}</p>
+                            <p className="flex-1 min-w-0 text-[14px] text-gray-700 font-bold">{d.exercise.startsWith("big3.") ? t(d.exercise) : d.exercise}</p>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] text-gray-400 font-medium">{t("proof.maxWeight")}</span>
                               <span className="text-[20px] font-black text-[#1B4332] leading-none">{d.value}</span>
