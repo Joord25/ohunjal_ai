@@ -2,6 +2,65 @@
 
 ---
 
+### 회의 30: 구독 취소 플로우 탭바 숨김 (몰입형 모달 전환)
+**참석:** 대표, 기획자, UX 디자이너, 그로스 마케터, 콘텐츠 MD, 프론트엔드 개발자, 평가자, 페르소나 유저 3명
+**일자:** 2026-04-06
+
+**배경:** 회의 29에서 취소 오버레이 하단 버튼이 탭바 뒤로 숨는 버그 1차 수정 (padding 128px 추가)했으나, 대표가 "탭바 자체를 숨기는 게 맞는지" UX 결정 요청.
+
+**평가자 크로스 시뮬 (편향 차단 8축, 100점):**
+| 축 | 배점 | 숨김 | 노출(현재) |
+|---|---|---|---|
+| 유저 자율성 | 20 | 15 | 20 |
+| 취소 결정 집중력 | 15 | 15 | 8 |
+| 리텐션 | 15 | 13 | 7 |
+| 업계 표준 | 10 | 10 | 5 |
+| Dark pattern 우회 | 15 | 11 | 15 |
+| 구현 리스크 | 5 | 5 | 5 |
+| 페르소나 투표(2:1) | 10 | 10 | 5 |
+| 뒤로가기 경로 | 10 | 7 | 10 |
+| **총점** | 100 | **86** | 75 |
+
+**대표 결정:** 탭바 **숨김**, 뒤로가기 아이콘은 현 상태 유지 (강화 불필요).
+
+**구현 (3파일 콜백 체인):**
+1. `SubscriptionScreen.tsx`
+   - `onCancelFlowChange?: (active: boolean) => void` prop 추가
+   - `useEffect`로 `cancelStep > 0` 변경 감지 → 콜백 호출
+   - 이전 회의 29의 `paddingBottom: calc(128px + safe-area)` → 불필요하므로 `calc(24px + safe-area)` 로 축소 (탭바 숨김 시 128px 공백 방지)
+2. `MyProfileTab.tsx`
+   - `onCancelFlowChange` prop 추가 → `SubscriptionScreen`에 통과
+3. `src/app/app/page.tsx`
+   - `cancelFlowActive` state 신설
+   - `<MyProfileTab onCancelFlowChange={setCancelFlowActive} />`로 콜백 전달
+   - `BottomTabs` 조건부 렌더: `!cancelFlowActive`일 때만
+
+**데이터 흐름:**
+```
+cancelStep 0→1 (사용자 취소 버튼 클릭)
+  ↓ useEffect
+onCancelFlowChange(true)
+  ↓
+MyProfileTab 통과
+  ↓
+page.tsx setCancelFlowActive(true)
+  ↓
+BottomTabs 렌더 조건 false → 탭바 숨김
+```
+
+**Dark pattern 회피 체크 (평가자):**
+- ✅ 취소/유지 버튼 동등 크기
+- ✅ 2단계 플로우 (합리적)
+- ✅ 뒤로가기 `<` 상단 유지
+- ✅ 숨겨진 요금 없음
+- ✅ EU DSA / 한국 공정위 다크패턴 가이드라인 안전
+
+**향후 고려 (Phase 2 — 다음 스프린트):**
+- "나중에 결정할게요" 부가 CTA (MD 제안)
+- 뒤로가기 아이콘 강화 (회의 30에서 대표가 불필요 판정)
+
+---
+
 ### 회의 27: Gemini 코치 시스템 전수 감사 — 데이터 오염 원인 발견 + 원칙 수립
 **참석:** 대표, 기획자, 프론트엔드 개발자, 백엔드 개발자, 디자이너, 현지화 전문가, 프롬프트 전문가, 평가자
 **일자:** 2026-04-06

@@ -105,6 +105,8 @@ export default function Home() {
 
   const locale = typeof window !== "undefined" ? (localStorage.getItem("alpha_language") || "ko") : "ko";
   const [activeTab, setActiveTab] = useState<TabId>("home");
+  // 회의 30: 구독 취소 플로우 활성 시 탭바 숨김 (유저 집중 + 리텐션)
+  const [cancelFlowActive, setCancelFlowActive] = useState(false);
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [autoEdit1RM, setAutoEdit1RM] = useState(false);
 
@@ -594,7 +596,7 @@ export default function Home() {
       default:
         // My 탭
         if (activeTab === "my") {
-          return <MyProfileTab user={user} onLogout={handleLogout} autoEdit1RM={autoEdit1RM} key={autoEdit1RM ? "edit1rm" : "normal"} />;
+          return <MyProfileTab user={user} onLogout={handleLogout} autoEdit1RM={autoEdit1RM} onCancelFlowChange={setCancelFlowActive} key={autoEdit1RM ? "edit1rm" : "normal"} />;
         }
 
         // If workout is already done, show report or proof (홈탭에서만)
@@ -715,7 +717,7 @@ export default function Home() {
           />
         )}
 
-        {view !== "login" && view !== "workout_session" && (
+        {view !== "login" && view !== "workout_session" && !cancelFlowActive && (
           <div className="absolute bottom-0 left-0 right-0 z-40">
             <BottomTabs active={activeTab} onChange={(id) => {
               if (!isLoggedIn && (id === "proof" || id === "my")) {

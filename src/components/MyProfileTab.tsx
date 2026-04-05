@@ -15,6 +15,8 @@ interface MyProfileTabProps {
   onLogout: () => void;
   onShowPrediction?: () => void;
   autoEdit1RM?: boolean;
+  /** 회의 30: 구독 취소 플로우 활성 상태를 page.tsx로 전달 (탭바 숨김용) */
+  onCancelFlowChange?: (active: boolean) => void;
 }
 
 // 영어 약관/개인정보 요약 (모달용)
@@ -184,7 +186,7 @@ Phone: 010-4824-2869
 Supplementary Provisions
 This Refund Policy shall be effective from March 1, 2026.`;
 
-export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM }) => {
+export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM, onCancelFlowChange }) => {
   const { t, locale, setLocale } = useTranslation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -364,7 +366,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
   };
 
   if (showSubscription && user) {
-    return <SubscriptionScreen user={user} onClose={() => setShowSubscription(false)} initialStatus={subStatus === "loading" ? undefined : subStatus} />;
+    return <SubscriptionScreen user={user} onClose={() => setShowSubscription(false)} initialStatus={subStatus === "loading" ? undefined : subStatus} onCancelFlowChange={onCancelFlowChange} />;
   }
 
   return (

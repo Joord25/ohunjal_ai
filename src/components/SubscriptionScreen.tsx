@@ -44,6 +44,8 @@ interface SubscriptionScreenProps {
   user: User;
   onClose: () => void;
   initialStatus?: "free" | "active" | "cancelled";
+  /** 회의 30: 취소 플로우 진입/이탈 알림 — 부모가 탭바 숨김/표시 결정 */
+  onCancelFlowChange?: (active: boolean) => void;
 }
 
 const FUNCTIONS_BASE = "/api";
@@ -370,7 +372,7 @@ export const REFUND_TEXT = `제1조(목적)
 부칙
 본 환불정책은 2026년 3월 1일부터 시행합니다.`;
 
-export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, onClose, initialStatus }) => {
+export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, onClose, initialStatus, onCancelFlowChange }) => {
   const { t, locale } = useTranslation();
   const [status, setStatus] = useState<"loading" | "free" | "active" | "cancelled">(initialStatus || "loading");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -381,6 +383,11 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   const [showSubDetail, setShowSubDetail] = useState(false);
   const [payments, setPayments] = useState<Array<{ paymentId: string; amount: number; plan: string; status: string; paidAt: string; periodStart: string; periodEnd: string }>>([]);
   const [cancelStep, setCancelStep] = useState<0 | 1 | 2>(0); // 0=hidden, 1=reason, 2=confirm
+
+  // 회의 30: 취소 플로우 활성화 시 부모(page.tsx)에 알려서 탭바 숨김
+  useEffect(() => {
+    onCancelFlowChange?.(cancelStep > 0);
+  }, [cancelStep, onCancelFlowChange]);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [cancelReasonText, setCancelReasonText] = useState("");
   const [confirmInput, setConfirmInput] = useState("");
@@ -867,10 +874,10 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       )}
 
       {/* Cancel Flow Overlay */}
-      {/* 회의 29: 하단 탭바(HOME/PROOF/MY) 높이 128px 확보 — 결제내역 뷰와 동일 패턴.
-          이게 없으면 '취소 계속 진행' 버튼이 탭바 뒤로 숨음 */}
+      {/* 회의 30: 진입 시 onCancelFlowChange(true)로 부모(page.tsx) 탭바 숨김 →
+          탭바 높이 padding 불필요. 세이프 에리어만 확보. */}
       {cancelStep > 0 && (
-        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(128px + var(--safe-area-bottom, 0px))" }}>
+        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(24px + var(--safe-area-bottom, 0px))" }}>
           {/* Header */}
           <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0">
             <button onClick={() => setCancelStep(0)} className="p-2 -ml-2">
