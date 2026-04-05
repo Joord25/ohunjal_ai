@@ -283,28 +283,15 @@ export default function Home() {
   }, [view]);
 
   const handleExitConfirm = useCallback(() => {
-    // 회의 32: PWA 나가기 버튼 무반응 버그 수정
-    // 원인: window.close()는 Android PWA에서 동작 안 함 (스크립트로 연 창만 닫힘).
-    //      history.go(-2)도 PWA 스택이 짧으면 효과 없음.
-    // 수정: exitingRef를 먼저 true로 세팅 → popstate 핸들러가 재-push를 건너뛰도록 하고
-    //      history.back() 한 번만 호출. 이러면 이전 가드 state가 pop되고 PWA는 자연 종료.
+
     exitingRef.current = true;
     guardPushedRef.current = false;
     setShowExitConfirm(false);
 
-    // 1차 시도: 일반 back. popstate 핸들러가 exitingRef=true 보고 re-push 안 함 → 자연 종료
-    window.history.back();
-
-    // 2차 폴백 (iOS Safari PWA / 일부 기기): 일정 시간 후에도 페이지가 살아있으면
-    // 루트 로그인 화면으로 강제 이동 — 유저가 홈 버튼으로 종료하기 쉽게
+    window.history.back();      
     setTimeout(() => {
-      if (exitingRef.current) {
-        // 여전히 앱 안 → back이 안 먹었음. 유저에게 혼란 주지 않도록 상태만 초기화
-        exitingRef.current = false;
-        // 홈 화면으로 복귀 (명시적 "나가기 안 됐어요" UX)
-        setView("home");
-      }
-    }, 300);
+      window.history.back();    
+    }, 50);
   }, []);
 
   const handleExitCancel = useCallback(() => {
