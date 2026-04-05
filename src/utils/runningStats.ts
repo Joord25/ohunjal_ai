@@ -65,8 +65,20 @@ export function accumulateDistance(points: GpsPoint[]): number {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// 페이스 sanity 상수 (회의 42 후속 — GPS drift 방어)
+// - MIN_WINDOW_DIST_M: 5초 윈도우에서 최소 이동 거리 미만이면 "정지"로 판단, null 반환
+//   (GPS drift는 정지 상태에서도 2-3m 움직임을 낼 수 있어 3m로 설정)
+// - MAX_PACE_SEC_PER_KM: 20:00 /km 넘으면 러닝 범위 벗어남, null 반환 (걷기도 안 됨)
+// - MIN_PACE_SEC_PER_KM: 2:00 /km 미만은 세계 최고 기록급, GPS 오측정으로 판단
+// ─────────────────────────────────────────────────────────────────
+const MIN_WINDOW_DIST_M = 3;
+const MAX_PACE_SEC_PER_KM = 20 * 60;    // 20:00
+const MIN_PACE_SEC_PER_KM = 2 * 60;     // 2:00
+
+// ─────────────────────────────────────────────────────────────────
 // 현재 페이스 (sec/km) — 최근 windowSec 구간의 이동평균
 // 러닝 코치 권고: raw speed는 튐, 5초 이동평균 권장
+// 회의 42: drift 방어 — 최소 거리 3m + 20:00 /km 상한
 // ─────────────────────────────────────────────────────────────────
 export function computeCurrentPace(
   points: GpsPoint[],
@@ -75,22 +87,31 @@ export function computeCurrentPace(
   if (points.length < 2) return null;
   const now = points[points.length - 1].t;
   const cutoff = now - windowSec * 1000;
-  // cutoff 이후의 포인트만
   const recent = points.filter(p => p.t >= cutoff);
   if (recent.length < 2) return null;
   const dist = accumulateDistance(recent);
   const durSec = (recent[recent.length - 1].t - recent[0].t) / 1000;
-  if (dist <= 0 || durSec <= 0) return null;
-  // sec/km = duration / (dist/1000)
-  return durSec / (dist / 1000);
+  if (durSec <= 0) return null;
+  // 최소 이동 거리 가드 (정지 상태 GPS drift 방어)
+  if (dist < MIN_WINDOW_DIST_M) return null;
+  const pace = durSec / (dist / 1000);
+  // 페이스 범위 sanity
+  if (pace > MAX_PACE_SEC_PER_KM) return null;
+  if (pace < MIN_PACE_SEC_PER_KM) return null;
+  return pace;
 }
 
 // ─────────────────────────────────────────────────────────────────
-// 평균 페이스 (sec/km)
+// 평균 페이스 (sec/km) — 동일한 sanity cap 적용
 // ─────────────────────────────────────────────────────────────────
 export function computeAvgPace(distanceM: number, durationSec: number): number | null {
   if (distanceM <= 0 || durationSec <= 0) return null;
-  return durationSec / (distanceM / 1000);
+  // 최소 총 거리 가드 — 50m 미만은 러닝으로 판단 불가
+  if (distanceM < 50) return null;
+  const pace = durationSec / (distanceM / 1000);
+  if (pace > MAX_PACE_SEC_PER_KM) return null;
+  if (pace < MIN_PACE_SEC_PER_KM) return null;
+  return pace;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -120,7 +141,12 @@ export function computeIntervalRounds(
     if (inRange.length < 2) continue;
     const dist = accumulateDistance(inRange);
     const durSec = (inRange[inRange.length - 1].t - inRange[0].t) / 1000;
-    const pace = dist > 0 && durSec > 0 ? durSec / (dist / 1000) : null;
+    // 회의 42: 구간 페이스도 sanity — 최소 5m 이동 + 범위 가드
+    let pace: number | null = null;
+    if (dist >= 5 && durSec > 0) {
+      const raw = durSec / (dist / 1000);
+      if (raw >= MIN_PACE_SEC_PER_KM && raw <= MAX_PACE_SEC_PER_KM) pace = raw;
+    }
 
     const existing = rounds.get(seg.round) ?? {
       round: seg.round,

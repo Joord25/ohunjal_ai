@@ -197,6 +197,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         savedDurationSec={selectedHistory.stats?.totalDurationSec}
         initialAnalysis={selectedHistory.analysis}
         savedCoachMessages={selectedHistory.coachMessages}
+        runningStats={selectedHistory.runningStats}
         onClose={() => setView(reportReturnView)}
         onDelete={() => {
           const updated = history.filter(h => h.id !== selectedHistory.id);
