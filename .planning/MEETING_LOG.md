@@ -884,3 +884,113 @@ IDE `noUnusedLocals` 경고로 발견. JA/ZH 파일에 `COMPACT_FEATURES` 상수
 1. 채팅 기능 (ai/chat.ts, 5턴 제한 + 역할 제한)
 2. 기상청 API 연동 (공공데이터포털 키 신청)
 3. 콜드스타트 모니터링
+
+---
+
+### 회의 38: 인터벌 타이머 Wall-clock 리라이트
+**참석:** 대표, 기획자, 프엔 개발자, 평가자
+**일자:** 2026-04-06
+
+**버그:** FitScreen 러닝 인터벌에서 "처음 2분만 작동하고 다음부터 1초마다 바로 끝나는" 증상 재현. 회의 36(v2 refs 기반) + 회의 36 v3(useMemo 안정화) 두 차례 수정에도 불구 잔존.
+
+**근본 원인:** `timeRef.current -= 1` 틱 기반 감산. setInterval 드리프트 + 백그라운드 스로틀 + 렌더 타이밍이 복합 작용하여 페이즈 전환이 불규칙적으로 빨라짐.
+
+**해결:** Wall-clock 기반 전면 재작성 (`Date.now() - phaseStartMsRef`). 매 틱마다 경과시간 재계산 → 드리프트 수학적으로 불가능.
+
+**주요 변경 (src/components/FitScreen.tsx 490~595):**
+- 삭제: `timeRef`, `halfFiredInPhaseRef`
+- 추가: `phaseStartMsRef`, `pausedAtMsRef`, `midpointFiredRef`, `lastTickSecondRef`
+- 틱 주기: 1000ms → 250ms (UI 부드러움)
+- Pause/resume: cleanup 시 `pausedAtMsRef = Date.now()`, 재개 시 `phaseStartMsRef += now - pausedAt`로 shift
+- Midpoint 알림: `remainingInt <= floor(phaseTotal/2)` 조건으로 페이즈당 1회
+- Tick 사운드: `lastTickSecondRef`로 같은 초 중복 발사 방지
+
+**검증:** 15개 체크리스트 (페이즈 전환, 중간 알림, pause/resume, 백그라운드 복귀, 3타입 색상/라벨). 실기기 대표 확인 필요.
+
+---
+
+### 회의 39: 러닝 세션 공유카드 차별화 (초기 논의)
+**참석:** 대표, 기획자, UX 디자이너, 러닝 코치, 프엔/백엔 개발자, 평가자, 데이터 담당
+**일자:** 2026-04-06
+
+**배경:** 현재 ShareCard는 웨이트 전용으로 설계됨. 러닝 세션 진입 시 EXERCISES 필터가 `type === "strength"`만 통과해 목록 비어있고, `isStrength=false`로 Volume 표시 안 됨. PR 감지도 `weightUsed` 기반이라 러닝에 해당 없음.
+
+**제안된 3 Plan:**
+- Plan A: 러닝 전용 2카드 신설 (Summary + Weekly)
+- Plan B: A + 타입별 색상 차별화
+- Plan C: 최소 수정
+
+→ Plan A 채택, 회의 40/41에서 구체화.
+
+---
+
+### 회의 40: GPS 도입 결정 + Strava 스타일 UI 방향
+**참석:** 대표, 기획자, UX 디자이너, 러닝 코치, 브랜드, 프엔 개발자
+**일자:** 2026-04-06
+
+**대표 핵심 결정 3가지:**
+1. **GPS 도입** — 우리 앱은 인터벌 러닝 중심이라 어차피 화면 보고 뛰어야 함. PWA 백그라운드 GPS 제약이 애초에 해당사항 없음. `navigator.geolocation.watchPosition` + Wake Lock으로 Strava급 정확도 가능.
+2. **지도 전면 제거** — "지도는 빼고 해도 될거같은데". Mapbox 라이브러리/토큰/Static API 불필요. html2canvas CORS 이슈 소멸. Firestore `gpsTrack` 저장도 불필요.
+3. **Strava 스타일 UI** — 레이아웃/타이포/정보 밀도만 차용, 브랜드 컬러는 emerald 유지 (오렌지 금지).
+
+**ShareCard 러닝 최종 레퍼런스:** 사용자 제공 Strava 이미지 (세로 3스탯 Distance/Pace/Time + 하단 로고). 기존 ShareCard 구조에서 벗어나지 않고 내용만 교체.
+
+**기술 스택 확정:**
+- GPS: `navigator.geolocation.watchPosition` (샘플 3초)
+- Wake Lock: `navigator.wakeLock.request("screen")`
+- 페이스 스무딩: 5초 이동평균
+- 거리 계산: Haversine 자체 구현
+- 저장: summary 숫자만 (gpsTrack X)
+
+---
+
+### 회의 41: 러닝 전용 인터페이스 종합 설계 락인
+**참석:** 대표, 기획자(진행), UX 디자이너, 러닝 코치, 재활의학 교수, 브랜드, 프엔/백엔 개발자, 평가자, 현지화
+**일자:** 2026-04-06
+
+**목적:** 러닝 관련 모든 화면/로직/데이터 구조를 **구현 착수 전** 완전 확정. 대표 컨펌 후에만 코드 작업.
+
+**대표 최종 지시 (확정):**
+1. **ShareCard 러닝** — 기존 ShareCard UI에서 많이 벗어나지 않게 통일성 있게. 내용만 Strava 이미지 스타일 (세로 3스탯: Distance 5.01km / Pace 6:27/km / Time 32m 22s) + 하단 오운잘 로고.
+2. **WorkoutReport 러닝** — 기존 웨이트 레이아웃과 비슷하게, **단 AI 코치 챗은 무조건 최상단 배치**. 나머지는 그 아래에 히어로 스탯 + 스플릿 + 인터벌 분해 + 주간.
+3. **FitScreen 러닝** — 지도 미니뷰 제거. 하단 재생/완료 버튼은 기존 웨이트 FitScreen과 완전 동일. 공간이 남으면 NEXT 프리뷰 + 라운드 도트로 채움.
+4. **GPS 권한** — 바텀시트 대신 툴팁형 중앙 팝업 모달.
+5. **지도 제거** 확정. Mapbox 관련 작업 전면 스킵.
+
+**전문가 의견 요약:**
+- UX 디자이너: 카드 외곽은 `bg-white rounded-3xl border border-gray-100 shadow-sm` 전부 재사용, 내용만 분기. 신규 시각 언어 0개.
+- 러닝 코치: NEXT 프리뷰 강력 지지, 인터벌 모드에서 페이스는 페이즈 전환 시 리셋, 스플릿은 인터벌 모드에서 km 대신 라운드 단위가 의미 있음.
+- 재활의학 교수: 스프린트/파틀렉 완료 후 AI 코치 버블 3에 "48시간 회복" 하드 제약 필수. 실시간 경고 UI 금지 (리포트 회고만).
+- 브랜드: emerald 고정, Strava 오렌지 `#FC4C02` 금지, "⚡" 표시는 lucide Zap 아이콘으로 (이모지 금지).
+- 데이터: Firestore `runningStats` 필드에 summary만 저장 (< 2KB). `gpsTrack` 저장 안 함.
+- 현지화: 30개 신규 키 × 2언어 일괄 추가 필수 (feedback_i18n_always).
+
+**평가자 독립 체크리스트 3종:**
+- 체크리스트 A (UI 통일성): rounded 값, 색상, 폰트 스케일, BrandFooter 일관
+- 체크리스트 B (기능/엣지케이스): 권한 거부, 실내, 첫 러닝, GPS 끊김, pause
+- 체크리스트 C (릴리즈 준비도): functions 배포, i18n diff, PROMPT_HISTORY.md, MEETING_LOG
+
+**시뮬 E2E 결과 — 발견된 결함 4개:**
+1. 권한 팝업 이중 모달 → [허용] 누르면 모달 먼저 닫고 1 tick 후 `getCurrentPosition`
+2. GPS lock-on과 시작 버튼 충돌 → 독립 동작, 미잡혀도 시작 가능
+3. Hero 3분할 페이스 라벨 혼란 → 평균 전체가 아닌 **전력 평균** 사용, 라벨 명시
+4. pause 장기화 시 GPS 배터리 낭비 → M-B 이후 결정
+
+**작업 마일스톤:**
+- M-A: functions 회의 36/37 배포 + ShareCard 러닝 기초 레이아웃 (GPS 없이도 동작)
+- M-B: GPS 스파이크 (`useGpsTracker` 훅 + Haversine 거리/페이스)
+- M-C: (삭제 — Mapbox 불필요)
+- M-D: `RunningReportBody` + `StrengthReportBody` 분리, AI 코치 최상단
+- M-E: 러닝 프롬프트 v1 + fallback
+- M-F: (삭제 — Mapbox Static 불필요)
+- M-G: 실내 모드 토글
+- M-H: 러닝 타입 가이드 문구 (MasterPlanPreview 하단)
+- M-I: GPS 권한 중앙 팝업 모달
+
+**대표 최종 컨펌 "진행합시다!" — 2026-04-06**
+ShareCard 러닝 레이아웃 확정 + 전체 Plan 승인. M-A 즉시 착수.
+
+**재발 방지:**
+- 이모지 검수: PR 전 grep 필수 (feedback_no_emoji)
+- i18n 동시 커밋 (feedback_i18n_always)
+- 기존 디자인 언어 강제 재사용 (rounded-3xl 카드)

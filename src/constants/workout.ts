@@ -55,6 +55,34 @@ export interface WorkoutAnalysis {
   nextSessionAdvice: string;
 }
 
+// ====================================================================
+// Running Session Stats (회의 41: GPS 기반 러닝, 지도 없이 숫자만 저장)
+// ====================================================================
+
+export type RunningType = "walkrun" | "tempo" | "fartlek" | "sprint";
+
+export interface IntervalRoundRecord {
+  round: number;
+  sprintPace: number | null;      // sec/km (실내/권한거부 시 null)
+  recoveryPace: number | null;
+  sprintDurationSec: number;
+  recoveryDurationSec: number;
+}
+
+export interface RunningStats {
+  runningType: RunningType;
+  isIndoor: boolean;
+  gpsAvailable: boolean;
+  distance: number;                // meters (실내 또는 권한거부 시 0)
+  duration: number;                // seconds
+  avgPace: number | null;          // sec/km — 전체 평균
+  sprintAvgPace: number | null;    // sec/km — 전력 구간만 평균 (Hero 스탯용)
+  recoveryAvgPace: number | null;
+  bestPace: number | null;         // sec/km — 가장 빠른 구간 페이스
+  intervalRounds: IntervalRoundRecord[];
+  completionRate: number;          // 0~1
+}
+
 export interface WorkoutHistory {
   id: string;
   date: string;
@@ -73,6 +101,7 @@ export interface WorkoutHistory {
   exerciseTimings?: ExerciseTiming[];
   analysis?: WorkoutAnalysis;
   coachMessages?: string[];
+  runningStats?: RunningStats;     // 회의 41: 러닝 세션만 설정
 }
 
 export interface UserCondition {

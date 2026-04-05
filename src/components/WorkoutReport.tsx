@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory } from "@/constants/workout";
+import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, RunningStats } from "@/constants/workout";
+import { RunningReportBody } from "@/components/report/RunningReportBody";
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages } from "@/utils/workoutHistory";
@@ -170,6 +171,7 @@ async function fetchCoachMessages(
   condition?: { bodyPart: string; energyLevel: number },
   sessionDesc?: string,
   streak?: number,
+  runningStats?: RunningStats,
 ): Promise<string[]> {
   try {
     const user = auth.currentUser;
@@ -207,6 +209,7 @@ async function fetchCoachMessages(
         condition,
         sessionDesc: translateDesc(sessionDesc || "", locale),
         streak,
+        runningStats,  // 회의 41: 러닝 세션 전용 프롬프트 분기용
       }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -230,7 +233,7 @@ interface RpgInsight {
   volumeCompare?: string;  // 4. vs 지난 세션 비교
 }
 
-function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress, onShowPrediction, skipAnimation, insight, sessionDesc, hero, timeContext, streak, nextWorkoutName, logs, exercises, condition, savedCoachMessages, onCoachMessagesLoaded }: {
+function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seasonExp, prevSeasonExp, expGained, intensityLevel, formatDuration, onHelpPress, onShowPrediction, skipAnimation, insight, sessionDesc, hero, timeContext, streak, nextWorkoutName, logs, exercises, condition, savedCoachMessages, onCoachMessagesLoaded, runningStats }: {
   totalDurationSec: number; totalSets?: number; totalVolume: number; successRate: number;
   isStrengthSession: boolean; seasonExp: number; prevSeasonExp: number; expGained: ExpLogEntry[];
   intensityLevel: "high" | "moderate" | "low";
@@ -240,6 +243,7 @@ function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seaso
   logs: Record<number, ExerciseLog[]>; exercises: WorkoutSessionData["exercises"];
   condition?: { bodyPart: string; energyLevel: number };
   savedCoachMessages?: string[]; onCoachMessagesLoaded?: (msgs: string[]) => void;
+  runningStats?: RunningStats;
 }) {
   const { t, locale } = useTranslation();
   const current = getTierFromExp(seasonExp);
@@ -267,7 +271,7 @@ function RpgResultCard({ totalDurationSec, totalVolume, isStrengthSession, seaso
       return;
     }
     // 서버에서 Gemini 3버블 가져오기
-    fetchCoachMessages(hero, locale, logs, exercises, condition, sessionDesc, streak).then(msgs => {
+    fetchCoachMessages(hero, locale, logs, exercises, condition, sessionDesc, streak, runningStats).then(msgs => {
       setCoachMessages(msgs);
       setIsThinking(false);
       // 저장 콜백 — 히스토리에 기록
@@ -485,6 +489,7 @@ interface WorkoutReportProps {
   precomputedExpGained?: ExpLogEntry[];
   precomputedPrevExp?: number;
   savedCoachMessages?: string[];
+  runningStats?: RunningStats;  // 회의 41: 러닝 세션 전용
 }
 
 // Sync load of recent history from localStorage (initial render), then async update from Firestore
@@ -524,6 +529,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   precomputedExpGained,
   precomputedPrevExp,
   savedCoachMessages: propCoachMessages,
+  runningStats,
 }) => {
   const analysis = initialAnalysis;
   const [showLogs, setShowLogs] = useState(false);
@@ -874,10 +880,17 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                   if (latest) updateCoachMessages(latest.id, msgs);
                 } catch {}
               }}
+              runningStats={runningStats}
             />
           );
         })()}
 
+        {/* === 러닝 세션 전용 본문 (회의 41) === */}
+        {runningStats && (
+          <div className="mb-5">
+            <RunningReportBody runningStats={runningStats} recentHistory={recentHistory} />
+          </div>
+        )}
 
         {/* === 운동 과학 데이터 (펼쳐보기, 웨이트만) === */}
         {isStrengthSession && (
@@ -1109,9 +1122,17 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("report.card.sessionType")}</p>
                 </div>
-                <p className="text-2xl font-black text-[#1B4332] leading-none">
-                  {sessionCategory === "cardio" ? "🏃" : "🧘"}
-                </p>
+                <div className="text-[#1B4332]">
+                  {sessionCategory === "cardio" ? (
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  )}
+                </div>
                 <p className="text-[9px] text-gray-400 mt-1.5 font-medium">
                   {sessionCategory === "cardio" ? t("report.card.cardioType") : t("report.card.mobilityType")}
                 </p>
@@ -1591,6 +1612,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           bodyWeightKg={bodyWeightKg}
           sessionDate={sessionDate}
           recentHistory={recentHistory}
+          runningStats={runningStats}
           onClose={() => { setShowShare(false); if (closeAfterShare) { setCloseAfterShare(false); onClose(); } }}
         />
       )}

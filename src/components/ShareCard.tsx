@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory } from "@/constants/workout";
+import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { WorkoutMetrics } from "@/utils/workoutMetrics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
+import { formatPace, formatRunDistanceKm, formatRunDuration, detectRunningType, getRunningTypeShareLabel } from "@/utils/runningFormat";
 
 interface ShareCardProps {
   sessionData: WorkoutSessionData;
@@ -14,6 +15,7 @@ interface ShareCardProps {
   bodyWeightKg?: number; // kept for interface compatibility
   sessionDate?: string;
   recentHistory?: WorkoutHistory[];
+  runningStats?: RunningStats;  // 회의 41: 러닝 세션 전용
   onClose: () => void;
 }
 
@@ -61,9 +63,10 @@ export const ShareCard: React.FC<ShareCardProps> = ({
   metrics,
   sessionDate,
   recentHistory = [],
+  runningStats,
   onClose,
 }) => {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const [currentCard, setCurrentCard] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const [mode, setMode] = useState<"transparent" | "filled">("transparent");
@@ -74,6 +77,38 @@ export const ShareCard: React.FC<ShareCardProps> = ({
 
   const { totalVolume, allE1RMs, totalDurationSec, sessionCategory } = metrics;
   const isStrength = sessionCategory === "strength" || sessionCategory === "mixed";
+
+  // 회의 41: 러닝 세션 감지 및 공유카드 분기 데이터 (runningStats는 prop으로 수신)
+  const runningType = detectRunningType(sessionData.exercises);
+  const isRunning = runningType !== null;
+  // recentHistory에서 이번 주(월~일) 러닝 집계 (카드 2 Weekly용)
+  const weeklyRunning = (() => {
+    if (!isRunning) return null;
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7; // 월=0 ... 일=6
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(now.getDate() - dow);
+    let runs = 0;
+    let totalDistance = 0;
+    let totalDuration = 0;
+    for (const h of recentHistory) {
+      if (!h.runningStats) continue;
+      const d = new Date(h.date);
+      if (d >= monday) {
+        runs += 1;
+        totalDistance += h.runningStats.distance;
+        totalDuration += h.runningStats.duration;
+      }
+    }
+    // 오늘 세션도 포함 (히스토리에 아직 반영 전일 수 있음)
+    if (runningStats) {
+      runs += 1;
+      totalDistance += runningStats.distance;
+      totalDuration += runningStats.duration;
+    }
+    return { runs, totalDistance, totalDuration };
+  })();
 
   const formatDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
@@ -210,7 +245,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
           }}
         >
           {/* ===== Card 1: Summary ===== */}
-          {currentCard === 0 && (
+          {currentCard === 0 && !isRunning && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center", textAlign: "center", width: "100%" }}>
               {/* Training Type */}
               <div>
@@ -267,8 +302,108 @@ export const ShareCard: React.FC<ShareCardProps> = ({
             </div>
           )}
 
+          {/* ===== Card 1: Running Summary (회의 41, Strava 세로 3스탯) ===== */}
+          {currentCard === 0 && isRunning && runningType && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", textAlign: "center", width: "100%" }}>
+              {/* 날짜 — 기존 위치/스타일 유지 */}
+              <div>
+                <p style={{ color: labelColor, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em" }}>
+                  {dateStr}
+                </p>
+              </div>
+
+              {/* 러닝 타입 라벨 — 기존 EXERCISES 위치에 한 줄 */}
+              <div>
+                <p style={{ color: "white", fontSize: 14, fontWeight: 800, letterSpacing: "0.15em", textShadow: shadow }}>
+                  {runningStats?.isIndoor ? t("share.running.indoor").toUpperCase() : getRunningTypeShareLabel(runningType, locale)}
+                </p>
+              </div>
+
+              {/* Strava 스타일 세로 3스탯: Distance / Pace / Time */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 18, alignItems: "center" }}>
+                {/* Distance */}
+                <div>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4 }}>
+                    {t("share.running.distance")}
+                  </p>
+                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                    {formatRunDistanceKm(runningStats?.distance)}
+                    <span style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", marginLeft: 4, fontWeight: 700 }}>{t("share.running.unitKm")}</span>
+                  </p>
+                </div>
+
+                {/* Pace */}
+                <div>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4 }}>
+                    {t("share.running.pace")}
+                  </p>
+                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                    {formatPace(runningStats?.sprintAvgPace ?? runningStats?.avgPace)}
+                    <span style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", marginLeft: 4, fontWeight: 700 }}>{t("share.running.unitPerKm")}</span>
+                  </p>
+                </div>
+
+                {/* Time */}
+                <div>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4 }}>
+                    {t("share.running.time")}
+                  </p>
+                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                    {formatRunDuration(runningStats?.duration ?? totalDurationSec)}
+                  </p>
+                </div>
+              </div>
+
+              <BrandFooter />
+            </div>
+          )}
+
           {/* ===== Card 2: PR 달성 or 노력 요약 ===== */}
-          {currentCard === 1 && (() => {
+          {currentCard === 1 && isRunning && weeklyRunning && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 28, alignItems: "center", width: "100%" }}>
+              <p style={{ color: labelColor, fontSize: 11, fontWeight: 800, letterSpacing: "0.15em" }}>
+                {t("share.running.weekly.title")}
+              </p>
+
+              {/* Runs */}
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                  {t("share.running.weekly.runs")}
+                </p>
+                <p style={{ color: "white", fontSize: 44, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                  {weeklyRunning.runs}
+                </p>
+              </div>
+
+              {/* Total Time */}
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                  {t("share.running.weekly.totalTime")}
+                </p>
+                <p style={{ color: "white", fontSize: 36, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                  {formatRunDuration(weeklyRunning.totalDuration)}
+                </p>
+              </div>
+
+              {/* Total Distance (실내 누적 제외 — distance > 0만) */}
+              {weeklyRunning.totalDistance > 0 && (
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                    {t("share.running.weekly.totalDistance")}
+                  </p>
+                  <p style={{ color: "white", fontSize: 36, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                    {formatRunDistanceKm(weeklyRunning.totalDistance)}
+                    <span style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginLeft: 4, fontWeight: 700 }}>{t("share.running.unitKm")}</span>
+                  </p>
+                </div>
+              )}
+
+              <BrandFooter />
+            </div>
+          )}
+
+          {/* ===== Card 2: PR 달성 or 노력 요약 (웨이트) ===== */}
+          {currentCard === 1 && !isRunning && (() => {
             const totalSetsCount = mainExercises.reduce((sum, ex) => sum + ex.sets, 0);
 
             if (hasPR) {

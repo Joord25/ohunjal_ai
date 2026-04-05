@@ -30,6 +30,7 @@ export const getCoachMessage = onRequest(
       condition,
       sessionDesc,
       streak,
+      runningStats,
     } = req.body as {
       heroType: string;
       exerciseName?: string;
@@ -39,7 +40,29 @@ export const getCoachMessage = onRequest(
       condition?: { bodyPart: string; energyLevel: number };
       sessionDesc?: string;
       streak?: number;
+      // 회의 41: 러닝 세션 전용 분기 데이터
+      runningStats?: {
+        runningType: "walkrun" | "tempo" | "fartlek" | "sprint";
+        isIndoor: boolean;
+        gpsAvailable: boolean;
+        distance: number;          // meters
+        duration: number;          // seconds
+        avgPace: number | null;    // sec/km
+        sprintAvgPace: number | null;
+        recoveryAvgPace: number | null;
+        bestPace: number | null;
+        intervalRounds: Array<{
+          round: number;
+          sprintPace: number | null;
+          recoveryPace: number | null;
+          sprintDurationSec: number;
+          recoveryDurationSec: number;
+        }>;
+        completionRate: number;
+      };
     };
+
+    const isRunning = !!runningStats;
 
     if (!heroType) {
       res.status(400).json({ error: "Missing heroType" });
@@ -109,8 +132,75 @@ export const getCoachMessage = onRequest(
       return base;
     })();
 
+    // ── 회의 41: 러닝 포맷 헬퍼 (페이스 "4:32", 거리 "2.43") ──
+    function formatPaceForPrompt(secPerKm: number | null | undefined): string {
+      if (secPerKm == null || !isFinite(secPerKm) || secPerKm <= 0) return isKo ? "기록 없음" : "no data";
+      const m = Math.floor(secPerKm / 60);
+      const s = Math.round(secPerKm % 60);
+      return `${m}:${String(s).padStart(2, "0")}`;
+    }
+    function formatRunDistanceForPrompt(meters: number): string {
+      if (meters <= 0) return "—";
+      return (meters / 1000).toFixed(2);
+    }
+    function formatRunDurationForPrompt(totalSec: number): string {
+      const m = Math.floor(totalSec / 60);
+      const s = Math.floor(totalSec % 60);
+      return `${m}m ${s}s`;
+    }
+
+    // ── 회의 41: 러닝 전용 룰베이스 폴백 (Gemini 실패 시) ──
+    function buildRunningFallback(): string[] {
+      if (!runningStats) return [];
+      const typeLabelKo: Record<string, string> = {
+        walkrun: "워크런", tempo: "템포런", fartlek: "변속주", sprint: "스프린트 인터벌",
+      };
+      const typeLabelEn: Record<string, string> = {
+        walkrun: "walk-run", tempo: "tempo run", fartlek: "fartlek", sprint: "sprint interval",
+      };
+      const typeLabel = isKo ? typeLabelKo[runningStats.runningType] : typeLabelEn[runningStats.runningType];
+      const rounds = runningStats.intervalRounds.length;
+      const completed = runningStats.completionRate >= 1;
+      const isHighIntensity = runningStats.runningType === "sprint" || runningStats.runningType === "fartlek";
+
+      const b1 = isKo
+        ? (completed
+            ? `오늘 ${typeLabel} 끝까지 달렸네요! 진짜 대단해요ㅎㅎ`
+            : `오늘 ${typeLabel} 여기까지도 충분해요ㅠㅠ 다음엔 더 가봐요`)
+        : (completed
+            ? `You crushed the ${typeLabel} all the way! So proud!`
+            : `Getting through the ${typeLabel} this far is already solid. Let's push further next time!`);
+
+      let b2: string;
+      if (runningStats.isIndoor || runningStats.distance <= 0) {
+        b2 = isKo
+          ? `${rounds > 0 ? `${rounds}라운드 ` : ""}총 ${formatRunDurationForPrompt(runningStats.duration)} 기록했어요`
+          : `${rounds > 0 ? `${rounds} rounds, ` : ""}total ${formatRunDurationForPrompt(runningStats.duration)} logged`;
+      } else if (runningStats.sprintAvgPace != null) {
+        b2 = isKo
+          ? `전력 평균 ${formatPaceForPrompt(runningStats.sprintAvgPace)} 페이스로 ${formatRunDistanceForPrompt(runningStats.distance)}km 달렸어요!`
+          : `Sprint avg ${formatPaceForPrompt(runningStats.sprintAvgPace)} pace over ${formatRunDistanceForPrompt(runningStats.distance)}km!`;
+      } else {
+        b2 = isKo
+          ? `평균 페이스 ${formatPaceForPrompt(runningStats.avgPace)}, 총 ${formatRunDistanceForPrompt(runningStats.distance)}km 기록했어요`
+          : `Avg pace ${formatPaceForPrompt(runningStats.avgPace)}, total ${formatRunDistanceForPrompt(runningStats.distance)}km`;
+      }
+
+      const b3 = isKo
+        ? (isHighIntensity
+            ? `오늘 고강도라 내일은 가볍게 쉬거나 조깅이 좋아요. 48시간은 회복 시간 주세요!`
+            : `이 감각 그대로 내일도 이어가 봐요ㅎㅎ`)
+        : (isHighIntensity
+            ? `High intensity today — rest or light jog tomorrow. Give your body 48h to recover!`
+            : `Carry this feeling into tomorrow too!`);
+
+      return [b1, b2, b3];
+    }
+
     // ── 룰베이스 폴백 생성 (Gemini 실패 시 사용) ──
     function buildFallbackMessages(): string[] {
+      // 회의 41: 러닝 세션은 전용 폴백
+      if (runningStats) return buildRunningFallback();
       const name = logAnalysis.mainExercise || (isKo ? "운동" : "workout");
       const desc = sessionDesc || "";
 
@@ -303,7 +393,7 @@ export const getCoachMessage = onRequest(
 - Feel free to reference seasonal vibes or everyday moments naturally
 
 ## Hard rules (do NOT break)
-- NO emojis (🔥💪 etc.) — use plain text exclamation instead
+- NO emojis at all (no unicode emoji, no pictographs) — use plain text exclamation instead
 - NO medical/sports-science jargon ("lactate threshold", "muscle fibers" etc.)
 - NO formal phrases ("You did a great job, sir.")
 - NO overly-casual slang or rudeness
@@ -369,7 +459,7 @@ Respond ONLY in this JSON format, in ENGLISH:
 - 한국에서 최근 유행하는 디저트, 음식, 문화 트렌드를 자연스럽게 언급해도 좋아요 (잘 모르겠으면 무난하게)
 
 ## 절대 하지 마 (울타리)
-- 이모지 사용 금지 (💪🔥 등. 단 한글 이모티콘 ㅎㅎ ㅠㅠ 는 OK)
+- 이모지 전면 금지 (유니코드 이모지/픽토그래프 일체 불가. 단 한글 이모티콘 ㅎㅎ ㅠㅠ 는 OK)
 - 영어 단어 금지 (운동명 포함 전부 한글)
 - "화이팅" 금지 (진부함)
 - 의학/운동과학 용어 금지 ("근섬유", "젖산 역치" 등)
@@ -428,13 +518,136 @@ ${logSummary}
 반드시 아래 JSON 형식으로만 응답하세요:
 {"messages":["1번째 메시지","2번째 메시지","3번째 메시지"]}` : promptEn;
 
+      // ── 회의 41: 러닝 세션 전용 프롬프트 (v1) — 웨이트 프롬프트 전체 오버라이드 ──
+      let finalPrompt = prompt;
+      if (isRunning && runningStats) {
+        const typeLabelKo: Record<string, string> = {
+          walkrun: "워크런", tempo: "템포런", fartlek: "변속주(파틀렉)", sprint: "스프린트 인터벌",
+        };
+        const typeLabelEn: Record<string, string> = {
+          walkrun: "walk-run", tempo: "tempo run", fartlek: "fartlek", sprint: "sprint interval",
+        };
+        const runTypeLabel = isKo ? typeLabelKo[runningStats.runningType] : typeLabelEn[runningStats.runningType];
+        const isHighIntensity = runningStats.runningType === "sprint" || runningStats.runningType === "fartlek";
+        const roundsSummary = runningStats.intervalRounds.length > 0
+          ? runningStats.intervalRounds.map(r =>
+              isKo
+                ? `R${r.round}: 전력 ${formatPaceForPrompt(r.sprintPace)} / 회복 ${formatPaceForPrompt(r.recoveryPace)}`
+                : `R${r.round}: sprint ${formatPaceForPrompt(r.sprintPace)} / rec ${formatPaceForPrompt(r.recoveryPace)}`
+            ).join(", ")
+          : (isKo ? "라운드 데이터 없음" : "No round data");
+
+        const indoorNote = runningStats.isIndoor
+          ? (isKo ? "- 실내 모드 (거리/페이스 측정 없음 — 라운드/시간만 언급)" : "- Indoor mode (no distance/pace — only rounds/time)")
+          : "";
+        const gpsDeniedNote = !runningStats.gpsAvailable && !runningStats.isIndoor
+          ? (isKo ? "- GPS 권한 없음 (거리/페이스 언급 금지)" : "- GPS denied (do not mention distance/pace)")
+          : "";
+
+        finalPrompt = isKo ? `당신은 10년차 러닝 코치이자 친한 트레이너입니다. 방금 러닝 세션을 끝낸 유저에게 카톡하듯 자연스럽게 피드백합니다.
+
+## 톤
+- 편한 존댓말 (해요체), 느낌표 자주!
+- "ㅎㅎ", "ㅠㅠ", "완전 굿!", "진짜", "캬!" 같은 구어체/한글 이모티콘 자연스럽게
+- 러너 용어 허용: LSD, 템포, 인터벌, 스플릿, 라운드
+- 트레이너가 회원한테 카톡 보내는 느낌으로
+
+## 절대 하지 마 (울타리)
+- 이모지 전면 금지 (유니코드 이모지/픽토그래프 일체 불가. 한글 이모티콘 ㅎㅎ ㅠㅠ 는 OK)
+- 영어 단어 금지 (km, min/km 단위만 예외)
+- "화이팅" 금지 → "잘했어요", "대단해요"로
+- 의학 용어 금지 (심박수, 젖산, 무릎, 발목 등)
+- 격식체 금지 ("하셨습니다", "수고하셨습니다")
+- 반말 금지 ("잘했어", "대박이야")
+- 부정적 피드백 금지 ("못했네요", "아쉬웠어요")
+- 체중/외모 언급 금지
+- 3줄 넘는 긴 버블 금지 (2~3문장, 60자 내외)
+- 페이스는 반드시 "4:32" 포맷 (분:초). "4분 32초" 풀어쓰기 금지.
+- 거리는 "2.43km" 포맷. "킬로미터" 풀어쓰기 금지.
+- **데이터에 없는 숫자 생성 절대 금지**
+- 3개 버블 전체에서 같은 숫자 중복 금지
+
+## 메시지 구조 (반드시 3개)
+1번째: 감정 공감 + 완주 칭찬. 러닝 타입 한 번 언급.
+2번째: 세션 데이터에서 가장 인상적인 지표 한 가지. 전력/회복 격차, 페이스 변화, 라운드 패턴 중 하나.${runningStats.isIndoor ? " (실내 모드: 거리/페이스 언급 금지, 라운드/시간 중심)" : ""}
+3번째: 내일 컨디션 조언. ${isHighIntensity ? "**스프린트/파틀렉은 고강도이므로 반드시 48시간 회복 권고**" : "이 감각 이어가는 톤"}.
+
+## 좋은 예시
+예시1 (스프린트 인터벌):
+  "오늘 스프린트 인터벌 6라운드 끝까지 달렸네요ㅎㅎ 진짜 다 쏟아부었구나 싶어요!"
+  "전력 평균 4:08인데 회복 평균 6:25로 격차가 잘 벌어져서 훈련 의도대로 갔어요!"
+  "오늘 고강도니까 내일은 가볍게 조깅이나 쉬는 게 좋아요. 48시간은 회복 시간 주세요!"
+
+예시2 (워크런):
+  "워크런 8라운드 천천히 잘 풀어냈어요! 이게 진짜 시작이에요ㅎㅎ"
+  "평균 6:40 페이스로 2.4km 달렸는데 몸 깨우는 날로 딱이었어요"
+  "이 감각 내일도 이어가 봐요! 꾸준함이 정답이에요"
+
+## 세션 데이터
+- 러닝 타입: ${runTypeLabel}
+- 총 거리: ${runningStats.isIndoor ? "실내" : formatRunDistanceForPrompt(runningStats.distance) + "km"}
+- 총 시간: ${formatRunDurationForPrompt(runningStats.duration)}
+- 평균 페이스: ${runningStats.isIndoor ? "—" : formatPaceForPrompt(runningStats.avgPace)}
+- 전력 평균 페이스: ${formatPaceForPrompt(runningStats.sprintAvgPace)}
+- 회복 평균 페이스: ${formatPaceForPrompt(runningStats.recoveryAvgPace)}
+- 최고 페이스: ${formatPaceForPrompt(runningStats.bestPace)}
+- 완주율: ${Math.round(runningStats.completionRate * 100)}%
+- 라운드별: ${roundsSummary}
+- ${conditionText}
+- 시간대: ${timeOfDay}${weatherContext}
+${indoorNote}
+${gpsDeniedNote}
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{"messages":["1번째 메시지","2번째 메시지","3번째 메시지"]}` : `You are a 10-year running coach and close trainer. The user just finished a running session. Text them like a friend who trains with them.
+
+## Tone
+- Casual-polite, lots of exclamation marks!
+- Natural fillers: "haha", "wow", "seriously"
+- Runner terms OK: LSD, tempo, interval, splits, rounds
+
+## Don'ts
+- No emojis at all (no unicode emoji, no pictographs)
+- No "fighting" — use "great job", "amazing"
+- No medical terms (heart rate, lactate, knees, ankles)
+- No negative feedback ("you failed", "not great")
+- No body weight/appearance mentions
+- Pace format MUST be "4:32" (m:ss). No "4 min 32 sec" spelled out.
+- Distance format "2.43km". No "kilometers" spelled out.
+- **Never fabricate numbers not in the data**
+- No duplicate numbers across the 3 bubbles
+- Max 60 chars per bubble, 2-3 sentences
+
+## Structure (3 bubbles)
+1st: Emotional empathy + finish congrats. Mention running type once.
+2nd: One standout data point (sprint/recovery gap, pace variance, or round pattern).${runningStats.isIndoor ? " (Indoor mode: no distance/pace mentions, focus on rounds/time)" : ""}
+3rd: Tomorrow advice. ${isHighIntensity ? "**Sprint/fartlek is high intensity — MUST recommend 48h recovery**" : "Carry the feeling forward tone"}.
+
+## Session Data
+- Running type: ${runTypeLabel}
+- Total distance: ${runningStats.isIndoor ? "indoor" : formatRunDistanceForPrompt(runningStats.distance) + "km"}
+- Total time: ${formatRunDurationForPrompt(runningStats.duration)}
+- Avg pace: ${runningStats.isIndoor ? "—" : formatPaceForPrompt(runningStats.avgPace)}
+- Sprint avg pace: ${formatPaceForPrompt(runningStats.sprintAvgPace)}
+- Recovery avg pace: ${formatPaceForPrompt(runningStats.recoveryAvgPace)}
+- Best pace: ${formatPaceForPrompt(runningStats.bestPace)}
+- Completion: ${Math.round(runningStats.completionRate * 100)}%
+- Rounds: ${roundsSummary}
+- Time of day: ${timeOfDay}${weatherContext}
+${indoorNote}
+${gpsDeniedNote}
+
+Respond ONLY in this JSON format, in ENGLISH:
+{"messages":["1st","2nd","3rd"]}`;
+      }
+
       // 5초 타임아웃
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: prompt,
+        contents: finalPrompt,
         config: {
           responseMimeType: "application/json",
           temperature: 0.9,

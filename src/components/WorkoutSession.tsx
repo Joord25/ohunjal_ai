@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
+import type { RunningStats } from "@/constants/workout";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -15,7 +16,12 @@ const MUSCLE_GROUP_EN: Record<string, string> = {
 
 interface WorkoutSessionProps {
   sessionData: WorkoutSessionData;
-  onComplete: (completedSessionData: WorkoutSessionData, logs: Record<number, ExerciseLog[]>, timing: { totalDurationSec: number; exerciseTimings: ExerciseTiming[] }) => void;
+  onComplete: (
+    completedSessionData: WorkoutSessionData,
+    logs: Record<number, ExerciseLog[]>,
+    timing: { totalDurationSec: number; exerciseTimings: ExerciseTiming[] },
+    runningStats?: RunningStats,  // 회의 41: 러닝 세션 전용
+  ) => void;
   onBack: () => void;
 }
 
@@ -35,6 +41,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const [isResting, setIsResting] = useState(false);
   const [restTimer, setRestTimer] = useState(60);
   const [logs, setLogs] = useState<Record<number, ExerciseLog[]>>({});
+  // 회의 41: 러닝 인터벌 완주 시 FitScreen에서 산출되는 runningStats 저장
+  const runningStatsRef = useRef<RunningStats | null>(null);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [addSearch, setAddSearch] = useState("");
   const [pendingExercise, setPendingExercise] = useState<string | null>(null);
@@ -207,10 +215,15 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const handleFinishWorkout = () => {
     const now = Date.now();
     const totalDurationSec = Math.round((now - sessionStartRef.current) / 1000);
-    onComplete({ ...sessionData, exercises }, logs, {
-      totalDurationSec,
-      exerciseTimings: timingsRef.current,
-    });
+    onComplete(
+      { ...sessionData, exercises },
+      logs,
+      {
+        totalDurationSec,
+        exerciseTimings: timingsRef.current,
+      },
+      runningStatsRef.current ?? undefined,
+    );
   };
 
   const handleSelectExercise = (exerciseName: string) => {
@@ -442,6 +455,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         onAddSet={currentExercise.type === "strength" || currentExercise.type === "core" ? handleAddSet : undefined}
         nextExerciseName={currentExerciseIndex < totalExercises - 1 ? exercises[currentExerciseIndex + 1].name : undefined}
         lastSessionRecord={lastSessionRecord}
+        onRunningStatsComputed={(stats) => { runningStatsRef.current = stats; }}
       />
     </div>
   );

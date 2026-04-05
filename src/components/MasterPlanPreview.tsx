@@ -496,6 +496,12 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-2">
             {translateDescription(sessionData.description, locale)}
           </p>
+          {/* 회의 41 M-H: 러닝 타입 가이드 한 줄 (러닝 코치 권고) */}
+          {isRunningSession && currentRunningVariant && (
+            <p className="text-[13px] font-semibold text-[#1B4332]/80 leading-relaxed mb-2">
+              {t(`running.guide.${currentRunningVariant}`)}
+            </p>
+          )}
           {/* 경험 메시지 — 목표 × 부위 매트릭스 (i18n) */}
           <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed">
             {(() => {

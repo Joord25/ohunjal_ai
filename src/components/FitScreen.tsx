@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { THEME } from "@/constants/theme";
-import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
+import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS, RunningStats, RunningType } from "@/constants/workout";
 import { AiCoachChat } from "@/components/AiCoachChat";
 import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName, translateWeightGuide } from "@/utils/exerciseName";
+import { useGpsTracker } from "@/hooks/useGpsTracker";
+import { formatPace, formatRunDistanceKm } from "@/utils/runningFormat";
+import { GpsPermissionDialog } from "@/components/running/GpsPermissionDialog";
+import { computeRunningStats } from "@/utils/runningStats";
 
 const MUSCLE_GROUP_EN: Record<string, string> = {
   "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
@@ -45,6 +49,8 @@ interface FitScreenProps {
     hadEasy: boolean;
     date: string;
   } | null;
+  // 회의 41: 러닝 인터벌 완주 시 runningStats 산출 콜백
+  onRunningStatsComputed?: (stats: RunningStats) => void;
 }
 
 export const FitScreen: React.FC<FitScreenProps> = ({
@@ -62,6 +68,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   onAddSet,
   nextExerciseName,
   lastSessionRecord,
+  onRunningStatsComputed,
 }) => {
   const { t, locale } = useTranslation();
   const [showSwapMenu, setShowSwapMenu] = useState(false);
@@ -470,6 +477,50 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   }, [exercise.count]);
   const isIntervalMode = intervalConfig !== null;
 
+  // 회의 41: GPS 권한 팝업 & 실내 모드 (M-G에서 외부 토글 도입 예정, 현재 기본 실외)
+  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
+  const [gpsPermissionAsked, setGpsPermissionAsked] = useState(false);
+  const [isIndoor] = useState(false);
+
+  // 인터벌 모드 첫 진입 시 권한 미결정이면 팝업 표시 (세션 1회)
+  useEffect(() => {
+    if (!isIntervalMode) return;
+    if (gpsPermissionAsked) return;
+    if (isIndoor) return;
+    const asked = typeof window !== "undefined" && window.localStorage?.getItem("ohunjal_gps_asked");
+    if (asked === "1") {
+      setGpsPermissionAsked(true);
+      return;
+    }
+    setPermissionDialogOpen(true);
+  }, [isIntervalMode, gpsPermissionAsked, isIndoor]);
+
+  const handleGpsAllow = () => {
+    try { window.localStorage?.setItem("ohunjal_gps_asked", "1"); } catch {}
+    setGpsPermissionAsked(true);
+    setPermissionDialogOpen(false);
+  };
+  const handleGpsLater = () => {
+    try { window.localStorage?.setItem("ohunjal_gps_asked", "1"); } catch {}
+    setGpsPermissionAsked(true);
+    setPermissionDialogOpen(false);
+  };
+
+  // 회의 41: GPS 추적 훅 — 인터벌 러닝 실행 중에만 활성
+  // gpsPermissionAsked=false일 때는 enabled=false로 대기 (권한 다이얼로그 해제 전까지 watchPosition 호출 방지)
+  const gpsTrackerEnabled = isIntervalMode && !isIndoor && gpsPermissionAsked;
+  const {
+    status: gpsStatus,
+    distance: gpsDistance,
+    currentPace: gpsPace,
+    markPhase: gpsMarkPhase,
+    getSnapshot: gpsGetSnapshot,
+    gpsAvailable: gpsIsAvailable,
+  } = useGpsTracker({
+    enabled: gpsTrackerEnabled,
+    isIndoor,
+  });
+
   // 회의 36: 타입별 색상 매핑 (회의 36 v3: useMemo 안정화)
   const intervalColors = useMemo(() => {
     if (!intervalConfig) return null;
@@ -492,79 +543,144 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [intervalPhase, setIntervalPhase] = useState<"sprint" | "recovery">("sprint");
   const [intervalTime, setIntervalTime] = useState(intervalConfig?.phase1Sec ?? 0);
 
-  // 회의 36 v2: 인터벌 타이머 refs 기반 (nested state update 제거)
-  // 이전 버전: setIntervalTime 안에서 setIntervalPhase, 그 안에서 다시 setIntervalTime 호출
-  //           → React 19 Strict Mode 이중 invocation으로 페이즈 1초 플립 버그
-  // 신버전: refs로 실제 상태 관리, state는 렌더링 용도만 동기화
+  // 회의 38: 인터벌 타이머 Wall-clock 기반 (Date.now() 타임스탬프)
+  // 이전 버전(v2): timeRef -= 1 틱 감산 → setInterval 드리프트 + 백그라운드 스로틀 + 렌더 타이밍으로 느려짐/빨라짐 발생
+  // 신버전(v3): 각 틱마다 (Date.now() - phaseStartMs)로 경과시간 재계산 → 드리프트 불가능, 백그라운드 복귀 시 자동 보정
   const phaseRef = useRef<"sprint" | "recovery">("sprint");
-  const timeRef = useRef(0);
   const roundRef = useRef(1);
-  // 회의 36 v3: 각 페이즈 중간 알림 (Option B) — 페이즈당 1회만 발사
-  const halfFiredInPhaseRef = useRef(false);
+  const phaseStartMsRef = useRef<number>(0);
+  const pausedAtMsRef = useRef<number>(0);
+  const midpointFiredRef = useRef(false);
+  const lastTickSecondRef = useRef<number>(-1);
+  // 회의 41: 인터벌 세션 전체 경과시간 (3분할 스탯 Time 표시용)
+  const sessionStartMsRef = useRef<number>(0);
+  const [intervalElapsedSec, setIntervalElapsedSec] = useState(0);
 
-  // state 초기화 시 refs도 함께 세팅
+  // exercise 변경 / config 변경 시 전체 리셋
   useEffect(() => {
     phaseRef.current = "sprint";
-    timeRef.current = intervalConfig?.phase1Sec ?? 0;
     roundRef.current = 1;
-    halfFiredInPhaseRef.current = false;
-  }, [intervalConfig?.phase1Sec, intervalConfig?.rounds]);
+    phaseStartMsRef.current = 0;
+    pausedAtMsRef.current = 0;
+    midpointFiredRef.current = false;
+    lastTickSecondRef.current = -1;
+    sessionStartMsRef.current = 0;
+    setIntervalPhase("sprint");
+    setIntervalRound(1);
+    setIntervalTime(intervalConfig?.phase1Sec ?? 0);
+    setIntervalElapsedSec(0);
+  }, [intervalConfig?.phase1Sec, intervalConfig?.phase2Sec, intervalConfig?.rounds]);
 
   useEffect(() => {
     if (!isPlaying || !isIntervalMode || !intervalConfig) return;
-    const cfg = intervalConfig; // 클로저에 안정적으로 캡처
+    const cfg = intervalConfig;
+    const now = Date.now();
+
+    // 최초 시작 또는 pause 후 재개
+    if (phaseStartMsRef.current === 0) {
+      phaseStartMsRef.current = now;
+      sessionStartMsRef.current = now;
+    } else if (pausedAtMsRef.current > 0) {
+      // 일시정지 지속 시간만큼 phaseStart + sessionStart 앞으로 shift (경과시간 유지)
+      const pauseDelta = now - pausedAtMsRef.current;
+      phaseStartMsRef.current += pauseDelta;
+      sessionStartMsRef.current += pauseDelta;
+      pausedAtMsRef.current = 0;
+    }
+
     const iv = setInterval(() => {
-      timeRef.current -= 1;
-      const t = timeRef.current;
+      const nowTick = Date.now();
+      const phaseTotal = phaseRef.current === "sprint" ? cfg.phase1Sec : cfg.phase2Sec;
+      const elapsedSec = (nowTick - phaseStartMsRef.current) / 1000;
+      const remainingFloat = phaseTotal - elapsedSec;
+      const remainingInt = Math.max(0, Math.ceil(remainingFloat));
 
-      if (t > 0 && t <= 3) playAlarmSound("tick");
-
-      // 회의 36 v3: 현재 페이즈 중간 지점 알림 (Option B)
-      const currentPhaseTotal = phaseRef.current === "sprint" ? cfg.phase1Sec : cfg.phase2Sec;
-      const midpoint = Math.floor(currentPhaseTotal / 2);
-      if (t === midpoint && midpoint > 0 && !halfFiredInPhaseRef.current) {
-        halfFiredInPhaseRef.current = true;
-        playAlarmSound("half");
-        if (navigator.vibrate) navigator.vibrate(150);
+      // UI 동기화
+      setIntervalTime(remainingInt);
+      // 회의 41: 세션 전체 경과시간 갱신 (3분할 Time 표시용)
+      if (sessionStartMsRef.current > 0) {
+        setIntervalElapsedSec(Math.max(0, Math.floor((nowTick - sessionStartMsRef.current) / 1000)));
       }
 
-      if (t <= 0) {
-        // 페이즈 전환
-        halfFiredInPhaseRef.current = false; // 다음 페이즈 중간 알림 재장전
+      // 페이즈 전환
+      if (remainingFloat <= 0) {
+        midpointFiredRef.current = false;
+        lastTickSecondRef.current = -1;
+
         if (phaseRef.current === "sprint") {
-          // sprint → recovery
           phaseRef.current = "recovery";
-          timeRef.current = cfg.phase2Sec;
+          phaseStartMsRef.current = nowTick;
           playAlarmSound("rest_end");
           if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
           setIntervalPhase("recovery");
           setIntervalTime(cfg.phase2Sec);
+          // 회의 41: GPS 페이즈 전환 마크 (리포트 인터벌 분해용)
+          gpsMarkPhase("recovery", roundRef.current);
         } else {
-          // recovery 완료 → 다음 라운드 또는 종료
           if (roundRef.current >= cfg.rounds) {
-            clearInterval(iv);
             setIsPlaying(false);
             setTimerCompleted(true);
             playAlarmSound("end");
             if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+            // 회의 41: 인터벌 러닝 완주 시 runningStats 산출 + 콜백
+            if (onRunningStatsComputed) {
+              const snap = gpsGetSnapshot();
+              const runningType: RunningType =
+                cfg.type === "walkrun" ? "walkrun"
+                : cfg.type === "fartlek" ? "fartlek"
+                : "sprint";
+              const stats = computeRunningStats({
+                runningType,
+                isIndoor,
+                gpsAvailable: gpsIsAvailable,
+                points: snap.points,
+                phaseMarks: snap.phaseMarks,
+                sessionStartMs: snap.sessionStartMs || nowTick,
+                sessionEndMs: nowTick,
+                completedRounds: cfg.rounds,
+                totalRounds: cfg.rounds,
+              });
+              onRunningStatsComputed(stats);
+            }
             return;
           }
           roundRef.current += 1;
           phaseRef.current = "sprint";
-          timeRef.current = cfg.phase1Sec;
+          phaseStartMsRef.current = nowTick;
           playAlarmSound("start");
           if (navigator.vibrate) navigator.vibrate(100);
           setIntervalRound(roundRef.current);
           setIntervalPhase("sprint");
           setIntervalTime(cfg.phase1Sec);
+          // 회의 41: GPS 페이즈 전환 마크
+          gpsMarkPhase("sprint", roundRef.current);
         }
-      } else {
-        // 정상 카운트다운 — state 동기화
-        setIntervalTime(t);
+        return;
       }
-    }, 1000);
-    return () => clearInterval(iv);
-  }, [isPlaying, isIntervalMode, intervalConfig]);
+
+      // 중간 지점 알림 (페이즈당 1회)
+      const midpoint = Math.floor(phaseTotal / 2);
+      if (!midpointFiredRef.current && midpoint > 0 && remainingInt <= midpoint) {
+        midpointFiredRef.current = true;
+        playAlarmSound("half");
+        if (navigator.vibrate) navigator.vibrate(150);
+      }
+
+      // 카운트다운 tick (3, 2, 1초) — 같은 초에 중복 발사 방지
+      if (remainingInt > 0 && remainingInt <= 3 && remainingInt !== lastTickSecondRef.current) {
+        lastTickSecondRef.current = remainingInt;
+        playAlarmSound("tick");
+      }
+    }, 250);
+
+    return () => {
+      clearInterval(iv);
+      // cleanup이 isPlaying=false로 트리거된 경우 pause 시점 기록
+      if (!pausedAtMsRef.current) {
+        pausedAtMsRef.current = Date.now();
+      }
+    };
+  }, [isPlaying, isIntervalMode, intervalConfig, gpsMarkPhase, gpsGetSnapshot, gpsIsAvailable, isIndoor, onRunningStatsComputed]);
 
   // Normal Timer Logic
   useEffect(() => {
@@ -634,14 +750,16 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     setTimerCompleted(false);
     halfAlarmFired.current = false;
     if (isIntervalMode && intervalConfig) {
-        // 회의 36 v2/v3: state + refs 동시 초기화
+        // 회의 38: wall-clock 기반 — state + refs 동시 초기화
         setIntervalRound(1);
         setIntervalPhase("sprint");
         setIntervalTime(intervalConfig.phase1Sec);
         phaseRef.current = "sprint";
-        timeRef.current = intervalConfig.phase1Sec;
         roundRef.current = 1;
-        halfFiredInPhaseRef.current = false;
+        phaseStartMsRef.current = 0;
+        pausedAtMsRef.current = 0;
+        midpointFiredRef.current = false;
+        lastTickSecondRef.current = -1;
         setElapsedTime(0);
     } else if (isTimerMode) {
         if (isDistanceMode) {
@@ -1219,9 +1337,27 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     )}
                   </div>
                 ) : isIntervalMode && intervalConfig && intervalColors ? (
-                  <div className="flex flex-col items-center">
-                    {/* 라운드 표시 */}
-                    <p className="text-xs font-bold text-gray-400 tracking-wider mb-3">
+                  <div className="flex flex-col items-center w-full">
+                    {/* 회의 41: 라운드 도트 프로그레스 */}
+                    <div className="flex items-center gap-1.5 mb-3">
+                      {Array.from({ length: intervalConfig.rounds }).map((_, i) => {
+                        const isDone = i < intervalRound - 1;
+                        const isCurrent = i === intervalRound - 1;
+                        return (
+                          <span
+                            key={i}
+                            className={`rounded-full transition-all ${
+                              isCurrent
+                                ? "w-2.5 h-2.5 bg-[#2D6A4F]"
+                                : isDone
+                                  ? "w-1.5 h-1.5 bg-[#2D6A4F]"
+                                  : "w-1.5 h-1.5 bg-gray-200"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs font-bold text-gray-400 tracking-wider mb-2">
                       ROUND {intervalRound} / {intervalConfig.rounds}
                     </p>
                     {/* 현재 페이즈 (회의 36: 타입별 색상/라벨) */}
@@ -1244,6 +1380,64 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         ? t(`${intervalConfig.phase1Key}.guide`)
                         : t(`${intervalConfig.phase2Key}.guide`)}
                     </p>
+
+                    {/* 회의 41: NEXT 페이즈 프리뷰 */}
+                    <p className="text-[10px] font-bold text-gray-400 tracking-wider mt-3 uppercase">
+                      {t("running.phase.next")}
+                      {" · "}
+                      {intervalPhase === "sprint"
+                        ? `${t(intervalConfig.phase2Key)} ${intervalConfig.phase2Sec}s`
+                        : (intervalRound >= intervalConfig.rounds
+                            ? t("fit.complete")
+                            : `${t(intervalConfig.phase1Key)} ${intervalConfig.phase1Sec}s`)}
+                    </p>
+
+                    {/* 회의 41: 3분할 실시간 스탯 (Distance / Pace / Time) */}
+                    {!isIndoor && gpsPermissionAsked && (
+                      <div className="flex items-start justify-center gap-5 mt-5 w-full">
+                        <div className="flex flex-col items-center min-w-[60px]">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
+                            {t("running.stats.distance")}
+                          </p>
+                          <p className="text-xl font-black text-[#1B4332] leading-none tabular-nums">
+                            {formatRunDistanceKm(gpsDistance)}
+                          </p>
+                          <p className="text-[9px] font-bold text-gray-400 mt-0.5">km</p>
+                        </div>
+                        <div className="w-px h-10 bg-gray-200 mt-2" />
+                        <div className="flex flex-col items-center min-w-[60px]">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
+                            {t("running.stats.pace")}
+                          </p>
+                          <p className="text-xl font-black text-[#1B4332] leading-none tabular-nums">
+                            {formatPace(gpsPace)}
+                          </p>
+                          <p className="text-[9px] font-bold text-gray-400 mt-0.5">/km</p>
+                        </div>
+                        <div className="w-px h-10 bg-gray-200 mt-2" />
+                        <div className="flex flex-col items-center min-w-[60px]">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
+                            {t("running.stats.time")}
+                          </p>
+                          <p className="text-xl font-black text-[#1B4332] leading-none tabular-nums">
+                            {formatTime(intervalElapsedSec)}
+                          </p>
+                          <p className="text-[9px] font-bold text-gray-400 mt-0.5">elapsed</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* GPS 상태 표시 */}
+                    {!isIndoor && gpsPermissionAsked && gpsStatus === "searching" && (
+                      <p className="text-[10px] font-bold text-gray-400 mt-2">
+                        {t("running.gps.searching")}
+                      </p>
+                    )}
+                    {!isIndoor && gpsPermissionAsked && gpsStatus === "denied" && (
+                      <p className="text-[10px] font-bold text-gray-400 mt-2">
+                        {t("running.gps.denied")}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -1770,7 +1964,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                         <span className="font-bold text-base text-[#1B4332]">{t("fit.justRight")}</span>
                         <span className="text-[10px] font-bold tracking-wide text-[#2D6A4F]/70">{t("fit.justRightSub")}</span>
                       </div>
-                      <span className="text-xl">👌</span>
+                      <svg className="w-5 h-5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                     </div>
                   </button>
 
@@ -1806,6 +2002,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           </div>
         </div>
       )}
+
+      {/* 회의 41: GPS 권한 중앙 팝업 (인터벌 러닝 첫 진입 시 1회) */}
+      <GpsPermissionDialog
+        open={permissionDialogOpen}
+        onAllow={handleGpsAllow}
+        onLater={handleGpsLater}
+      />
     </div>
   );
 };

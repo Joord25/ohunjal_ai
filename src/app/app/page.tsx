@@ -10,7 +10,7 @@ import { WorkoutReport } from "@/components/WorkoutReport";
 import { WorkoutSession } from "@/components/WorkoutSession";
 import { ProofTab } from "@/components/ProofTab";
 import { MyProfileTab } from "@/components/MyProfileTab";
-import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, WorkoutHistory } from "@/constants/workout";
+import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { generateAIWorkoutPlan } from "@/utils/gemini";
 import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { saveWorkoutHistory, updateWorkoutAnalysis } from "@/utils/workoutHistory";
@@ -237,6 +237,7 @@ export default function Home() {
   const [currentSession, setCurrentSession] = useState<SessionSelection | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<Record<number, ExerciseLog[]>>({});
   const [workoutDurationSec, setWorkoutDurationSec] = useState<number | undefined>(undefined);
+  const [currentRunningStats, setCurrentRunningStats] = useState<RunningStats | null>(null);
   const [lastExpGained, setLastExpGained] = useState<ExpLogEntry[]>([]);
   const [lastPrevExp, setLastPrevExp] = useState<number>(0);
   const [recommendedIntensity, setRecommendedIntensity] = useState<"high" | "moderate" | "low" | null>(null);
@@ -628,11 +629,12 @@ export default function Home() {
         return (
           <WorkoutSession
             sessionData={currentWorkoutSession}
-            onComplete={(completedData, logs, timing) => {
+            onComplete={(completedData, logs, timing, runningStats) => {
               trackEvent("workout_complete", { session_number: getPlanCount(), duration_min: Math.round(timing.totalDurationSec / 60) });
               setCurrentWorkoutSession(completedData);
               setWorkoutLogs(logs);
               setWorkoutDurationSec(timing.totalDurationSec);
+              setCurrentRunningStats(runningStats ?? null);
               completeRitual("workout");
 
               // Calculate stats for history (pass actual elapsed time)
@@ -655,6 +657,7 @@ export default function Home() {
                   loadScore: wMetrics.loadScore,
                 },
                 exerciseTimings: timing.exerciseTimings,
+                ...(runningStats ? { runningStats } : {}),
               };
 
               saveWorkoutHistory(historyEntry);
@@ -686,6 +689,7 @@ export default function Home() {
             savedDurationSec={workoutDurationSec}
             precomputedExpGained={lastExpGained}
             precomputedPrevExp={lastPrevExp}
+            runningStats={currentRunningStats ?? undefined}
             onClose={() => {
               // 운동 완료 상태 해제 → HOME 복귀 시 리포트 재표시 방지
               const newCompleted = completedRitualIds.filter(id => id !== "workout");
