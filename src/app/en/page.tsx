@@ -25,7 +25,7 @@ const FEATURES = [
     pain: "I want to lose weight, but what exercises actually work?",
     title: "Weight Loss Workout Plans",
     desc: "Select your goal and AI builds a balanced routine\nwith the right mix of cardio and weights.\nAdapted to your daily condition\nso you stay consistent without burning out.",
-    video: "/hero.mp4",
+    video: "/weight-loss.mp4",
   },
   {
     pain: "A personal trainer costs $300 a month...",
@@ -38,13 +38,13 @@ const FEATURES = [
     pain: "Stop deciding what to do every single day",
     title: "AI builds your daily workout automatically",
     desc: "Upper body yesterday? Lower body today.\nFeeling tired? A lighter session.\nAI balances everything for you.\nZero time spent planning.",
-    video: "/is-it-right.mp4",
+    video: "/hero.mp4",
   },
   {
     pain: "Am I even doing this right on my own?",
     title: "AI coaching without a personal trainer",
     desc: "Every set is tracked automatically.\nAI recommends your next weight and reps.\nTrain as effectively as having a PT\nwithout the price tag.",
-    video: "/easy-to-use.mp4",
+    video: "/is-it-right.mp4",
   },
 ];
 
@@ -52,10 +52,12 @@ const COMPACT_FEATURES = [
   {
     title: "Build habits like a game",
     desc: "Complete quests, earn XP, and climb the tier ladder",
+    questCard: true,
   },
   {
     title: "AI predicts your progress",
     desc: "See projected weight loss, strength gains, and body changes",
+    video: "/predictmodel.mp4",
   },
 ];
 

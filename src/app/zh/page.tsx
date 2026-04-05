@@ -25,7 +25,7 @@ const FEATURES = [
     pain: "想减肥，但不知道该做什么运动...",
     title: "减脂专属训练计划",
     desc: "选择你的目标，AI自动搭配有氧和力量训练。\n每天根据身体状态自动调整，\n不勉强，不过度，\n轻松坚持下去。",
-    video: "/hero.mp4",
+    video: "/weight-loss.mp4",
   },
   {
     pain: "私教一个月要2000多块...",
@@ -38,13 +38,13 @@ const FEATURES = [
     pain: "每天想练什么太费脑了",
     title: "AI每天自动生成训练计划",
     desc: "昨天练了上半身？今天练下半身。\n状态不好？安排轻松训练。\nAI全自动平衡调整，\n不用花一秒钟想计划。",
-    video: "/is-it-right.mp4",
+    video: "/hero.mp4",
   },
   {
     pain: "自己练，真的练对了吗...",
     title: "没有私教也能科学训练",
     desc: "每组自动记录，\nAI推荐下一组重量和次数。\n像有私教一样系统训练，\n但不用付私教的钱。",
-    video: "/easy-to-use.mp4",
+    video: "/is-it-right.mp4",
   },
 ];
 
@@ -167,6 +167,17 @@ export default function ZhLandingPage() {
               <div className="flex items-center gap-1.5"><span>Backed by</span><img src="/google-cloud-logo.png" alt="Google Cloud" className="h-6 sm:h-8 inline-block" /></div>
               <span className="text-white/20">|</span>
               <div className="flex items-center gap-2"><span>Powered by</span><img src="/gemini_logo.png" alt="Gemini" className="h-8 sm:h-9 inline-block" /></div>
+            </div>
+          </RevealSection>
+
+          <RevealSection className="mt-14 sm:mt-20">
+            <div className="relative mx-auto w-[240px] sm:w-[320px]">
+              <div className="relative z-10 rounded-[40px] border-[6px] border-white/20 bg-black shadow-2xl overflow-hidden">
+                <video autoPlay loop muted playsInline className="w-full">
+                  <source src="/hero.mp4" type="video/mp4" />
+                </video>
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+              </div>
             </div>
           </RevealSection>
         </div>

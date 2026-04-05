@@ -2,6 +2,35 @@
 
 ---
 
+### 회의 19: 다국어 랜딩 영상 매핑 버그 수정
+**참석:** 대표, 기획자, 프론트엔드 개발자, 평가자
+**일자:** 2026-04-05
+
+**증상 1 — EN 소개 영상이 KO와 다름:**
+KO `LandingContent.tsx`와 `en/page.tsx` FEATURES 비교 결과 video 경로가 한 칸씩 밀려있음 + `/weight-loss.mp4` 누락. 다이어트 소개에 hero.mp4가 나오는 등 매핑 오류.
+
+**증상 2 — JA/ZH 히어로 섹션 영상 자체가 없음:**
+KO/EN 랜딩의 히어로 섹션에는 전화기 프레임 안에 `/hero.mp4` autoplay 비디오가 있는데 JA/ZH 히어로 섹션에는 `<video>` 태그 자체가 없음. JA/ZH를 EN 초기 버전에서 복제할 때 비디오 블록이 누락된 것으로 추정.
+
+**증상 3 (추가 발견) — JA/ZH에 COMPACT_FEATURES 섹션 미렌더:**
+IDE `noUnusedLocals` 경고로 발견. JA/ZH 파일에 `COMPACT_FEATURES` 상수는 선언돼 있고 번역 데이터도 들어있지만(ゲーム感覚で/像打游戏一样), 실제 JSX에서 `.map()`으로 렌더하는 블록이 없음. KO/EN에는 있는 "게임처럼 운동 / AI 성장 예측" 2칸 그리드가 JA/ZH에는 통째로 빠져있음.
+
+**수정 내용 (대표 지시 — A안, KO를 source of truth로 통일):**
+- EN/JA/ZH FEATURES video 경로 KO와 동일 순서로 통일
+  - [0] weight-loss.mp4 / [1] priceCard / [2] hero.mp4 / [3] is-it-right.mp4
+- EN COMPACT_FEATURES[0]에 `questCard: true`, [1]에 `video: "/predictmodel.mp4"` 추가 (KO 구조 일치)
+- JA/ZH 히어로 섹션에 `<video>` 블록 추가 (KO/EN과 동일 마크업, `/hero.mp4`)
+
+**미처리 (별도 보고):**
+- JA/ZH의 COMPACT_FEATURES 섹션 렌더링 자체가 빠진 건 사용자 지시 범위 밖으로 판단해 이번 작업에서는 수정하지 않음. 번역 데이터는 이미 존재하므로 다음 회의에서 렌더 블록 추가 여부 결정 필요.
+
+**재발 방지:**
+- 다국어 랜딩 파일은 KO → EN → JA → ZH 순으로 동일 구조 유지 원칙
+- 신규 섹션 추가 시 4개 파일 동시 작업 의무화
+- 로케일 파일 간 diff 체크를 릴리스 전 수동 검증
+
+---
+
 ### 회의 18: 주간 퀘스트 월 경계 처리 (Case 1 이어받기 / Case 2 축소)
 **참석:** 대표, 기획자, 프론트엔드 개발자, 평가자, 페르소나 유저 4명
 **일자:** 2026-04-05

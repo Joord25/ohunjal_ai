@@ -25,7 +25,7 @@ const FEATURES = [
     pain: "痩せたいけど、何をすればいいか分からない...",
     title: "ダイエットに最適なワークアウトプラン",
     desc: "目標を選ぶだけで、有酸素と筋トレの\nバランスをAIが自動で組みます。\n毎日のコンディションに合わせて調整\n無理なく続けられます。",
-    video: "/hero.mp4",
+    video: "/weight-loss.mp4",
   },
   {
     pain: "パーソナルトレーナーは月8万円...",
@@ -38,13 +38,13 @@ const FEATURES = [
     pain: "毎日メニューを考えるのが面倒",
     title: "AIが毎日のメニューを自動作成",
     desc: "昨日は上半身？今日は下半身。\n疲れている日は軽めに。\nAIが全て自動で調整します。\nメニューを考える時間はゼロ。",
-    video: "/is-it-right.mp4",
+    video: "/hero.mp4",
   },
   {
     pain: "一人でやって、本当に合ってるのかな...",
     title: "トレーナーなしでも安心のAIコーチング",
     desc: "セットごとに自動記録。\n次の重量とレップ数はAIが提案。\nパーソナルトレーニングのように\n体系的にトレーニングできます。",
-    video: "/easy-to-use.mp4",
+    video: "/is-it-right.mp4",
   },
 ];
 
@@ -167,6 +167,17 @@ export default function JaLandingPage() {
               <div className="flex items-center gap-1.5"><span>Backed by</span><img src="/google-cloud-logo.png" alt="Google Cloud" className="h-6 sm:h-8 inline-block" /></div>
               <span className="text-white/20">|</span>
               <div className="flex items-center gap-2"><span>Powered by</span><img src="/gemini_logo.png" alt="Gemini" className="h-8 sm:h-9 inline-block" /></div>
+            </div>
+          </RevealSection>
+
+          <RevealSection className="mt-14 sm:mt-20">
+            <div className="relative mx-auto w-[240px] sm:w-[320px]">
+              <div className="relative z-10 rounded-[40px] border-[6px] border-white/20 bg-black shadow-2xl overflow-hidden">
+                <video autoPlay loop muted playsInline className="w-full">
+                  <source src="/hero.mp4" type="video/mp4" />
+                </video>
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+              </div>
             </div>
           </RevealSection>
         </div>
