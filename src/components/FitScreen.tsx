@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { THEME } from "@/constants/theme";
 import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { AiCoachChat } from "@/components/AiCoachChat";
@@ -430,8 +430,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     phase1Key: string; // i18n key
     phase2Key: string;
   }
-  const intervalConfig: IntervalConfig | null = (() => {
-    // Walk-run pattern — 첫 페이즈가 걷기 (안전한 회복)
+  // 회의 36 v3: useMemo로 intervalConfig 안정화 — exercise.count 변경 시에만 재계산
+  // (이전: 매 렌더마다 새 객체 생성 → useEffect 의존성 변화 → timer teardown/rebuild 반복 → 타이머 느려짐)
+  const intervalConfig: IntervalConfig | null = useMemo(() => {
     const walkRun = exercise.count.match(/(\d+)초\s*걷기\s*\/?\s*(\d+)초\s*달리기\s*[×x]\s*(\d+)/i);
     if (walkRun) {
       return {
@@ -443,7 +444,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         phase2Key: "fit.interval.run",
       };
     }
-    // Fartlek pattern — 첫 페이즈가 전력, 둘째가 보통
     const fartlek = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*보통\s*[×x]\s*(\d+)/i);
     if (fartlek) {
       return {
@@ -455,7 +455,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         phase2Key: "fit.interval.base",
       };
     }
-    // Sprint pattern (기존) — "N초 전력 / M초 회복 × R"
     const sprint = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*회복\s*[×x]\s*(\d+)/i);
     if (sprint) {
       return {
@@ -468,11 +467,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       };
     }
     return null;
-  })();
+  }, [exercise.count]);
   const isIntervalMode = intervalConfig !== null;
 
-  // 회의 36: 타입별 색상 매핑
-  const intervalColors = intervalConfig ? (() => {
+  // 회의 36: 타입별 색상 매핑 (회의 36 v3: useMemo 안정화)
+  const intervalColors = useMemo(() => {
+    if (!intervalConfig) return null;
     if (intervalConfig.type === "walkrun") {
       return {
         phase1Bg: "bg-blue-100", phase1Text: "text-blue-600",
@@ -480,13 +480,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         phase1Timer: "text-blue-500", phase2Timer: "text-orange-600",
       };
     }
-    // sprint / fartlek 공통 (기존 색상)
     return {
       phase1Bg: "bg-red-100", phase1Text: "text-red-600",
       phase2Bg: "bg-emerald-100", phase2Text: "text-emerald-700",
       phase1Timer: "text-red-500", phase2Timer: "text-emerald-600",
     };
-  })() : null;
+  }, [intervalConfig]);
 
   // Interval timer state
   const [intervalRound, setIntervalRound] = useState(1);
