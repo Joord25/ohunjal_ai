@@ -476,25 +476,26 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             )}
           </div>
 
-          {/* Title */}
-          <h1 className="text-2xl font-black text-[#1B4332] leading-tight tracking-tight mb-2">
-            {t("plan.title")}
-          </h1>
+          {/* 회의 36 v2: 제목 + 러닝 타입 교체 버튼 (제목 옆 빈공간 활용) */}
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <h1 className="text-2xl font-black text-[#1B4332] leading-tight tracking-tight flex-1 min-w-0">
+              {t("plan.title")}
+            </h1>
+            {isRunningSession && currentRunningVariant && (
+              <button
+                onClick={() => setShowRunningSwap(true)}
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-[#2D6A4F] active:scale-95 transition-all mt-1"
+              >
+                <span>{t(`plan.running.${currentRunningVariant}.label`)}</span>
+                <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            )}
+          </div>
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-2">
             {translateDescription(sessionData.description, locale)}
           </p>
-          {/* 회의 36: 러닝 세션이면 타입 교체 버튼 */}
-          {isRunningSession && currentRunningVariant && (
-            <button
-              onClick={() => setShowRunningSwap(true)}
-              className="inline-flex items-center gap-1.5 mb-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-[#2D6A4F] active:scale-95 transition-all"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-              {t(`plan.running.${currentRunningVariant}.label`)} · {t("plan.running.changeType")}
-            </button>
-          )}
           {/* 경험 메시지 — 목표 × 부위 매트릭스 (i18n) */}
           <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed">
             {(() => {
