@@ -2,6 +2,65 @@
 
 ---
 
+### 회의 23: Science Data 2x2 카드 UI 깨짐 — EN 배지/팁 라벨 축약
+**참석:** 대표, 기획자, 프론트엔드 개발자, UX 디자이너, 현지화 전문가, 평가자
+**일자:** 2026-04-05
+
+**증상:** WorkoutReport 2x2 과학 데이터 카드에서 EN 라벨이 길어 배지 wrap 발생
+- LOAD STATUS "Low Volume" → 2줄
+- INTENSITY "Moderate"가 너무 넓어 "77% 1RM" 배지가 "77%" / "1RM" 세로 분리
+- FATIGUE "Recovery needed: 12h" 2줄
+
+**픽셀 계산 (phone 384px):** 카드 내부 가용 폭 ≈ 131px. "Moderate" text-2xl ≈ 110px + gap 6 + 배지 50 = 166 > 131 → wrap
+
+**3가지 옵션 평가자 시뮬 (100점):**
+| 기준 | 가중치 | A(축약) | B(flex-col) | C(혼합) |
+|---|---|---|---|---|
+| 정보 손실 없음 | 25 | 18 | 25 | 22 |
+| 가독성 | 25 | 23 | 22 | 23 |
+| KO/EN 일관성 | 15 | 14 | 12 | 14 |
+| 영어권 UX 관행 | 15 | 14 | 11 | 14 |
+| 3초 스캔성 | 10 | 10 | 8 | 9 |
+| 코드 변경 최소 | 5 | 5 | 2 | 3 |
+| JA/ZH 확장성 | 5 | 4 | 4 | 5 |
+| **총점** | 100 | **88** | 84 | **90** |
+
+**평가자 자기편향 체크:** C안이 90점 1위지만 flex-wrap은 wrap 발생 시 세로 불균형 리스크 → 실전에서 A보다 불안정. A안 채택 (88점).
+
+**현지화 전문가 근거:** Strong/Hevy/JEFIT/Fitbod 업계 표준 = 배지 1단어 원칙 (Max, Vol, RPE, High, Low, Rest).
+
+**수정 (en.json, 14건, KO 변경 없음):**
+
+배지 9건:
+- `report.load.deficit`: "Low Volume" → "Low"
+- `report.load.lowOptimal`: "Light Optimal" → "Light"
+- `report.load.highGrowth`: "High Growth" → "High+"
+- `report.load.growth`: "Growth Zone" → "Growth"
+- `report.load.overload`: "Overload" → "Over"
+- `report.load.highLoad`: "High Load" → "High"
+- `report.load.recovery`: "Recovery" → "Rest"
+- `report.load.first`: "First Session" → "First"
+- `report.intensityLabel.moderate`: "Moderate" → "Mid"
+
+팁 5건:
+- `report.load.overloadTip`: "Over limit · reduce next time" → "Over limit"
+- `report.load.highTip`: "Above optimal · try adjusting" → "Above optimal"
+- `report.load.deficitTip`: "Below optimal · try increasing" → "Below optimal"
+- `report.load.lowOptimalTip`: "Light optimal · focus on recovery" → "Light zone"
+- `report.load.highGrowthTip`: "High intensity optimal · good pace" → "High pace"
+- `report.load.growthTip`: "Growth zone · good pace" → "On track"
+- `report.load.lowRecovery`: "Light recovery · on track" → "Recovery"
+
+Fatigue 1건:
+- `report.fatigue.recoveryTime`: "Recovery needed: {hours}h" → "Rest: {hours}h"
+
+**재발 방지:**
+- 메트릭 카드 배지는 1단어/최대 2단어 원칙 수립 (앞으로 EN 라벨 추가 시 준수)
+- 긴 라벨 필요하면 tooltip/help 모달로 이관 (? 버튼 이미 존재)
+- UI wrap 발생 여부는 phone frame 384px 기준 사전 시뮬 필수
+
+---
+
 ### 회의 22: Growth Prediction EN 마무리 + Exercise Science Data 라벨 축약
 **참석:** 대표, 기획자, 프론트엔드 개발자, 평가자, 현지화 전문가, 카피라이터
 **일자:** 2026-04-05
