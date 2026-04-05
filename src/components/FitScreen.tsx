@@ -855,6 +855,27 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   const handleDoneClick = () => {
     if (exercise.type !== "strength" && exercise.type !== "core") {
+      // 회의 41: 인터벌 러닝 조기 종료 시 부분 runningStats 산출
+      if (isIntervalMode && intervalConfig && onRunningStatsComputed) {
+        const snap = gpsGetSnapshot();
+        const runType: RunningType =
+          intervalConfig.type === "walkrun" ? "walkrun"
+          : intervalConfig.type === "fartlek" ? "fartlek"
+          : "sprint";
+        const stats = computeRunningStats({
+          runningType: runType,
+          isIndoor,
+          gpsAvailable: gpsIsAvailable,
+          points: snap.points,
+          phaseMarks: snap.phaseMarks,
+          sessionStartMs: snap.sessionStartMs || Date.now(),
+          sessionEndMs: Date.now(),
+          completedRounds: Math.max(0, intervalRound - 1),
+          totalRounds: intervalConfig.rounds,
+        });
+        onRunningStatsComputed(stats);
+      }
+      setIsPlaying(false);
       setIsDoneAnimating(true);
       setRepsStopwatchRunning(false);
       playAlarmSound("start");
@@ -1281,8 +1302,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     {subTitle}
                   </p>
                 )}
-                {/* 자세 가이드 미리보기 */}
-                {(() => {
+                {/* 자세 가이드 미리보기 — 회의 41: 인터벌 러닝 모드에선 숨김 (공간 확보 + 뛰면서 안 봄) */}
+                {!isIntervalMode && (() => {
                   const embedUrl = getVideoEmbedUrl(exercise.name);
                   if (embedUrl) {
                     return (
@@ -1520,6 +1541,35 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     </svg>
                     <span className="font-black text-base tracking-wider">{t("fit.done")}</span>
                   </button>
+                ) : isIntervalMode ? (
+                  // 회의 41: 인터벌 러닝 모드는 재생/일시정지 상태와 무관하게 재생 + 완료 2버튼 고정
+                  <div className="flex items-center gap-6">
+                    <button
+                      onClick={() => {
+                        if (isPlaying) {
+                          setIsPlaying(false);
+                        } else {
+                          playAlarmSound("start");
+                          setIsPlaying(true);
+                        }
+                      }}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center text-white shadow-xl active:scale-95 transition-all ${
+                        isPlaying ? "bg-amber-500" : "bg-[#2D6A4F]"
+                      }`}
+                    >
+                      {isPlaying ? (
+                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                      ) : (
+                        <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleDoneClick}
+                      className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
+                    >
+                      <span className="font-black text-base tracking-wider">{t("fit.complete")}</span>
+                    </button>
+                  </div>
                 ) : !isPlaying && elapsedTime > 0 ? (
                   <div className="flex items-center gap-6">
                       <button
