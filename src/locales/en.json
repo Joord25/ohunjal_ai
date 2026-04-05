@@ -307,6 +307,8 @@
   "proof.quests": "Quests",
   "proof.weeklyQuests": "Weekly Quests",
   "proof.questComplete": "{done}/{total} complete",
+  "proof.questDays": " days",
+  "proof.questScaledNotice": "This week is shorter due to a new month. Targets adjusted to the remaining days!",
   "proof.allClearBonus": "All Clear Bonus +5 EXP!",
   "proof.noRecordYet": "No workout records yet",
   "proof.firstWorkoutHere": "Complete your first workout and it will show here",

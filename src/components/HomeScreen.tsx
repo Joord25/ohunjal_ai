@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
-import { getOrCreateWeeklyQuests, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
+import { getOrCreateWeeklyQuests, getCurrentWeekQuestWindow, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -116,17 +116,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return count;
   })();
 
-  // 이번 주 운동 일수 (당일 N회도 1일로, 이번 달 범위만)
+  // 이번 주 운동 일수 (당일 N회도 1일로) — 회의 18: questSystem과 동일한 윈도우 사용
   const thisWeekCount = (() => {
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const weekStart = monday > monthStart ? monday : monthStart;
+    const window = getCurrentWeekQuestWindow(history);
     const days = new Set(
       history
-        .filter(h => new Date(h.date).getTime() >= weekStart.getTime())
+        .filter(h => {
+          const d = new Date(h.date);
+          return d >= window.start && d <= window.end;
+        })
         .map(h => new Date(h.date).toDateString())
     );
     return days.size;

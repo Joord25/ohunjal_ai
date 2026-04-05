@@ -141,6 +141,84 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * 회의 18: 월 경계 주간 퀘스트 윈도우 결정
+ *
+ * Case 0 (정상 ISO 주) — 월 경계 안 걸침
+ *   → Mon~Sun 7일, ACSM 기본 target
+ *
+ * Case 1 (이어받기) — 월 경계 걸침 + 지난 달 부분에 활동 있음
+ *   → Mon~Sun 7일 유지, ACSM 기본 target, 지난 달 기록 포함해 진행도 카운트
+ *
+ * Case 2 (새 출발) — 월 경계 걸침 + 지난 달 부분에 활동 없음
+ *   → 월1일~ISO일요일 (부분 주), scaleWeeklyTarget으로 축소된 target
+ */
+export interface WeekQuestWindow {
+  start: Date;      // 윈도우 시작 (00:00:00)
+  end: Date;        // 윈도우 끝 (포함, 23:59:59)
+  days: number;     // 실제 일수 (1~7)
+  isScaled: boolean; // Case 2 여부 (스케일된 target)
+  case: 0 | 1 | 2;
+}
+
+export function getCurrentWeekQuestWindow(
+  history: WorkoutHistory[],
+  today = new Date(),
+): WeekQuestWindow {
+  const isoMonday = getWeekStartMonday(today);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  monthStart.setHours(0, 0, 0, 0);
+  const isoSunday = new Date(isoMonday);
+  isoSunday.setDate(isoSunday.getDate() + 6);
+  isoSunday.setHours(23, 59, 59, 999);
+
+  // Case 0: 월 경계 안 걸침
+  if (isoMonday >= monthStart) {
+    return { start: isoMonday, end: isoSunday, days: 7, isScaled: false, case: 0 };
+  }
+
+  // 월 경계 걸침 — 지난 달 부분 활동 체크
+  const prevMonthEnd = new Date(monthStart);
+  prevMonthEnd.setMilliseconds(-1); // 직전 달 마지막 순간
+  const hasPrevMonthActivity = history.some(h => {
+    const d = new Date(h.date);
+    return d >= isoMonday && d <= prevMonthEnd;
+  });
+
+  if (hasPrevMonthActivity) {
+    // Case 1: 이어받기 — ISO 주 그대로
+    return { start: isoMonday, end: isoSunday, days: 7, isScaled: false, case: 1 };
+  }
+
+  // Case 2: 새 출발 — 월1일부터
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.floor((isoSunday.getTime() - monthStart.getTime()) / msPerDay) + 1;
+  return { start: monthStart, end: isoSunday, days, isScaled: true, case: 2 };
+}
+
+/**
+ * 부분 주(days < 7) target 축소 테이블 (회의 18, 대표 승인).
+ * 이미 나이/성별로 줄어든 base보다 테이블이 크면 base로 캡.
+ */
+function scaleWeeklyTarget(base: WeeklyIntensityTarget, weekDays: number): WeeklyIntensityTarget {
+  if (weekDays >= 7) return base;
+
+  const tables: Record<number, { high: number; moderate: number; low: number }> = {
+    6: { high: 2, moderate: 2, low: 1 },
+    5: { high: 1, moderate: 2, low: 1 },
+    4: { high: 1, moderate: 1, low: 1 },
+    3: { high: 1, moderate: 1, low: 1 },
+    2: { high: 1, moderate: 1, low: 0 },
+    1: { high: 0, moderate: 1, low: 0 },
+  };
+
+  const t = tables[weekDays] || { high: 0, moderate: 1, low: 0 };
+  const high = Math.min(t.high, base.high);
+  const moderate = Math.min(t.moderate, base.moderate);
+  const low = Math.min(t.low, base.low);
+  return { high, moderate, low, total: high + moderate + low };
+}
+
 // ─── Tier ────────────────────────────────────────────────────────
 
 export function getTierFromExp(exp: number): TierResult {
@@ -159,8 +237,14 @@ export function getTierFromExp(exp: number): TierResult {
 
 // ─── Quest Generation ────────────────────────────────────────────
 
-export function generateWeeklyQuests(birthYear?: number, gender?: "male" | "female"): QuestDefinition[] {
-  const target: WeeklyIntensityTarget = getWeeklyIntensityTarget(birthYear, gender);
+export function generateWeeklyQuests(
+  birthYear?: number,
+  gender?: "male" | "female",
+  weekDays = 7,
+): QuestDefinition[] {
+  const baseTarget: WeeklyIntensityTarget = getWeeklyIntensityTarget(birthYear, gender);
+  // 회의 18: 부분 주(Case 2)면 target 축소
+  const target: WeeklyIntensityTarget = weekDays < 7 ? scaleWeeklyTarget(baseTarget, weekDays) : baseTarget;
 
   const quests: QuestDefinition[] = [];
 
@@ -211,15 +295,18 @@ export function generateWeeklyQuests(birthYear?: number, gender?: "male" | "fema
   });
 
   // Bonus quests
-  quests.push({
-    id: "bonus_streak_5",
-    type: "bonus_streak",
-    label: "5일 연속 운동",
-    description: "연속 기록 도전!",
-    target: 5,
-    exp: QUEST_EXP.bonus_streak,
-    isBonus: true,
-  });
+  // 회의 18: 부분 주(5일 미만)에서는 5일 연속 달성 물리적 불가능 → 숨김
+  if (weekDays >= 5) {
+    quests.push({
+      id: "bonus_streak_5",
+      type: "bonus_streak",
+      label: "5일 연속 운동",
+      description: "연속 기록 도전!",
+      target: 5,
+      exp: QUEST_EXP.bonus_streak,
+      isBonus: true,
+    });
+  }
 
   quests.push({
     id: "bonus_new_exercise_3",
@@ -236,12 +323,11 @@ export function generateWeeklyQuests(birthYear?: number, gender?: "male" | "fema
 
 // ─── Quest Progress Evaluation ───────────────────────────────────
 
-function getWeekSessions(history: WorkoutHistory[], weekStart: Date): WorkoutHistory[] {
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+function getWeekSessions(history: WorkoutHistory[], windowStart: Date, windowEnd?: Date): WorkoutHistory[] {
+  const end = windowEnd ?? (() => { const e = new Date(windowStart); e.setDate(e.getDate() + 7); return e; })();
   return history.filter(h => {
     const d = new Date(h.date);
-    return d >= weekStart && d < weekEnd;
+    return d >= windowStart && d <= end;
   });
 }
 
@@ -509,37 +595,41 @@ export function rebuildFromHistory(
     return { seasonKey, totalExp: 0, expLog: [] };
   }
 
-  // Find all unique weeks in the season
-  const weeks = new Map<string, Date>(); // weekStartStr → weekStart
+  // 회의 18: 각 세션 시점의 윈도우 기준으로 그룹화 (Case 0/1/2 적용)
+  // key = window.start 날짜 문자열
+  const windowMap = new Map<string, { window: WeekQuestWindow; sessions: WorkoutHistory[] }>();
   seasonHistory.forEach(h => {
-    const ws = getWeekStartMonday(new Date(h.date));
-    const wsStr = toDateStr(ws);
-    if (!weeks.has(wsStr)) weeks.set(wsStr, ws);
+    const window = getCurrentWeekQuestWindow(seasonHistory, new Date(h.date));
+    const key = toDateStr(window.start);
+    if (!windowMap.has(key)) {
+      windowMap.set(key, { window, sessions: [] });
+    }
+    windowMap.get(key)!.sessions.push(h);
   });
 
-  // Sort weeks chronologically
-  const sortedWeeks = Array.from(weeks.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  // Sort windows chronologically
+  const sortedWindows = Array.from(windowMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
   const allExpLog: ExpLogEntry[] = [];
-  const questDefs = generateWeeklyQuests(birthYear, gender);
 
-  for (const [, weekStart] of sortedWeeks) {
-    const weekSessions = getWeekSessions(seasonHistory, weekStart);
+  for (const [, { window, sessions: winSessions }] of sortedWindows) {
+    // Window 길이에 맞는 quest defs (스케일 적용)
+    const questDefs = generateWeeklyQuests(birthYear, gender, window.days);
 
     // Process sessions one by one to detect quest completions
     let prevState: WeeklyQuestState = {
-      weekStart: toDateStr(weekStart),
+      weekStart: toDateStr(window.start),
       quests: questDefs.map(q => ({ questId: q.id, current: 0, completed: false })),
       allCoreCompleted: false,
       weeklyBonusClaimed: false,
     };
 
-    // Sort sessions by date within the week
-    const sorted = [...weekSessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Sort sessions by date within the window
+    const sorted = [...winSessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (let i = 0; i < sorted.length; i++) {
       const sessionsUpToNow = sorted.slice(0, i + 1);
-      const afterState = evaluateQuestProgress(questDefs, sessionsUpToNow, history, weekStart);
+      const afterState = evaluateQuestProgress(questDefs, sessionsUpToNow, history, window.start);
       const entries = calculateSessionExp(prevState, afterState, questDefs, sorted[i].date);
       allExpLog.push(...entries);
       prevState = afterState;
@@ -563,31 +653,32 @@ export function getOrCreateWeeklyQuests(
   history: WorkoutHistory[],
   birthYear?: number,
   gender?: "male" | "female",
-): { questDefs: QuestDefinition[]; questState: WeeklyQuestState } {
-  const currentMonday = getWeekStartMonday();
-  const currentMondayStr = toDateStr(currentMonday);
+): { questDefs: QuestDefinition[]; questState: WeeklyQuestState; window: WeekQuestWindow } {
+  // 회의 18: 월 경계 윈도우 적용
+  const window = getCurrentWeekQuestWindow(history);
+  const windowStartStr = toDateStr(window.start);
   const saved = loadWeeklyQuestState();
 
-  const questDefs = generateWeeklyQuests(birthYear, gender);
-  const weekSessions = getWeekSessions(history, currentMonday);
+  const questDefs = generateWeeklyQuests(birthYear, gender, window.days);
+  const weekSessions = getWeekSessions(history, window.start, window.end);
 
-  // 주가 다르거나, 세션 수 불일치면 다시 계산
-  if (!saved || saved.weekStart !== currentMondayStr) {
-    const questState = evaluateQuestProgress(questDefs, weekSessions, history, currentMonday);
+  // 윈도우 시작이 다르거나, 세션 수 불일치면 다시 계산
+  if (!saved || saved.weekStart !== windowStartStr) {
+    const questState = evaluateQuestProgress(questDefs, weekSessions, history, window.start);
     saveWeeklyQuestState(questState);
-    return { questDefs, questState };
+    return { questDefs, questState, window };
   }
 
-  // 캐시된 진행도의 consistency(운동일수) vs 실제 이번주 세션 수 비교
+  // 캐시된 진행도의 consistency(운동일수) vs 실제 이번 주 세션 수 비교
   const consistencyQuest = saved.quests.find(q => q.questId.startsWith("consistency_"));
   const actualDays = new Set(weekSessions.map(h => new Date(h.date).toDateString())).size;
   if (consistencyQuest && consistencyQuest.current !== Math.min(actualDays, questDefs.find(q => q.type === "consistency")?.target ?? 99)) {
-    const questState = evaluateQuestProgress(questDefs, weekSessions, history, currentMonday);
+    const questState = evaluateQuestProgress(questDefs, weekSessions, history, window.start);
     saveWeeklyQuestState(questState);
-    return { questDefs, questState };
+    return { questDefs, questState, window };
   }
 
-  return { questDefs, questState: saved };
+  return { questDefs, questState: saved, window };
 }
 
 /**
@@ -630,17 +721,22 @@ export function processWorkoutCompletion(
   birthYear?: number,
   gender?: "male" | "female",
 ): ExpLogEntry[] {
-  const currentMonday = getWeekStartMonday();
-  const questDefs = generateWeeklyQuests(birthYear, gender);
+  // 회의 18: allHistory 기준으로 현재 윈도우 결정 (Case 1/2 분기 포함)
+  const window = getCurrentWeekQuestWindow(allHistory);
+  const questDefs = generateWeeklyQuests(birthYear, gender, window.days);
 
   // History without the new session = "before" state
+  // NOTE: historyBefore 기준으로도 윈도우 재계산해야 Case 1→2 전환 케이스 방지
+  // (예: 첫 세션으로 인해 Case 2→1 전환되어 target이 달라질 수 있음)
   const historyBefore = allHistory.filter(h => h.id !== newSession.id);
-  const weekSessionsBefore = getWeekSessions(historyBefore, currentMonday);
-  const questsBefore = evaluateQuestProgress(questDefs, weekSessionsBefore, historyBefore, currentMonday);
+  const windowBefore = getCurrentWeekQuestWindow(historyBefore);
+  const questDefsBefore = generateWeeklyQuests(birthYear, gender, windowBefore.days);
+  const weekSessionsBefore = getWeekSessions(historyBefore, windowBefore.start, windowBefore.end);
+  const questsBefore = evaluateQuestProgress(questDefsBefore, weekSessionsBefore, historyBefore, windowBefore.start);
 
   // History with the new session = "after" state
-  const weekSessionsAfter = getWeekSessions(allHistory, currentMonday);
-  const questsAfter = evaluateQuestProgress(questDefs, weekSessionsAfter, allHistory, currentMonday);
+  const weekSessionsAfter = getWeekSessions(allHistory, window.start, window.end);
+  const questsAfter = evaluateQuestProgress(questDefs, weekSessionsAfter, allHistory, window.start);
 
   // Calculate EXP delta
   const entries = calculateSessionExp(questsBefore, questsAfter, questDefs);

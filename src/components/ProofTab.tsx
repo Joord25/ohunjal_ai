@@ -660,7 +660,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           /* === Weekly Quest Card (toggle view) === */
           (() => {
             const bYear = !isNaN(savedBirthYear) ? savedBirthYear : undefined;
-            const { questDefs, questState: qs } = getOrCreateWeeklyQuests(history, bYear, savedGender);
+            const { questDefs, questState: qs, window } = getOrCreateWeeklyQuests(history, bYear, savedGender);
             const coreQs = questDefs.filter(q => !q.isBonus);
             const bonusQs = questDefs.filter(q => q.isBonus);
             const doneCount = qs.quests.filter(q => q.completed).length;
@@ -668,12 +668,20 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             const prog = (qDef: QuestDefinition): QuestProgress =>
               qs.quests.find(p => p.questId === qDef.id) || { questId: qDef.id, current: 0, completed: false };
 
+            // 회의 18: 윈도우 기간 포맷 (예: "4/1 ~ 4/5, 5일")
+            const fmtMd = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+            const rangeLabel = `${fmtMd(window.start)} ~ ${fmtMd(window.end)}, ${window.days}${t("proof.questDays")}`;
+
             return (
               <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-black text-[#1B4332]">{t("proof.weeklyQuests")}</h3>
                   <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{t("proof.questComplete", { done: String(doneCount), total: String(questDefs.length) })}</span>
                 </div>
+                <p className="text-[11px] text-gray-400 mb-3">{rangeLabel}</p>
+                {window.isScaled && (
+                  <p className="text-[11px] text-[#2D6A4F] bg-[#2D6A4F]/5 rounded-lg px-3 py-2 mb-3">{t("proof.questScaledNotice")}</p>
+                )}
                 <div className="space-y-3">
                   {coreQs.map(q => {
                     const p = prog(q);

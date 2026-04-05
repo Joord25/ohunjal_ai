@@ -307,6 +307,8 @@
   "proof.quests": "퀘스트",
   "proof.weeklyQuests": "이번 주 퀘스트",
   "proof.questComplete": "{done}/{total} 완료",
+  "proof.questDays": "일",
+  "proof.questScaledNotice": "월이 바뀌어서 이번 주는 짧아요. 남은 일수에 맞춰 목표가 조정됐어요!",
   "proof.allClearBonus": "올클리어 보너스 +5 EXP!",
   "proof.noRecordYet": "아직 운동 기록이 없어요",
   "proof.firstWorkoutHere": "첫 운동을 완료하면 여기에 기록이 쌓여요",
