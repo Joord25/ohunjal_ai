@@ -616,6 +616,11 @@
   "running.guide.fartlek": "변속을 즐기며 지루함을 덜어내요",
   "running.guide.sprint": "짧게 전력, 충분히 회복. 강도 최상",
   "running.battery.warning": "GPS 사용으로 배터리가 소모돼요",
+  "running.complete.confirm.title": "운동을 완료할까요?",
+  "running.complete.confirm.descInterval": "{current}/{total} 라운드 진행 중이에요. 지금 완료하면 남은 라운드는 기록되지 않아요",
+  "running.complete.confirm.descContinuous": "운동이 아직 진행 중이에요. 지금 완료해도 괜찮을까요?",
+  "running.complete.confirm.cancel": "계속하기",
+  "running.complete.confirm.proceed": "완료",
 
   "quest.title": "주간 퀘스트",
   "quest.completed": "완료",

@@ -616,6 +616,11 @@
   "running.guide.fartlek": "Break the routine with speed play",
   "running.guide.sprint": "Short bursts, full recovery. Max intensity",
   "running.battery.warning": "GPS usage will drain battery",
+  "running.complete.confirm.title": "Finish the workout?",
+  "running.complete.confirm.descInterval": "You're on round {current} of {total}. Remaining rounds won't be recorded",
+  "running.complete.confirm.descContinuous": "The workout is still in progress. Finish now anyway?",
+  "running.complete.confirm.cancel": "Keep going",
+  "running.complete.confirm.proceed": "Finish",
 
   "quest.title": "Weekly Quests",
   "quest.completed": "Completed",

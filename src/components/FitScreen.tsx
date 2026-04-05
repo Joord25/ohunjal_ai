@@ -488,6 +488,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [gpsPermissionAsked, setGpsPermissionAsked] = useState(false);
   const [isIndoor] = useState(false);
+  // 회의 43 후속: 러닝 조기 종료 확인 모달
+  const [runCompleteConfirmOpen, setRunCompleteConfirmOpen] = useState(false);
 
   // 러닝 운동 첫 진입 시 권한 미결정이면 팝업 표시 (세션 1회)
   // 회의 43: 인터벌/연속 러닝 모두 포함
@@ -512,6 +514,15 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     try { window.localStorage?.setItem("ohunjal_gps_asked", "1"); } catch {}
     setGpsPermissionAsked(true);
     setPermissionDialogOpen(false);
+  };
+
+  // 회의 43 후속: 러닝 완료 버튼 클릭 래퍼 — 자연 완료 전이면 확인 모달, 이미 완료된 상태면 바로 진행
+  const handleRunningCompleteClick = () => {
+    if (timerCompleted) {
+      handleDoneClick();
+      return;
+    }
+    setRunCompleteConfirmOpen(true);
   };
 
   // 회의 41/43: GPS 추적 훅 — 모든 러닝 운동(인터벌 + 연속) 실행 중 활성
@@ -1679,7 +1690,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                       )}
                     </button>
                     <button
-                      onClick={handleDoneClick}
+                      onClick={handleRunningCompleteClick}
                       className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
                     >
                       <span className="font-black text-base tracking-wider">{t("fit.complete")}</span>
@@ -2174,6 +2185,52 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         onAllow={handleGpsAllow}
         onLater={handleGpsLater}
       />
+
+      {/* 회의 43 후속: 러닝 조기 종료 확인 모달 */}
+      {runCompleteConfirmOpen && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 animate-fade-in"
+          style={{ padding: "env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px) 16px" }}
+          onClick={() => setRunCompleteConfirmOpen(false)}
+        >
+          <div
+            className="w-80 max-w-[calc(100vw-48px)] bg-white rounded-3xl shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 pt-6 pb-5 text-center">
+              <h2 className="text-base font-black text-[#1B4332] mb-2">
+                {t("running.complete.confirm.title")}
+              </h2>
+              <p className="text-[13px] text-gray-500 leading-relaxed">
+                {isIntervalMode && intervalConfig
+                  ? t("running.complete.confirm.descInterval", {
+                      current: String(intervalRound),
+                      total: String(intervalConfig.rounds),
+                    })
+                  : t("running.complete.confirm.descContinuous")}
+              </p>
+            </div>
+            <div className="flex border-t border-gray-100">
+              <button
+                onClick={() => setRunCompleteConfirmOpen(false)}
+                className="flex-1 py-4 text-sm font-bold text-gray-500 active:bg-gray-50 transition-colors"
+              >
+                {t("running.complete.confirm.cancel")}
+              </button>
+              <div className="w-px bg-gray-100" />
+              <button
+                onClick={() => {
+                  setRunCompleteConfirmOpen(false);
+                  handleDoneClick();
+                }}
+                className="flex-1 py-4 text-sm font-black text-[#2D6A4F] active:bg-emerald-50 transition-colors"
+              >
+                {t("running.complete.confirm.proceed")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
