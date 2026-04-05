@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { FitScreen, FeedbackType } from "@/components/FitScreen";
 import type { RunningStats } from "@/constants/workout";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
@@ -43,6 +43,10 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const [logs, setLogs] = useState<Record<number, ExerciseLog[]>>({});
   // 회의 41: 러닝 인터벌 완주 시 FitScreen에서 산출되는 runningStats 저장
   const runningStatsRef = useRef<RunningStats | null>(null);
+  // 회의 43 후속: 안정화된 콜백 — FitScreen useEffect가 매초 재실행되는 문제 방지
+  const handleRunningStatsComputed = useCallback((stats: RunningStats) => {
+    runningStatsRef.current = stats;
+  }, []);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [addSearch, setAddSearch] = useState("");
   const [pendingExercise, setPendingExercise] = useState<string | null>(null);
@@ -455,7 +459,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         onAddSet={currentExercise.type === "strength" || currentExercise.type === "core" ? handleAddSet : undefined}
         nextExerciseName={currentExerciseIndex < totalExercises - 1 ? exercises[currentExerciseIndex + 1].name : undefined}
         lastSessionRecord={lastSessionRecord}
-        onRunningStatsComputed={(stats) => { runningStatsRef.current = stats; }}
+        onRunningStatsComputed={handleRunningStatsComputed}
       />
     </div>
   );
