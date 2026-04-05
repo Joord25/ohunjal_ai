@@ -40,6 +40,8 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
   })();
 
   const typeLabel = getRunningTypeShareLabel(runningStats.runningType, locale);
+  // 회의 41 후속: GPS 없거나 실내일 때 Distance 자리를 Rounds 또는 Duration으로 대체
+  const hasGpsData = runningStats.gpsAvailable && !runningStats.isIndoor && runningStats.distance > 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -58,16 +60,28 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
         </div>
 
         <div className="flex items-start justify-around gap-2">
-          {/* Distance */}
-          <div className="flex flex-col items-center flex-1">
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
-              {t("running.stats.distance")}
-            </p>
-            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
-              {formatRunDistanceKm(runningStats.distance)}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">km</p>
-          </div>
+          {/* Distance — GPS 없으면 Rounds로 대체 */}
+          {hasGpsData ? (
+            <div className="flex flex-col items-center flex-1">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
+                {t("running.stats.distance")}
+              </p>
+              <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
+                {formatRunDistanceKm(runningStats.distance)}
+              </p>
+              <p className="text-[10px] font-bold text-gray-400 mt-1">km</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center flex-1">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
+                {t("running.stats.rounds")}
+              </p>
+              <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
+                {runningStats.intervalRounds.length || "—"}
+              </p>
+              <p className="text-[10px] font-bold text-gray-400 mt-1">rounds</p>
+            </div>
+          )}
 
           <div className="w-px h-14 bg-gray-100 mt-3" />
 

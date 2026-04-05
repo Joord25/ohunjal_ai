@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { RunningReportBody } from "@/components/report/RunningReportBody";
+import { detectRunningType } from "@/utils/runningFormat";
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages } from "@/utils/workoutHistory";
@@ -885,12 +886,30 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           );
         })()}
 
-        {/* === 러닝 세션 전용 본문 (회의 41) === */}
-        {runningStats && (
-          <div className="mb-5">
-            <RunningReportBody runningStats={runningStats} recentHistory={recentHistory} />
-          </div>
-        )}
+        {/* === 러닝 세션 전용 본문 (회의 41) — exercises 패턴으로 감지, stats 없으면 폴백 생성 === */}
+        {(() => {
+          const detectedRunningType = detectRunningType(sessionData.exercises);
+          if (!detectedRunningType) return null;
+          // GPS 데이터 없이 러닝 세션 종료된 경우: 세션 metadata로 최소 stats 조립
+          const effectiveStats: RunningStats = runningStats ?? {
+            runningType: detectedRunningType,
+            isIndoor: false,
+            gpsAvailable: false,
+            distance: 0,
+            duration: totalDurationSec,
+            avgPace: null,
+            sprintAvgPace: null,
+            recoveryAvgPace: null,
+            bestPace: null,
+            intervalRounds: [],
+            completionRate: 0,
+          };
+          return (
+            <div className="mb-5">
+              <RunningReportBody runningStats={effectiveStats} recentHistory={recentHistory} />
+            </div>
+          );
+        })()}
 
         {/* === 운동 과학 데이터 (펼쳐보기, 웨이트만) === */}
         {isStrengthSession && (
