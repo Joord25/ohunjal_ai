@@ -24,12 +24,51 @@ import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from
 import { syncExpFromFirestore, processWorkoutCompletion, getOrRebuildSeasonExp, type ExpLogEntry } from "@/utils/questSystem";
 import { useSafeArea } from "@/hooks/useSafeArea";
 import { trackEvent } from "@/utils/analytics";
-import { I18nProvider } from "@/hooks/useTranslation";
+import { I18nProvider, useTranslation } from "@/hooks/useTranslation";
 
 const getDisplayName = (user: import("firebase/auth").User | null, fallback = "회원") => {
   const raw = user?.displayName?.split(" ")[0] || fallback;
   return raw.slice(0, 10);
 };
+
+/** 회의 32: Exit Confirm 다이얼로그 — I18nProvider 내부에서 t() 사용 가능하도록 분리 */
+function ExitConfirmDialog({
+  inWorkoutSession,
+  onCancel,
+  onConfirm,
+}: {
+  inWorkoutSession: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-2xl p-6 mx-8 shadow-xl max-w-[300px] w-full">
+        <p className="text-center text-gray-800 font-bold text-base mb-1">
+          {t("exit.confirm")}
+        </p>
+        <p className="text-center text-gray-500 text-sm mb-5">
+          {inWorkoutSession ? t("exit.confirm.sessionWarn") : t("exit.confirm.backPressed")}
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold text-sm active:scale-95 transition-transform"
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold text-sm active:scale-95 transition-transform"
+          >
+            {t("exit.button")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const lazyGenerateWorkout = async (
   dayIndex: number,
@@ -244,19 +283,28 @@ export default function Home() {
   }, [view]);
 
   const handleExitConfirm = useCallback(() => {
-    setShowExitConfirm(false);
-    guardPushedRef.current = false;
+    // 회의 32: PWA 나가기 버튼 무반응 버그 수정
+    // 원인: window.close()는 Android PWA에서 동작 안 함 (스크립트로 연 창만 닫힘).
+    //      history.go(-2)도 PWA 스택이 짧으면 효과 없음.
+    // 수정: exitingRef를 먼저 true로 세팅 → popstate 핸들러가 재-push를 건너뛰도록 하고
+    //      history.back() 한 번만 호출. 이러면 이전 가드 state가 pop되고 PWA는 자연 종료.
     exitingRef.current = true;
-    // PWA standalone mode: close the app window
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-      || (navigator as unknown as { standalone?: boolean }).standalone === true;
-    if (isStandalone) {
-      window.close();
-      // Fallback: if window.close() didn't work (iOS), go back
-      setTimeout(() => window.history.go(-2), 100);
-    } else {
-      window.history.go(-2);
-    }
+    guardPushedRef.current = false;
+    setShowExitConfirm(false);
+
+    // 1차 시도: 일반 back. popstate 핸들러가 exitingRef=true 보고 re-push 안 함 → 자연 종료
+    window.history.back();
+
+    // 2차 폴백 (iOS Safari PWA / 일부 기기): 일정 시간 후에도 페이지가 살아있으면
+    // 루트 로그인 화면으로 강제 이동 — 유저가 홈 버튼으로 종료하기 쉽게
+    setTimeout(() => {
+      if (exitingRef.current) {
+        // 여전히 앱 안 → back이 안 먹었음. 유저에게 혼란 주지 않도록 상태만 초기화
+        exitingRef.current = false;
+        // 홈 화면으로 복귀 (명시적 "나가기 안 됐어요" UX)
+        setView("home");
+      }
+    }, 300);
   }, []);
 
   const handleExitCancel = useCallback(() => {
@@ -789,32 +837,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* Exit Confirmation Dialog */}
+        {/* Exit Confirmation Dialog — 회의 32: i18n 지원 + PWA 나가기 버그 수정 */}
         {showExitConfirm && (
-          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl p-6 mx-8 shadow-xl max-w-[300px] w-full">
-              <p className="text-center text-gray-800 font-bold text-base mb-1">
-                앱을 나가시겠습니까?
-              </p>
-              <p className="text-center text-gray-500 text-sm mb-5">
-                {view === "workout_session" ? "진행 중인 운동이 저장되지 않습니다." : "뒤로 가기를 누르셨습니다."}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleExitCancel}
-                  className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold text-sm active:scale-95 transition-transform"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleExitConfirm}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold text-sm active:scale-95 transition-transform"
-                >
-                  나가기
-                </button>
-              </div>
-            </div>
-          </div>
+          <ExitConfirmDialog
+            inWorkoutSession={view === "workout_session"}
+            onCancel={handleExitCancel}
+            onConfirm={handleExitConfirm}
+          />
         )}
       </div>
     </PhoneFrame>

@@ -600,6 +600,9 @@
 
   "exit.confirm": "앱을 나가시겠습니까?",
   "exit.confirm.desc": "운동 중인 세션이 있으면 기록이 사라질 수 있어요",
+  "exit.confirm.backPressed": "뒤로 가기를 누르셨습니다.",
+  "exit.confirm.sessionWarn": "진행 중인 운동이 저장되지 않습니다.",
+  "exit.button": "나가기",
 
   "loading.step1": "컨디션 · 운동 이력 분석",
   "loading.step2": "ACSM 가이드라인 대조",

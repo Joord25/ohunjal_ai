@@ -600,6 +600,9 @@
 
   "exit.confirm": "Leave the app?",
   "exit.confirm.desc": "Your current workout session data may be lost",
+  "exit.confirm.backPressed": "You pressed the back button.",
+  "exit.confirm.sessionWarn": "Your ongoing workout won't be saved.",
+  "exit.button": "Leave",
 
   "loading.step1": "Analyzing condition & workout history",
   "loading.step2": "Cross-referencing ACSM guidelines",
