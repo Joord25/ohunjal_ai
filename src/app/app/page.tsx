@@ -146,6 +146,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   // 회의 30: 구독 취소 플로우 활성 시 탭바 숨김 (유저 집중 + 리텐션)
   const [cancelFlowActive, setCancelFlowActive] = useState(false);
+  // 회의 34: 스크롤 내릴 때 탭바 숨김 (인스타 스타일)
+  const [tabsVisible, setTabsVisible] = useState(true);
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [autoEdit1RM, setAutoEdit1RM] = useState(false);
 
@@ -156,6 +158,39 @@ export default function Home() {
       return () => clearTimeout(t);
     }
   }, [autoEdit1RM, activeTab]);
+
+  // 회의 34: 스크롤 방향 감지 탭바 자동 숨김 (인스타/유튜브 스타일)
+  // - capture phase로 모든 중첩 스크롤 컨테이너 감지
+  // - 30px 이상 내려가면 숨김, 위로 스크롤하면 즉시 노출, 맨 위면 항상 노출
+  useEffect(() => {
+    const lastYByEl = new WeakMap<EventTarget, number>();
+    const HIDE_THRESHOLD = 30;
+    const DELTA_THRESHOLD = 5;
+
+    const handleScroll = (e: Event) => {
+      const el = e.target;
+      if (!el || !(el instanceof HTMLElement)) return;
+      const currentY = el.scrollTop;
+      const lastY = lastYByEl.get(el) ?? 0;
+
+      if (currentY < HIDE_THRESHOLD) {
+        setTabsVisible(true); // 맨 위 근처 → 항상 노출
+      } else if (currentY > lastY + DELTA_THRESHOLD) {
+        setTabsVisible(false); // 아래로 스크롤 → 숨김
+      } else if (currentY < lastY - DELTA_THRESHOLD) {
+        setTabsVisible(true); // 위로 스크롤 → 노출
+      }
+      lastYByEl.set(el, currentY);
+    };
+
+    document.addEventListener("scroll", handleScroll, true); // capture
+    return () => document.removeEventListener("scroll", handleScroll, true);
+  }, []);
+
+  // 뷰 전환 시 탭바 항상 노출 리셋 (새 화면에서 숨겨진 상태로 시작 방지)
+  useEffect(() => {
+    setTabsVisible(true);
+  }, [activeTab, view]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // AI Loading State
@@ -772,7 +807,11 @@ export default function Home() {
         )}
 
         {view !== "login" && view !== "workout_session" && !cancelFlowActive && (
-          <div className="absolute bottom-0 left-0 right-0 z-40">
+          <div
+            className={`absolute bottom-0 left-0 right-0 z-40 transition-transform duration-300 ease-out ${
+              tabsVisible ? "translate-y-0" : "translate-y-full"
+            }`}
+          >
             <BottomTabs active={activeTab} onChange={(id) => {
               if (!isLoggedIn && (id === "proof" || id === "my")) {
                 setShowLoginModal(true);
