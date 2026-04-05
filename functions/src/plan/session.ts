@@ -52,12 +52,17 @@ export const planSession = onRequest(
       );
 
       // 응답 랜덤 변형: main phase 내 마지막 2개 운동 순서 미세 셔플 (보안: 패턴 감지 방지)
-      const mainIndices: number[] = [];
-      session.exercises.forEach((e, i) => { if ((e.phase || e.type) === "main") mainIndices.push(i); });
-      if (mainIndices.length >= 3 && Math.random() > 0.5) {
-        const a = mainIndices[mainIndices.length - 1];
-        const b = mainIndices[mainIndices.length - 2];
-        [session.exercises[a], session.exercises[b]] = [session.exercises[b], session.exercises[a]];
+      // 회의 37: 러닝 세션은 시간 순서가 엄격 (워밍업→드릴→메인→쿨다운).
+      // 셔플이 마무리 조깅 ↔ 인터벌 스프린트를 바꿔버려 부상 위험 + UX 버그.
+      // 러닝 세션은 셔플 제외, 웨이트 세션만 적용 (보안 목적 유지).
+      if (sessionMode !== "running") {
+        const mainIndices: number[] = [];
+        session.exercises.forEach((e, i) => { if ((e.phase || e.type) === "main") mainIndices.push(i); });
+        if (mainIndices.length >= 3 && Math.random() > 0.5) {
+          const a = mainIndices[mainIndices.length - 1];
+          const b = mainIndices[mainIndices.length - 2];
+          [session.exercises[a], session.exercises[b]] = [session.exercises[b], session.exercises[a]];
+        }
       }
 
       // AI 응답처럼 보이는 딜레이
