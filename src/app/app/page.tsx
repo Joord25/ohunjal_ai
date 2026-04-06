@@ -472,8 +472,8 @@ export default function Home() {
       setShowLoginModal(true);
       return;
     }
-    // Check free usage limit
-    if (subStatus === "free" && getPlanCount() >= FREE_PLAN_LIMIT) {
+    // Check free usage limit (로그인 유저만 — 게스트는 GUEST_TRIAL_LIMIT으로 제한)
+    if (isLoggedIn && subStatus === "free" && getPlanCount() >= FREE_PLAN_LIMIT) {
       trackEvent("paywall_view", { session_number: getPlanCount() });
       setShowPaywall(true);
       return;
