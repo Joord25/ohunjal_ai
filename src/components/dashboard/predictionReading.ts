@@ -7,7 +7,7 @@ import {
   calcBig3VolumeBalance,
   linearRegression,
 } from "@/utils/predictionUtils";
-import { type FitnessProfile } from "./FitnessReading";
+import { type FitnessProfile } from "./fitnessTypes";
 
 type UserLevel = "beginner" | "advanced";
 

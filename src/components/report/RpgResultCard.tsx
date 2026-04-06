@@ -7,7 +7,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
 import { auth } from "@/lib/firebase";
 import { ExpTierCard, type RpgInsight } from "./ExpTierCard";
-import { translateDesc } from "./WorkoutReport";
+import { translateDesc } from "./reportUtils";
 
 export type HeroType = "weightPR" | "repsPR" | "volumePR" | "perfect" | "streak" | "volume" | "first" | "running";
 

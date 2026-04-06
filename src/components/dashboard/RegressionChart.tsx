@@ -4,7 +4,7 @@ import React from "react";
 import { WorkoutHistory } from "@/constants/workout";
 import { useTranslation } from "@/hooks/useTranslation";
 import { linearRegression, dateToDayIndex, calcCalorieBalanceTrend } from "@/utils/predictionUtils";
-import { type FitnessProfile } from "./FitnessReading";
+import { type FitnessProfile } from "./fitnessTypes";
 
 export function RegressionChart({ goal, history, weightLog, profile }: {
   goal: string;

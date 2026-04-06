@@ -4,7 +4,7 @@ import React from "react";
 import { WorkoutHistory } from "@/constants/workout";
 import { useTranslation } from "@/hooks/useTranslation";
 import { calcE1RMTrendByExercise } from "@/utils/predictionUtils";
-import { type FitnessProfile } from "./FitnessReading";
+import { type FitnessProfile } from "./fitnessTypes";
 
 export function Big3RegressionChart({ history, profile }: { history: WorkoutHistory[]; profile: FitnessProfile }) {
   const { locale } = useTranslation();
