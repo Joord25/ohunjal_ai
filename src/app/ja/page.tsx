@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { LanguageSelector } from "@/components/LanguageSelector";
+import { LanguageSelector } from "@/components/layout/LanguageSelector";
 
 function useAuthRedirect() {
   const router = useRouter();

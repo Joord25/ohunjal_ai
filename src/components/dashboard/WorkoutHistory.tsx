@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
-import { SwipeToDelete } from "./SwipeToDelete";
+import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface WorkoutHistoryProps {

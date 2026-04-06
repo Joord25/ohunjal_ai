@@ -6,10 +6,10 @@ import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
 import { loadWorkoutHistory, deleteWorkoutHistory } from "@/utils/workoutHistory";
 
 import { estimateTrainingLevelDetailed } from "@/utils/workoutMetrics";
-import { SwipeToDelete } from "./SwipeToDelete";
+import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWeeklyQuests, rebuildFromHistory, saveSeasonExp, translateQuestLabel, translateExpDetail, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
-import { WorkoutReport } from "./report/WorkoutReport";
+import { WorkoutReport } from "@/components/report/WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 import { WeightDetailView } from "./WeightDetailView";
 import { HelpCardModal } from "./HelpCardModal";

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { LanguageSelector } from "@/components/LanguageSelector";
+import { LanguageSelector } from "@/components/layout/LanguageSelector";
 
 // localStorage 캐시 기반 리다이렉트
 function useAuthRedirect() {

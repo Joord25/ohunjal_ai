@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { THEME } from "@/constants/theme";
 import { ExerciseStep, getAlternativeExercises, LABELED_EXERCISE_POOLS, RunningStats, RunningType } from "@/constants/workout";
-import { AiCoachChat } from "@/components/AiCoachChat";
+import { AiCoachChat } from "./AiCoachChat";
 import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName, translateWeightGuide } from "@/utils/exerciseName";
 import { useGpsTracker } from "@/hooks/useGpsTracker";
 import { useAlarmSynthesizer } from "@/hooks/useAlarmSynthesizer";
 import { formatPace, formatRunDistanceKm, detectRunExerciseMode, detectExerciseRunningType, getRunningTypeShareLabel } from "@/utils/runningFormat";
-import { GpsPermissionDialog } from "@/components/running/GpsPermissionDialog";
+import { GpsPermissionDialog } from "./GpsPermissionDialog";
 import { computeRunningStats } from "@/utils/runningStats";
 
 const MUSCLE_GROUP_EN: Record<string, string> = {

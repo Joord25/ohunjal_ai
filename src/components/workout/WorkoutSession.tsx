@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { FitScreen, FeedbackType } from "@/components/FitScreen";
+import { FitScreen, FeedbackType } from "./FitScreen";
 import type { RunningStats } from "@/constants/workout";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, WorkoutHistory, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { trackEvent } from "@/utils/analytics";
