@@ -865,12 +865,25 @@ export default function Home() {
             <div className="bg-white rounded-2xl p-6 mx-6 shadow-xl max-w-[320px] w-full">
               <div className="flex flex-col items-center gap-1 mb-5">
                 <img src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"} alt="Ohunjal AI" className="w-32 h-auto mb-2" />
-                <p className="text-center text-gray-800 font-bold text-base">
-                  {locale === "ko" ? "로그인하고 계속하기" : "Sign in to continue"}
-                </p>
-                <p className="text-center text-gray-500 text-sm">
-                  {locale === "ko" ? <>운동 기록 저장, 성장 분석 등<br />모든 기능을 이용할 수 있어요</> : <>Save workout records, growth analysis<br />and unlock all features</>}
-                </p>
+                {!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT ? (
+                  <>
+                    <p className="text-center text-gray-800 font-bold text-base">
+                      {locale === "ko" ? "무료 체험이 끝났어요" : "Free trial completed"}
+                    </p>
+                    <p className="text-center text-gray-500 text-sm">
+                      {locale === "ko" ? <>첫 운동 잘 하셨어요!<br />로그인하면 기록 저장, AI 분석 등<br />모든 기능을 쓸 수 있어요</> : <>Great first workout!<br />Sign in to save records, AI analysis<br />and unlock all features</>}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-center text-gray-800 font-bold text-base">
+                      {locale === "ko" ? "로그인하고 계속하기" : "Sign in to continue"}
+                    </p>
+                    <p className="text-center text-gray-500 text-sm">
+                      {locale === "ko" ? <>운동 기록 저장, 성장 분석 등<br />모든 기능을 이용할 수 있어요</> : <>Save workout records, growth analysis<br />and unlock all features</>}
+                    </p>
+                  </>
+                )}
               </div>
               <button
                 onClick={async () => {
