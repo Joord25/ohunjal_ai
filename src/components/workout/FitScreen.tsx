@@ -153,18 +153,22 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   }
 
   // Reset easyExtraReps when set changes + 세트 전환 애니메이션
-  const [prevSet, setPrevSet] = useState(setInfo.current);
   const [setTransition, setSetTransition] = useState(false);
   const [setFlash, setSetFlash] = useState(false);
-  if (setInfo.current !== prevSet) {
-    setPrevSet(setInfo.current);
-    setEasyExtraReps(2);
-    setView("active");
-    setIsDoneAnimating(false);
-    // 세트 전환 시각 피드백
-    setSetTransition(true);
-    setSetFlash(true);
-  }
+  const prevSetRef = useRef(setInfo.current);
+  useEffect(() => {
+    if (setInfo.current !== prevSetRef.current) {
+      prevSetRef.current = setInfo.current;
+      setEasyExtraReps(2);
+      setView("active");
+      setIsDoneAnimating(false);
+      // 세트 전환 시각 피드백: 다음 프레임에서 트리거해야 CSS transition 작동
+      requestAnimationFrame(() => {
+        setSetTransition(true);
+        setSetFlash(true);
+      });
+    }
+  }, [setInfo.current]);
 
   const halfAlarmFired = useRef(false);
   const playAlarmSound = useAlarmSynthesizer();

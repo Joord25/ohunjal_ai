@@ -232,7 +232,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "나비 자세 심화": "QV-PKq5sz5Y",
   "고관절 굴곡근 스트레칭": "7lGIfjasuNo",
   "오버헤드 스쿼트 홀딩": "xU-5OAMm43M",
-  "고관절 회전": "C4MDREc9ERg",
+  "고관절 회전": "roZ6Uu0RGT0",
 
   // ── 모빌리티 (전신) ──
   "터키시 겟업": "-Zsx2JTfGsU",
@@ -308,7 +308,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "추가 추천: 편안한 속도 걷기 또는 가벼운 스트레칭": "Tj3YVlL3yQk",
   "추가 활동: 가벼운 걷기 또는 스트레칭": "dgp4dMUi8ek",
   "준비 런: 가벼운 조깅": "Gn5t6izrn5Y",
-  "준비 조깅": "ppmeLjrx6UE",
+  "준비 조깅": "Gn5t6izrn5Y",
   "이지 런: 대화 가능 속도": "plREYzvF9tI",
   "인터벌 러닝": "Ph1fmsFkCkw",
   "인터벌 스프린트": "sMXvl_iOW88",
