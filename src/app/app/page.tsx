@@ -6,7 +6,7 @@ import { BottomTabs, TabId } from "@/components/BottomTabs";
 import { LoginScreen } from "@/components/LoginScreen";
 import { MasterPlanPreview } from "@/components/MasterPlanPreview";
 import { ConditionCheck, SessionSelection } from "@/components/ConditionCheck";
-import { WorkoutReport } from "@/components/WorkoutReport";
+import { WorkoutReport } from "@/components/report/WorkoutReport";
 import { WorkoutSession } from "@/components/WorkoutSession";
 import { ProofTab } from "@/components/ProofTab";
 import { MyProfileTab } from "@/components/MyProfileTab";

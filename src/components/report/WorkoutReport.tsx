@@ -5,7 +5,7 @@ import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, Runni
 import { RunningReportBody } from "@/components/report/RunningReportBody";
 import { detectRunningType } from "@/utils/runningFormat";
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
-import { ShareCard } from "./ShareCard";
+import { ShareCard } from "@/components/ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages } from "@/utils/workoutHistory";
 import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, getOrRebuildSeasonExp, translateExpDetail } from "@/utils/questSystem";
 import { trackEvent } from "@/utils/analytics";
