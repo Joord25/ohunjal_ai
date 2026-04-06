@@ -86,13 +86,33 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     || (/푸쉬업|푸시업|push[\s-]?up|pull[\s-]?up|풀업|친업|chin[\s-]?up|턱걸이|딥스|dip|plank|플랭크|버피|burpee|크런치|crunch|레그레이즈|leg raise|마운틴\s?클라이머|mountain\s?climber|점프|jump/i.test(exercise.name) && !/중량/i.test(exercise.name));
   const hasWeight = isStrengthType && !isBodyweight;
 
-  // Default weight by sex/age: male 20kg, female/senior(60+) 15kg
+  // 장비 타입 감지 (운동 이름 키워드 기반)
+  const getEquipmentType = (name: string): "barbell" | "smith" | "dumbbell" | "kettlebell" | "cable_machine" => {
+    if (/덤벨|dumbbell/i.test(name)) return "dumbbell";
+    if (/케틀벨|kettlebell/i.test(name)) return "kettlebell";
+    if (/스미스|smith/i.test(name)) return "smith";
+    if (/케이블|cable|머신|machine|풀다운|pulldown|레그\s?프레스|leg\s?press|레그\s?익스텐션|leg\s?ext|레그\s?컬|leg\s?curl|펙덱|pec\s?deck|체스트\s?프레스|시티드/i.test(name)) return "cable_machine";
+    if (/바벨|barbell/i.test(name)) return "barbell";
+    return "barbell";
+  };
+
+  // 장비 x 성별/연령별 기본 무게 (전문가 6인 합의)
   const getDefaultWeight = (): number => {
     if (typeof window === "undefined") return 20;
     const gender = localStorage.getItem("alpha_gender");
     const birthYear = localStorage.getItem("alpha_birth_year");
     const age = birthYear ? new Date().getFullYear() - parseInt(birthYear) : 30;
-    return (gender === "female" || age >= 60) ? 15 : 20;
+    const isFemaleOrSenior = gender === "female" || age >= 60;
+    const equipment = getEquipmentType(exercise.name);
+    const defaults: Record<string, [number, number]> = {
+      barbell:       [20, 15],
+      smith:         [15, 10],
+      dumbbell:      [10, 5],
+      kettlebell:    [12, 8],
+      cable_machine: [15, 10],
+    };
+    const [male, female] = defaults[equipment];
+    return isFemaleOrSenior ? female : male;
   };
 
   // Load last used weight from localStorage
