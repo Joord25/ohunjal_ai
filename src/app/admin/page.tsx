@@ -262,7 +262,7 @@ export default function AdminPage() {
   const statusColor = (s: string) => s === "active" ? "bg-emerald-100 text-emerald-700" : s === "cancelled" ? "bg-amber-100 text-amber-700" : s === "expired" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600";
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-gray-400">로딩 중...</p></div>;
-  if (!user) return (
+  if (!user || user.isAnonymous) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <h1 className="text-2xl font-black text-gray-800 mb-4">관리자 로그인</h1>
