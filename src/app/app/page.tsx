@@ -15,7 +15,7 @@ import { generateAIWorkoutPlan } from "@/utils/gemini";
 import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { saveWorkoutHistory, updateWorkoutAnalysis } from "@/utils/workoutHistory";
 import { auth, googleProvider } from "@/lib/firebase";
-import { onAuthStateChanged, signOut, signInWithPopup, User } from "firebase/auth";
+import { onAuthStateChanged, signOut, signInWithPopup, signInAnonymously, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/profile/SubscriptionScreen";
 import { PlanLoadingOverlay } from "@/components/plan/PlanLoadingOverlay";
 import { FitnessReading } from "@/components/dashboard/FitnessReading";
@@ -255,6 +255,15 @@ export default function Home() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
 
+      if (firebaseUser && firebaseUser.isAnonymous) {
+        // 익명 유저: API 토큰은 있지만 "로그인"은 아님
+        setIsLoggedIn(false);
+        setSubStatus("free");
+        setView("home");
+        setIsInitialized(true);
+        return;
+      }
+
       if (firebaseUser) {
         setIsLoggedIn(true);
         localStorage.setItem("auth_logged_in", "1");
@@ -293,10 +302,15 @@ export default function Home() {
           // 리포트는 PROOF 탭 히스토리에서만 접근 가능
         }
       } else {
-        setIsLoggedIn(false);
-        setSubStatus("free");
-        // 비로그인도 home 뷰로 진입 (체험 가능)
-        setView("home");
+        // 유저 없음 → 익명 로그인 시도 (API 토큰 확보용)
+        signInAnonymously(auth).catch(() => {
+          // 익명 로그인 실패해도 앱은 진행 (API 호출만 못 함)
+          setIsLoggedIn(false);
+          setSubStatus("free");
+          setView("home");
+        });
+        // onAuthStateChanged가 다시 호출되어 anonymous 분기로 처리됨
+        return;
       }
 
       setIsInitialized(true);
