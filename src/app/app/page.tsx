@@ -246,7 +246,7 @@ export default function Home() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const FREE_PLAN_LIMIT = 4;
-  const GUEST_TRIAL_LIMIT = 1; // 비로그인 체험 횟수
+  const GUEST_TRIAL_LIMIT = 3; // 비로그인 체험 횟수 (전문가 합의: 3회면 앱 가치 체감)
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [predictionReturnTab, setPredictionReturnTab] = useState<"home" | "proof" | "my">("home");
 
@@ -868,10 +868,10 @@ export default function Home() {
                 {!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT ? (
                   <>
                     <p className="text-center text-gray-800 font-bold text-base">
-                      {locale === "ko" ? "무료 체험이 끝났어요" : "Free trial completed"}
+                      {locale === "ko" ? "운동 기록을 저장하세요" : "Save your workout records"}
                     </p>
                     <p className="text-center text-gray-500 text-sm">
-                      {locale === "ko" ? <>첫 운동 잘 하셨어요!<br />로그인하면 기록 저장, AI 분석 등<br />모든 기능을 쓸 수 있어요</> : <>Great first workout!<br />Sign in to save records, AI analysis<br />and unlock all features</>}
+                      {locale === "ko" ? <>{getGuestTrialCount()}회 운동 잘 하셨어요!<br />로그인하면 기록이 저장되고<br />AI 성장 분석도 받을 수 있어요</> : <>{getGuestTrialCount()} workouts done!<br />Sign in to save your records<br />and get AI growth analysis</>}
                     </p>
                   </>
                 ) : (
