@@ -22,6 +22,7 @@ export interface StatusTabProps {
   bodyWeightKg: number;
   gender: "male" | "female";
   age: number;
+  onHelpPress?: () => void;
 }
 
 const CATEGORY_LABELS: Record<FitnessCategory, { ko: string; en: string }> = {
@@ -42,6 +43,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   bodyWeightKg,
   gender,
   age,
+  onHelpPress,
 }) => {
   const { t, locale } = useTranslation();
   const isKo = locale === "ko";
@@ -106,7 +108,12 @@ export const StatusTab: React.FC<StatusTabProps> = ({
     <div className="space-y-4">
       {/* 피트니스 나이 */}
       {hasAnyData && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm text-center">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm text-center relative">
+          {onHelpPress && (
+            <button onClick={onHelpPress} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
+              <span className="text-[11px] font-black text-gray-400">?</span>
+            </button>
+          )}
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
             {t("report.status.fitnessAge")}
           </p>

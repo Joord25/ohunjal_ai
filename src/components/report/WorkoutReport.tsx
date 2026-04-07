@@ -368,6 +368,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               bodyWeightKg={bodyWeightKg ?? 70}
               gender={gender ?? "male"}
               age={userAge}
+              onHelpPress={() => setHelpCard("fitnessAge")}
             />
           );
         })()}
@@ -512,6 +513,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               bodyWeightKg={bodyWeightKg ?? 70}
               gender={gender ?? "male"}
               age={birthYear ? new Date().getFullYear() - birthYear : 30}
+              onHelpPress={() => setHelpCard("fitnessAge")}
             />
           )}
           {activeReportTab === "today" && (

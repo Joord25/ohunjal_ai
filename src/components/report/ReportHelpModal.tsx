@@ -191,6 +191,44 @@ export const ReportHelpModal: React.FC<ReportHelpModalProps> = ({ helpCard, onCl
               </div>
             </>
           )}
+          {helpCard === "fitnessAge" && (
+            <>
+              <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "피트니스 나이란?" : "What is Fitness Age?"}</h3>
+              <div className="space-y-3 text-[13px] text-gray-600 leading-relaxed">
+                <p>{locale === "ko" ? <>당신의 근력 데이터를 같은 연령대/성별과 비교해서, <span className="font-bold text-[#1B4332]">신체 능력이 몇 살 수준인지</span> 역산한 값이에요.</> : <>We compare your strength data against your age/gender group and calculate <span className="font-bold text-[#1B4332]">what age your fitness level matches</span>.</>}</p>
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "계산 방법" : "How it's calculated"}</p>
+                  <div className="space-y-1.5 text-[12px]">
+                    <p>{locale === "ko" ? "1. 운동별 최고 기록(E1RM)을 체중 대비 비율로 변환" : "1. Convert your best lifts (E1RM) to body weight ratio"}</p>
+                    <p>{locale === "ko" ? "2. 연령/성별별 퍼센타일표에서 당신의 위치 산출" : "2. Find your percentile in age/gender reference tables"}</p>
+                    <p>{locale === "ko" ? "3. 5개 카테고리(가슴/등/어깨/하체/체력) 가중 평균" : "3. Weighted average of 5 categories (chest/back/shoulder/legs/cardio)"}</p>
+                    <p>{locale === "ko" ? "4. 종합 퍼센타일을 전 연령대에 대입해 피트니스 나이 역산" : "4. Map overall percentile across all age groups to find fitness age"}</p>
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "카테고리별 가중치" : "Category Weights"}</p>
+                  <div className="space-y-1 text-[12px]">
+                    <div className="flex justify-between"><span>{locale === "ko" ? "하체" : "Legs"}</span><span className="font-bold">30%</span></div>
+                    <div className="flex justify-between"><span>{locale === "ko" ? "가슴" : "Chest"}</span><span className="font-bold">20%</span></div>
+                    <div className="flex justify-between"><span>{locale === "ko" ? "등" : "Back"}</span><span className="font-bold">20%</span></div>
+                    <div className="flex justify-between"><span>{locale === "ko" ? "어깨" : "Shoulder"}</span><span className="font-bold">15%</span></div>
+                    <div className="flex justify-between"><span>{locale === "ko" ? "체력" : "Cardio"}</span><span className="font-bold">15%</span></div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "출처 및 근거" : "References"}</p>
+                  <div className="space-y-1 text-[11px] text-gray-500">
+                    <p>ACSM Guidelines for Exercise Testing and Prescription (11th ed.)</p>
+                    <p>NSCA Essentials of Strength Training and Conditioning (4th ed.)</p>
+                    <p>{locale === "ko" ? "E1RM 추정: Brzycki/Epley/Lombardi 공식 (렙수별 분기)" : "E1RM estimation: Brzycki/Epley/Lombardi formulas (rep-range based)"}</p>
+                    <p>{locale === "ko" ? "머신 운동은 프리웨이트 대비 0.7~0.75 보정 적용" : "Machine exercises adjusted by 0.7-0.75 vs free weights"}</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400">{locale === "ko" ? "운동 기록이 쌓일수록 정확도가 올라가요. 최소 3회 이상 기록하면 신뢰도가 높아집니다." : "Accuracy improves with more data. At least 3 sessions recommended for reliable results."}</p>
+              </div>
+            </>
+          )}
+
           {helpCard === "levelSystem" && (
             <>
               <h3 className="text-lg font-black text-[#1B4332] mb-3">{locale === "ko" ? "시즌 티어 시스템" : "Season Tier System"}</h3>
