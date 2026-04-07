@@ -176,7 +176,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
               <img
                 src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"}
                 alt="logo"
-                className="h-20 object-contain brightness-0 invert"
+                className="h-20 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]"
               />
             </div>
             <h1 className={`text-white text-[28px] font-black text-center mb-4 leading-tight transition-all duration-700 delay-200 ${welcomeVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
