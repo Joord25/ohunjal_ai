@@ -108,7 +108,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "해머 컬": "EXzrRuekzLU",
   "인클라인 덤벨 컬": "xHkhJK8ox0s",
   "케이블 바이셉 컬": "KbIMqVOSIiw",
-  "덤벨 프리쳐 컬": "A4YnL6fnijk",
+  "덤벨 프리쳐 컬": "ldy9fgGWPVA",
   "덤벨 컬": "-nGL7q-eP5g",
   "프리처 컬 머신": "R5JK0d7Ji_M",
   "오버헤드 케이블 바이셉 컬": "zwBRxWpGeZE",
