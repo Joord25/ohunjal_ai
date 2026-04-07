@@ -13,7 +13,7 @@ import { MyProfileTab } from "@/components/profile/MyProfileTab";
 import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { generateAIWorkoutPlan } from "@/utils/gemini";
 import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
-import { saveWorkoutHistory, updateWorkoutAnalysis } from "@/utils/workoutHistory";
+import { saveWorkoutHistory, updateWorkoutAnalysis, updateReportTabs } from "@/utils/workoutHistory";
 import { auth, googleProvider } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, signInWithPopup, signInAnonymously, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/profile/SubscriptionScreen";
@@ -709,9 +709,9 @@ export default function Home() {
             onReportTabsSaved={(tabs) => {
               try {
                 const history = JSON.parse(localStorage.getItem("alpha_workout_history") || "[]");
-                if (history.length > 0) {
-                  history[history.length - 1].reportTabs = tabs;
-                  localStorage.setItem("alpha_workout_history", JSON.stringify(history));
+                const lastEntry = history[history.length - 1];
+                if (lastEntry?.id) {
+                  updateReportTabs(lastEntry.id, tabs);
                 }
               } catch {}
             }}

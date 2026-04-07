@@ -113,6 +113,33 @@ export async function updateCoachMessages(
   }
 }
 
+/** Save reportTabs to workout history (localStorage + Firestore) — 회의 37 */
+export async function updateReportTabs(
+  historyId: string,
+  reportTabs: WorkoutHistory["reportTabs"]
+): Promise<void> {
+  try {
+    const history = JSON.parse(localStorage.getItem("alpha_workout_history") || "[]");
+    const entry = history.find((h: WorkoutHistory) => h.id === historyId);
+    if (entry) {
+      entry.reportTabs = reportTabs;
+      localStorage.setItem("alpha_workout_history", JSON.stringify(history));
+    }
+  } catch (e) {
+    console.error("Failed to update reportTabs in localStorage", e);
+  }
+
+  const col = getUserCollection();
+  if (!col) return;
+
+  try {
+    const docRef = doc(col, historyId);
+    await updateDoc(docRef, { reportTabs });
+  } catch (e) {
+    console.error("Failed to update reportTabs in Firestore", e);
+  }
+}
+
 /** Load all workout history from Firestore, falling back to localStorage */
 export async function loadWorkoutHistory(): Promise<WorkoutHistory[]> {
   const col = getUserCollection();
