@@ -901,7 +901,7 @@ export default function Home() {
           />
         )}
 
-        {view !== "login" && view !== "workout_session" && !cancelFlowActive && (
+        {view !== "login" && view !== "onboarding" && view !== "workout_session" && !cancelFlowActive && (
           <div
             className={`absolute bottom-0 left-0 right-0 z-40 transition-transform duration-300 ease-out ${
               tabsVisible ? "translate-y-0" : "translate-y-full"
