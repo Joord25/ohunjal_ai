@@ -359,7 +359,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           // 유저 목표
           let userGoal: string | undefined;
           try { userGoal = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}").goal; } catch {}
-          const isRunning = sessionData.exercises.some(e => e.type === "cardio");
           return (
             <TodayTab
               sessionCategory={sessionCategory}
@@ -368,8 +367,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               goal={userGoal}
               bodyWeightKg={bodyWeightKg}
               totalDurationSec={totalDurationSec}
+              savedDurationSec={savedDurationSec}
               fatigueDrop={fatigueDrop}
-              isRunning={isRunning}
             />
           );
         })()}
@@ -483,8 +482,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               volumeChangePercent={savedReportTabs.today.volumeChangePercent}
               bodyWeightKg={bodyWeightKg}
               totalDurationSec={totalDurationSec}
+              savedDurationSec={savedDurationSec}
               fatigueDrop={fatigueDrop}
-              isRunning={sessionData.exercises.some(e => e.type === "cardio")}
             />
           )}
           {activeReportTab === "next" && savedReportTabs.next && (
