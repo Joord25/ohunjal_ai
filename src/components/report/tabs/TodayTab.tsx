@@ -22,9 +22,10 @@ const FOOD_EN = [
 ];
 
 function getFoodAnalogy(cal: number, locale: string): string {
-  if (cal < 30) return "";
+  if (cal < 100) return ""; // 100kcal 미만은 음식 비유 의미 없음
   const pool = locale === "ko" ? FOOD_KO : FOOD_EN;
-  let best = pool[0]; let bestDiff = Infinity;
+  let best: typeof pool[0] | null = null;
+  let bestDiff = Infinity;
   for (const item of pool) {
     const n = Math.round(cal / item.cal);
     if (n >= 1 && n <= 4) {
@@ -32,6 +33,7 @@ function getFoodAnalogy(cal: number, locale: string): string {
       if (diff < bestDiff) { bestDiff = diff; best = item; }
     }
   }
+  if (!best) return ""; // 매칭 실패
   const n = Math.max(1, Math.round(cal / best.cal));
   if (n === 1) return best.food;
   if (locale === "ko") return `${best.food} ${n}개분`;
@@ -148,16 +150,16 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           </p>
           <div className="flex items-baseline gap-2">
             <p className="text-4xl font-black text-[#1B4332]">
-              {cal > 30 ? cal.toLocaleString() : "-"}
+              {cal > 0 ? cal.toLocaleString() : "-"}
             </p>
             <span className="text-base font-bold text-gray-400">kcal</span>
           </div>
-          {cal > 30 && food && (
+          {food && (
             <p className="text-sm text-[#2D6A4F] font-bold mt-2">
               {ko ? `${food} 태웠어요` : `Burned ${food}`}
             </p>
           )}
-          {cal <= 30 && (
+          {cal === 0 && (
             <p className="text-xs text-gray-400 mt-2">
               {ko ? "운동 시간 데이터가 부족해요" : "Not enough duration data"}
             </p>
@@ -251,7 +253,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">{ko ? "칼로리 소모" : "Calories"}</span>
             <span className="text-sm font-bold text-[#1B4332]">
-              {cal > 30 ? `${cal}kcal${food ? ` · ${food}` : ""}` : "-"}
+              {cal > 0 ? `${cal}kcal${food ? ` · ${food}` : ""}` : "-"}
             </span>
           </div>
         ) : (
