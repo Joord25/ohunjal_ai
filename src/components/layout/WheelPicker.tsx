@@ -91,8 +91,8 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({
               <span
                 className={`transition-all duration-150 font-black ${
                   isSelected
-                    ? "text-4xl text-[#1B4332]"
-                    : "text-xl text-gray-300"
+                    ? "text-3xl text-[#1B4332]"
+                    : "text-lg text-gray-300"
                 }`}
               >
                 {v}
@@ -110,7 +110,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({
 
       {/* Selection highlight bar */}
       <div
-        className="absolute left-4 right-4 border-y-2 border-[#2D6A4F]/20 rounded-lg pointer-events-none"
+        className="absolute left-0 right-0 border-y-2 border-[#2D6A4F]/20 rounded-lg pointer-events-none"
         style={{
           height: itemHeight + 12,
           top: centerOffset - 6,
