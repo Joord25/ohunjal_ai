@@ -695,9 +695,12 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
         <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="w-full px-5 py-4 flex items-center justify-between active:bg-gray-50 transition-all"
+            className="w-full p-4 flex items-center justify-between active:scale-[0.99] transition-all"
           >
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("my.settings")}</span>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
+              <span className="text-sm font-bold text-[#1B4332]">{t("my.settings")}</span>
+            </div>
             <svg className={`w-4 h-4 text-gray-400 transition-transform ${showSettings ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
