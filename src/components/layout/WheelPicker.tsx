@@ -110,7 +110,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({
 
       {/* Selection highlight bar */}
       <div
-        className="absolute left-0 right-0 border-y-2 border-[#2D6A4F]/20 rounded-lg pointer-events-none"
+        className="absolute -left-8 -right-8 border-y-2 border-[#2D6A4F]/20 rounded-xl pointer-events-none"
         style={{
           height: itemHeight + 12,
           top: centerOffset - 6,
