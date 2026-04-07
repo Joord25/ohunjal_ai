@@ -759,13 +759,9 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
         <div className="mb-5">
           <button
             onClick={() => setShowDetail(!showDetail)}
-            className="w-full flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-4 shadow-sm active:scale-[0.99] transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 active:opacity-60 transition-all"
           >
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-              <span className="text-sm font-bold text-[#1B4332]">{t("report.scienceData")}</span>
-              <span className="text-[10px] text-gray-400 font-medium">{t("report.scienceSub")}</span>
-            </div>
+            <span className="text-sm text-gray-400 font-medium">{t("report.scienceData")}</span>
             <svg className={`w-4 h-4 text-gray-400 transition-transform ${showDetail ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
@@ -1045,12 +1041,9 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
         {(activeReportTab === "today" || (!!sessionDate && !savedReportTabs)) && <div className="mb-4">
           <button
             onClick={() => setShowLogs(!showLogs)}
-            className="w-full flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-4 shadow-sm active:scale-[0.99] transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 active:opacity-60 transition-all"
           >
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-              <span className="text-sm font-serif font-medium text-[#1B4332] uppercase tracking-wide">Workout Logs</span>
-            </div>
+            <span className="text-sm text-gray-400 font-medium">Workout Logs</span>
             <svg className={`w-4 h-4 text-gray-400 transition-transform ${showLogs ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
