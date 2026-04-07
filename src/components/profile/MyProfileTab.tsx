@@ -219,6 +219,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
     try { return JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}").height || ""; } catch { return ""; }
   });
   const [isEditingHeight, setIsEditingHeight] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [heightInput, setHeightInput] = useState(height);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
   const [showBodyInfo, setShowBodyInfo] = useState(!!autoEdit1RM);
@@ -690,20 +691,22 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
           </svg>
         </a>
 
-        {/* Settings Section */}
+        {/* Settings Section — 접이식 드롭다운 */}
         <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 pt-4 pb-2">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="w-full px-5 py-4 flex items-center justify-between active:bg-gray-50 transition-all"
+          >
             <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("my.settings")}</span>
-          </div>
+            <svg className={`w-4 h-4 text-gray-400 transition-transform ${showSettings ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
+          {showSettings && <>
           {/* Sound Toggle */}
-          <div className="px-5 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6.253v11.494m0-11.494A5.99 5.99 0 008 9H5a1 1 0 00-1 1v4a1 1 0 001 1h3a5.99 5.99 0 004 2.747" />
-              </svg>
-              <span className="text-sm font-bold text-[#1B4332]">{t("my.settings.sound")}</span>
-            </div>
+          <div className="px-5 py-3.5 flex items-center justify-between border-t border-gray-50">
+            <span className="text-sm font-bold text-[#1B4332]">{t("my.settings.sound")}</span>
             <button
               onClick={() => {
                 const next = !soundEnabled;
@@ -718,12 +721,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
 
           {/* Vibration Toggle */}
           <div className="px-5 py-3.5 flex items-center justify-between border-t border-gray-50">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-              </svg>
-              <span className="text-sm font-bold text-[#1B4332]">{t("my.settings.vibration")}</span>
-            </div>
+            <span className="text-sm font-bold text-[#1B4332]">{t("my.settings.vibration")}</span>
             <button
               onClick={() => {
                 const next = !vibrationEnabled;
@@ -738,12 +736,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
 
           {/* Language Selector */}
           <div className="px-5 py-3.5 flex items-center justify-between border-t border-gray-50">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582" />
-              </svg>
-              <span className="text-sm font-bold text-[#1B4332]">{t("my.language")}</span>
-            </div>
+            <span className="text-sm font-bold text-[#1B4332]">{t("my.language")}</span>
             <div className="flex gap-1.5">
               {([["ko", "KO"], ["en", "EN"]] as const).map(([code, label]) => (
                 <button
@@ -756,6 +749,7 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
               ))}
             </div>
           </div>
+          </>}
         </div>
 
         <button
