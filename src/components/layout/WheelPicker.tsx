@@ -67,7 +67,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="overflow-y-scroll scrollbar-hide"
+        className="overflow-y-scroll scrollbar-hide relative z-10"
         style={{
           height: containerHeight,
           scrollSnapType: "y mandatory",
