@@ -240,22 +240,46 @@ export const NextTab: React.FC<NextTabProps> = ({
     ? getWeightGoal(advice.recommendedPartKey, recentHistory, gender ?? "male", locale)
     : null;
 
-  // 이번 주 남은 스케줄
-  const remainingSchedule = (() => {
-    if (!weeklySchedule) return [];
-    const today = new Date().getDay(); // 0=Sun
-    const todayIdx = today === 0 ? 6 : today - 1; // Mon-indexed
-    const remaining: { dayLabel: string; workout: string }[] = [];
-    for (let i = todayIdx + 1; i < 7; i++) {
-      const label = weeklySchedule[i];
-      if (label && label !== "rest" && label !== "휴식") {
-        remaining.push({
-          dayLabel: ko ? DAY_KO[i] : DAY_EN[i],
-          workout: label,
+  // 이번 주 운동 현황 (recentHistory 기반)
+  const weekSummary = (() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun
+    // 이번 주 월요일 기준
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    // 이번 주 운동한 날 + 부위
+    const thisWeekSessions: { dayIdx: number; dayLabel: string; desc: string }[] = [];
+    for (const h of recentHistory) {
+      const d = new Date(h.date);
+      if (d >= monday && d <= now) {
+        const idx = d.getDay() === 0 ? 6 : d.getDay() - 1; // Mon-indexed
+        const desc = h.sessionData.description || h.sessionData.title || "";
+        const partLabel = desc.split("·")[0]?.trim() || (ko ? "운동" : "Workout");
+        thisWeekSessions.push({
+          dayIdx: idx,
+          dayLabel: ko ? DAY_KO[idx] : DAY_EN[idx],
+          desc: partLabel,
         });
       }
     }
-    return remaining;
+    // 오늘도 포함
+    const todayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const todayDesc = sessionDesc?.split("·")[0]?.trim() || (ko ? "운동" : "Workout");
+    const todayAlready = thisWeekSessions.some(s => s.dayIdx === todayIdx);
+    if (!todayAlready) {
+      thisWeekSessions.push({ dayIdx: todayIdx, dayLabel: ko ? DAY_KO[todayIdx] : DAY_EN[todayIdx], desc: todayDesc });
+    }
+
+    // 주간 빈도
+    let weeklyFreq = 3;
+    try { weeklyFreq = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}").weeklyFrequency || 3; } catch {}
+
+    const done = thisWeekSessions.length;
+    const remaining = Math.max(0, weeklyFreq - done);
+
+    return { sessions: thisWeekSessions.sort((a, b) => a.dayIdx - b.dayIdx), done, remaining, weeklyFreq };
   })();
 
   return (
@@ -286,22 +310,37 @@ export const NextTab: React.FC<NextTabProps> = ({
         </div>
       </div>
 
-      {/* 이번 주 남은 스케줄 */}
-      {remainingSchedule.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">
-            {ko ? "이번 주 남은 운동" : "Remaining This Week"}
-          </p>
-          <div className="space-y-2">
-            {remainingSchedule.map((s, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <span className="text-sm font-bold text-[#1B4332]">{s.dayLabel}</span>
-                <span className="text-sm text-gray-500">{s.workout}</span>
-              </div>
-            ))}
+      {/* 이번 주 운동 현황 */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">
+          {ko ? "이번 주 운동" : "This Week"}
+        </p>
+        {/* 완료한 운동 */}
+        {weekSummary.sessions.map((s, i) => (
+          <div key={i} className="flex items-center justify-between py-1">
+            <span className="text-sm font-bold text-[#1B4332]">{s.dayLabel}</span>
+            <span className="text-sm text-gray-500">{s.desc}</span>
           </div>
+        ))}
+        {weekSummary.sessions.length > 0 && <div className="h-px bg-gray-100 my-2" />}
+        {/* 남은 횟수 */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500">{ko ? "이번 주 목표" : "Weekly Goal"}</span>
+          <span className="text-sm font-bold text-[#1B4332]">
+            {weekSummary.done}/{weekSummary.weeklyFreq}{ko ? "회" : "x"}
+            {weekSummary.remaining > 0 && (
+              <span className="text-[#2D6A4F] ml-1">
+                ({weekSummary.remaining}{ko ? "회 남음" : " left"})
+              </span>
+            )}
+            {weekSummary.remaining === 0 && (
+              <span className="text-[#2D6A4F] ml-1">
+                {ko ? "달성!" : "Done!"}
+              </span>
+            )}
+          </span>
         </div>
-      )}
+      </div>
     </div>
   );
 };
