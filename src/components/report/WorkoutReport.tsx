@@ -6,129 +6,21 @@ import { RunningReportBody } from "@/components/report/RunningReportBody";
 import { detectRunningType } from "@/utils/runningFormat";
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
-import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages } from "@/utils/workoutHistory";
-import { getTierFromExp, type ExpLogEntry, sumExp, TIERS, getOrRebuildSeasonExp, translateExpDetail } from "@/utils/questSystem";
+import { loadRecentHistory as loadRecentHistoryFromStore } from "@/utils/workoutHistory";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
 
-import { ExpTierCard, type RpgInsight } from "./ExpTierCard";
-import { RpgResultCard, type HeroData, type HeroType } from "./RpgResultCard";
 import { ReportHelpModal } from "./ReportHelpModal";
-import { translateDesc } from "./reportUtils";
+
+import { StatusTab } from "./tabs/StatusTab";
+import { TodayTab } from "./tabs/TodayTab";
+import { NextTab } from "./tabs/NextTab";
+import { NutritionTab } from "./tabs/NutritionTab";
+
+type ReportTabId = "status" | "today" | "next" | "nutrition";
 
 
-/** 시간대 맥락 메시지 키 반환 */
-function getTimeContextKey(): string {
-  const h = new Date().getHours();
-  if (h >= 0 && h < 5) return "report.hero.time.night";
-  if (h >= 5 && h < 8) return "report.hero.time.dawn";
-  if (h >= 8 && h < 11) return "report.hero.time.morning";
-  if (h >= 11 && h < 12) return "report.hero.time.preLunch";
-  if (h >= 12 && h < 14) return "report.hero.time.lunch";
-  if (h >= 14 && h < 18) return "report.hero.time.afternoon";
-  if (h >= 18 && h < 22) return "report.hero.time.evening";
-  return "report.hero.time.night";
-}
-
-/** 마이크로 PR 감지 — 같은 운동의 이전 최고와 비교 (2회차+) — 메시지 없이 타입만 */
-function detectMicroPR(
-  exercises: WorkoutSessionData["exercises"],
-  logs: Record<number, ExerciseLog[]>,
-  history: WorkoutHistory[],
-  t: (key: string, vars?: Record<string, string>) => string,
-  locale: string,
-): HeroData | null {
-  // 히스토리에서 운동별 최고 기록 추출
-  const historyBest: Record<string, { maxWeight: number; maxRepsAtWeight: Record<number, number>; maxVolume: number; count: number }> = {};
-  for (const h of history) {
-    if (!h.logs) continue;
-    for (const ex of h.sessionData.exercises) {
-      const exIdx = h.sessionData.exercises.indexOf(ex);
-      const exLogs = h.logs[exIdx];
-      if (!exLogs || exLogs.length === 0) continue;
-      const name = ex.name;
-      if (!historyBest[name]) historyBest[name] = { maxWeight: 0, maxRepsAtWeight: {}, maxVolume: 0, count: 0 };
-      historyBest[name].count++;
-      let exVol = 0;
-      for (const l of exLogs) {
-        const w = parseFloat(l.weightUsed || "0");
-        if (w > historyBest[name].maxWeight) historyBest[name].maxWeight = w;
-        if (w > 0) {
-          const prevMax = historyBest[name].maxRepsAtWeight[w] || 0;
-          if (l.repsCompleted > prevMax) historyBest[name].maxRepsAtWeight[w] = l.repsCompleted;
-        }
-        exVol += (w || 0) * l.repsCompleted;
-      }
-      if (exVol > historyBest[name].maxVolume) historyBest[name].maxVolume = exVol;
-    }
-  }
-
-  // 우선순위 1: 무게 PR
-  for (let i = 0; i < exercises.length; i++) {
-    const ex = exercises[i];
-    const exLogs = logs[i];
-    if (!exLogs || exLogs.length === 0) continue;
-    const best = historyBest[ex.name];
-    if (!best || best.count < 1) continue;
-    for (const l of exLogs) {
-      const w = parseFloat(l.weightUsed || "0");
-      if (w > 0 && w > best.maxWeight && best.maxWeight > 0) {
-        const displayName = getExerciseName(ex.name, locale).split("(")[0].trim();
-        return {
-          type: "weightPR", label: t("report.hero.pr"), isDark: true,
-          bigNumber: `${best.maxWeight} → ${w} kg`, subText: displayName,
-          exerciseName: ex.name, exerciseType: ex.type,
-          vars: { name: displayName, weight: String(w), prev: String(best.maxWeight) },
-        };
-      }
-    }
-  }
-
-  // 우선순위 2: 렙수 PR
-  for (let i = 0; i < exercises.length; i++) {
-    const ex = exercises[i];
-    const exLogs = logs[i];
-    if (!exLogs || exLogs.length === 0) continue;
-    const best = historyBest[ex.name];
-    if (!best || best.count < 1) continue;
-    for (const l of exLogs) {
-      const w = parseFloat(l.weightUsed || "0");
-      if (w > 0 && best.maxRepsAtWeight[w] && l.repsCompleted > best.maxRepsAtWeight[w]) {
-        const displayName = getExerciseName(ex.name, locale).split("(")[0].trim();
-        const diff = l.repsCompleted - best.maxRepsAtWeight[w];
-        return {
-          type: "repsPR", label: t("report.hero.pr"), isDark: true,
-          bigNumber: `${best.maxRepsAtWeight[w]} → ${l.repsCompleted}`, subText: `${displayName} · ${w}kg`,
-          exerciseName: ex.name, exerciseType: ex.type,
-          vars: { name: displayName, diff: String(diff), prev: String(best.maxRepsAtWeight[w]), current: String(l.repsCompleted) },
-        };
-      }
-    }
-  }
-
-  // 우선순위 3: 볼륨 PR
-  for (let i = 0; i < exercises.length; i++) {
-    const ex = exercises[i];
-    const exLogs = logs[i];
-    if (!exLogs || exLogs.length === 0) continue;
-    const best = historyBest[ex.name];
-    if (!best || best.count < 1) continue;
-    let todayVol = 0;
-    for (const l of exLogs) todayVol += (parseFloat(l.weightUsed || "0") || 0) * l.repsCompleted;
-    if (todayVol > best.maxVolume && best.maxVolume > 0) {
-      const displayName = getExerciseName(ex.name, locale).split("(")[0].trim();
-      return {
-        type: "volumePR", label: t("report.hero.sessionRecord"), isDark: true,
-        bigNumber: `${best.maxVolume.toLocaleString()} → ${todayVol.toLocaleString()} kg`, subText: displayName,
-        exerciseName: ex.name, exerciseType: ex.type,
-        vars: { name: displayName },
-      };
-    }
-  }
-
-  return null;
-}
 
 
 interface WorkoutReportProps {
@@ -145,9 +37,9 @@ interface WorkoutReportProps {
   onDelete?: () => void;
   onShowPrediction?: () => void;
   onAnalysisComplete?: (analysis: WorkoutAnalysis) => void;
-  precomputedExpGained?: ExpLogEntry[];
-  precomputedPrevExp?: number;
-  savedCoachMessages?: string[];
+  precomputedExpGained?: unknown[];  // 회의 37: EXP 삭제, props 호환용
+  precomputedPrevExp?: number;       // 회의 37: EXP 삭제, props 호환용
+  savedCoachMessages?: string[];     // 회의 37: 코치 삭제, props 호환용
   runningStats?: RunningStats;  // 회의 41: 러닝 세션 전용
 }
 
@@ -185,9 +77,9 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   onDelete,
   onShowPrediction,
   onAnalysisComplete,
-  precomputedExpGained,
-  precomputedPrevExp,
-  savedCoachMessages: propCoachMessages,
+  // precomputedExpGained — 회의 37: EXP 시스템 삭제 (props 호환성 유지)
+  // precomputedPrevExp — 회의 37: EXP 시스템 삭제
+  // savedCoachMessages — 회의 37: 코치 3버블 삭제
   runningStats,
 }) => {
   const analysis = initialAnalysis;
@@ -199,6 +91,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
   const [activeDot, setActiveDot] = useState<string | null>(null);
   const [e1rmIndex, setE1rmIndex] = useState(0);
   const [recentHistory, setRecentHistory] = useState<WorkoutHistory[]>(getRecentHistorySync);
+  const [activeReportTab, setActiveReportTab] = useState<ReportTabId>("status");
 
   const { t, locale } = useTranslation();
   useEffect(() => { trackEvent("report_view"); }, []);
@@ -316,102 +209,43 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-5 scrollbar-hide" style={{ paddingBottom: "calc(96px + var(--safe-area-bottom, 0px))" }}>
 
-        {/* === RPG 리절트 화면 === */}
-        {(() => {
-          // Use precomputed EXP from completion handler (avoids re-processing on every render)
-          // For history view (sessionDate), rebuild from saved state
-          const seasonState = getOrRebuildSeasonExp(recentHistory, birthYear, gender);
-          const expGained = precomputedExpGained && !sessionDate ? precomputedExpGained : [];
-          const prevExp = precomputedPrevExp !== undefined && !sessionDate ? precomputedPrevExp : seasonState.totalExp;
-          const currentExp = sessionDate ? seasonState.totalExp : prevExp + sumExp(expGained);
+        {/* === 4탭 네비게이션 (회의 37) — 현재 세션에서만, 히스토리에서는 숨김 === */}
+        {!sessionDate && <div className="flex bg-white rounded-2xl border border-gray-100 p-1 mb-5 shadow-sm">
+          {(["status", "today", "next", "nutrition"] as ReportTabId[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveReportTab(tab)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                activeReportTab === tab
+                  ? "bg-[#1B4332] text-white shadow-sm"
+                  : "text-gray-400 active:bg-gray-50"
+              }`}
+            >
+              {t(`report.tab.${tab}`)}
+            </button>
+          ))}
+        </div>}
 
-          // ── Insight 계산 ──
-          const insight: RpgInsight = {};
-
-          // 1. 목표 연결 한 줄
-          try {
-            const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
-            const goal = fp.goal as string | undefined;
-            const bw = fp.bodyWeight as number | undefined;
-            const freq = fp.weeklyFrequency as number | undefined;
-            const sessionMin = fp.sessionMinutes as number | undefined;
-            if (goal && bw && freq && sessionMin) {
-              const metLow = goal === "endurance" ? 5.0 : goal === "fat_loss" ? 4.0 : 3.5;
-              const metHigh = goal === "endurance" ? 8.0 : goal === "fat_loss" ? 7.0 : 6.0;
-              const hours = (sessionMin || 45) / 60;
-              const sessionCal = Math.round(((metLow + metHigh) / 2) * bw * hours);
-              if (goal === "fat_loss") {
-                const weeklyCal = sessionCal * freq;
-                const weeklyLossKg = Math.round((weeklyCal / 7700) * 100) / 100;
-                const pred4w = Math.round((bw - weeklyLossKg * 4) * 10) / 10;
-                insight.goalLine = t("report.insight.goalLine.fatLoss", { cal: String(sessionCal), weight: String(pred4w) });
-              } else if (goal === "muscle_gain") {
-                const bestVal = bestE1RM?.value ?? 0;
-                const target = Math.round(bw * 1.0);
-                if (bestVal > 0) {
-                  const rounded = Math.round(bestVal * 10) / 10;
-                  const eNameFull = bestE1RM!.exerciseName.split("(")[0].trim();
-                  const eName = eNameFull.length > 6 ? eNameFull.slice(0, 6) + ".." : eNameFull;
-                  const pct = Math.min(100, Math.round((bestVal / target) * 100));
-                  insight.goalLine = t("report.insight.goalLine.muscleGain", { name: eName, value: String(rounded), pct: String(pct) });
-                }
-              } else if (goal === "endurance" || goal === "health") {
-                const whoMin = 150;
-                const weeklyMin = freq * (sessionMin || 45);
-                const pct = Math.min(200, Math.round((weeklyMin / whoMin) * 100));
-                insight.goalLine = t("report.insight.goalLine.health", { pct: String(pct) });
-              }
-            }
-          } catch {}
-
-          // 2. 최고 무게 신기록
-          if (isStrengthSession && logs) {
-            let todayMaxWeight = 0;
-            for (const exLogs of Object.values(logs)) {
-              for (const l of exLogs) {
-                const w = parseFloat(l.weightUsed || "0");
-                if (w > todayMaxWeight) todayMaxWeight = w;
-              }
-            }
-            if (todayMaxWeight > 0) {
-              let historyMaxWeight = 0;
-              for (const h of recentHistory) {
-                if (h.logs) {
-                  for (const exLogs of Object.values(h.logs)) {
-                    for (const l of exLogs) {
-                      const w = parseFloat(l.weightUsed || "0");
-                      if (w > historyMaxWeight) historyMaxWeight = w;
-                    }
-                  }
-                }
-              }
-              if (todayMaxWeight > historyMaxWeight && historyMaxWeight > 0) {
-                insight.weightPR = t("report.insight.weightPR", { prev: String(historyMaxWeight), current: String(todayMaxWeight) });
-              }
-            }
-          }
-
-          // 3. Phase 해금 알림
-          const totalWorkouts = sessionDate ? recentHistory.length : recentHistory.length + 1;
-          const prevWorkouts = recentHistory.length;
-          const phaseThresholds = [5, 10, 20];
-          // 이전에는 미달이었지만 이번에 달성한 Phase 찾기
-          const justUnlockedPhase = phaseThresholds.find(th => prevWorkouts < th && totalWorkouts >= th);
-          if (justUnlockedPhase) {
-            insight.phaseUnlock = t("report.insight.phaseUnlock", { count: String(justUnlockedPhase) });
-            insight.phaseJustUnlocked = true;
-          } else {
-            const nextPhase = phaseThresholds.find(th => totalWorkouts < th);
-            if (nextPhase) {
-              const remaining = nextPhase - totalWorkouts;
-              insight.phaseUnlock = t("report.insight.phaseRemaining", { remaining: String(remaining) });
-            }
-          }
-
-          // 4. vs 지난 세션 볼륨 비교 (현재 세션 제외)
+        {/* === 탭 내용 (현재 세션에서만) === */}
+        {!sessionDate && <>
+        {activeReportTab === "status" && (() => {
+          const currentYear = new Date().getFullYear();
+          const userAge = birthYear ? currentYear - birthYear : 30;
+          return (
+            <StatusTab
+              exercises={sessionData.exercises}
+              logs={logs}
+              recentHistory={recentHistory}
+              bodyWeightKg={bodyWeightKg ?? 70}
+              gender={gender ?? "male"}
+              age={userAge}
+            />
+          );
+        })()}
+        {activeReportTab === "today" && (() => {
+          // 볼륨 변화 % 계산 (기존 insight 로직과 동일)
+          let volumeChangePercent: number | null = null;
           if (isStrengthSession && totalVolume > 0 && recentHistory.length > 0) {
-            // 현재 세션과 볼륨이 동일한 마지막 항목은 자기 자신일 수 있으므로,
-            // 현재 세션 날짜/볼륨과 다른 가장 최근 세션을 찾음
             const currentId = sessionData.exercises.map(e => e.name).join(",");
             const prevSessions = recentHistory.filter(h => {
               const hId = h.sessionData.exercises.map((e: { name: string }) => e.name).join(",");
@@ -419,169 +253,146 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             });
             const lastSession = prevSessions[prevSessions.length - 1];
             const lastVol = lastSession?.stats?.totalVolume || 0;
-            if (lastVol > 0) {
-              const diff = Math.round(((totalVolume - lastVol) / lastVol) * 100);
-              if (diff > 0) {
-                insight.volumeCompare = t("report.insight.volumeUp", { volume: totalVolume.toLocaleString(), diff: String(diff) });
-              } else if (diff < 0) {
-                insight.volumeCompare = t("report.insight.volumeDown", { volume: totalVolume.toLocaleString(), diff: String(diff) });
-              } else {
-                insight.volumeCompare = t("report.insight.volumeSame", { volume: totalVolume.toLocaleString() });
-              }
-            }
+            if (lastVol > 0) volumeChangePercent = Math.round(((totalVolume - lastVol) / lastVol) * 100);
           }
-
-          // ── 히어로 데이터 계산 (coachLine 없이 — Gemini에서 생성) ──
-          const microPR = detectMicroPR(sessionData.exercises, logs, recentHistory, t, locale);
-
+          // 유저 목표
+          let userGoal: string | undefined;
+          try { userGoal = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}").goal; } catch {}
+          const isRunning = sessionData.exercises.some(e => e.type === "cardio");
+          return (
+            <TodayTab
+              sessionCategory={sessionCategory}
+              totalVolume={totalVolume}
+              volumeChangePercent={volumeChangePercent}
+              goal={userGoal}
+              bodyWeightKg={bodyWeightKg}
+              totalDurationSec={totalDurationSec}
+              fatigueDrop={fatigueDrop}
+              isRunning={isRunning}
+            />
+          );
+        })()}
+        {activeReportTab === "next" && (() => {
+          // condition에서 bodyPart 추출
+          let todayBodyPart: string | undefined;
+          let weeklySchedule: string[] | undefined;
+          try {
+            const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+            todayBodyPart = fp.lastCondition?.bodyPart;
+            weeklySchedule = fp.weeklySchedule;
+          } catch {}
           // 스트릭 계산
           const heroStreak = (() => {
             if (recentHistory.length === 0) return 0;
             let count = 0;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = new Date(); today.setHours(0, 0, 0, 0);
             const dayMs = 24 * 60 * 60 * 1000;
             for (let i = 0; ; i++) {
               const checkDate = new Date(today.getTime() - i * dayMs);
-              const checkStr = checkDate.toDateString();
-              if (recentHistory.some(h => new Date(h.date).toDateString() === checkStr)) {
-                count++;
-              } else if (i === 0) {
-                count++;
-                continue;
-              } else {
-                break;
-              }
+              if (recentHistory.some(h => new Date(h.date).toDateString() === checkDate.toDateString())) { count++; }
+              else if (i === 0) { count++; continue; }
+              else break;
             }
             return count;
           })();
+          return (
+            <NextTab
+              todayBodyPart={todayBodyPart}
+              sessionCategory={sessionCategory}
+              fatigueDrop={fatigueDrop}
+              recentHistory={recentHistory}
+              weeklySchedule={weeklySchedule}
+              streak={heroStreak}
+              totalVolume={totalVolume}
+            />
+          );
+        })()}
+        {activeReportTab === "nutrition" && (() => {
+          const currentYear = new Date().getFullYear();
+          const userAge = birthYear ? currentYear - birthYear : 30;
+          let userGoal = "health";
+          let userFreq = 3;
+          let userHeight: number | undefined;
+          let todayBodyPart: string | undefined;
+          try {
+            const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+            userGoal = fp.goal || "health";
+            userFreq = fp.weeklyFrequency || 3;
+            userHeight = fp.height;
+            todayBodyPart = fp.lastCondition?.bodyPart;
+          } catch {}
+          const durationMin = Math.round(totalDurationSec / 60);
+          const met = sessionCategory === "cardio" ? 8 : 4.5;
+          const estimatedCal = Math.round(met * (bodyWeightKg ?? 70) * (durationMin / 60));
+          return (
+            <NutritionTab
+              bodyWeightKg={bodyWeightKg ?? 70}
+              heightCm={userHeight}
+              age={userAge}
+              gender={gender ?? "male"}
+              goal={userGoal}
+              weeklyFrequency={userFreq}
+              todaySession={{
+                type: sessionCategory,
+                durationMin,
+                bodyPart: todayBodyPart,
+                estimatedCalories: estimatedCal,
+              }}
+            />
+          );
+        })()}
+        </>}
 
-          // 폴백 체인: microPR > 러닝 > 완주율100% > 스트릭3+ > 총볼륨 > 첫운동
-          const hero: HeroData = microPR ?? (() => {
-            const totalWorkouts = recentHistory.length;
-            const isRunning = sessionData.exercises.some(e => e.type === "cardio");
-
-            if (isRunning) {
-              return { type: "running" as HeroType, label: t("report.hero.todaysWork"), bigNumber: formatDuration(totalDurationSec), subText: translateDesc(sessionData.description || "", locale), isDark: false };
+        {/* === 스트릭 뱃지 (회의 37 — 상단 유지) === */}
+        {(() => {
+          const streak = (() => {
+            if (recentHistory.length === 0) return 1; // 오늘 포함
+            let count = 0;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const dayMs = 24 * 60 * 60 * 1000;
+            for (let i = 0; ; i++) {
+              const checkDate = new Date(today.getTime() - i * dayMs);
+              if (recentHistory.some(h => new Date(h.date).toDateString() === checkDate.toDateString())) { count++; }
+              else if (i === 0) { count++; continue; }
+              else break;
             }
-            if (successRate >= 100 && isStrengthSession) {
-              return { type: "perfect" as HeroType, label: t("report.hero.perfectSession"), bigNumber: t("report.hero.perfectDesc"), isDark: false };
-            }
-            if (heroStreak >= 3) {
-              return { type: "streak" as HeroType, label: t("report.hero.streakLabel", { days: String(heroStreak) }), bigNumber: t("report.hero.streakDesc"), isDark: false, vars: { days: String(heroStreak) } };
-            }
-            if (totalVolume > 0) {
-              return { type: "volume" as HeroType, label: t("report.hero.todaysWork"), bigNumber: `${totalVolume.toLocaleString()} kg`, subText: t("report.hero.totalVolume"), isDark: false };
-            }
-            if (totalWorkouts === 0) {
-              return { type: "first" as HeroType, label: t("report.hero.firstWorkout"), bigNumber: t("report.hero.firstComplete"), isDark: false };
-            }
-            return { type: "volume" as HeroType, label: t("report.hero.todaysWork"), bigNumber: formatDuration(totalDurationSec), subText: translateDesc(sessionData.description || "", locale), isDark: false };
+            return count;
           })();
+          if (streak < 2) return null;
+          return (
+            <div className="flex items-center justify-center gap-1.5 mb-4">
+              <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+              </svg>
+              <span className="text-xs font-black text-amber-600">
+                {streak}{locale === "ko" ? "일 연속" : " day streak"}
+              </span>
+            </div>
+          );
+        })()}
 
-          const heroTimeContext = t(getTimeContextKey());
-
-          // 다음 운동 예고 (요일 기반 스케줄에서 추출)
-          const nextWorkout = (() => {
-            try {
-              const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
-              const schedule = fp.weeklySchedule as string[] | undefined;
-              if (!schedule) return undefined;
-              const today = new Date().getDay(); // 0=Sun
-              for (let i = 1; i <= 7; i++) {
-                const nextDay = (today + i) % 7;
-                const label = schedule[nextDay === 0 ? 6 : nextDay - 1]; // schedule is Mon-indexed
-                if (label && label !== "rest" && label !== "휴식") {
-                  return translateDesc(label, locale);
-                }
-              }
-            } catch {}
-            return undefined;
-          })();
-
-          // 회의 42: 러닝 세션 감지 + 폴백 stats 조립 (IIFE 스코프 내 — ExpTierCard 외부 렌더에 expGained 등 필요)
+        {/* === 러닝 세션 전용 본문 (유지) === */}
+        {(() => {
           const detectedRunningType = detectRunningType(sessionData.exercises);
           const isRunningReport = detectedRunningType !== null;
-          const effectiveRunningStats: RunningStats | null = isRunningReport
-            ? (runningStats ?? {
-                runningType: detectedRunningType,
-                isIndoor: false,
-                gpsAvailable: false,
-                distance: 0,
-                duration: totalDurationSec,
-                avgPace: null,
-                sprintAvgPace: null,
-                recoveryAvgPace: null,
-                bestPace: null,
-                intervalRounds: [],
-                completionRate: 0,
-              })
-            : null;
-
+          if (!isRunningReport) return null;
+          const effectiveRunningStats: RunningStats = runningStats ?? {
+            runningType: detectedRunningType,
+            isIndoor: false,
+            gpsAvailable: false,
+            distance: 0,
+            duration: totalDurationSec,
+            avgPace: null,
+            sprintAvgPace: null,
+            recoveryAvgPace: null,
+            bestPace: null,
+            intervalRounds: [],
+            completionRate: 0,
+          };
           return (
-            <>
-              <RpgResultCard
-                totalDurationSec={totalDurationSec}
-                totalSets={isStrengthSession ? metrics.strengthSets : metrics.totalSets}
-                totalVolume={totalVolume}
-                successRate={successRate}
-                isStrengthSession={isStrengthSession}
-                seasonExp={currentExp}
-                prevSeasonExp={prevExp}
-                expGained={expGained}
-                intensityLevel={sessionIntensity.level}
-                formatDuration={formatDuration}
-                onHelpPress={() => setHelpCard("levelSystem")}
-                onShowPrediction={onShowPrediction}
-                skipAnimation={!!sessionDate}
-                insight={insight}
-                sessionDesc={sessionData.description || sessionData.title || ""}
-                hero={hero}
-                timeContext={heroTimeContext}
-                streak={heroStreak}
-                nextWorkoutName={nextWorkout}
-                logs={logs}
-                exercises={sessionData.exercises}
-                condition={(() => { try { const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}"); return fp.lastCondition; } catch { return undefined; } })()}
-                savedCoachMessages={propCoachMessages || (() => {
-                  // prop으로 전달 안 됐으면 히스토리에서 찾기
-                  const match = recentHistory.find(h =>
-                    h.id && h.coachMessages && h.coachMessages.length > 0
-                    && h.sessionData.exercises.map(e => e.name).join(",") === sessionData.exercises.map(e => e.name).join(",")
-                  );
-                  return match?.coachMessages;
-                })()}
-                onCoachMessagesLoaded={(msgs) => {
-                  // 최신 히스토리 항목에 코치 멘트 저장
-                  try {
-                    const history = JSON.parse(localStorage.getItem("alpha_workout_history") || "[]") as WorkoutHistory[];
-                    const latest = history[history.length - 1];
-                    if (latest) updateCoachMessages(latest.id, msgs);
-                  } catch {}
-                }}
-                runningStats={runningStats}
-                hideExpCard={isRunningReport}
-              />
-              {/* 회의 41/42: 러닝 세션 전용 본문 — RpgResultCard 직후 */}
-              {isRunningReport && effectiveRunningStats && (
-                <div className="mb-5">
-                  <RunningReportBody runningStats={effectiveRunningStats} recentHistory={recentHistory} />
-                </div>
-              )}
-              {/* 회의 42: 러닝 세션 EXP 카드는 RunningReportBody 아래, Workout Logs 바로 위에 위치 */}
-              {isRunningReport && (
-                <ExpTierCard
-                  seasonExp={currentExp}
-                  prevSeasonExp={prevExp}
-                  expGained={expGained}
-                  insight={insight}
-                  streak={heroStreak}
-                  nextWorkoutName={nextWorkout}
-                  onHelpPress={() => setHelpCard("levelSystem")}
-                  onShowPrediction={onShowPrediction}
-                />
-              )}
-            </>
+            <div className="mb-5">
+              <RunningReportBody runningStats={effectiveRunningStats} recentHistory={recentHistory} />
+            </div>
           );
         })()}
 

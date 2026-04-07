@@ -5,6 +5,7 @@ setGlobalOptions({ region: "us-central1" });
 
 export { generateWorkout, analyzeWorkout } from "./ai/workout";
 export { getCoachMessage } from "./ai/coach";
+export { getNutritionGuide, nutritionChat } from "./ai/nutrition";
 export { planSession } from "./plan/session";
 export { subscribe, getSubscription, cancelSubscription } from "./billing/subscription";
 export { adminActivate, adminCheckUser, adminDeactivate, adminDashboard, adminListUsers, adminLogs } from "./admin/admin";
