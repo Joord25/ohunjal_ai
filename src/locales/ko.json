@@ -877,10 +877,11 @@
 
   "onboarding.back": "이전",
   "onboarding.welcome.title": "{name}님, 반가워요!",
-  "onboarding.welcome.desc1": "오운잘 코치가 더 나은 도움을 주기 위해",
+  "onboarding.welcome.desc1": "오운잘 AI 코치가 더 나은 도움을 주기 위해",
   "onboarding.welcome.desc2": "몇 가지 질문을 준비했어요",
   "onboarding.welcome.cta": "시작하기",
-  "onboarding.gender.title": "성별이 어떻게 되시나요?",
+  "onboarding.gender.title": "성별이 어떻게 되세요?",
+  "onboarding.gender.sub": "성별에 따라 맞게 운동을 제공해요",
   "onboarding.birthYear.title": "태어난 연도를 알려주세요",
   "onboarding.birthYear.sub": "나이에 따라 최적의 운동을 만들어요",
   "onboarding.height.title": "키가 몇이신가요?",

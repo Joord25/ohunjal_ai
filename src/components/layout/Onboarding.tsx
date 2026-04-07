@@ -179,9 +179,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
         <div key={`gender-${animKey}`} className={`flex-1 flex flex-col px-6 pt-6 ${animClass}`}>
           {backButton()}
           {stepIndicator()}
-          <h2 className="text-xl font-black text-[#1B4332] text-center mb-10">
+          <h2 className="text-xl font-black text-[#1B4332] text-center mb-2">
             {t("onboarding.gender.title")}
           </h2>
+          <p className="text-sm text-gray-400 text-center mb-10">{t("onboarding.gender.sub")}</p>
           <div className="flex gap-4 justify-center">
             {(["male", "female"] as const).map((g) => (
               <button
