@@ -327,9 +327,10 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
   };
 
   const handle1RMSave = () => {
-    const b = parseFloat(bench1RM.trim()) || undefined;
-    const s = parseFloat(squat1RM.trim()) || undefined;
-    const d = parseFloat(deadlift1RM.trim()) || undefined;
+    const clamp1RM = (v: string) => { const n = parseFloat(v.trim()); return (!isNaN(n) && n > 0 && n <= 500) ? n : undefined; };
+    const b = clamp1RM(bench1RM);
+    const s = clamp1RM(squat1RM);
+    const d = clamp1RM(deadlift1RM);
     try {
       const fp = JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}");
       const updated = { ...fp, bench1RM: b, squat1RM: s, deadlift1RM: d };
@@ -543,6 +544,8 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
                   value={birthYearInput}
                   onChange={(e) => setBirthYearInput(e.target.value)}
                   autoFocus
+                  min={1930}
+                  max={2015}
                   placeholder="1990"
                   className="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-[100px] outline-none focus:border-[#2D6A4F] transition-colors text-right"
                   onKeyDown={(e) => {
@@ -581,6 +584,8 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
                   value={heightInput}
                   onChange={(e) => setHeightInput(e.target.value)}
                   autoFocus
+                  min={100}
+                  max={250}
                   placeholder="170"
                   className="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-1.5 w-[100px] outline-none focus:border-[#2D6A4F] transition-colors text-right"
                   onKeyDown={(e) => {
@@ -637,6 +642,8 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
                     inputMode="decimal"
                     value={lift.value}
                     onChange={(e) => lift.setter(e.target.value)}
+                    min={0}
+                    max={500}
                     placeholder="kg"
                     className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#2D6A4F] transition-colors text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     onKeyDown={(e) => { if (e.key === "Enter") handle1RMSave(); }}
