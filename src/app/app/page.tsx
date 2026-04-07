@@ -836,6 +836,8 @@ export default function Home() {
               setPredictionReturnTab("home");
               setView("prediction_report");
             }}
+            isPremium={subStatus === "active"}
+            isLoggedIn={isLoggedIn}
           />
         );
     }

@@ -1,23 +1,38 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, getCurrentWeekQuestWindow, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  type FitnessCategory,
+  type CategoryPercentile,
+  getCategoryBestBwRatio,
+  bwRatioToPercentile,
+  computeOverallPercentile,
+  computeFitnessAge,
+  percentileToRank,
+  getAgeGroupLabel,
+} from "@/utils/fitnessPercentile";
+import { HexagonChart, type HexagonAxis } from "@/components/report/HexagonChart";
+import { NutritionTab } from "@/components/report/tabs/NutritionTab";
 
 
 interface HomeScreenProps {
   userName?: string;
   onStartWorkout: () => void;
   onShowPrediction?: () => void;
+  isPremium?: boolean;
+  isLoggedIn?: boolean;
 }
 
 interface FitnessProfile {
   gender: "male" | "female";
   birthYear: number;
   bodyWeight: number;
+  height?: number;
   weeklyFrequency: number;
   sessionMinutes: number;
   goal: "fat_loss" | "muscle_gain" | "endurance" | "health";
@@ -26,9 +41,22 @@ interface FitnessProfile {
   deadlift1RM?: number;
 }
 
+const CATEGORY_LABELS: Record<FitnessCategory, { ko: string; en: string }> = {
+  chest: { ko: "가슴", en: "Chest" },
+  back: { ko: "등", en: "Back" },
+  shoulder: { ko: "어깨", en: "Shoulder" },
+  legs: { ko: "하체", en: "Legs" },
+  cardio: { ko: "체력", en: "Cardio" },
+};
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout, onShowPrediction }) => {
+const CATEGORIES: FitnessCategory[] = ["chest", "back", "shoulder", "legs", "cardio"];
+
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout, onShowPrediction, isPremium, isLoggedIn }) => {
   const { t, locale } = useTranslation();
+
+  // 내부 탭 상태
+  const [homeTab, setHomeTab] = useState<"home" | "nutrition">("home");
 
   // 퀘스트 라벨 번역 헬퍼
   const tq = (label: string) => {
@@ -116,7 +144,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return count;
   })();
 
-  // 이번 주 운동 일수 (당일 N회도 1일로) — 회의 18: questSystem과 동일한 윈도우 사용
+  // 이번 주 운동 일수 (당일 N회도 1일로)
   const thisWeekCount = (() => {
     const window = getCurrentWeekQuestWindow(history);
     const days = new Set(
@@ -134,6 +162,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
   // 오늘 운동 했는지
   const didWorkoutToday = history.some(h => new Date(h.date).toDateString() === new Date().toDateString());
+
+  // 오늘 운동 세션 데이터 (영양탭 용)
+  const todaySession = useMemo(() => {
+    const todayWorkout = history.find(h => new Date(h.date).toDateString() === new Date().toDateString());
+    if (todayWorkout) {
+      return {
+        type: todayWorkout.sessionData?.title || "general",
+        durationMin: todayWorkout.stats?.totalDurationSec ? Math.round(todayWorkout.stats.totalDurationSec / 60) : 50,
+        estimatedCalories: todayWorkout.stats?.totalVolume ? Math.round(todayWorkout.stats.totalVolume * 0.05 + 100) : 300,
+      };
+    }
+    return { type: "general", durationMin: 50, estimatedCalories: 300 };
+  }, [history]);
 
   // 시간대별 인사
   const greetingMsg = (() => {
@@ -349,6 +390,71 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     return () => clearInterval(timer);
   }, [sortedPreviews.length]);
 
+  // === 내 상태 (피트니스 나이 + 육각형) ===
+  const statusData = useMemo(() => {
+    const fp = profile;
+    const birthYear = fp?.birthYear || parseInt(localStorage.getItem("ohunjal_birth_year") || "0");
+    const gender: "male" | "female" = fp?.gender || (localStorage.getItem("ohunjal_gender") as "male" | "female") || "male";
+    const bodyWeightKg = fp?.bodyWeight || parseFloat(localStorage.getItem("ohunjal_body_weight") || "0") || 70;
+    const age = birthYear ? new Date().getFullYear() - birthYear : 30;
+
+    if (history.length === 0) {
+      return { hasData: false, gender, age, bodyWeightKg };
+    }
+
+    // 최근 세션의 exercises/logs (hexagon용)
+    const lastSession = history[history.length - 1];
+    const exercises = lastSession.sessionData?.exercises || [];
+    const logs = lastSession.logs || {};
+
+    const bestByCategory = getCategoryBestBwRatio(exercises, logs, history, bodyWeightKg);
+
+    const categoryPercentiles: CategoryPercentile[] = CATEGORIES.map((cat) => {
+      const bwRatio = bestByCategory.get(cat);
+      if (bwRatio === undefined || bwRatio <= 0) {
+        return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };
+      }
+      const percentile = bwRatioToPercentile(bwRatio, cat, gender, age);
+      return { category: cat, rank: percentileToRank(percentile), percentile, bwRatio, hasData: true };
+    });
+
+    const overallPercentile = computeOverallPercentile(categoryPercentiles);
+    const overallRank = percentileToRank(overallPercentile);
+    const fitnessAge = computeFitnessAge(overallPercentile, age, gender);
+    const ageDiff = age - fitnessAge;
+    const hasAnyData = categoryPercentiles.some((c) => c.hasData);
+
+    const hexAxes: HexagonAxis[] = [
+      ...categoryPercentiles.map((cp) => ({
+        label: locale === "ko" ? CATEGORY_LABELS[cp.category].ko : CATEGORY_LABELS[cp.category].en,
+        value: cp.hasData ? cp.percentile : 0,
+        rankText: cp.hasData ? `${cp.rank}${locale === "ko" ? "등" : "th"}` : "-",
+      })),
+      {
+        label: locale === "ko" ? "종합" : "Overall",
+        value: hasAnyData ? overallPercentile : 0,
+        rankText: hasAnyData ? `${overallRank}${locale === "ko" ? "등" : "th"}` : "-",
+      },
+    ];
+
+    const ageGroupLabel = getAgeGroupLabel(age, locale);
+    const genderLabel = locale === "ko" ? (gender === "male" ? "남성" : "여성") : (gender === "male" ? "men" : "women");
+
+    return {
+      hasData: true,
+      hasAnyData,
+      gender,
+      age,
+      bodyWeightKg,
+      fitnessAge,
+      ageDiff,
+      overallRank,
+      hexAxes,
+      ageGroupLabel,
+      genderLabel,
+    };
+  }, [history, profile, locale]);
+
   // 첫 방문자 화면
   if (isFirstVisit) {
     return (
@@ -452,6 +558,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     );
   };
 
+  // 퀘스트 완료 수 요약
+  const questSummaryText = (() => {
+    if (!questData) return null;
+    const { questDefs, questState: qs } = questData;
+    const doneCount = qs.quests.filter(q => q.completed).length;
+    return `${t("home.checklist.quest")} ${doneCount}/${questDefs.length}`;
+  })();
+
+  // NutritionTab 용 프로필 데이터
+  const nutritionProps = useMemo(() => {
+    const fp = profile;
+    return {
+      bodyWeightKg: fp?.bodyWeight || 70,
+      heightCm: fp?.height || 170,
+      age: fp?.birthYear ? new Date().getFullYear() - fp.birthYear : 30,
+      gender: (fp?.gender || "male") as "male" | "female",
+      goal: fp?.goal || "health",
+      weeklyFrequency: fp?.weeklyFrequency || 3,
+    };
+  }, [profile]);
+
   // 재방문 유저 홈 화면
   return (
     <div className="flex flex-col h-full bg-[#FAFBF9]">
@@ -465,111 +592,218 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
-        {/* AI 코치 카드 — 2버블 채팅 */}
-        <div className="rounded-3xl bg-white border border-gray-100 shadow-sm px-4 pt-4 pb-4 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
-            <span className="text-[11px] font-bold text-gray-400">{t("home.coachTitle")}</span>
-          </div>
-          {/* 버블 1: 인사/감정 */}
-          <div className="flex items-start gap-2.5 mb-2">
-            <div className="w-7 shrink-0" />
-            <div className="bg-[#2D6A4F]/5 rounded-2xl px-4 py-3">
-              <p className="text-[14px] font-medium text-[#1B4332] leading-relaxed">
-                {coachBubbles[0]}
-              </p>
-            </div>
-          </div>
-          {/* 버블 2: 추천/행동 */}
-          <div className="flex items-start gap-2.5 mb-4">
-            <div className="w-7 shrink-0" />
-            <div className="bg-[#2D6A4F]/5 rounded-2xl px-4 py-3">
-              <p className="text-[14px] font-medium text-[#1B4332] leading-relaxed">
-                {coachBubbles[1]}
-              </p>
-            </div>
-          </div>
+        {/* 내부 탭 토글: [홈] [영양] */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
           <button
-            onClick={() => { setCtaPulse(false); onStartWorkout(); }}
-            className={`w-full py-4 rounded-2xl bg-[#1B4332] border-2 border-black shadow-[4px_4px_0px_0px_#000000] text-white font-bold text-[16px] flex items-center justify-center gap-2 active:shadow-[1px_1px_0px_0px_#000000] active:translate-x-[3px] active:translate-y-[3px] transition-all ${ctaPulse ? "animate-cta-breathe" : ""}`}
+            onClick={() => setHomeTab("home")}
+            className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${homeTab === "home" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"}`}
           >
-            {didWorkoutToday ? t("home.coach.oneMore") : t("home.coach.startToday")}
+            {t("home.tab.home")}
+          </button>
+          <button
+            onClick={() => setHomeTab("nutrition")}
+            className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${homeTab === "nutrition" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"}`}
+          >
+            {t("home.tab.nutrition")}
           </button>
         </div>
 
-        {/* 성장 통계 */}
-        <div className="flex gap-3 mb-4">
-          <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
-            <p className="text-2xl font-black text-[#1B4332] leading-none">{(() => {
-              const now = new Date();
-              const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-              return history.filter(h => new Date(h.date) >= monthStart).length;
-            })()}<span className="text-[11px] font-bold text-gray-400 ml-0.5">{t("home.stats.unit.sessions")}</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.thisMonth")}</p>
-          </div>
-          <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
-            <p className="text-2xl font-black text-[#1B4332] leading-none">{streak}<span className="text-[11px] font-bold text-gray-400 ml-0.5">{t("home.stats.unit.days")}</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.streak")}</p>
-          </div>
-          <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
-            <p className="text-2xl font-black text-[#1B4332] leading-none">{thisWeekCount}<span className="text-[11px] font-bold text-gray-400 ml-0.5">{t("home.stats.unit.days")}</span></p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.thisWeek")}</p>
-          </div>
-        </div>
+        {homeTab === "home" ? (
+          <>
+            {/* === 1. 체크리스트 섹션 === */}
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 mb-4">
+              <h3 className="text-[13px] font-black text-[#1B4332] mb-3">{t("home.checklist.title")}</h3>
 
-
-        {/* 성장 예측 프리뷰 (분리된 카드) */}
-        {sortedPreviews.length > 0 && (() => {
-          const preview = sortedPreviews[previewIdx % sortedPreviews.length];
-          // 경험 번역
-          const previewExpMsg = (() => {
-            const label = (preview.label || "").toLowerCase();
-            if (/볼륨|volume/i.test(label)) return t("home.prediction.volume");
-            if (/감량|체중|weight|loss/i.test(label)) return t("home.prediction.weightLoss");
-            if (/1rm|근력|strength/i.test(label)) return t("home.prediction.strength");
-            return t("home.prediction.default");
-          })();
-          return (
-            <div
-              className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 mb-4 cursor-pointer active:opacity-80 transition-all"
-              onClick={onShowPrediction}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[12px] font-medium text-gray-500">{t("home.prediction.atThisPace")}</p>
-                {sortedPreviews.length > 1 && (
-                  <div className="flex gap-1">
-                    {sortedPreviews.map((_, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === previewIdx % sortedPreviews.length ? "bg-[#2D6A4F]" : "bg-gray-200"}`} />
-                    ))}
+              {/* 오늘 운동하기 */}
+              <button
+                onClick={() => { if (!didWorkoutToday) { setCtaPulse(false); onStartWorkout(); } }}
+                className="w-full flex items-center gap-3 py-2.5 group"
+              >
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${didWorkoutToday ? "bg-[#2D6A4F] border-[#2D6A4F]" : "border-gray-300 group-active:border-[#2D6A4F]"}`}>
+                  {didWorkoutToday && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className={`text-[14px] font-bold ${didWorkoutToday ? "text-[#2D6A4F] line-through" : "text-[#1B4332]"}`}>
+                    {didWorkoutToday ? t("home.checklist.workout.done") : t("home.checklist.workout")}
+                  </p>
+                  {!didWorkoutToday && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">{coachBubbles[1]}</p>
+                  )}
+                </div>
+                {!didWorkoutToday && (
+                  <div className={`px-3 py-1.5 rounded-lg bg-[#1B4332] ${ctaPulse ? "animate-cta-breathe" : ""}`}>
+                    <span className="text-[11px] font-bold text-white">{t("home.startWorkout")}</span>
                   </div>
                 )}
+              </button>
+
+              {/* 구분선 */}
+              <div className="h-px bg-gray-100 my-1" />
+
+              {/* 오늘 식단 확인 */}
+              <button
+                onClick={() => setHomeTab("nutrition")}
+                className="w-full flex items-center gap-3 py-2.5 group"
+              >
+                <div className="w-5 h-5 rounded-md border-2 border-gray-300 flex items-center justify-center shrink-0 group-active:border-[#2D6A4F] transition-all" />
+                <p className="text-[14px] font-bold text-[#1B4332] text-left flex-1">
+                  {t("home.checklist.nutrition")}
+                </p>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-300"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+
+              {/* 구분선 */}
+              {questSummaryText && (
+                <>
+                  <div className="h-px bg-gray-100 my-1" />
+                  {/* 주간 퀘스트 요약 */}
+                  <div className="flex items-center gap-3 py-2.5">
+                    <div className="w-5 h-5 rounded-md bg-[#2D6A4F]/10 flex items-center justify-center shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="#2D6A4F"/></svg>
+                    </div>
+                    <p className="text-[13px] font-bold text-gray-500">{questSummaryText}</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* === 성장 통계 (3 cards) === */}
+            <div className="flex gap-3 mb-4">
+              <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
+                <p className="text-2xl font-black text-[#1B4332] leading-none">{(() => {
+                  const now = new Date();
+                  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                  return history.filter(h => new Date(h.date) >= monthStart).length;
+                })()}<span className="text-[11px] font-bold text-gray-400 ml-0.5">{t("home.stats.unit.sessions")}</span></p>
+                <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.thisMonth")}</p>
               </div>
-              <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{locale !== "ko" ? ({"벤치프레스": "Bench Press", "스쿼트": "Squat", "데드리프트": "Deadlift"}[preview.label] || preview.label.replace(/.*\(([^)]+)\).*/, "$1")) : preview.label}</p>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="text-center">
-                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">{t("home.prediction.current")}</p>
-                  <p className="text-[18px] font-black text-[#1B4332]">{preview.current}</p>
-                </div>
-                <div className="flex-1 flex items-center justify-center px-3">
-                  <div className="flex-1 h-[2px] bg-gray-200 rounded-full relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[6px] border-l-[#2D6A4F]" />
+              <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
+                <p className="text-2xl font-black text-[#1B4332] leading-none">{streak}<span className="text-[11px] font-bold text-gray-400 ml-0.5">{t("home.stats.unit.days")}</span></p>
+                <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.streak")}</p>
+              </div>
+              <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
+                <p className="text-2xl font-black text-[#1B4332] leading-none">{thisWeekCount}<span className="text-[11px] font-bold text-gray-400 ml-0.5">{t("home.stats.unit.days")}</span></p>
+                <p className="text-[10px] font-bold text-gray-400 mt-1">{t("home.stats.thisWeek")}</p>
+              </div>
+            </div>
+
+            {/* === 2. 내 상태 섹션 === */}
+            <div className="mb-4">
+              <h3 className="text-[13px] font-black text-[#1B4332] mb-3">{t("home.status.title")}</h3>
+              {statusData.hasData && statusData.hasAnyData ? (
+                <div className="space-y-3">
+                  {/* 피트니스 나이 */}
+                  <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm text-center">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      {t("report.status.fitnessAge")}
+                    </p>
+                    <p className="text-3xl font-black text-[#1B4332]">
+                      {statusData.fitnessAge}{locale === "ko" ? "세" : ""}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {statusData.ageDiff! > 0
+                        ? (locale === "ko" ? `실제 나이보다 ${statusData.ageDiff}살 젊은 몸이에요` : `${statusData.ageDiff} years younger than your age`)
+                        : statusData.ageDiff === 0
+                          ? (locale === "ko" ? "딱 나이만큼 건강해요" : "Right on track for your age")
+                          : (locale === "ko" ? "지금부터 시작하면 빠르게 달라져요" : "Start now and you'll improve fast")
+                      }
+                    </p>
+                  </div>
+
+                  {/* 육각형 레이더 */}
+                  <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                    <p className="text-sm font-black text-[#1B4332] text-center mb-1">
+                      {locale === "ko"
+                        ? `${statusData.ageGroupLabel} ${statusData.genderLabel} 100명 중`
+                        : `Among 100 ${statusData.ageGroupLabel} ${statusData.genderLabel}`}
+                    </p>
+                    <HexagonChart axes={statusData.hexAxes!} />
+                    <div className="text-center mt-3">
+                      <p className="text-lg font-black text-[#1B4332]">
+                        {locale === "ko" ? `종합 ${statusData.overallRank}등` : `Overall rank: ${statusData.overallRank}`}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-0.5">{t("home.prediction.in4weeks")}</p>
-                  <p className="text-[18px] font-black text-[#2D6A4F]">{preview.predicted}</p>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm text-center">
+                  <p className="text-[13px] text-gray-400 font-medium">{t("home.status.noData")}</p>
                 </div>
-              </div>
-              <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed mt-2">{previewExpMsg}</p>
-              <p className="text-[11px] font-bold text-gray-400 text-center mt-2">
-                {t("home.prediction.viewReport")} &gt;
-              </p>
+              )}
             </div>
-          );
-        })()}
 
-        {/* 주간 퀘스트 */}
-        {renderQuestPreview()}
+            {/* === 3. 성장 예측 프리뷰 === */}
+            {history.length === 0 ? (
+              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 mb-4 text-center">
+                <p className="text-[13px] text-gray-400 font-medium">{t("home.prediction.noData")}</p>
+              </div>
+            ) : sortedPreviews.length > 0 && (() => {
+              const preview = sortedPreviews[previewIdx % sortedPreviews.length];
+              // 경험 번역
+              const previewExpMsg = (() => {
+                const label = (preview.label || "").toLowerCase();
+                if (/볼륨|volume/i.test(label)) return t("home.prediction.volume");
+                if (/감량|체중|weight|loss/i.test(label)) return t("home.prediction.weightLoss");
+                if (/1rm|근력|strength/i.test(label)) return t("home.prediction.strength");
+                return t("home.prediction.default");
+              })();
+              return (
+                <div
+                  className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 mb-4 cursor-pointer active:opacity-80 transition-all"
+                  onClick={onShowPrediction}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[12px] font-medium text-gray-500">{t("home.prediction.atThisPace")}</p>
+                    {sortedPreviews.length > 1 && (
+                      <div className="flex gap-1">
+                        {sortedPreviews.map((_, i) => (
+                          <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === previewIdx % sortedPreviews.length ? "bg-[#2D6A4F]" : "bg-gray-200"}`} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-1">{locale !== "ko" ? ({"벤치프레스": "Bench Press", "스쿼트": "Squat", "데드리프트": "Deadlift"}[preview.label] || preview.label.replace(/.*\(([^)]+)\).*/, "$1")) : preview.label}</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="text-center">
+                      <p className="text-[10px] font-bold text-gray-400 mb-0.5">{t("home.prediction.current")}</p>
+                      <p className="text-[18px] font-black text-[#1B4332]">{preview.current}</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center px-3">
+                      <div className="flex-1 h-[2px] bg-gray-200 rounded-full relative">
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[6px] border-l-[#2D6A4F]" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] font-bold text-[#2D6A4F]/60 mb-0.5">{t("home.prediction.in4weeks")}</p>
+                      <p className="text-[18px] font-black text-[#2D6A4F]">{preview.predicted}</p>
+                    </div>
+                  </div>
+                  <p className="text-[13px] font-bold text-[#2D6A4F] leading-relaxed mt-2">{previewExpMsg}</p>
+                  <p className="text-[11px] font-bold text-gray-400 text-center mt-2">
+                    {t("home.prediction.viewReport")} &gt;
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* 주간 퀘스트 */}
+            {renderQuestPreview()}
+          </>
+        ) : (
+          /* === 영양 탭 === */
+          <NutritionTab
+            bodyWeightKg={nutritionProps.bodyWeightKg}
+            heightCm={nutritionProps.heightCm}
+            age={nutritionProps.age}
+            gender={nutritionProps.gender}
+            goal={nutritionProps.goal}
+            weeklyFrequency={nutritionProps.weeklyFrequency}
+            todaySession={todaySession}
+            isPremium={isPremium}
+          />
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,38 @@
 
 ---
 
+### 회의 41: 온보딩 플로우 통합 설계 + 짐워크 벤치마크 분석
+**참석:** 대표(임주용), 기획자, UX 디자이너, 프론트엔드 개발자, 백엔드 개발자, 트레이너, 한체대 교수, 콘텐츠 MD, 그로스 마케터, 퍼포먼스 마케터, 평가자, 박서진(Toss FE Head), 카피라이터
+**일자:** 2026-04-08
+
+**배경:** 프로필 입력이 ConditionCheck, FitnessReading, MyProfileTab 3곳에 분산되어 있고, HomeScreen "첫 운동" 화면이 온보딩 없이 노출됨. 짐워크(18스텝 온보딩) 벤치마크 분석 후 필요한 것만 채택.
+
+**핵심 결정:**
+
+1. **프로필 입력 통합** — 기존 3곳(ConditionCheck, FitnessReading, MyProfileTab) 분산 프로필 입력을 온보딩 1곳으로 통합
+2. **온보딩 7스텝 확정** — 안내카드 → 성별(원탭) → 출생연도(휠피커) → 키(휠피커) → 체중(휠피커) → 목표(4택) → 완료카드
+3. **짐워크 벤치마크** — 18스텝 분석 후 필요한 것만 채택: 1화면 1질문, 휠피커 UI, 즉시 피드백(완료카드). 불필요한 것 제외(기구환경, 서약서, 유입경로, 닉네임)
+4. **HomeScreen "첫 운동" 중복 제거** — 온보딩 완료 유저는 isFirstVisit 화면 스킵
+5. **온보딩 → condition_check 직행** — 완료카드에서 "첫 운동 시작하기" → 바로 컨디션체크
+6. **energyLevel 자동 추론** — 항상 3이던 에너지 레벨을 bodyPart에서 자동 매핑 (full_fatigue→2, good→4, 나머지→3)
+7. **localStorage 키 리네이밍** — alpha_ → ohunjal_ 전면 교체 (19파일 165곳) + 기존 유저 마이그레이션
+8. **package.json** — "alphamale" → "ohunjal"
+9. **admin 취소 피드백 탭** — Firestore cancel_feedbacks 조회 Cloud Function + admin 프론트 탭 추가
+10. **입력값 범위 제한 통일** — 출생연도 1930~2015, 키 100~250cm, 체중 20~300kg, 1RM 0~500kg (MyProfileTab, ConditionCheck, FitnessReading 전부)
+11. **온보딩 탭바 숨김** — 온보딩 중 BottomTabs 비노출
+
+**카피 결정:**
+- 웰컴: "{name}님, 반가워요!" + "진짜 내 운동을 시작할 시간!\n가볍게 답해서 나만의 핏을 찾아보세요"
+- 성별: "성별이 어떻게 되세요?" + "성별에 따라 맞게 운동을 제공해요"
+- 완료: "{name}님, 답변 감사해요" + "주신 정보와 {goal} 목적에 맞게 제가 도와드릴게요!" + "ACSM/NSCA 기반 운동 가이드라인과 200+ 최신 논문으로 학습했으니 트렌드에 맞게 확실하게 도와드릴게요!"
+- 장기 목표 vs 세션 목표 구분 확정: 온보딩=장기목표(성장예측/리포트), ConditionCheck=세션목표(운동프로그램)
+
+**구현 파일:**
+- 신규: Onboarding.tsx, WheelPicker.tsx
+- 수정: page.tsx, HomeScreen.tsx, ConditionCheck.tsx, FitnessReading.tsx, MyProfileTab.tsx, analytics.ts, ko.json, en.json, package.json, firebase.json, functions/src/admin/admin.ts, functions/src/index.ts, + localStorage 키 변경 19파일
+
+---
+
 ### 회의 39: [다음] 탭 퀘스트 프로그레스바 + ACSM 강도 추천
 **참석:** 대표(임주용), 기획자, UX 디자이너, 프론트엔드 개발자, 백엔드 개발자, 트레이너, 한체대 교수, 콘텐츠 MD, 그로스 마케터, 퍼포먼스 마케터, 평가자, 박서진(Toss FE Head)
 **일자:** 2026-04-07
