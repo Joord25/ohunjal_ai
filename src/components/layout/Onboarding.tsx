@@ -172,21 +172,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
 
           {/* Content */}
           <div className="flex-1 flex flex-col items-center justify-center px-8 relative z-10">
-            <div className={`mb-8 transition-all duration-700 ${welcomeVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}>
-              <img
-                src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"}
-                alt="logo"
-                className="h-20 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]"
-              />
+            {/* Greeting badge */}
+            <div className={`mb-6 transition-all duration-700 ${welcomeVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}>
+              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                <svg className="w-10 h-10 text-[#95D5B2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+              </div>
             </div>
-            <h1 className={`text-white text-[28px] font-black text-center mb-4 leading-tight transition-all duration-700 delay-200 ${welcomeVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <h1 className={`text-white text-[32px] font-black text-center mb-3 leading-tight transition-all duration-700 delay-200 ${welcomeVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
               {t("onboarding.welcome.title", { name: displayName })}
             </h1>
             <div className={`text-center mb-12 transition-all duration-700 delay-[400ms] ${welcomeVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-              <p className="text-[#95D5B2] text-base font-medium leading-relaxed">
+              <p className="text-[#95D5B2] text-lg font-medium leading-relaxed">
                 {t("onboarding.welcome.desc1")}
               </p>
-              <p className="text-[#95D5B2] text-base font-medium leading-relaxed mt-0.5">
+              <p className="text-[#95D5B2] text-lg font-medium leading-relaxed mt-0.5">
                 {t("onboarding.welcome.desc2")}
               </p>
             </div>
