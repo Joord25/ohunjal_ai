@@ -663,6 +663,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
               )}
             </div>
 
+            {/* CTA 버튼 */}
+            <button
+              onClick={() => { setCtaPulse(false); onStartWorkout(); }}
+              className={`w-full py-4 rounded-2xl bg-[#1B4332] border-2 border-black shadow-[4px_4px_0px_0px_#000000] text-white font-bold text-[16px] flex items-center justify-center gap-2 active:shadow-[1px_1px_0px_0px_#000000] active:translate-x-[3px] active:translate-y-[3px] transition-all mb-4 ${ctaPulse ? "animate-cta-breathe" : ""}`}
+            >
+              {didWorkoutToday ? t("home.coach.oneMore") : t("home.coach.startToday")}
+            </button>
+
             {/* === 성장 통계 (3 cards) === */}
             <div className="flex gap-3 mb-4">
               <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm text-center">
