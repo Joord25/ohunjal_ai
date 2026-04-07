@@ -356,21 +356,30 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             const lastVol = lastSession?.stats?.totalVolume || 0;
             if (lastVol > 0) volumeChangePercent = Math.round(((totalVolume - lastVol) / lastVol) * 100);
           }
-          // 유저 목표
+          // 유저 목표 + PR 감지
           let userGoal: string | undefined;
           try { userGoal = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}").goal; } catch {}
+          // PR 감지 (기존 detectMicroPR 재활용)
+          const microPR = detectMicroPR(sessionData.exercises, logs, recentHistory, t, locale);
+          const prInfo = microPR ? { exerciseName: microPR.subText || "", value: microPR.bigNumber } : null;
           return (
             <TodayTab
               sessionCategory={sessionCategory}
               totalVolume={totalVolume}
               volumeChangePercent={volumeChangePercent}
               goal={userGoal}
+              gender={gender}
               bodyWeightKg={bodyWeightKg}
               totalDurationSec={totalDurationSec}
               savedDurationSec={savedDurationSec}
               fatigueDrop={fatigueDrop}
               totalSets={metrics.totalSets}
               totalReps={metrics.totalReps}
+              sessionDesc={sessionData.description || sessionData.title || ""}
+              graphData={graphData}
+              prInfo={prInfo}
+              loadBand={loadBand.low > 0 ? { low: loadBand.low, high: loadBand.high } : null}
+              todayLoadScore={loadScore}
             />
           );
         })()}
