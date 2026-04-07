@@ -478,6 +478,10 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               weeklySchedule={weeklySchedule}
               streak={heroStreak}
               totalVolume={totalVolume}
+              gender={gender}
+              sessionDesc={sessionData.description || sessionData.title || ""}
+              exercises={sessionData.exercises}
+              logs={logs}
             />
           );
         })()}
@@ -600,6 +604,10 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               recentHistory={recentHistory}
               streak={0}
               totalVolume={totalVolume}
+              gender={gender}
+              sessionDesc={sessionData.description || sessionData.title || ""}
+              exercises={sessionData.exercises}
+              logs={logs}
             />
           )}
           {activeReportTab === "nutrition" && savedReportTabs.nutrition && (

@@ -5,269 +5,300 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { WorkoutHistory } from "@/constants/workout";
 
 export interface NextTabProps {
-  /** 오늘 운동한 부위 (bodyPart from condition) */
   todayBodyPart?: string;
-  /** 오늘 세션 카테고리 */
   sessionCategory: "strength" | "cardio" | "mobility" | "mixed";
-  /** 피로도 (fatigueDrop) */
   fatigueDrop: number | null;
-  /** 최근 운동 이력 */
   recentHistory: WorkoutHistory[];
-  /** 주간 스케줄 (Mon-indexed) */
   weeklySchedule?: string[];
-  /** 연속 운동 일수 */
   streak: number;
-  /** 총 볼륨 */
   totalVolume: number;
+  gender?: "male" | "female";
+  /** 오늘 세션 설명 (부위 추출용) */
+  sessionDesc?: string;
+  /** 오늘 세션 운동 목록 (부위 추출용) */
+  exercises?: { name: string; type?: string }[];
+  /** 오늘 세션 로그 (무게 목표 산출용) */
+  logs?: Record<number, { weightUsed?: string; repsCompleted: number }[]>;
 }
 
-// 부위 매핑 (condition bodyPart → 표시용 카테고리)
-const BODY_PART_MAP: Record<string, { ko: string; en: string; opposite: string; oppositeKo: string; oppositeEn: string }> = {
-  "upper_push": { ko: "가슴·어깨", en: "Chest & Shoulders", opposite: "upper_pull", oppositeKo: "등·팔", oppositeEn: "Back & Arms" },
-  "upper_pull": { ko: "등·팔", en: "Back & Arms", opposite: "upper_push", oppositeKo: "가슴·어깨", oppositeEn: "Chest & Shoulders" },
-  "lower": { ko: "하체", en: "Legs", opposite: "upper_push", oppositeKo: "가슴·어깨", oppositeEn: "Chest & Shoulders" },
-  "full_body": { ko: "전신", en: "Full Body", opposite: "lower", oppositeKo: "하체", oppositeEn: "Legs" },
-  "core": { ko: "코어", en: "Core", opposite: "upper_push", oppositeKo: "가슴·어깨", oppositeEn: "Chest & Shoulders" },
-  "cardio": { ko: "유산소", en: "Cardio", opposite: "upper_push", oppositeKo: "가슴·어깨", oppositeEn: "Chest & Shoulders" },
+// 부위 매핑
+const BODY_PART_MAP: Record<string, { ko: string; en: string; opposite: string }> = {
+  upper_push: { ko: "가슴·어깨", en: "Chest & Shoulders", opposite: "upper_pull" },
+  upper_pull: { ko: "등·팔", en: "Back & Arms", opposite: "upper_push" },
+  lower: { ko: "하체", en: "Legs", opposite: "upper_push" },
+  full_body: { ko: "전신", en: "Full Body", opposite: "lower" },
+  core: { ko: "코어", en: "Core", opposite: "upper_push" },
+  cardio: { ko: "유산소", en: "Cardio", opposite: "upper_push" },
 };
 
-// 요일 키 매핑
 const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const DAY_KO = ["월", "화", "수", "목", "금", "토", "일"];
+const DAY_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** sessionDesc/exercises에서 부위 추출 (todayBodyPart null 대응) */
+function detectBodyPart(desc?: string, exercises?: { name: string; type?: string }[]): string | null {
+  const text = (desc || "").toLowerCase();
+  if (/가슴|chest|벤치|bench|푸쉬|push/i.test(text)) return "upper_push";
+  if (/등|back|로우|row|풀업|pull/i.test(text)) return "upper_pull";
+  if (/하체|leg|스쿼트|squat|데드|dead|런지|lunge/i.test(text)) return "lower";
+  if (/전신|full|전체/i.test(text)) return "full_body";
+  if (/코어|core|복근|ab/i.test(text)) return "core";
+  if (/러닝|run|cardio|유산소/i.test(text)) return "cardio";
+
+  // 운동 목록에서 추출
+  if (exercises) {
+    const names = exercises.map(e => e.name.toLowerCase()).join(" ");
+    if (/벤치|bench|체스트|chest|푸쉬업|push/i.test(names)) return "upper_push";
+    if (/로우|row|풀업|pull|랫/i.test(names)) return "upper_pull";
+    if (/스쿼트|squat|데드|dead|레그|leg|런지|lunge/i.test(names)) return "lower";
+  }
+  return null;
+}
+
+/** 부위별 마지막 최고 무게에서 +2.5kg (남) / +1.25kg (여) */
+function getWeightGoal(
+  recommendedPart: string,
+  history: WorkoutHistory[],
+  gender: "male" | "female",
+  locale: string,
+): { exerciseName: string; targetWeight: number } | null {
+  const partKeywords: Record<string, string[]> = {
+    upper_push: ["벤치", "bench", "체스트", "chest", "숄더", "shoulder", "프레스", "press"],
+    upper_pull: ["로우", "row", "풀업", "pull", "랫", "lat"],
+    lower: ["스쿼트", "squat", "데드", "dead", "레그", "leg"],
+  };
+  const keywords = partKeywords[recommendedPart];
+  if (!keywords) return null;
+
+  let bestExercise = "";
+  let bestWeight = 0;
+
+  for (const h of history) {
+    if (!h.logs) continue;
+    for (let i = 0; i < h.sessionData.exercises.length; i++) {
+      const ex = h.sessionData.exercises[i];
+      const nameLower = ex.name.toLowerCase();
+      if (!keywords.some(kw => nameLower.includes(kw))) continue;
+      const exLogs = h.logs[i];
+      if (!exLogs) continue;
+      for (const l of exLogs) {
+        const w = parseFloat(l.weightUsed || "0");
+        if (w > bestWeight) {
+          bestWeight = w;
+          bestExercise = ex.name;
+        }
+      }
+    }
+  }
+
+  if (bestWeight <= 0) return null;
+
+  const step = gender === "female" ? 1.25 : 2.5;
+  const target = Math.round((bestWeight + step) * 10) / 10;
+  // 운동명 간소화
+  const displayName = bestExercise.split("(")[0].trim();
+
+  return { exerciseName: displayName, targetWeight: target };
+}
+
+function getDaysSincePart(history: WorkoutHistory[], bodyParts: string[]): number {
+  const now = Date.now();
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h = history[i];
+    const desc = (h.sessionData.description || h.sessionData.title || "").toLowerCase();
+    const partKeywords: Record<string, string[]> = {
+      upper_push: ["가슴", "어깨", "chest", "shoulder", "push"],
+      upper_pull: ["등", "팔", "back", "arm", "pull"],
+      lower: ["하체", "다리", "leg", "squat", "lower"],
+      full_body: ["전신", "full"],
+      core: ["코어", "복근", "core", "ab"],
+      cardio: ["러닝", "달리기", "run", "cardio"],
+    };
+    for (const part of bodyParts) {
+      const kws = partKeywords[part] || [];
+      if (kws.some(kw => desc.includes(kw))) {
+        return Math.floor((now - new Date(h.date).getTime()) / (24 * 60 * 60 * 1000));
+      }
+    }
+  }
+  return 30;
+}
 
 interface NextAdvice {
   message: string;
   recommendedPart: string;
+  recommendedPartKey: string; // 내부 키 (무게 목표 산출용)
   recommendedIntensity: string;
 }
 
 function generateNextAdvice(
-  todayBodyPart: string | undefined,
+  bodyPart: string | null,
   sessionCategory: string,
   fatigueDrop: number | null,
   recentHistory: WorkoutHistory[],
   streak: number,
-  totalVolume: number,
-  t: (key: string, vars?: Record<string, string>) => string,
-  locale: string,
+  ko: boolean,
+  intensityLighter: string,
+  intensitySame: string,
+  intensityHarder: string,
 ): NextAdvice {
-  const isKo = locale === "ko";
-
-  // 특수 조건 우선
   // 1) 첫 운동
   if (recentHistory.length === 0) {
     return {
-      message: isKo
-        ? "첫 운동 해냈어요! 이틀 뒤에 다른 부위로 한번 더 와보세요"
-        : "You did your first workout! Come back in 2 days with a different muscle group",
-      recommendedPart: isKo ? "다른 부위" : "Different group",
-      recommendedIntensity: t("report.next.intensity.lighter"),
+      message: ko ? "첫 운동 해냈어요! 이틀 뒤에 다른 부위로 한번 더 와보세요" : "First workout done! Come back in 2 days with a different group",
+      recommendedPart: ko ? "다른 부위" : "Different group",
+      recommendedPartKey: "",
+      recommendedIntensity: intensityLighter,
     };
   }
 
-  // 2) 3일 연속
+  // 2) 3일+ 연속
   if (streak >= 3) {
     return {
-      message: isKo
-        ? `${streak}일 연속 잘 버텼어요. 내일은 가볍게 쉬어가세요`
-        : `${streak} days in a row! Take it easy tomorrow`,
-      recommendedPart: isKo ? "스트레칭·유산소" : "Stretch & Cardio",
-      recommendedIntensity: t("report.next.intensity.lighter"),
+      message: ko ? `${streak}일 연속 잘 버텼어요. 내일은 가볍게 쉬어가세요` : `${streak} days in a row! Take it easy tomorrow`,
+      recommendedPart: ko ? "스트레칭·유산소" : "Stretch & Cardio",
+      recommendedPartKey: "cardio",
+      recommendedIntensity: intensityLighter,
     };
   }
 
   // 3) 러닝 후
   if (sessionCategory === "cardio") {
-    const part = BODY_PART_MAP["upper_push"];
-    // 최근 이력에서 상체 안 한 일수 체크
-    const daysSinceUpper = getDaysSincePart(recentHistory, ["upper_push", "upper_pull"]);
-    const dayMsg = daysSinceUpper > 5
-      ? (isKo ? ` 상체 안 한 지 ${daysSinceUpper}일 됐어요` : ` Haven't done upper body in ${daysSinceUpper} days`)
-      : "";
-
+    const daysSince = getDaysSincePart(recentHistory, ["upper_push", "upper_pull"]);
+    const dayMsg = daysSince > 5 ? (ko ? ` 상체 안 한 지 ${daysSince}일 됐어요.` : ` Upper body gap: ${daysSince} days.`) : "";
     return {
-      message: isKo
-        ? `오늘 뛰느라 다리 고생했으니 다음엔 상체 해주세요.${dayMsg}`
-        : `Your legs worked hard today, try upper body next.${dayMsg}`,
-      recommendedPart: isKo ? part.ko : part.en,
-      recommendedIntensity: t("report.next.intensity.same"),
+      message: ko ? `오늘 뛰느라 다리 고생했으니 다음엔 상체 해주세요.${dayMsg}` : `Legs worked hard, try upper body next.${dayMsg}`,
+      recommendedPart: ko ? "가슴·어깨" : "Chest & Shoulders",
+      recommendedPartKey: "upper_push",
+      recommendedIntensity: intensitySame,
     };
   }
 
-  // 4) 컨디션 불량 (저볼륨 + 높은 피로)
+  // 4) 피로 높음
   if (fatigueDrop !== null && fatigueDrop < -25) {
-    const todayPart = todayBodyPart ? (BODY_PART_MAP[todayBodyPart] ?? null) : null;
+    const partInfo = bodyPart ? BODY_PART_MAP[bodyPart] : null;
     return {
-      message: isKo
-        ? "컨디션 안 좋은데도 나온 거 대단해요. 다음엔 무게 올려봐요"
-        : "Coming in despite a rough day is impressive. Try going heavier next time",
-      recommendedPart: todayPart ? (isKo ? todayPart.ko : todayPart.en) : (isKo ? "같은 부위" : "Same group"),
-      recommendedIntensity: t("report.next.intensity.harder"),
+      message: ko ? "컨디션 안 좋은데도 나온 거 대단해요. 다음엔 무게 올려봐요" : "Impressive showing up on a tough day. Push harder next time",
+      recommendedPart: partInfo ? (ko ? partInfo.ko : partInfo.en) : (ko ? "같은 부위" : "Same group"),
+      recommendedPartKey: bodyPart || "",
+      recommendedIntensity: intensityHarder,
     };
   }
 
-  // 5) 일반 — 반대 부위 추천
-  const todayMapping = todayBodyPart ? BODY_PART_MAP[todayBodyPart] : null;
-
-  if (todayMapping) {
-    // 오래 안 한 부위 체크
+  // 5) 일반
+  if (bodyPart && BODY_PART_MAP[bodyPart]) {
+    const todayInfo = BODY_PART_MAP[bodyPart];
+    // 가장 오래 안 한 부위
     const allParts = Object.keys(BODY_PART_MAP).filter(p => p !== "cardio" && p !== "core");
-    let longestGapPart = todayMapping.opposite;
+    let longestGapPart = todayInfo.opposite;
     let longestGap = 0;
     for (const part of allParts) {
-      if (part === todayBodyPart) continue;
+      if (part === bodyPart) continue;
       const days = getDaysSincePart(recentHistory, [part]);
-      if (days > longestGap) {
-        longestGap = days;
-        longestGapPart = part;
-      }
+      if (days > longestGap) { longestGap = days; longestGapPart = part; }
     }
+    const recKey = longestGap > 7 ? longestGapPart : todayInfo.opposite;
+    const recInfo = BODY_PART_MAP[recKey] ?? BODY_PART_MAP["upper_push"];
+    const intensity = fatigueDrop !== null && fatigueDrop < -15 ? intensityLighter : intensitySame;
+    const todayName = ko ? todayInfo.ko : todayInfo.en;
+    const nextName = ko ? recInfo.ko : recInfo.en;
 
-    const recPart = longestGap > 7 ? longestGapPart : todayMapping.opposite;
-    const recPartInfo = BODY_PART_MAP[recPart] ?? BODY_PART_MAP["upper_push"];
+    const message = longestGap > 7
+      ? (ko ? `${nextName} 안 한 지 ${longestGap}일 됐어요. 다음엔 ${nextName} 먼저 챙겨주세요` : `${nextName} gap: ${longestGap} days. Prioritize it next`)
+      : (ko ? `오늘 ${todayName} 열심히 했으니까 다음엔 ${nextName} 해주면 딱이에요` : `Great ${todayName} session! ${nextName} next would be perfect`);
 
-    // 강도 결정
-    const intensity = fatigueDrop !== null && fatigueDrop < -15
-      ? t("report.next.intensity.lighter")
-      : t("report.next.intensity.same");
-
-    // 메시지 생성
-    const todayName = isKo ? todayMapping.ko : todayMapping.en;
-    const nextName = isKo ? recPartInfo.ko : recPartInfo.en;
-
-    let message: string;
-    if (longestGap > 7) {
-      message = isKo
-        ? `${nextName} 안 한 지 ${longestGap}일 됐어요. 다음엔 ${nextName} 먼저 챙겨주세요`
-        : `Haven't done ${nextName} in ${longestGap} days. Prioritize it next`;
-    } else {
-      message = isKo
-        ? `오늘 ${todayName} 열심히 했으니까 다음엔 ${nextName} 해주면 딱이에요`
-        : `Great ${todayName} session! ${nextName} next would be perfect`;
-    }
-
-    return {
-      message,
-      recommendedPart: isKo ? recPartInfo.ko : recPartInfo.en,
-      recommendedIntensity: intensity,
-    };
+    return { message, recommendedPart: ko ? recInfo.ko : recInfo.en, recommendedPartKey: recKey, recommendedIntensity: intensity };
   }
 
   // 폴백
   return {
-    message: isKo ? "오늘 잘했어요! 다음에도 꾸준히 가세요" : "Great work today! Keep it consistent",
-    recommendedPart: isKo ? "이전과 다른 부위" : "Different group",
-    recommendedIntensity: t("report.next.intensity.same"),
+    message: ko ? "오늘 잘했어요! 다음엔 다른 부위로 가볍게 가세요" : "Great work! Try a different group next",
+    recommendedPart: ko ? "이전과 다른 부위" : "Different group",
+    recommendedPartKey: "",
+    recommendedIntensity: intensitySame,
   };
 }
 
-/** 특정 부위를 마지막으로 한 이후 일수 */
-function getDaysSincePart(history: WorkoutHistory[], bodyParts: string[]): number {
-  const now = Date.now();
-  // 역순으로 가장 최근 매칭 찾기
-  for (let i = history.length - 1; i >= 0; i--) {
-    const h = history[i];
-    // condition에서 bodyPart 추출 시도
-    try {
-      const desc = (h.sessionData.description || h.sessionData.title || "").toLowerCase();
-      for (const part of bodyParts) {
-        const keywords = getPartKeywords(part);
-        if (keywords.some(kw => desc.includes(kw))) {
-          const daysDiff = Math.floor((now - new Date(h.date).getTime()) / (24 * 60 * 60 * 1000));
-          return daysDiff;
-        }
-      }
-    } catch {}
-  }
-  return 30; // 기록 없으면 오래 안 한 것으로 처리
-}
-
-function getPartKeywords(part: string): string[] {
-  switch (part) {
-    case "upper_push": return ["가슴", "어깨", "chest", "shoulder", "push", "상체 밀기", "upper push"];
-    case "upper_pull": return ["등", "팔", "back", "arm", "pull", "상체 당기기", "upper pull"];
-    case "lower": return ["하체", "다리", "leg", "squat", "lower"];
-    case "full_body": return ["전신", "full", "전체"];
-    case "core": return ["코어", "복근", "core", "ab"];
-    case "cardio": return ["러닝", "달리기", "run", "cardio", "유산소"];
-    default: return [];
-  }
-}
-
-/** [다음] 탭 — 다음 운동 조언 (회의 37) */
+/** [다음] 탭 — 다음 운동 조언 + 무게 목표 + 주간 스케줄 */
 export const NextTab: React.FC<NextTabProps> = ({
-  todayBodyPart,
-  sessionCategory,
-  fatigueDrop,
-  recentHistory,
-  weeklySchedule,
-  streak,
-  totalVolume,
+  todayBodyPart, sessionCategory, fatigueDrop, recentHistory,
+  weeklySchedule, streak, totalVolume, gender, sessionDesc, exercises, logs,
 }) => {
   const { t, locale } = useTranslation();
+  const ko = locale === "ko";
+
+  // todayBodyPart가 null이면 sessionDesc/exercises에서 추출
+  const bodyPart = todayBodyPart || detectBodyPart(sessionDesc, exercises);
 
   const advice = generateNextAdvice(
-    todayBodyPart,
-    sessionCategory,
-    fatigueDrop,
-    recentHistory,
-    streak,
-    totalVolume,
-    t,
-    locale,
+    bodyPart, sessionCategory, fatigueDrop, recentHistory, streak, ko,
+    t("report.next.intensity.lighter"), t("report.next.intensity.same"), t("report.next.intensity.harder"),
   );
 
-  // 다음 스케줄 계산
-  const nextScheduleEntry = (() => {
-    if (!weeklySchedule) return null;
+  // 무게 목표
+  const weightGoal = advice.recommendedPartKey
+    ? getWeightGoal(advice.recommendedPartKey, recentHistory, gender ?? "male", locale)
+    : null;
+
+  // 이번 주 남은 스케줄
+  const remainingSchedule = (() => {
+    if (!weeklySchedule) return [];
     const today = new Date().getDay(); // 0=Sun
-    for (let i = 1; i <= 7; i++) {
-      const nextDay = (today + i) % 7;
-      const schedIdx = nextDay === 0 ? 6 : nextDay - 1; // Mon-indexed
-      const label = weeklySchedule[schedIdx];
+    const todayIdx = today === 0 ? 6 : today - 1; // Mon-indexed
+    const remaining: { dayLabel: string; workout: string }[] = [];
+    for (let i = todayIdx + 1; i < 7; i++) {
+      const label = weeklySchedule[i];
       if (label && label !== "rest" && label !== "휴식") {
-        const dayKey = DAY_KEYS[schedIdx];
-        return {
-          dayLabel: t(`report.next.day.${dayKey}`),
+        remaining.push({
+          dayLabel: ko ? DAY_KO[i] : DAY_EN[i],
           workout: label,
-        };
+        });
       }
     }
-    return null;
+    return remaining;
   })();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 mb-4">
       {/* 메인 조언 카드 */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">{t("report.next.title")}</p>
         <p className="text-sm font-medium text-[#1B4332] leading-relaxed mb-4">
           &ldquo;{advice.message}&rdquo;
         </p>
-        <div className="flex gap-3">
-          <div className="flex-1 bg-gray-50 rounded-xl p-3">
-            <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t("report.next.recommendedPart")}</p>
-            <p className="text-sm font-black text-[#1B4332]">{advice.recommendedPart}</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">{t("report.next.recommendedPart")}</span>
+            <span className="text-sm font-bold text-[#1B4332]">{advice.recommendedPart}</span>
           </div>
-          <div className="flex-1 bg-gray-50 rounded-xl p-3">
-            <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t("report.next.recommendedIntensity")}</p>
-            <p className="text-sm font-black text-[#1B4332]">{advice.recommendedIntensity}</p>
+          <div className="h-px bg-gray-100" />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">{t("report.next.recommendedIntensity")}</span>
+            <span className="text-sm font-bold text-[#1B4332]">{advice.recommendedIntensity}</span>
           </div>
+          {weightGoal && <>
+            <div className="h-px bg-gray-100" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">{ko ? "무게 목표" : "Weight Goal"}</span>
+              <span className="text-sm font-bold text-[#2D6A4F]">{weightGoal.exerciseName} {weightGoal.targetWeight}kg</span>
+            </div>
+          </>}
         </div>
       </div>
 
-      {/* 스케줄 */}
-      {nextScheduleEntry && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1B4332]/5 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-[9px] font-bold text-gray-400 uppercase">{t("report.next.schedule")}</p>
-            <p className="text-sm font-bold text-[#1B4332]">
-              {nextScheduleEntry.dayLabel} · {nextScheduleEntry.workout}
-            </p>
+      {/* 이번 주 남은 스케줄 */}
+      {remainingSchedule.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">
+            {ko ? "이번 주 남은 운동" : "Remaining This Week"}
+          </p>
+          <div className="space-y-2">
+            {remainingSchedule.map((s, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <span className="text-sm font-bold text-[#1B4332]">{s.dayLabel}</span>
+                <span className="text-sm text-gray-500">{s.workout}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
