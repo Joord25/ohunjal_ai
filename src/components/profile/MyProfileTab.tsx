@@ -220,6 +220,10 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
   });
   const [isEditingHeight, setIsEditingHeight] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [userGoal, setUserGoal] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try { return JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}").goal || ""; } catch { return ""; }
+  });
   const [heightInput, setHeightInput] = useState(height);
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
   const [showBodyInfo, setShowBodyInfo] = useState(!!autoEdit1RM);
@@ -657,6 +661,42 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
               ))}
             </div>
           )}
+          <div className="h-px bg-gray-100" />
+
+          {/* 운동 목표 */}
+          <div>
+            <span className="text-sm font-bold text-gray-500">{t("my.goal")}</span>
+            <div className="flex gap-2 mt-2">
+              {([
+                { key: "fat_loss", ko: "감량", en: "Fat Loss" },
+                { key: "muscle_gain", ko: "근비대", en: "Muscle" },
+                { key: "endurance", ko: "체력", en: "Endurance" },
+                { key: "health", ko: "건강", en: "Health" },
+              ] as const).map((g) => (
+                <button
+                  key={g.key}
+                  onClick={() => {
+                    setUserGoal(g.key);
+                    try {
+                      const fp = JSON.parse(localStorage.getItem("alpha_fitness_profile") || "{}");
+                      fp.goal = g.key;
+                      localStorage.setItem("alpha_fitness_profile", JSON.stringify(fp));
+                      import("@/utils/userProfile").then(({ saveUserProfile }) => {
+                        saveUserProfile({ fitnessProfile: fp });
+                      });
+                    } catch {}
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    userGoal === g.key
+                      ? "bg-[#2D6A4F] text-white"
+                      : "bg-white border border-gray-200 text-gray-500"
+                  }`}
+                >
+                  {locale === "ko" ? g.ko : g.en}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         )}
 
