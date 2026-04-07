@@ -123,7 +123,14 @@ export interface WorkoutHistory {
       message: string;
       recommendedPart: string;
       recommendedIntensity: string;
-      scheduleEntry?: { dayLabel: string; workout: string };
+      weightGoal?: { exerciseName: string; targetWeight: number };
+      questProgress?: {
+        high: { done: number; target: number };
+        moderate: { done: number; target: number };
+        low: { done: number; target: number };
+        total: { done: number; target: number };
+      };
+      weekSessions?: { dayLabel: string; desc: string }[];
     };
     nutrition: {
       dailyCalorie: number;

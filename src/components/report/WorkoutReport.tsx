@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { RunningReportBody } from "@/components/report/RunningReportBody";
 import { detectRunningType } from "@/utils/runningFormat";
-import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation } from "@/utils/workoutMetrics";
+import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation, getWeeklyIntensityTarget } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages } from "@/utils/workoutHistory";
 import { type ExpLogEntry, sumExp, getOrRebuildSeasonExp } from "@/utils/questSystem";
@@ -216,10 +216,31 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
       const bw = bodyWeightKg ?? 70;
       const calBurned = Math.round(met * bw * (m.totalDurationSec / 3600));
       const recoveryH = m.fatigueDrop === null ? "24" : m.fatigueDrop >= 0 ? "12" : m.fatigueDrop > -15 ? "24" : m.fatigueDrop > -25 ? "48" : "48~72";
+      // 퀘스트 진행률 계산
+      let questProgress: NonNullable<WorkoutHistory["reportTabs"]>["next"]["questProgress"];
+      try {
+        const target = getWeeklyIntensityTarget(birthYear, gender);
+        const now = new Date();
+        const dow = now.getDay();
+        const monOff = dow === 0 ? -6 : 1 - dow;
+        const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + monOff);
+        mon.setHours(0, 0, 0, 0);
+        let hi = 0, md = 0, lo = 0;
+        for (const h of hist) {
+          if (new Date(h.date) < mon) continue;
+          if (!h.logs || !h.sessionData?.exercises) continue;
+          const lvl = classifySessionIntensity(h.sessionData.exercises, h.logs).level;
+          if (lvl === "high") hi++; else if (lvl === "moderate") md++; else lo++;
+        }
+        const todayLvl = classifySessionIntensity(sessionData.exercises, logs).level;
+        if (todayLvl === "high") hi++; else if (todayLvl === "moderate") md++; else lo++;
+        questProgress = { high: { done: hi, target: target.high }, moderate: { done: md, target: target.moderate }, low: { done: lo, target: target.low }, total: { done: hi + md + lo, target: target.total } };
+      } catch {}
+
       onReportTabsSaved({
         status: { percentiles: [], overallRank: 0, fitnessAge: 0, ageGroupLabel: "", genderLabel: "" },
         today: { volumeChangePercent: volChange, caloriesBurned: calBurned, foodAnalogy: "", recoveryHours: recoveryH, stimulusMessage: "" },
-        next: { message: "", recommendedPart: "", recommendedIntensity: "" },
+        next: { message: "", recommendedPart: "", recommendedIntensity: "", questProgress },
         nutrition: null,
       });
 
@@ -482,6 +503,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               sessionDesc={sessionData.description || sessionData.title || ""}
               exercises={sessionData.exercises}
               logs={logs}
+              birthYear={birthYear}
             />
           );
         })()}
@@ -608,6 +630,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               sessionDesc={sessionData.description || sessionData.title || ""}
               exercises={sessionData.exercises}
               logs={logs}
+              birthYear={birthYear}
             />
           )}
           {activeReportTab === "nutrition" && savedReportTabs.nutrition && (

@@ -3,6 +3,7 @@
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { WorkoutHistory } from "@/constants/workout";
+import { classifySessionIntensity, getWeeklyIntensityTarget } from "@/utils/workoutMetrics";
 
 export interface NextTabProps {
   todayBodyPart?: string;
@@ -19,6 +20,8 @@ export interface NextTabProps {
   exercises?: { name: string; type?: string }[];
   /** 오늘 세션 로그 (무게 목표 산출용) */
   logs?: Record<number, { weightUsed?: string; repsCompleted: number }[]>;
+  /** 출생년도 (퀘스트 타겟 산출) */
+  birthYear?: number;
 }
 
 // 부위 매핑
@@ -222,7 +225,7 @@ function generateNextAdvice(
 /** [다음] 탭 — 다음 운동 조언 + 무게 목표 + 주간 스케줄 */
 export const NextTab: React.FC<NextTabProps> = ({
   todayBodyPart, sessionCategory, fatigueDrop, recentHistory,
-  weeklySchedule, streak, totalVolume, gender, sessionDesc, exercises, logs,
+  weeklySchedule, streak, totalVolume, gender, sessionDesc, exercises, logs, birthYear,
 }) => {
   const { t, locale } = useTranslation();
   const ko = locale === "ko";
@@ -282,6 +285,51 @@ export const NextTab: React.FC<NextTabProps> = ({
     return { sessions: thisWeekSessions.sort((a, b) => a.dayIdx - b.dayIdx), done, remaining, weeklyFreq };
   })();
 
+  // 퀘스트 진행률 (ACSM 강도 분배)
+  const questProgress = (() => {
+    const target = getWeeklyIntensityTarget(birthYear, gender);
+    // 이번 주 세션들의 강도 분류
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    let high = 0, moderate = 0, low = 0;
+    for (const h of recentHistory) {
+      const d = new Date(h.date);
+      if (d < monday || d > now) continue;
+      if (!h.logs || !h.sessionData?.exercises) continue;
+      const intensity = classifySessionIntensity(h.sessionData.exercises, h.logs);
+      if (intensity.level === "high") high++;
+      else if (intensity.level === "moderate") moderate++;
+      else low++;
+    }
+    // 오늘 세션도 포함
+    if (exercises && logs) {
+      const todayIntensity = classifySessionIntensity(exercises as Parameters<typeof classifySessionIntensity>[0], logs as Parameters<typeof classifySessionIntensity>[1]);
+      if (todayIntensity.level === "high") high++;
+      else if (todayIntensity.level === "moderate") moderate++;
+      else low++;
+    }
+
+    return {
+      high: { done: high, target: target.high },
+      moderate: { done: moderate, target: target.moderate },
+      low: { done: low, target: target.low },
+      total: { done: high + moderate + low, target: target.total },
+    };
+  })();
+
+  // 퀘스트 기반 강도 추천 (부족한 강도 우선)
+  const questBasedIntensity = (() => {
+    const { high, moderate, low } = questProgress;
+    if (high.done < high.target) return { level: "high" as const, message: ko ? `이번 주 고강도 ${high.done}/${high.target}회 — 다음엔 빡세게!` : `High intensity ${high.done}/${high.target} — push hard next!` };
+    if (moderate.done < moderate.target) return { level: "moderate" as const, message: ko ? `이번 주 중강도 ${moderate.done}/${moderate.target}회 — 적당하게 가세요` : `Moderate ${moderate.done}/${moderate.target} — keep it steady` };
+    if (low.done < low.target) return { level: "low" as const, message: ko ? `이번 주 저강도 ${low.done}/${low.target}회 — 가볍게 회복!` : `Low ${low.done}/${low.target} — light recovery!` };
+    return { level: null, message: ko ? "이번 주 목표 다 채웠어요!" : "Weekly goals complete!" };
+  })();
+
   return (
     <div className="space-y-3 mb-4">
       {/* 메인 조언 카드 */}
@@ -298,7 +346,12 @@ export const NextTab: React.FC<NextTabProps> = ({
           <div className="h-px bg-gray-100" />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">{t("report.next.recommendedIntensity")}</span>
-            <span className="text-sm font-bold text-[#1B4332]">{advice.recommendedIntensity}</span>
+            <span className="text-sm font-bold text-[#1B4332]">
+              {questBasedIntensity.level === "high" ? (ko ? "고강도" : "High")
+                : questBasedIntensity.level === "moderate" ? (ko ? "중강도" : "Moderate")
+                : questBasedIntensity.level === "low" ? (ko ? "저강도" : "Low")
+                : advice.recommendedIntensity}
+            </span>
           </div>
           {weightGoal && <>
             <div className="h-px bg-gray-100" />
@@ -310,36 +363,46 @@ export const NextTab: React.FC<NextTabProps> = ({
         </div>
       </div>
 
-      {/* 이번 주 운동 현황 */}
+      {/* 이번 주 퀘스트 */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">
-          {ko ? "이번 주 운동" : "This Week"}
+          {ko ? "이번 주 퀘스트" : "Weekly Quest"}
         </p>
-        {/* 완료한 운동 */}
-        {weekSummary.sessions.map((s, i) => (
-          <div key={i} className="flex items-center justify-between py-1">
-            <span className="text-sm font-bold text-[#1B4332]">{s.dayLabel}</span>
-            <span className="text-sm text-gray-500">{s.desc}</span>
-          </div>
-        ))}
-        {weekSummary.sessions.length > 0 && <div className="h-px bg-gray-100 my-2" />}
-        {/* 남은 횟수 */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">{ko ? "이번 주 목표" : "Weekly Goal"}</span>
-          <span className="text-sm font-bold text-[#1B4332]">
-            {weekSummary.done}/{weekSummary.weeklyFreq}{ko ? "회" : "x"}
-            {weekSummary.remaining > 0 && (
-              <span className="text-[#2D6A4F] ml-1">
-                ({weekSummary.remaining}{ko ? "회 남음" : " left"})
-              </span>
-            )}
-            {weekSummary.remaining === 0 && (
-              <span className="text-[#2D6A4F] ml-1">
-                {ko ? "달성!" : "Done!"}
-              </span>
-            )}
-          </span>
+        <p className="text-xs text-[#2D6A4F] font-bold mb-4">{questBasedIntensity.message}</p>
+        <div className="space-y-3">
+          {([
+            { label: ko ? "고강도" : "High", ...questProgress.high, color: "bg-red-400" },
+            { label: ko ? "중강도" : "Moderate", ...questProgress.moderate, color: "bg-amber-400" },
+            { label: ko ? "저강도" : "Low", ...questProgress.low, color: "bg-blue-400" },
+            { label: ko ? "총 운동" : "Total", ...questProgress.total, color: "bg-[#2D6A4F]" },
+          ] as const).map((q, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">{q.label}</span>
+                <span className="text-xs font-bold text-[#1B4332]">
+                  {q.done}/{q.target}{ko ? "회" : "x"}
+                  {q.done >= q.target && q.target > 0 && <span className="text-[#2D6A4F] ml-1">{ko ? "달성" : "Done"}</span>}
+                </span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${q.color}`}
+                  style={{ width: `${q.target > 0 ? Math.min(100, (q.done / q.target) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
+        {/* 이번 주 운동 이력 */}
+        {weekSummary.sessions.length > 0 && <>
+          <div className="h-px bg-gray-100 my-3" />
+          {weekSummary.sessions.map((s, i) => (
+            <div key={i} className="flex items-center justify-between py-0.5">
+              <span className="text-xs font-bold text-[#1B4332]">{s.dayLabel}</span>
+              <span className="text-xs text-gray-500">{s.desc}</span>
+            </div>
+          ))}
+        </>}
       </div>
     </div>
   );
