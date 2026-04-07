@@ -823,6 +823,7 @@ export default function Home() {
         // 홈 화면: 로그인/비로그인 모두 진입 가능
         return (
           <HomeScreen
+            key={(() => { try { return JSON.parse(localStorage.getItem("ohunjal_workout_history") || "[]").length; } catch { return 0; } })()}
             userName={getDisplayName(user, "")}
             onStartWorkout={() => {
               if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
