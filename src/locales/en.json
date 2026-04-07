@@ -876,9 +876,9 @@
   "report.streak.next": "Next up: {name}",
 
   "onboarding.back": "Back",
-  "onboarding.welcome.title": "Welcome, {name}",
-  "onboarding.welcome.desc1": "To build your perfect workout,",
-  "onboarding.welcome.desc2": "we've prepared a few quick questions",
+  "onboarding.welcome.title": "Hi {name}!",
+  "onboarding.welcome.desc1": "Your coach has prepared a few questions",
+  "onboarding.welcome.desc2": "to help you get the best results",
   "onboarding.welcome.cta": "Get Started",
   "onboarding.gender.title": "What's your gender?",
   "onboarding.birthYear.title": "What year were you born?",
