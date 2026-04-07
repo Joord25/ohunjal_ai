@@ -12,21 +12,22 @@ export interface HexagonAxis {
 
 interface HexagonChartProps {
   axes: HexagonAxis[];
-  size?: number;
 }
 
-/** 육각형 레이더 차트 (SVG) — 6축 고정 */
-export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) => {
-  const cx = size / 2;
-  const cy = size / 2;
-  const maxR = size * 0.30;
-  const labelR = size * 0.45;
+/** 육각형 레이더 차트 (SVG) — 6축 고정, 라벨 짤림 방지 */
+export const HexagonChart: React.FC<HexagonChartProps> = ({ axes }) => {
+  // 내부 좌표계: 중심 200,200 / 차트 반경 80 / 라벨 반경 130 / 전체 400x400
+  const vw = 400;
+  const vh = 400;
+  const cx = 200;
+  const cy = 200;
+  const maxR = 80;
+  const labelR = 135;
   const n = 6;
 
-  // 각도 계산 (12시 방향부터 시계방향)
   const angleFor = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
 
-  // 배경 그리드 (20%, 40%, 60%, 80%, 100%)
+  // 배경 그리드
   const gridLevels = [0.2, 0.4, 0.6, 0.8, 1.0];
   const gridPaths = gridLevels.map((level) => {
     const points = Array.from({ length: n }, (_, i) => {
@@ -40,16 +41,13 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) 
   // 축 라인
   const axisLines = Array.from({ length: n }, (_, i) => {
     const angle = angleFor(i);
-    return {
-      x2: cx + maxR * Math.cos(angle),
-      y2: cy + maxR * Math.sin(angle),
-    };
+    return { x2: cx + maxR * Math.cos(angle), y2: cy + maxR * Math.sin(angle) };
   });
 
-  // 데이터 폴리곤 (value는 0~100 → 0~1 비율)
+  // 데이터 폴리곤
   const dataPoints = axes.map((axis, i) => {
     const angle = angleFor(i);
-    const r = maxR * Math.max(0.05, axis.value / 100); // 최소 5%는 보이게
+    const r = maxR * Math.max(0.05, axis.value / 100);
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   });
   const dataPath = dataPoints.map((p) => `${p.x},${p.y}`).join(" ");
@@ -66,7 +64,11 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) 
   });
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
+    <svg
+      viewBox={`0 0 ${vw} ${vh}`}
+      className="w-full mx-auto"
+      style={{ maxWidth: 320 }}
+    >
       {/* 배경 그리드 */}
       {gridPaths.map((points, i) => (
         <polygon
@@ -74,38 +76,22 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) 
           points={points}
           fill="none"
           stroke="#E5E7EB"
-          strokeWidth={i === gridLevels.length - 1 ? 1 : 0.5}
+          strokeWidth={i === gridLevels.length - 1 ? 1.5 : 0.7}
           opacity={0.5}
         />
       ))}
 
       {/* 축 라인 */}
       {axisLines.map((line, i) => (
-        <line
-          key={i}
-          x1={cx}
-          y1={cy}
-          x2={line.x2}
-          y2={line.y2}
-          stroke="#E5E7EB"
-          strokeWidth={0.5}
-          opacity={0.5}
-        />
+        <line key={i} x1={cx} y1={cy} x2={line.x2} y2={line.y2} stroke="#E5E7EB" strokeWidth={0.7} opacity={0.5} />
       ))}
 
       {/* 데이터 폴리곤 */}
-      <polygon
-        points={dataPath}
-        fill="#2D6A4F"
-        fillOpacity={0.15}
-        stroke="#2D6A4F"
-        strokeWidth={2}
-        strokeLinejoin="round"
-      />
+      <polygon points={dataPath} fill="#2D6A4F" fillOpacity={0.15} stroke="#2D6A4F" strokeWidth={2.5} strokeLinejoin="round" />
 
       {/* 데이터 포인트 */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3.5} fill="#fff" stroke="#2D6A4F" strokeWidth={2} />
+        <circle key={i} cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#2D6A4F" strokeWidth={2.5} />
       ))}
 
       {/* 라벨 + 등수 */}
@@ -113,19 +99,23 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) 
         <g key={i}>
           <text
             x={pos.x}
-            y={pos.y - 8}
+            y={pos.y - 10}
             textAnchor="middle"
             dominantBaseline="auto"
-            className="text-[11px] font-bold fill-gray-600"
+            fontSize={15}
+            fontWeight={700}
+            fill="#6B7280"
           >
             {pos.label}
           </text>
           <text
             x={pos.x}
-            y={pos.y + 9}
+            y={pos.y + 12}
             textAnchor="middle"
             dominantBaseline="auto"
-            className="text-[13px] font-black fill-[#1B4332]"
+            fontSize={18}
+            fontWeight={900}
+            fill="#1B4332"
           >
             {pos.rankText}
           </text>

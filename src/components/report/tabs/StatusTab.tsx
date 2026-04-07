@@ -131,7 +131,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
             ? `${ageGroupLabel} ${genderLabel} 100명 중`
             : `Among 100 ${ageGroupLabel} ${genderLabel}`}
         </p>
-        <HexagonChart axes={hexAxes} size={280} />
+        <HexagonChart axes={hexAxes} />
         {hasAnyData && (
           <div className="text-center mt-3">
             <p className="text-lg font-black text-[#1B4332]">
