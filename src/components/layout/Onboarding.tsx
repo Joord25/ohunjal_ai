@@ -29,7 +29,7 @@ const WEIGHTS = Array.from({ length: 131 }, (_, i) => 30 + i);       // 30 ~ 160
 const STEP_ORDER: Step[] = ["welcome", "gender", "birth_year", "height", "weight", "goal", "done"];
 
 export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) => {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const displayName = userName || t("home.defaultName");
   const [step, setStep] = useState<Step>("welcome");
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
@@ -131,20 +131,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
 
   return (
     <div className="h-full flex flex-col bg-white relative overflow-hidden">
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(60px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-60px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}} />
+
 
       {/* Welcome */}
       {step === "welcome" && (

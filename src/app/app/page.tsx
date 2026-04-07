@@ -20,7 +20,8 @@ import { SubscriptionScreen } from "@/components/profile/SubscriptionScreen";
 import { PlanLoadingOverlay } from "@/components/plan/PlanLoadingOverlay";
 import { FitnessReading } from "@/components/dashboard/FitnessReading";
 import { HomeScreen } from "@/components/dashboard/HomeScreen";
-import { Onboarding } from "@/components/layout/Onboarding";
+import dynamic from "next/dynamic";
+const Onboarding = dynamic(() => import("@/components/layout/Onboarding").then(m => m.Onboarding), { ssr: false });
 import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from "@/utils/userProfile";
 import { syncExpFromFirestore, processWorkoutCompletion, getOrRebuildSeasonExp, type ExpLogEntry } from "@/utils/questSystem";
 import { useSafeArea } from "@/hooks/useSafeArea";
@@ -146,7 +147,6 @@ if (typeof window !== "undefined") {
 export default function Home() {
   useSafeArea();
 
-  // 기존 alpha_ 키 → ohunjal_ 키 마이그레이션 (1회성
   useEffect(() => {
     if (localStorage.getItem("ohunjal_migrated")) return;
     const MIGRATE_KEYS = [
@@ -191,10 +191,6 @@ export default function Home() {
     }
   }, [autoEdit1RM, activeTab]);
 
-  // 회의 34 v2: 스크롤 방향 감지 탭바 자동 숨김
-  // 개선: 각 화면의 실제 스크롤 컨테이너를 찾아 직접 바인딩 (capture phase 불안정 문제 해결)
-  // - HomeScreen, ProofTab, MyProfileTab 각자 다른 위치의 overflow-y-auto 사용
-  // - MutationObserver로 뷰 전환 시에도 자동 재탐색
   useEffect(() => {
     const HIDE_THRESHOLD = 30;
     const DELTA_THRESHOLD = 8;

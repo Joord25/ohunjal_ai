@@ -42,7 +42,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({
     if (!el) return;
     const idx = Math.round(el.scrollTop / itemHeight);
     const clamped = Math.max(0, Math.min(values.length - 1, idx));
-    el.scrollTo({ top: clamped * itemHeight, behavior: "smooth" });
+    try { el.scrollTo({ top: clamped * itemHeight, behavior: "smooth" }); } catch { el.scrollTop = clamped * itemHeight; }
     if (values[clamped] !== selected) {
       onChange(values[clamped]);
     }
