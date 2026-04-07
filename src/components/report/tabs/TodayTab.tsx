@@ -178,7 +178,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   const vsLast = getVsLastMessage();
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-2 gap-2.5 mb-4">
       {/* 자극 */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex items-center gap-1.5 mb-2">

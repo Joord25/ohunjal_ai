@@ -254,7 +254,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
           <img src="/favicon_backup.png" alt="AI" className="w-7 h-7 rounded-full shrink-0" />
           <div>
-            <p className="text-xs font-black text-[#1B4332]">{isKo ? "영양 코치" : "Nutrition Coach"}</p>
+            <p className="text-xs font-black text-[#1B4332]">{isKo ? "AI 코치" : "AI Coach"}</p>
             <p className="text-[9px] text-[#2D6A4F] font-medium">{isKo ? "온라인" : "Online"}</p>
           </div>
           {chatCount > 0 && (
@@ -334,7 +334,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
       </div>
 
       {/* 면책조항 */}
-      <p className="text-center text-[9px] text-gray-300 px-4">
+      <p className="text-center text-[10px] text-gray-700 font-medium px-4">
         {isKo
           ? "일반적인 영양 정보이며 개인 건강 상담을 대체하지 않습니다"
           : "General nutrition information. Not a substitute for professional advice."}

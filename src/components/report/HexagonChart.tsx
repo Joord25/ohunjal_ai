@@ -19,8 +19,8 @@ interface HexagonChartProps {
 export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) => {
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = size * 0.35;
-  const labelR = size * 0.48;
+  const maxR = size * 0.30;
+  const labelR = size * 0.45;
   const n = 6;
 
   // 각도 계산 (12시 방향부터 시계방향)
@@ -113,19 +113,19 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes, size = 240 }) 
         <g key={i}>
           <text
             x={pos.x}
-            y={pos.y - 6}
+            y={pos.y - 8}
             textAnchor="middle"
             dominantBaseline="auto"
-            className="text-[9px] font-bold fill-gray-500"
+            className="text-[11px] font-bold fill-gray-600"
           >
             {pos.label}
           </text>
           <text
             x={pos.x}
-            y={pos.y + 7}
+            y={pos.y + 9}
             textAnchor="middle"
             dominantBaseline="auto"
-            className="text-[10px] font-black fill-[#1B4332]"
+            className="text-[13px] font-black fill-[#1B4332]"
           >
             {pos.rankText}
           </text>

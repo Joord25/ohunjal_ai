@@ -125,16 +125,16 @@ export const StatusTab: React.FC<StatusTabProps> = ({
       )}
 
       {/* 육각형 레이더 */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center mb-2">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <p className="text-sm font-black text-[#1B4332] text-center mb-1">
           {isKo
             ? `${ageGroupLabel} ${genderLabel} 100명 중`
             : `Among 100 ${ageGroupLabel} ${genderLabel}`}
         </p>
-        <HexagonChart axes={hexAxes} size={240} />
+        <HexagonChart axes={hexAxes} size={280} />
         {hasAnyData && (
-          <div className="text-center mt-2">
-            <p className="text-sm font-bold text-[#1B4332]">
+          <div className="text-center mt-3">
+            <p className="text-lg font-black text-[#1B4332]">
               {isKo ? `종합 ${overallRank}등` : `Overall rank: ${overallRank}`}
             </p>
           </div>
