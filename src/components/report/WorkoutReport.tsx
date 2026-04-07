@@ -479,7 +479,24 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 estimatedCalories: estimatedCal,
               }}
               cachedGuide={cachedNutritionGuide as Parameters<typeof NutritionTab>[0]["cachedGuide"]}
-              onGuideLoaded={(g) => setCachedNutritionGuide(g)}
+              onGuideLoaded={(g) => {
+                setCachedNutritionGuide(g);
+                // 영양 데이터 Firestore 업데이트
+                if (onReportTabsSaved && !sessionDate) {
+                  try {
+                    const history = JSON.parse(localStorage.getItem("alpha_workout_history") || "[]");
+                    const lastEntry = history[history.length - 1];
+                    if (lastEntry?.reportTabs) {
+                      lastEntry.reportTabs.nutrition = g;
+                      localStorage.setItem("alpha_workout_history", JSON.stringify(history));
+                      // Firestore도 업데이트
+                      import("@/utils/workoutHistory").then(({ updateReportTabs }) => {
+                        updateReportTabs(lastEntry.id, lastEntry.reportTabs);
+                      });
+                    }
+                  } catch {}
+                }
+              }}
               isPremium={isPremium}
               onChatHistoryChange={(msgs) => setCachedChatHistory(msgs)}
             />
@@ -692,7 +709,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
         })()}
 
         {/* === 운동 과학 데이터 (펼쳐보기, 웨이트만) — 오늘 탭 or 히스토리에서만 === */}
-        {(activeReportTab === "today" || !!sessionDate) && isStrengthSession && (
+        {(activeReportTab === "today" || (!!sessionDate && !savedReportTabs)) && isStrengthSession && (
         <div className="mb-5">
           <button
             onClick={() => setShowDetail(!showDetail)}
@@ -979,7 +996,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
         </>}
 
         {/* === Workout Logs (Collapsible) — 오늘 탭 or 히스토리에서만 === */}
-        {(activeReportTab === "today" || !!sessionDate) && <div className="mb-4">
+        {(activeReportTab === "today" || (!!sessionDate && !savedReportTabs)) && <div className="mb-4">
           <button
             onClick={() => setShowLogs(!showLogs)}
             className="w-full flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-4 shadow-sm active:scale-[0.99] transition-all"
