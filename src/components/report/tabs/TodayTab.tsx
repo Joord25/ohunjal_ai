@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useState } from "react";
 
 // ── 음식 비유 풀 ──
 const FOOD_KO = [
@@ -68,6 +69,8 @@ export interface TodayTabProps {
   loadBand?: { low: number; high: number } | null;
   /** 오늘 부하 점수 */
   todayLoadScore?: number;
+  /** 도움말 콜백 */
+  onHelpPress?: () => void;
 }
 
 /** [오늘] 탭 — 성별 고정 하이라이트 (회의 38) */
@@ -75,9 +78,11 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   sessionCategory, totalVolume, volumeChangePercent, goal, gender,
   bodyWeightKg, totalDurationSec, savedDurationSec, fatigueDrop,
   totalSets, totalReps, sessionDesc, graphData, prInfo, loadBand, todayLoadScore,
+  onHelpPress,
 }) => {
   const { locale } = useTranslation();
   const ko = locale === "ko";
+  const [activeGraphDot, setActiveGraphDot] = useState<number | null>(null);
   const dur = totalDurationSec > 0 ? totalDurationSec : (savedDurationSec ?? 0);
   const bw = bodyWeightKg ?? 70;
   const cal = estimateCalories(sessionCategory, dur, bw);
@@ -166,74 +171,111 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           )}
         </div>
       ) : (
-        /* 남성/근비대: 4주 그래프 메인 */
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">
-            {ko ? "4주 운동량 변화" : "4-Week Volume Trend"}
-          </p>
-          {/* 미니 그래프 */}
-          {graphData && graphData.length >= 1 ? (
-            <div className="relative h-24 mb-3">
-              {/* 적정 범위 배경 */}
-              {loadBand && (() => {
-                const allScores = graphData.map(d => d.loadScore);
-                const maxScore = Math.max(...allScores, loadBand.high * 1.2);
-                const lowY = 100 - (loadBand.low / maxScore) * 100;
-                const highY = 100 - (loadBand.high / maxScore) * 100;
-                return (
-                  <div
-                    className="absolute left-0 right-0 bg-emerald-50 rounded"
-                    style={{ top: `${highY}%`, bottom: `${100 - lowY}%` }}
-                  />
-                );
-              })()}
-              <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path
-                  d={graphData.map((d, i) => {
-                    const x = graphData.length === 1 ? 50 : (i / (graphData.length - 1)) * 100;
-                    const maxScore = Math.max(...graphData.map(g => g.loadScore), 1);
-                    const y = 95 - (d.loadScore / maxScore) * 85;
-                    return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-                  }).join(" ")}
-                  fill="none"
-                  stroke="#2D6A4F"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </svg>
-              {/* 오늘 포인트 */}
-              {graphData.length > 0 && (() => {
-                const maxScore = Math.max(...graphData.map(g => g.loadScore), 1);
-                const last = graphData[graphData.length - 1];
-                const x = 100;
-                const y = 95 - (last.loadScore / maxScore) * 85;
-                return (
-                  <div className="absolute" style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}>
-                    <div className="w-3 h-3 bg-white border-[2.5px] border-[#2D6A4F] rounded-full" />
-                  </div>
-                );
-              })()}
-            </div>
-          ) : (
-            <div className="h-24 flex items-center justify-center">
-              <p className="text-xs text-gray-400">{ko ? "데이터가 쌓이면 그래프가 보여요" : "Graph appears with more data"}</p>
-            </div>
-          )}
-          {/* 판정 */}
-          <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-black text-[#1B4332]">
-              {todayLoadScore ? todayLoadScore.toFixed(1) : totalVolume > 0 ? totalVolume.toLocaleString() + "kg" : "-"}
+        /* 남성/근비대: 4주 그래프 메인 — LoadTimelineChart 디자인 동일 */
+        <div className="bg-white rounded-3xl border border-[#2D6A4F]/10 p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
+              {ko ? "4주 운동량 변화" : "4-Week Volume Trend"}
             </p>
-            {graphVerdict && (
-              <span className={`text-sm font-black ${graphVerdict.color}`}>
-                — {graphVerdict.text}
-              </span>
+            {onHelpPress && (
+              <button onClick={onHelpPress} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                <span className="text-[10px] font-black text-gray-400">?</span>
+              </button>
             )}
           </div>
-          {todayLoadScore && !graphVerdict && totalVolume > 0 && (
-            <p className="text-xs text-gray-500 mt-1">{ko ? "오늘 총 볼륨이에요" : "Today's total volume"}</p>
+          {graphData && graphData.length >= 1 ? (() => {
+            const maxLoad = Math.max(...graphData.map(g => g.loadScore), 1);
+            const bandHigh = loadBand?.high ?? maxLoad;
+            const bandLow = loadBand?.low ?? 0;
+            const bandOverload = bandHigh * 1.2;
+            const maxScale = Math.max(maxLoad, bandHigh, bandOverload) * 1.1;
+            const tickValues = [0, Math.round(bandLow), Math.round(bandHigh), Math.round(bandOverload)].filter((v, i, a) => a.indexOf(v) === i);
+            const latest = graphData[graphData.length - 1].loadScore;
+
+            return (
+              <>
+                <div className="relative h-36 mt-5 mb-2 mx-5">
+                  {/* Y축 눈금 */}
+                  {tickValues.map((v, ti) => {
+                    const yPct = 100 - ((v / maxScale) * 80);
+                    if (yPct < 0 || yPct > 100) return null;
+                    return (
+                      <div key={ti} className="absolute left-0 right-0 pointer-events-none" style={{ top: `${yPct}%` }}>
+                        <div className="border-t border-dashed border-gray-200/60 w-full" />
+                        <span className="absolute -left-1 -translate-x-full -translate-y-1/2 text-[8px] text-gray-300 font-bold">{v}</span>
+                      </div>
+                    );
+                  })}
+                  {/* 적정/과부하 영역 */}
+                  {loadBand && (() => {
+                    const topPct = 100 - (bandHigh / maxScale) * 80;
+                    const overloadPct = 100 - (bandOverload / maxScale) * 80;
+                    const bottomPct = 100 - (bandLow / maxScale) * 80;
+                    return (
+                      <>
+                        <div className="absolute left-0 right-0 bg-amber-50/50 border-t border-amber-200/50 rounded-t" style={{ top: `${Math.max(0, overloadPct)}%`, height: `${Math.max(0, topPct - overloadPct)}%` }} />
+                        <div className="absolute left-0 right-0 bg-emerald-50 border-y border-emerald-100 rounded" style={{ top: `${Math.max(0, topPct)}%`, height: `${Math.max(4, bottomPct - topPct)}%` }} />
+                      </>
+                    );
+                  })()}
+                  {/* 라인 */}
+                  <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={graphData.map((d, i) => {
+                        const x = graphData.length === 1 ? 50 : (i / (graphData.length - 1)) * 100;
+                        const y = 100 - ((d.loadScore / maxScale) * 80);
+                        return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+                      }).join(" ")}
+                      fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                  {/* 점 */}
+                  {graphData.map((d, i) => {
+                    const xPct = graphData.length === 1 ? 50 : (i / (graphData.length - 1)) * 100;
+                    const yPct = 100 - ((d.loadScore / maxScale) * 80);
+                    const isActive = activeGraphDot === i;
+                    return (
+                      <button
+                        type="button"
+                        key={i}
+                        className="absolute z-10 flex items-center justify-center"
+                        style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
+                        onPointerUp={(e) => { e.stopPropagation(); setActiveGraphDot(isActive ? null : i); }}
+                      >
+                        {isActive && (
+                          <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
+                            {d.loadScore.toFixed(1)}
+                          </span>
+                        )}
+                        <div className={`rounded-full border-2 transition-transform ${isActive ? "scale-150" : ""} w-2 h-2 bg-white border-[#2D6A4F]`} />
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* X축 날짜 */}
+                <div className="relative text-[9px] text-gray-300 font-medium mx-5">
+                  <span className="absolute left-0 -translate-x-1/2">{`${graphData[0].date.getMonth() + 1}/${graphData[0].date.getDate()}`}</span>
+                  <span className="absolute right-0 translate-x-1/2">{`${graphData[graphData.length - 1].date.getMonth() + 1}/${graphData[graphData.length - 1].date.getDate()}`}</span>
+                  <span>&nbsp;</span>
+                </div>
+                {/* 범례 */}
+                <div className="flex justify-center gap-2 text-[9px] text-gray-300 font-medium mt-1">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-50 border border-amber-200 rounded-sm inline-block" /> {ko ? "많음" : "High"}</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-100 rounded-sm inline-block" /> {ko ? "딱 좋음" : "Optimal"}</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#2D6A4F] rounded-full inline-block" /> {ko ? "운동량" : "Volume"}</span>
+                </div>
+                {/* 판정 */}
+                <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+                  <p className="text-2xl font-black text-[#1B4332]">
+                    {latest.toFixed(1)} {graphVerdict && <span className={`text-base ${graphVerdict.color}`}>— {graphVerdict.text}</span>}
+                  </p>
+                </div>
+              </>
+            );
+          })() : (
+            <div className="h-36 flex items-center justify-center">
+              <p className="text-xs text-gray-400">{ko ? "데이터가 쌓이면 그래프가 보여요" : "Graph appears with more data"}</p>
+            </div>
           )}
         </div>
       )}
