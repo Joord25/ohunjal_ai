@@ -289,12 +289,17 @@ export const TodayTab: React.FC<TodayTabProps> = ({
 
       {/* ── 보조 정보 카드 ── */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
-        {/* 부위·시간·세트 */}
-        <div>
-          <p className="text-sm font-black text-[#1B4332]">{summaryLine}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{intensityMsg}</p>
+        {/* 운동 요약 */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500">{ko ? "운동 요약" : "Summary"}</span>
+          <span className="text-sm font-bold text-[#1B4332]">{summaryLine}</span>
         </div>
-
+        <div className="h-px bg-gray-100" />
+        {/* 강도 */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500">{ko ? "강도" : "Intensity"}</span>
+          <span className="text-sm font-bold text-[#1B4332]">{intensityMsg}</span>
+        </div>
         <div className="h-px bg-gray-100" />
 
         {/* 칼로리 (남성 보조) / 볼륨 (여성 보조) */}
