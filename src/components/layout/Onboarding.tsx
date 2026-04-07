@@ -131,7 +131,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
 
   return (
     <div className="h-full flex flex-col bg-white relative overflow-hidden">
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes slideInRight {
           from { opacity: 0; transform: translateX(60px); }
           to { opacity: 1; transform: translateX(0); }
@@ -144,7 +144,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
         }
-      `}</style>
+      `}} />
 
       {/* Welcome */}
       {step === "welcome" && (
