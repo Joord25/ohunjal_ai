@@ -441,6 +441,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               prInfo={prInfo}
               loadBand={loadBand.low > 0 ? { low: loadBand.low, high: loadBand.high } : null}
               todayLoadScore={loadScore}
+              onHelpPress={() => setHelpCard("loadTimeline")}
             />
           );
         })()}
@@ -585,6 +586,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 graphData={graphData}
                 loadBand={loadBand.low > 0 ? { low: loadBand.low, high: loadBand.high } : null}
                 todayLoadScore={loadScore}
+                onHelpPress={() => setHelpCard("loadTimeline")}
               />
             );
           })()}

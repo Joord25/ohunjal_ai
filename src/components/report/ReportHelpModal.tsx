@@ -166,6 +166,12 @@ export const ReportHelpModal: React.FC<ReportHelpModalProps> = ({ helpCard, onCl
                     <div className="flex justify-between"><span className="text-gray-500">{locale === "ko" ? "상급" : "Advanced"}</span><span className="font-bold text-gray-600">{locale === "ko" ? "적정 70~180 · 주의 180~220 · 상한 220+" : "Optimal 70–180 · Caution 180–220 · Max 220+"}</span></div>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-1">{locale === "ko" ? "예: 체중 70kg, 총 볼륨 4,200kg → Load Score = 60" : "e.g. BW 70kg, total volume 4,200kg → Load Score = 60"}</p>
+                  <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
+                    <p className="text-[11px] font-bold text-gray-500">{locale === "ko" ? "계산 공식" : "Formula"}</p>
+                    <p className="text-[10px] text-gray-500">{locale === "ko" ? "Load Score = 총 볼륨(kg) / 체중(kg)" : "Load Score = Total Volume(kg) / Body Weight(kg)"}</p>
+                    <p className="text-[10px] text-gray-500">{locale === "ko" ? "총 볼륨 = 모든 세트의 (무게 x 횟수) 합계" : "Total Volume = Sum of (Weight x Reps) for all sets"}</p>
+                    <p className="text-[10px] text-gray-500">{locale === "ko" ? "적정 범위는 운동 레벨(초급/중급/상급)과 나이에 따라 자동 조정돼요." : "Optimal range auto-adjusts based on your level (beginner/intermediate/advanced) and age."}</p>
+                  </div>
                 </div>
                 <p>{locale === "ko" ? <>꾸준히 초록 영역 안에 점이 찍히면 <span className="font-bold text-[#2D6A4F]">잘 관리되고 있는 거예요</span>. 노란 영역 위로 자주 벗어나면 볼륨 조절이 필요해요.</> : <>If your dots consistently land in the green zone, <span className="font-bold text-[#2D6A4F]">you&apos;re managing well</span>. Frequently going above the yellow zone means it&apos;s time to adjust your volume.</>}</p>
                 <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">{locale === "ko" ? "근거: ACSM 점진적 과부하 원칙, Schoenfeld et al. (2017), Israetel RP Strength, NSCA" : "Source: ACSM progressive overload principle, Schoenfeld et al. (2017), Israetel RP Strength, NSCA"}</p>
