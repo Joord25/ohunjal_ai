@@ -66,7 +66,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
   weeklyFrequency,
   todaySession,
 }) => {
-  const { t, locale } = useTranslation();
+  const { locale } = useTranslation();
   const isKo = locale === "ko";
   const [guide, setGuide] = useState<NutritionGuide | null>(cachedGuide ?? null);
   const [loading, setLoading] = useState(!cachedGuide);
@@ -373,7 +373,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
 
       {/* 칼로리 도움말 모달 */}
       {showCalorieHelp && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setShowCalorieHelp(false)}>
+        <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setShowCalorieHelp(false)}>
           <div className="bg-white rounded-2xl mx-6 max-w-sm w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-[#1B4332]">
