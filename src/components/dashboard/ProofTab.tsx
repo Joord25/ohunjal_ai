@@ -249,7 +249,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
   return (
     <div className="flex flex-col h-full bg-[#F0F4F1] animate-fade-in relative overflow-hidden">
       {/* ── 다크 히어로 존 (스크롤에 포함 — 위로 밀려남) ── */}
-      <div className="shrink-0 pt-[max(1rem,env(safe-area-inset-top))] px-4 sm:px-6 text-center z-10 relative"
+      <div className="shrink-0 pt-[max(1.5rem,calc(env(safe-area-inset-top)+0.5rem))] px-4 sm:px-6 text-center z-10 relative"
         style={{ background: "radial-gradient(ellipse at 50% 0%, #2D6A4F 0%, #1B4332 70%)" }}>
         {/* 서브타이틀 제거 — 월 네비에 이미 정보 충분 */}
         {/* 월 네비게이션 */}
@@ -276,10 +276,10 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         {/* 히어로: 좌 숫자 + 우 통계 */}
         <div className="mt-3 mb-1">
           {monthHistory.length > 0 ? (
-            <div className="flex items-end gap-4 px-2">
-              <h1 className="text-5xl font-black text-white leading-none" style={{ textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}<span className="text-base font-bold text-[#95D5B2]/50 ml-1">{t("proof.workoutCount")}</span></h1>
-              <p className="text-base text-[#95D5B2]/60 ml-auto font-bold">
-                <span className="text-xl font-black text-white/90">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg · <span className="text-xl font-black text-white/90">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"} · <span className="text-xl font-black text-white/90">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
+            <div className="flex items-end gap-2 px-2 flex-nowrap">
+              <h1 className="font-black text-white leading-none shrink-0" style={{ fontSize: "clamp(2rem, 10vw, 3rem)", textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}<span className="font-bold text-[#95D5B2]/50 ml-1" style={{ fontSize: "clamp(0.75rem, 3vw, 1rem)" }}>{t("proof.workoutCount")}</span></h1>
+              <p className="text-[#95D5B2]/60 ml-auto font-bold whitespace-nowrap" style={{ fontSize: "clamp(0.65rem, 2.5vw, 0.875rem)" }}>
+                <span className="font-black text-white/90" style={{ fontSize: "clamp(0.875rem, 3.5vw, 1.25rem)" }}>{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg · <span className="font-black text-white/90" style={{ fontSize: "clamp(0.875rem, 3.5vw, 1.25rem)" }}>{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"} · <span className="font-black text-white/90" style={{ fontSize: "clamp(0.875rem, 3.5vw, 1.25rem)" }}>{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
               </p>
             </div>
           ) : isCurrentMonth ? (
