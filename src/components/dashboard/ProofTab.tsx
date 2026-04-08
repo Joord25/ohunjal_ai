@@ -248,59 +248,91 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
 
   return (
     <div className="flex flex-col h-full bg-[#FAFBF9] animate-fade-in relative overflow-hidden">
-      {/* Fixed Header */}
-      <div className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-3 sm:pb-4 px-4 sm:px-6 text-center z-10 shrink-0">
+      {/* ── 다크 히어로 존 ── */}
+      <div className="bg-[#1B4332] pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 px-4 sm:px-6 text-center z-10 shrink-0 relative">
+        {/* 서브타이틀 */}
+        <p className="text-[10px] font-serif font-medium text-[#52B788]/60 uppercase tracking-[0.3em] mb-1">MY LEGACY</p>
         {/* 월 네비게이션 */}
-        <div className="inline-flex items-center gap-1 bg-[#2D6A4F]/10 rounded-full">
+        <div className="inline-flex items-center gap-1 bg-white/10 rounded-full">
           <button
             onClick={() => setMonthOffset(prev => prev - 1)}
             className="p-2 pl-3 active:opacity-60 transition-opacity"
           >
-            <svg className="w-3.5 h-3.5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <svg className="w-3.5 h-3.5 text-[#95D5B2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <span className="text-xs font-black text-[#2D6A4F] min-w-[100px] text-center">{currentMonthLabel}</span>
+          <span className="text-xs font-black text-white min-w-[100px] text-center">{currentMonthLabel}</span>
           <button
             onClick={() => setMonthOffset(prev => Math.min(prev + 1, 0))}
             disabled={isCurrentMonth}
             className="p-2 pr-3 active:opacity-60 transition-opacity disabled:opacity-20"
           >
-            <svg className="w-3.5 h-3.5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <svg className="w-3.5 h-3.5 text-[#95D5B2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
         {/* 히어로: 월 요약 + 누적 통계 */}
-        <div className="mt-3">
+        <div className="mt-4">
           {monthHistory.length > 0 ? (
             <>
-              <h1 className="text-4xl font-black text-[#1B4332]">{monthHistory.length}<span className="text-lg font-bold text-[#2D6A4F]/50 ml-1">{t("proof.workoutCount")}</span></h1>
+              <h1 className="text-4xl font-black text-white">{monthHistory.length}<span className="text-lg font-bold text-[#95D5B2]/60 ml-1">{t("proof.workoutCount")}</span></h1>
               <div className="flex justify-center gap-4 mt-2">
-                <span className="text-[11px] text-gray-400">
-                  <span className="font-bold text-[#1B4332]">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg
+                <span className="text-[11px] text-[#95D5B2]/50">
+                  <span className="font-bold text-white">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg
                 </span>
-                <span className="text-[11px] text-gray-400">
-                  <span className="font-bold text-[#1B4332]">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}
+                <span className="text-[11px] text-[#95D5B2]/50">
+                  <span className="font-bold text-white">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}
                 </span>
-                <span className="text-[11px] text-gray-400">
-                  <span className="font-bold text-[#1B4332]">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
+                <span className="text-[11px] text-[#95D5B2]/50">
+                  <span className="font-bold text-white">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
                 </span>
               </div>
             </>
           ) : isCurrentMonth ? (
             <>
-              <h1 className="text-xl font-black text-[#1B4332]">{t("proof.createFirstRecord")}</h1>
-              <p className="text-[12px] font-medium text-gray-400 mt-1">{t("proof.startToday")}</p>
+              <h1 className="text-xl font-black text-white">{t("proof.createFirstRecord")}</h1>
+              <p className="text-[12px] font-medium text-[#95D5B2]/50 mt-1">{t("proof.startToday")}</p>
             </>
           ) : (
             <>
-              <h1 className="text-xl font-black text-gray-300">{t("proof.noRecordsMonth")}</h1>
-              <p className="text-[12px] font-medium text-gray-400 mt-1">{t("proof.monthLabel", { month: String(viewMonth + 1) })}</p>
+              <h1 className="text-xl font-black text-white/30">{t("proof.noRecordsMonth")}</h1>
+              <p className="text-[12px] font-medium text-[#95D5B2]/40 mt-1">{t("proof.monthLabel", { month: String(viewMonth + 1) })}</p>
             </>
           )}
         </div>
+        {/* ── 하이라이트 (업적 횡스크롤 — 다크존 안) ── */}
+        {(() => {
+          const achievements = detectAchievements(history);
+          if (achievements.length === 0) return null;
+          const recent = achievements.slice(0, 10);
+          return (
+            <div className="mt-5 px-4 sm:px-6">
+              <p className="text-[10px] font-black text-[#95D5B2]/40 uppercase tracking-[0.15em] mb-2">
+                {locale === "ko" ? "나의 업적" : "Highlights"}
+              </p>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:-mx-6 sm:px-6">
+                {recent.map((a, i) => (
+                  <div key={i} className="shrink-0 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 px-4 py-3 min-w-[140px]">
+                    <p className="text-[9px] font-bold text-[#95D5B2]/40 mb-1">
+                      {a.date.slice(0, 10).replace(/-/g, ".")}
+                    </p>
+                    <p className="text-sm font-black text-white leading-tight">
+                      {locale === "ko" ? a.title : a.titleEn}
+                    </p>
+                    <p className="text-[9px] font-bold mt-1 text-[#52B788]/60">
+                      {a.type === "pr" ? (locale === "ko" ? "신기록" : "PR") : a.type === "streak" ? (locale === "ko" ? "연속" : "Streak") : a.type === "milestone" ? (locale === "ko" ? "달성" : "Milestone") : (locale === "ko" ? "시작" : "First")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
+      {/* 다크 → 라이트 그라데이션 전환 */}
+      <div className="h-8 bg-gradient-to-b from-[#1B4332] to-[#FAFBF9] shrink-0" />
 
       {/* Scrollable Content with pull-to-refresh */}
       <div
@@ -341,34 +373,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             style={{ opacity: pullDistance > 20 || isRefreshing ? 1 : pullDistance / 20, transform: `rotate(${pullDistance * 3}deg)` }}
           />
         </div>
-        {/* ── 하이라이트 (업적 횡스크롤) ── */}
-        {(() => {
-          const achievements = detectAchievements(history);
-          if (achievements.length === 0) return null;
-          const recent = achievements.slice(0, 10);
-          return (
-            <div className="mb-4">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2">
-                {locale === "ko" ? "나의 업적" : "Highlights"}
-              </p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                {recent.map((a, i) => (
-                  <div key={i} className="shrink-0 bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm min-w-[140px]">
-                    <p className="text-[9px] font-bold text-gray-300 mb-1">
-                      {a.date.slice(0, 10).replace(/-/g, ".")}
-                    </p>
-                    <p className="text-sm font-black text-[#1B4332] leading-tight">
-                      {locale === "ko" ? a.title : a.titleEn}
-                    </p>
-                    <p className="text-[9px] font-bold mt-1 text-[#2D6A4F]/60">
-                      {a.type === "pr" ? (locale === "ko" ? "신기록" : "PR") : a.type === "streak" ? (locale === "ko" ? "연속" : "Streak") : a.type === "milestone" ? (locale === "ko" ? "달성" : "Milestone") : (locale === "ko" ? "시작" : "First")}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
+        {/* 하이라이트는 다크존으로 이동됨 */}
 
         {/* ── 부위 도감 (이번 달) ── */}
         {monthHistory.length > 0 && (() => {
