@@ -942,3 +942,123 @@ export function getIntensityRecommendation(
     recoveryHours,
   };
 }
+
+/* ─── PR / 업적 감지 (PROOF 하이라이트용) ─── */
+
+export interface Achievement {
+  type: "pr" | "streak" | "milestone" | "first";
+  title: string;
+  titleEn: string;
+  date: string;
+  value?: string;
+}
+
+/**
+ * 운동 히스토리에서 주요 업적을 자동 감지
+ * - PR: 종목별 최고 무게/e1RM 달성
+ * - 스트릭: 연속 운동일 기록
+ * - 마일스톤: 총 운동 횟수 (10/30/50/100/200/365회)
+ * - 첫 달성: 처음 한 운동 종류
+ */
+export function detectAchievements(history: WorkoutHistory[]): Achievement[] {
+  if (!history || history.length === 0) return [];
+
+  const achievements: Achievement[] = [];
+  const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // ── PR 감지: 종목별 최고 무게 ──
+  const exerciseBest = new Map<string, { weight: number; date: string }>();
+  for (const h of sorted) {
+    if (!h.logs) continue;
+    for (let i = 0; i < h.sessionData.exercises.length; i++) {
+      const ex = h.sessionData.exercises[i];
+      const exLogs = h.logs[i];
+      if (!exLogs) continue;
+      for (const log of exLogs) {
+        const w = parseFloat(log.weightUsed || "0");
+        if (w <= 0) continue;
+        const name = ex.name.split(" (")[0]; // 한글 이름만
+        const prev = exerciseBest.get(name);
+        if (!prev) {
+          exerciseBest.set(name, { weight: w, date: h.date });
+        } else if (w > prev.weight) {
+          // PR 달성
+          achievements.push({
+            type: "pr",
+            title: `${name} ${w}kg`,
+            titleEn: `${ex.name.includes("(") ? ex.name.split("(")[1].replace(")", "").trim() : name} ${w}kg`,
+            date: h.date,
+            value: `${w}kg`,
+          });
+          exerciseBest.set(name, { weight: w, date: h.date });
+        }
+      }
+    }
+  }
+
+  // ── 스트릭 감지: 연속 운동일 ──
+  const uniqueDates = [...new Set(sorted.map(h => h.date.slice(0, 10)))].sort();
+  let maxStreak = 1;
+  let currentStreak = 1;
+  let streakEndDate = uniqueDates[0];
+
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const prev = new Date(uniqueDates[i - 1]);
+    const curr = new Date(uniqueDates[i]);
+    const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays === 1) {
+      currentStreak++;
+      if (currentStreak > maxStreak) {
+        maxStreak = currentStreak;
+        streakEndDate = uniqueDates[i];
+      }
+    } else {
+      currentStreak = 1;
+    }
+  }
+  if (maxStreak >= 3) {
+    achievements.push({
+      type: "streak",
+      title: `${maxStreak}일 연속 운동`,
+      titleEn: `${maxStreak}-Day Streak`,
+      date: streakEndDate,
+      value: `${maxStreak}`,
+    });
+  }
+
+  // ── 마일스톤: 총 운동 횟수 ──
+  const milestones = [10, 30, 50, 100, 200, 365];
+  for (const m of milestones) {
+    if (sorted.length >= m) {
+      achievements.push({
+        type: "milestone",
+        title: `${m}회 운동 달성`,
+        titleEn: `${m} Workouts Complete`,
+        date: sorted[m - 1].date,
+        value: `${m}`,
+      });
+    }
+  }
+
+  // ── 첫 운동 ──
+  if (sorted.length > 0) {
+    achievements.push({
+      type: "first",
+      title: "첫 운동",
+      titleEn: "First Workout",
+      date: sorted[0].date,
+    });
+  }
+
+  // 최신순 정렬, 중복 제거 (같은 날 같은 타입)
+  const seen = new Set<string>();
+  return achievements
+    .filter(a => {
+      const key = `${a.type}-${a.title}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 20); // 최대 20개
+}

@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
 import { loadWorkoutHistory, deleteWorkoutHistory } from "@/utils/workoutHistory";
 
-import { estimateTrainingLevelDetailed } from "@/utils/workoutMetrics";
+import { estimateTrainingLevelDetailed, detectAchievements, type Achievement } from "@/utils/workoutMetrics";
 import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWeeklyQuests, rebuildFromHistory, saveSeasonExp, translateQuestLabel, translateExpDetail, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
@@ -271,12 +271,22 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             </svg>
           </button>
         </div>
-        {/* 성취 숫자 or 안내 */}
+        {/* 히어로: 월 요약 + 누적 통계 */}
         <div className="mt-3">
           {monthHistory.length > 0 ? (
             <>
               <h1 className="text-4xl font-black text-[#1B4332]">{monthHistory.length}<span className="text-lg font-bold text-[#2D6A4F]/50 ml-1">{t("proof.workoutCount")}</span></h1>
-              <p className="text-[12px] font-medium text-gray-400 mt-1">{isCurrentMonth ? t("proof.thisMonth") : `${viewMonth + 1}${t("proof.monthRecord")}`}</p>
+              <div className="flex justify-center gap-4 mt-2">
+                <span className="text-[11px] text-gray-400">
+                  <span className="font-bold text-[#1B4332]">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg
+                </span>
+                <span className="text-[11px] text-gray-400">
+                  <span className="font-bold text-[#1B4332]">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}
+                </span>
+                <span className="text-[11px] text-gray-400">
+                  <span className="font-bold text-[#1B4332]">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
+                </span>
+              </div>
             </>
           ) : isCurrentMonth ? (
             <>
@@ -331,6 +341,82 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             style={{ opacity: pullDistance > 20 || isRefreshing ? 1 : pullDistance / 20, transform: `rotate(${pullDistance * 3}deg)` }}
           />
         </div>
+        {/* ── 하이라이트 (업적 횡스크롤) ── */}
+        {(() => {
+          const achievements = detectAchievements(history);
+          if (achievements.length === 0) return null;
+          const recent = achievements.slice(0, 10);
+          return (
+            <div className="mb-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2">
+                {locale === "ko" ? "나의 업적" : "Highlights"}
+              </p>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {recent.map((a, i) => (
+                  <div key={i} className="shrink-0 bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm min-w-[140px]">
+                    <p className="text-[9px] font-bold text-gray-300 mb-1">
+                      {a.date.slice(0, 10).replace(/-/g, ".")}
+                    </p>
+                    <p className="text-sm font-black text-[#1B4332] leading-tight">
+                      {locale === "ko" ? a.title : a.titleEn}
+                    </p>
+                    <p className="text-[9px] font-bold mt-1 text-[#2D6A4F]/60">
+                      {a.type === "pr" ? (locale === "ko" ? "신기록" : "PR") : a.type === "streak" ? (locale === "ko" ? "연속" : "Streak") : a.type === "milestone" ? (locale === "ko" ? "달성" : "Milestone") : (locale === "ko" ? "시작" : "First")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── 부위 도감 (이번 달) ── */}
+        {monthHistory.length > 0 && (() => {
+          const partCount: Record<string, number> = {};
+          for (const h of monthHistory) {
+            const title = (h.sessionData.title || h.sessionData.description || "").toLowerCase();
+            if (/가슴|chest|push|푸쉬/.test(title)) partCount["chest"] = (partCount["chest"] || 0) + 1;
+            if (/등|back|pull|당기/.test(title)) partCount["back"] = (partCount["back"] || 0) + 1;
+            if (/어깨|shoulder|숄더/.test(title)) partCount["shoulder"] = (partCount["shoulder"] || 0) + 1;
+            if (/하체|leg|lower|스쿼트|squat/.test(title)) partCount["legs"] = (partCount["legs"] || 0) + 1;
+            if (/팔|arm|이두|삼두|bicep|tricep/.test(title)) partCount["arms"] = (partCount["arms"] || 0) + 1;
+            if (/코어|core|복근|abs/.test(title)) partCount["core"] = (partCount["core"] || 0) + 1;
+            if (/러닝|유산소|cardio|run|hiit|서킷/.test(title)) partCount["cardio"] = (partCount["cardio"] || 0) + 1;
+          }
+          const parts = [
+            { key: "chest", ko: "가슴", en: "Chest" },
+            { key: "back", ko: "등", en: "Back" },
+            { key: "shoulder", ko: "어깨", en: "Shoulder" },
+            { key: "legs", ko: "하체", en: "Legs" },
+            { key: "arms", ko: "팔", en: "Arms" },
+            { key: "core", ko: "코어", en: "Core" },
+            { key: "cardio", ko: "유산소", en: "Cardio" },
+          ];
+          const maxCount = Math.max(...Object.values(partCount), 1);
+          return (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm mb-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3">
+                {locale === "ko" ? "이번 달 부위별" : "This Month by Part"}
+              </p>
+              <div className="space-y-2">
+                {parts.map(p => {
+                  const count = partCount[p.key] || 0;
+                  const pct = (count / maxCount) * 100;
+                  return (
+                    <div key={p.key} className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-gray-500 w-10 shrink-0">{locale === "ko" ? p.ko : p.en}</span>
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#2D6A4F] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 w-4 text-right">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Calendar / Quest Toggle */}
         <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-4">
           <button
