@@ -8,7 +8,7 @@ import { loadWorkoutHistory, deleteWorkoutHistory } from "@/utils/workoutHistory
 import { estimateTrainingLevelDetailed, detectAchievements } from "@/utils/workoutMetrics";
 import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, getOrCreateWeeklyQuests, rebuildFromHistory, saveSeasonExp, translateQuestLabel, translateExpDetail, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
+import { getCurrentSeason, getTierFromExp, getOrRebuildSeasonExp, rebuildFromHistory, saveSeasonExp } from "@/utils/questSystem";
 import { WorkoutReport } from "@/components/report/WorkoutReport";
 import { WorkoutHistory } from "./WorkoutHistory";
 import { WeightDetailView } from "./WeightDetailView";
@@ -89,7 +89,6 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
   const [weightLog, setWeightLog] = useState<{ date: string; weight: number }[]>([]);
   const [helpCard, setHelpCard] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [expLogOpen, setExpLogOpen] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -158,7 +157,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
   });
   const [reportReturnView, setReportReturnView] = useState<"dashboard" | "list">("list");
   const [dayPickerSessions, setDayPickerSessions] = useState<{ sessions: WorkoutHistoryType[]; day: number } | null>(null);
-  const [proofView, setProofView] = useState<"calendar" | "quest">("calendar");
+  const [proofView, setProofView] = useState<"calendar" | "bodypart" | "weight" | "tier">("calendar");
 
   const handleSessionClick = (session: WorkoutHistoryType, returnTo: "dashboard" | "list" = "list") => {
     setSelectedHistory(session);
@@ -376,72 +375,27 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         </div>
         {/* 하이라이트는 다크존으로 이동됨 */}
 
-        {/* ── 부위 도감 (이번 달) ── */}
-        {monthHistory.length > 0 && (() => {
-          const partCount: Record<string, number> = {};
-          for (const h of monthHistory) {
-            const title = (h.sessionData.title || h.sessionData.description || "").toLowerCase();
-            if (/가슴|chest|push|푸쉬/.test(title)) partCount["chest"] = (partCount["chest"] || 0) + 1;
-            if (/등|back|pull|당기/.test(title)) partCount["back"] = (partCount["back"] || 0) + 1;
-            if (/어깨|shoulder|숄더/.test(title)) partCount["shoulder"] = (partCount["shoulder"] || 0) + 1;
-            if (/하체|leg|lower|스쿼트|squat/.test(title)) partCount["legs"] = (partCount["legs"] || 0) + 1;
-            if (/팔|arm|이두|삼두|bicep|tricep/.test(title)) partCount["arms"] = (partCount["arms"] || 0) + 1;
-            if (/코어|core|복근|abs/.test(title)) partCount["core"] = (partCount["core"] || 0) + 1;
-            if (/러닝|유산소|cardio|run|hiit|서킷/.test(title)) partCount["cardio"] = (partCount["cardio"] || 0) + 1;
-          }
-          const parts = [
-            { key: "chest", ko: "가슴", en: "Chest" },
-            { key: "back", ko: "등", en: "Back" },
-            { key: "shoulder", ko: "어깨", en: "Shoulder" },
-            { key: "legs", ko: "하체", en: "Legs" },
-            { key: "arms", ko: "팔", en: "Arms" },
-            { key: "core", ko: "코어", en: "Core" },
-            { key: "cardio", ko: "유산소", en: "Cardio" },
-          ];
-          const maxCount = 8; // ACSM 권장 부위별 주 2회 = 월 8회
-          return (
-            <div className="bg-white/80 rounded-2xl border border-[#2D6A4F]/10 p-4 shadow-sm mb-5">
-              <p className="text-[10px] font-black text-[#2D6A4F]/50 uppercase tracking-[0.15em] mb-3">
-                {locale === "ko" ? "부위 도감" : "Body Part Log"}
-              </p>
-              <div className="space-y-2.5">
-                {parts.map(p => {
-                  const count = partCount[p.key] || 0;
-                  const pct = Math.min((count / maxCount) * 100, 100);
-                  return (
-                    <div key={p.key} className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-[#1B4332]/60 w-10 shrink-0">{locale === "ko" ? p.ko : p.en}</span>
-                      <div className="flex-1 h-2 bg-[#2D6A4F]/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#2D6A4F] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="text-[10px] font-bold text-[#1B4332]/40 w-4 text-right">{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+        {/* 부위 도감은 4탭 카드 안으로 이동 */}
 
-        {/* Calendar / Quest 통합 카드 */}
+        {/* 4탭 통합 카드 */}
         <div className="bg-white/80 rounded-2xl border border-[#2D6A4F]/10 shadow-sm mb-5 overflow-hidden">
-          <div className="flex gap-1 bg-[#2D6A4F]/10 p-1 m-3 mb-0 rounded-xl">
-            <button
-              onClick={() => setProofView("calendar")}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                proofView === "calendar" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
-              }`}
-            >
-              {t("proof.calendar")}
-            </button>
-            <button
-              onClick={() => setProofView("quest")}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                proofView === "quest" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
-              }`}
-            >
-              {t("proof.quests")}
-            </button>
+          <div className="flex gap-0.5 bg-[#2D6A4F]/10 p-1 m-3 mb-0 rounded-xl">
+            {([
+              { key: "calendar" as const, label: locale === "ko" ? "캘린더" : "Calendar" },
+              { key: "bodypart" as const, label: locale === "ko" ? "부위" : "Parts" },
+              { key: "weight" as const, label: locale === "ko" ? "체중" : "Weight" },
+              { key: "tier" as const, label: locale === "ko" ? "티어" : "Tier" },
+            ]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setProofView(tab.key)}
+                className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition-all ${
+                  proofView === tab.key ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
         {proofView === "calendar" ? (
@@ -515,83 +469,75 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             <span className="text-[10px] text-gray-500 ml-1">{locale === "ko" ? "· 운동시간 기준" : "· by duration"}</span>
           </div>
         </div>
-        ) : (
-          /* === Weekly Quest Card (toggle view) === */
-          (() => {
-            const bYear = !isNaN(savedBirthYear) ? savedBirthYear : undefined;
-            const { questDefs, questState: qs, window } = getOrCreateWeeklyQuests(history, bYear, savedGender);
-            const coreQs = questDefs.filter(q => !q.isBonus);
-            const bonusQs = questDefs.filter(q => q.isBonus);
-            const doneCount = qs.quests.filter(q => q.completed).length;
-            const coreDone = coreQs.every(cq => qs.quests.find(p => p.questId === cq.id)?.completed);
-            const prog = (qDef: QuestDefinition): QuestProgress =>
-              qs.quests.find(p => p.questId === qDef.id) || { questId: qDef.id, current: 0, completed: false };
-
-            // 회의 18: 윈도우 기간 포맷 (예: "4/1 ~ 4/5, 5일")
-            const fmtMd = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
-            const rangeLabel = `${fmtMd(window.start)} ~ ${fmtMd(window.end)}, ${window.days}${t("proof.questDays")}`;
-
-            return (
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-black text-[#1B4332]">{t("proof.weeklyQuests")}</h3>
-                  <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{t("proof.questComplete", { done: String(doneCount), total: String(questDefs.length) })}</span>
-                </div>
-                <p className="text-[11px] text-gray-400 mb-3">{rangeLabel}</p>
-                {window.isScaled && (
-                  <p className="text-[11px] text-[#2D6A4F] bg-[#2D6A4F]/5 rounded-lg px-3 py-2 mb-3">{t("proof.questScaledNotice")}</p>
-                )}
-                <div className="space-y-3">
-                  {coreQs.map(q => {
-                    const p = prog(q);
-                    const pct = Math.min(p.current / q.target, 1);
+        ) : proofView === "bodypart" ? (
+          /* === 부위 도감 탭 === */
+          <div className="p-4">
+            {(() => {
+              const partCount: Record<string, number> = {};
+              for (const h of monthHistory) {
+                const title = (h.sessionData.title || h.sessionData.description || "").toLowerCase();
+                if (/가슴|chest|push|푸쉬/.test(title)) partCount["chest"] = (partCount["chest"] || 0) + 1;
+                if (/등|back|pull|당기/.test(title)) partCount["back"] = (partCount["back"] || 0) + 1;
+                if (/어깨|shoulder|숄더/.test(title)) partCount["shoulder"] = (partCount["shoulder"] || 0) + 1;
+                if (/하체|leg|lower|스쿼트|squat/.test(title)) partCount["legs"] = (partCount["legs"] || 0) + 1;
+                if (/팔|arm|이두|삼두|bicep|tricep/.test(title)) partCount["arms"] = (partCount["arms"] || 0) + 1;
+                if (/코어|core|복근|abs/.test(title)) partCount["core"] = (partCount["core"] || 0) + 1;
+                if (/러닝|유산소|cardio|run|hiit|서킷/.test(title)) partCount["cardio"] = (partCount["cardio"] || 0) + 1;
+              }
+              const parts = [
+                { key: "chest", ko: "가슴", en: "Chest" }, { key: "back", ko: "등", en: "Back" },
+                { key: "shoulder", ko: "어깨", en: "Shoulder" }, { key: "legs", ko: "하체", en: "Legs" },
+                { key: "arms", ko: "팔", en: "Arms" }, { key: "core", ko: "코어", en: "Core" },
+                { key: "cardio", ko: "유산소", en: "Cardio" },
+              ];
+              const maxCount = 8;
+              return (
+                <div className="space-y-2.5">
+                  {parts.map(p => {
+                    const count = partCount[p.key] || 0;
+                    const pct = Math.min((count / maxCount) * 100, 100);
                     return (
-                      <div key={q.id}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-700"}`}>
-                            {p.completed ? "✓ " : ""}{translateQuestLabel(q, t)}
-                          </span>
-                          <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
+                      <div key={p.key} className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-[#1B4332]/60 w-10 shrink-0">{locale === "ko" ? p.ko : p.en}</span>
+                        <div className="flex-1 h-2 bg-[#2D6A4F]/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#2D6A4F] rounded-full transition-all" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct * 100}%`, backgroundColor: p.completed ? "#2D6A4F" : "#a7f3d0" }} />
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-400 min-w-[32px] text-right">{p.current}/{q.target}</span>
-                        </div>
+                        <span className="text-[10px] font-bold text-[#1B4332]/40 w-4 text-right">{count}</span>
                       </div>
                     );
                   })}
-                  {bonusQs.length > 0 && (
-                    <div className="pt-2 border-t border-gray-100 space-y-3">
-                      {bonusQs.map(q => {
-                        const p = prog(q);
-                        const pct = Math.min(p.current / q.target, 1);
-                        return (
-                          <div key={q.id} className="opacity-60">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-[12px] font-bold ${p.completed ? "text-[#2D6A4F]" : "text-gray-500"}`}>
-                                {p.completed ? "✓ " : "☆ "}{translateQuestLabel(q, t)}
-                              </span>
-                              <span className="text-[11px] font-bold text-gray-400">{q.exp} EXP</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct * 100}%`, backgroundColor: p.completed ? "#2D6A4F" : "#d1d5db" }} />
-                              </div>
-                              <span className="text-[10px] font-bold text-gray-400 min-w-[32px] text-right">{p.current}/{q.target}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {coreDone && !qs.weeklyBonusClaimed && (
-                    <div className="mt-2 p-3 bg-[#2D6A4F]/10 rounded-xl text-center">
-                      <span className="text-[12px] font-black text-[#2D6A4F]">{t("proof.allClearBonus")}</span>
-                    </div>
-                  )}
                 </div>
+              );
+            })()}
+          </div>
+        ) : proofView === "weight" ? (
+          /* === 체중 변화 탭 === */
+          <div className="p-4">
+            {weightLog.length > 0 ? (
+              <WeightTrendChart weightLog={weightLog} onViewAll={() => setView("weight_detail")} />
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-8">{locale === "ko" ? "체중 기록이 없어요" : "No weight data yet"}</p>
+            )}
+          </div>
+        ) : (
+          /* === 티어 탭 === */
+          (() => {
+            const seasonExp = getOrRebuildSeasonExp(history, !isNaN(savedBirthYear) ? savedBirthYear : undefined, savedGender);
+            const tierInfo = getTierFromExp(seasonExp.totalExp);
+            const seasonInfo = getCurrentSeason();
+            return (
+              <div className="p-4">
+                <div className={`bg-gradient-to-r ${tierInfo.tier.name === "Diamond" ? "from-purple-500 to-indigo-400" : tierInfo.tier.name === "Platinum" ? "from-cyan-500 to-blue-400" : tierInfo.tier.name === "Gold" ? "from-amber-500 to-orange-400" : tierInfo.tier.name === "Silver" ? "from-gray-400 to-gray-300" : tierInfo.tier.name === "Bronze" ? "from-amber-700 to-amber-600" : "from-gray-500 to-gray-400"} rounded-2xl px-5 py-4 mb-3`}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-black text-white">{locale === "ko" ? seasonInfo.label : seasonInfo.label.replace("시즌", "Season")}</p>
+                    <p className="text-xl font-black text-white">{tierInfo.tier.name}</p>
+                  </div>
+                  <div className="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${tierInfo.nextTier ? Math.min((tierInfo.progress / tierInfo.nextTier.minExp) * 100, 100) : 100}%` }} />
+                  </div>
+                  <p className="text-[10px] text-white/60 mt-1">{tierInfo.progress} / {tierInfo.nextTier ? tierInfo.nextTier.minExp : "MAX"} EXP</p>
+                </div>
+                <p className="text-[11px] text-gray-400 text-center">{locale === "ko" ? "운동할수록 티어가 올라가요" : "Work out more to level up"}</p>
               </div>
             );
           })()
@@ -607,119 +553,9 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         </div>{/* 통합 카드 닫기 */}
 
         <div className="mt-4 flex flex-col gap-3">
-          {/* Weight Trend Graph */}
-          {weightLog.length > 0 && (
-            <WeightTrendChart weightLog={weightLog} onViewAll={() => setView("weight_detail")} />
-          )}
+          {/* 체중/시즌티어/성장예측/총운동은 4탭 카드 안으로 이동 */}
 
-          {/* === 성장 예측 리포트 === */}
-          {onShowPrediction && (
-            <button
-              onClick={onShowPrediction}
-              className="w-full bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm p-5 flex items-center justify-between active:scale-[0.98] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#2D6A4F]/10 flex items-center justify-center shrink-0">
-                  <svg className="w-5 h-5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-[#1B4332]">{t("proof.growthPrediction")}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{t("proof.growthPrediction.desc")}</p>
-                </div>
-              </div>
-              <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          )}
-
-          {/* === Season Tier Card === */}
-          {(() => {
-            const seasonInfo = getCurrentSeason();
-            const seasonExp = getOrRebuildSeasonExp(history, !isNaN(savedBirthYear) ? savedBirthYear : undefined, savedGender);
-            const tierResult = getTierFromExp(seasonExp.totalExp);
-            const seasonSessions = history.filter(h => {
-              const d = h.date.slice(0, 10);
-              return d >= seasonInfo.startDate && d <= seasonInfo.endDate;
-            }).length;
-
-            const expLog = [...seasonExp.expLog].sort((a, b) => b.date.localeCompare(a.date));
-
-            return (
-              <div className="rounded-3xl overflow-hidden border shadow-sm" style={{ borderColor: `${tierResult.tier.color}30` }}>
-                <div
-                  className="px-6 py-4 cursor-pointer"
-                  style={{ background: `linear-gradient(135deg, ${tierResult.tier.color}20, ${tierResult.tier.color}08)` }}
-                  onClick={() => setExpLogOpen(v => !v)}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1">{locale === "ko" ? seasonInfo.label : seasonInfo.label.replace("시즌", "Season")}</p>
-                    <button onClick={(e) => { e.stopPropagation(); setHelpCard("tierSystem"); }} className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center -mt-1 -mr-1">
-                      <span className="text-[10px] font-black text-gray-400">?</span>
-                    </button>
-                  </div>
-                  <span className="text-2xl font-black" style={{ color: tierResult.tier.color }}>{tierResult.tier.name}</span>
-                  <div className="mt-3">
-                    <div className="w-full h-2.5 bg-black/5 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${tierResult.progress * 100}%`, backgroundColor: tierResult.tier.color }} />
-                    </div>
-                    <div className="flex justify-between mt-1.5">
-                      <span className="text-[11px] font-bold" style={{ color: tierResult.tier.color }}>{seasonExp.totalExp} EXP</span>
-                      <span className="text-[11px] text-gray-400">
-                        {tierResult.nextTier ? t("report.tierRemaining", { next: tierResult.nextTier.name, remaining: `${tierResult.remaining} EXP` }) : t("report.maxTier")}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-[11px] text-gray-400">{t("proof.seasonWorkouts", { count: String(seasonSessions) })}</p>
-                    <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${expLogOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-                  </div>
-                </div>
-
-                {/* EXP 내역 아코디언 */}
-                <div className={`overflow-hidden transition-all duration-300 ${expLogOpen ? "max-h-[300px]" : "max-h-0"}`}>
-                  <div className="px-6 py-3 border-t overflow-y-auto max-h-[280px]" style={{ borderColor: `${tierResult.tier.color}15` }}>
-                    {expLog.length === 0 ? (
-                      <p className="text-[11px] text-gray-400 text-center py-2">{t("proof.noExpYet")}</p>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        {expLog.map((entry, i) => (
-                          <div key={i} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-gray-400 w-12 shrink-0">
-                                {entry.date.slice(5, 10).replace("-", ".")}
-                              </span>
-                              <span className="text-[11px] text-gray-600">{translateExpDetail(entry, t)}</span>
-                            </div>
-                            <span className="text-[11px] font-bold shrink-0 ml-2" style={{ color: tierResult.tier.color }}>+{entry.amount}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Workout History List Button */}
-          <button
-            onClick={() => setView("list")}
-            className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm w-full text-left active:scale-[0.98] transition-all group"
-          >
-            <div className="flex justify-between items-center mb-1">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.totalWorkouts")}</p>
-                <svg className="w-5 h-5 text-gray-300 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-            </div>
-            <h3 className="text-3xl font-black text-[#1B4332]">{history.length} <span className="text-lg text-[#2D6A4F]/50">{t("proof.sessionUnit")}</span></h3>
-            <p className="text-xs text-gray-400 mt-2 font-medium">{t("proof.clickToDetail")}</p>
-          </button>
-
-          {/* === Collapsible Advanced Stats === */}
+          {/* === Collapsible Advanced Stats + 성장 예측 === */}
           <button
             onClick={() => setShowAdvancedStats(v => !v)}
             className="flex items-center justify-center gap-1.5 w-full py-3 text-[12px] font-bold text-gray-400 active:opacity-60 transition-opacity"
@@ -800,6 +636,26 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
 
           {/* Volume Trend Graph */}
           <VolumeTrendChart monthHistory={monthHistory} />
+
+          {/* 성장 예측 리포트 */}
+          {onShowPrediction && (
+            <button
+              onClick={onShowPrediction}
+              className="w-full bg-white rounded-2xl border border-[#2D6A4F]/10 shadow-sm p-4 flex items-center justify-between active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#2D6A4F]/10 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-bold text-[#1B4332]">{t("proof.growthPrediction")}</p>
+              </div>
+              <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
 
           </>)}
         </div>
