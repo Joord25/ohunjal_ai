@@ -423,28 +423,29 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           );
         })()}
 
-        {/* Calendar / Quest Toggle */}
-        <div className="flex gap-1 bg-[#2D6A4F]/10 rounded-2xl p-1 mb-5">
-          <button
-            onClick={() => setProofView("calendar")}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-              proofView === "calendar" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
-            }`}
-          >
-            {t("proof.calendar")}
-          </button>
-          <button
-            onClick={() => setProofView("quest")}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-              proofView === "quest" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
-            }`}
-          >
-            {t("proof.quests")}
-          </button>
-        </div>
+        {/* Calendar / Quest 통합 카드 */}
+        <div className="bg-white/80 rounded-2xl border border-[#2D6A4F]/10 shadow-sm mb-5 overflow-hidden">
+          <div className="flex gap-1 bg-[#2D6A4F]/10 p-1 m-3 mb-0 rounded-xl">
+            <button
+              onClick={() => setProofView("calendar")}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                proofView === "calendar" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
+              }`}
+            >
+              {t("proof.calendar")}
+            </button>
+            <button
+              onClick={() => setProofView("quest")}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                proofView === "quest" ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
+              }`}
+            >
+              {t("proof.quests")}
+            </button>
+          </div>
 
         {proofView === "calendar" ? (
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+        <div className="p-4">
           <div className="grid grid-cols-7 gap-2">
             {(locale === "ko" ? ['일', '월', '화', '수', '목', '금', '토'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map((day, i) => (
               <div key={i} className={`text-center text-xs font-bold mb-2 ${
@@ -531,7 +532,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             const rangeLabel = `${fmtMd(window.start)} ~ ${fmtMd(window.end)}, ${window.days}${t("proof.questDays")}`;
 
             return (
-              <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-5">
+              <div className="p-4">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-black text-[#1B4332]">{t("proof.weeklyQuests")}</h3>
                   <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">{t("proof.questComplete", { done: String(doneCount), total: String(questDefs.length) })}</span>
@@ -603,8 +604,9 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             <p className="text-[12px] text-gray-400">{t("proof.firstWorkoutHere")}</p>
           </div>
         )}
+        </div>{/* 통합 카드 닫기 */}
 
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-4 flex flex-col gap-3">
           {/* Weight Trend Graph */}
           {weightLog.length > 0 && (
             <WeightTrendChart weightLog={weightLog} onViewAll={() => setView("weight_detail")} />
