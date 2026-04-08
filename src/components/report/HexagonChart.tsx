@@ -89,10 +89,7 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes }) => {
       {/* 데이터 폴리곤 */}
       <polygon points={dataPath} fill="#2D6A4F" fillOpacity={0.15} stroke="#2D6A4F" strokeWidth={2.5} strokeLinejoin="round" />
 
-      {/* 데이터 포인트 */}
-      {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#2D6A4F" strokeWidth={2.5} />
-      ))}
+      {/* 데이터 포인트 제거 — 선만 표시 */}
 
       {/* 라벨 + 등수 */}
       {labelPositions.map((pos, i) => (
