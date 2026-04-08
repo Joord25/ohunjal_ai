@@ -273,25 +273,30 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             </svg>
           </button>
         </div>
-        {/* 히어로: 월 요약 + 누적 통계 */}
-        <div className="mt-4">
+        {/* 히어로: 좌 숫자 + 우 통계 */}
+        <div className="mt-3 mb-1">
           {monthHistory.length > 0 ? (
-            <>
-              <h1 className="text-5xl font-black text-white" style={{ textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}<span className="text-base font-bold text-[#95D5B2]/50 ml-1">{t("proof.workoutCount")}</span></h1>
-              <p className="text-[11px] text-[#95D5B2]/40 mt-1.5">
-                <span className="font-bold text-white/80">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span>kg · <span className="font-bold text-white/80">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span>{locale === "ko" ? "분" : "min"} · <span className="font-bold text-white/80">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span>{locale === "ko" ? "세트" : "sets"}
-              </p>
-            </>
+            <div className="flex items-center justify-between px-2">
+              <div className="text-left">
+                <h1 className="text-5xl font-black text-white leading-none" style={{ textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}</h1>
+                <p className="text-xs font-bold text-[#95D5B2]/50 mt-0.5">{t("proof.workoutCount")}</p>
+              </div>
+              <div className="text-right space-y-0.5">
+                <p className="text-sm text-[#95D5B2]/40"><span className="font-bold text-white/80">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg</p>
+                <p className="text-sm text-[#95D5B2]/40"><span className="font-bold text-white/80">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}</p>
+                <p className="text-sm text-[#95D5B2]/40"><span className="font-bold text-white/80">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}</p>
+              </div>
+            </div>
           ) : isCurrentMonth ? (
-            <>
+            <div className="text-center">
               <h1 className="text-xl font-black text-white">{t("proof.createFirstRecord")}</h1>
               <p className="text-[12px] font-medium text-[#95D5B2]/50 mt-1">{t("proof.startToday")}</p>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="text-center">
               <h1 className="text-xl font-black text-white/30">{t("proof.noRecordsMonth")}</h1>
               <p className="text-[12px] font-medium text-[#95D5B2]/40 mt-1">{t("proof.monthLabel", { month: String(viewMonth + 1) })}</p>
-            </>
+            </div>
           )}
         </div>
         {/* ── 하이라이트 (업적 횡스크롤 — 다크존 안) ── */}
@@ -301,7 +306,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           const recent = achievements.slice(0, 10);
           return (
             <div className="mt-3 pb-2">
-              <p className="text-[10px] font-black text-[#95D5B2]/40 uppercase tracking-[0.15em] mb-2">
+              <p className="text-[10px] font-black text-[#95D5B2]/40 uppercase tracking-[0.15em] mb-2 text-left">
                 {locale === "ko" ? "나의 업적" : "Highlights"}
               </p>
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
