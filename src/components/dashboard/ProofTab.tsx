@@ -272,7 +272,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           </button>
         </div>
         {/* 히어로: 좌 숫자 + 우 통계 */}
-        <div className="mt-3 mb-1">
+        <div className="mt-5 mb-2">
           {monthHistory.length > 0 ? (
             <div className="flex items-end gap-2 px-2 flex-nowrap">
               <h1 className="font-black text-[#1B4332] leading-none shrink-0" style={{ fontSize: "clamp(2rem, 10vw, 3rem)" }}>{monthHistory.length}<span className="font-bold text-[#2D6A4F]/50 ml-1" style={{ fontSize: "clamp(0.75rem, 3vw, 1rem)" }}>{t("proof.workoutCount")}</span></h1>
@@ -298,7 +298,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           if (achievements.length === 0) return null;
           const recent = achievements.slice(0, 10);
           return (
-            <div className="mt-3 pb-2">
+            <div className="mt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[#2D6A4F]/20" />
                 <p className="text-[13px] font-serif font-bold text-[#2D6A4F]/50 tracking-[0.25em]">
