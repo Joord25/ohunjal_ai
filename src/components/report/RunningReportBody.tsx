@@ -32,10 +32,14 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
         totalDuration += h.runningStats.duration;
       }
     }
-    // 오늘 세션 포함 (히스토리 반영 전일 수 있음)
-    runs += 1;
-    totalDistance += runningStats.distance;
-    totalDuration += runningStats.duration;
+    // 오늘 세션 포함 (히스토리에 아직 없을 때만)
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const alreadyInHistory = recentHistory.some(h => h.runningStats && h.date?.startsWith(todayStr));
+    if (!alreadyInHistory) {
+      runs += 1;
+      totalDistance += runningStats.distance;
+      totalDuration += runningStats.duration;
+    }
     return { runs, totalDistance, totalDuration };
   })();
 
@@ -77,7 +81,7 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
                 {t("running.stats.rounds")}
               </p>
               <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
-                {runningStats.intervalRounds.length || "—"}
+                {(runningStats.intervalRounds || []).length || "—"}
               </p>
               <p className="text-[10px] font-bold text-gray-400 mt-1">rounds</p>
             </div>
@@ -142,7 +146,7 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
         </div>
 
         {/* 라운드별 상세 — 데이터 있으면 리스트, 없으면 빈 상태 안내 */}
-        {runningStats.intervalRounds.length > 0 ? (
+        {(runningStats.intervalRounds || []).length > 0 ? (
           <div className="flex flex-col gap-1.5">
             {runningStats.intervalRounds.map((round) => (
               <div key={round.round} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-b-0">

@@ -260,6 +260,7 @@ export function getCategoryBestBwRatio(
   bodyWeightKg: number,
 ): Map<FitnessCategory, number> {
   const bestByCategory = new Map<FitnessCategory, number>();
+  if (!bodyWeightKg || bodyWeightKg <= 0) return bestByCategory;
 
   // 이력에서
   for (const h of history) {

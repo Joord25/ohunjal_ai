@@ -161,9 +161,13 @@ export default function Home() {
         localStorage.setItem(`ohunjal_${key}`, old);
       }
     }
+    const allKeys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith("alpha_weight_")) {
+      if (k) allKeys.push(k);
+    }
+    for (const k of allKeys) {
+      if (k.startsWith("alpha_weight_")) {
         const newKey = k.replace("alpha_", "ohunjal_");
         if (localStorage.getItem(newKey) === null) {
           localStorage.setItem(newKey, localStorage.getItem(k)!);
@@ -316,14 +320,16 @@ export default function Home() {
           loadPlanCount().catch((e) => console.error("Failed to load plan count", e)),
           syncExpFromFirestore().catch((e) => console.error("Failed to sync EXP", e)),
         ]).finally(() => {
-          setView(localStorage.getItem("ohunjal_onboarding_done") ? "home" : "onboarding");
+          // 기존 유저(프로필 있음) → 온보딩 자동 스킵
+          const hasProfile = !!(localStorage.getItem("ohunjal_gender") && localStorage.getItem("ohunjal_birth_year"));
+          if (hasProfile) localStorage.setItem("ohunjal_onboarding_done", "1");
+          setView(hasProfile || localStorage.getItem("ohunjal_onboarding_done") ? "home" : "onboarding");
         });
 
         // Load workout data
         const rDone = localStorage.getItem("ohunjal_completed_rituals");
         if (rDone) {
-          const doneIds = JSON.parse(rDone);
-          setCompletedRitualIds(doneIds);
+          try { setCompletedRitualIds(JSON.parse(rDone)); } catch { /* corrupted */ }
 
           // 오늘 운동 완료 상태면 세션 데이터를 복원하지 않음
           // 리포트는 PROOF 탭 히스토리에서만 접근 가능
@@ -335,6 +341,7 @@ export default function Home() {
           setIsLoggedIn(false);
           setSubStatus("free");
           setView("home");
+          setIsInitialized(true);
         });
         // onAuthStateChanged가 다시 호출되어 anonymous 분기로 처리됨
         return;
