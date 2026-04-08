@@ -636,7 +636,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
                   )}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className={`text-[14px] font-bold ${didWorkoutToday ? "text-[#2D6A4F]" : "text-[#1B4332]"}`}>
+                  <p className={`text-[14px] font-bold ${didWorkoutToday ? "text-gray-400 line-through" : "text-[#1B4332]"}`}>
                     {didWorkoutToday ? t("home.checklist.workout.done") : t("home.checklist.workout")}
                   </p>
                   {!didWorkoutToday && (
