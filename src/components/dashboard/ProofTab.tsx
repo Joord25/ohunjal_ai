@@ -382,8 +382,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           <div className="flex gap-0.5 bg-[#2D6A4F]/10 p-1 m-3 mb-0 rounded-xl">
             {([
               { key: "calendar" as const, label: locale === "ko" ? "캘린더" : "Calendar" },
-              { key: "bodypart" as const, label: locale === "ko" ? "부위" : "Parts" },
-              { key: "weight" as const, label: locale === "ko" ? "체중" : "Weight" },
+              { key: "bodypart" as const, label: locale === "ko" ? "부위도감" : "Body Log" },
+              { key: "weight" as const, label: locale === "ko" ? "체중변화" : "Weight" },
               { key: "tier" as const, label: locale === "ko" ? "티어" : "Tier" },
             ]).map(tab => (
               <button
