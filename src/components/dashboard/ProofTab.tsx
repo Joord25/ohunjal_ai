@@ -399,7 +399,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           </div>
 
         {proofView === "calendar" ? (
-        <div className="p-4 min-h-[380px]">
+        <div className="p-4 min-h-[320px]">
           <div className="grid grid-cols-7 gap-2">
             {(locale === "ko" ? ['일', '월', '화', '수', '목', '금', '토'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map((day, i) => (
               <div key={i} className={`text-center text-xs font-bold mb-2 ${
@@ -471,7 +471,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         </div>
         ) : proofView === "bodypart" ? (
           /* === 부위 도감 탭 === */
-          <div className="p-4 min-h-[380px]">
+          <div className="p-4 min-h-[300px]">
             {(() => {
               const partCount: Record<string, number> = {};
               for (const h of monthHistory) {
@@ -512,7 +512,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           </div>
         ) : proofView === "weight" ? (
           /* === 체중 변화 탭 === */
-          <div className="p-4 min-h-[380px]">
+          <div className="p-4 min-h-[300px]">
             {weightLog.length > 0 ? (
               <WeightTrendChart weightLog={weightLog} onViewAll={() => setView("weight_detail")} embedded />
             ) : (
@@ -526,7 +526,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             const tierInfo = getTierFromExp(seasonExp.totalExp);
             const seasonInfo = getCurrentSeason();
             return (
-              <div className="p-4 min-h-[380px]">
+              <div className="p-4 min-h-[300px]">
                 <div className={`bg-gradient-to-r ${tierInfo.tier.name === "Diamond" ? "from-purple-500 to-indigo-400" : tierInfo.tier.name === "Platinum" ? "from-cyan-500 to-blue-400" : tierInfo.tier.name === "Gold" ? "from-amber-500 to-orange-400" : tierInfo.tier.name === "Silver" ? "from-gray-400 to-gray-300" : tierInfo.tier.name === "Bronze" ? "from-amber-700 to-amber-600" : "from-gray-500 to-gray-400"} rounded-2xl px-5 py-4 mb-3`}>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-black text-white">{locale === "ko" ? seasonInfo.label : seasonInfo.label.replace("시즌", "Season")}</p>
