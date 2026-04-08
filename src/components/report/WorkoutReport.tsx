@@ -8,6 +8,7 @@ import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages } from "@/utils/workoutHistory";
 import { type ExpLogEntry, sumExp, getOrRebuildSeasonExp } from "@/utils/questSystem";
+import { calcSessionCalories } from "@/utils/predictionUtils";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
@@ -464,6 +465,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               loadBand={loadBand.low > 0 ? { low: loadBand.low, high: loadBand.high } : null}
               todayLoadScore={loadScore}
               onHelpPress={() => setHelpCard("loadTimeline")}
+              calorieOverride={calcSessionCalories({ sessionData, logs, stats: { totalVolume, totalSets: metrics.totalSets, totalReps: metrics.totalReps, totalDurationSec }, date: "", id: "" } as WorkoutHistory, bodyWeightKg ?? 70)}
             />
           );
         })()}
@@ -625,6 +627,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 loadBand={loadBand.low > 0 ? { low: loadBand.low, high: loadBand.high } : null}
                 todayLoadScore={loadScore}
                 onHelpPress={() => setHelpCard("loadTimeline")}
+                calorieOverride={calcSessionCalories({ sessionData, logs, stats: { totalVolume, totalSets: metrics.totalSets, totalReps: metrics.totalReps, totalDurationSec }, date: "", id: "" } as WorkoutHistory, bodyWeightKg ?? 70)}
               />
             );
           })()}

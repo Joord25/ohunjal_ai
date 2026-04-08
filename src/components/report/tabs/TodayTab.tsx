@@ -71,6 +71,8 @@ export interface TodayTabProps {
   todayLoadScore?: number;
   /** 도움말 콜백 */
   onHelpPress?: () => void;
+  /** 정확한 칼로리 (calcSessionCalories 결과) */
+  calorieOverride?: number;
 }
 
 /** [오늘] 탭 — 성별 고정 하이라이트 (회의 38) */
@@ -78,14 +80,14 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   sessionCategory, totalVolume, volumeChangePercent, goal, gender,
   bodyWeightKg, totalDurationSec, savedDurationSec, fatigueDrop,
   totalSets, totalReps, sessionDesc, graphData, prInfo, loadBand, todayLoadScore,
-  onHelpPress,
+  onHelpPress, calorieOverride,
 }) => {
   const { locale } = useTranslation();
   const ko = locale === "ko";
   const [activeGraphDot, setActiveGraphDot] = useState<number | null>(null);
   const dur = totalDurationSec > 0 ? totalDurationSec : (savedDurationSec ?? 0);
   const bw = bodyWeightKg ?? 70;
-  const cal = estimateCalories(sessionCategory, dur, bw);
+  const cal = calorieOverride ?? estimateCalories(sessionCategory, dur, bw);
   const food = getFoodAnalogy(cal, ko ? "ko" : "en");
   const minutes = Math.round(dur / 60);
 

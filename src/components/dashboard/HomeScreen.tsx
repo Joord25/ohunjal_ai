@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, getCurrentWeekQuestWindow, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
-import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression } from "@/utils/predictionUtils";
+import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression, calcSessionCalories } from "@/utils/predictionUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type FitnessCategory,
@@ -184,7 +184,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       return {
         type: todayWorkout.sessionData?.title || "general",
         durationMin: todayWorkout.stats?.totalDurationSec ? Math.round(todayWorkout.stats.totalDurationSec / 60) : 50,
-        estimatedCalories: todayWorkout.stats?.totalVolume ? Math.round(todayWorkout.stats.totalVolume * 0.05 + 100) : 300,
+        estimatedCalories: calcSessionCalories(todayWorkout, parseFloat(localStorage.getItem("ohunjal_body_weight") || "70")),
       };
     }
     return { type: "general", durationMin: 50, estimatedCalories: 300 };
