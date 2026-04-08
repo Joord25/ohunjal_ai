@@ -15,6 +15,8 @@ import {
   computeFitnessAge,
   percentileToRank,
   getAgeGroupLabel,
+  getBestRunningPace,
+  getCardioPacePercentile,
 } from "@/utils/fitnessPercentile";
 import { HexagonChart, type HexagonAxis } from "@/components/report/HexagonChart";
 import { NutritionTab } from "@/components/report/tabs/NutritionTab";
@@ -421,7 +423,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
     const bestByCategory = getCategoryBestBwRatio(exercises, logs, history, bodyWeightKg);
 
+    const bestPace = getBestRunningPace(history);
+
     const categoryPercentiles: CategoryPercentile[] = CATEGORIES.map((cat) => {
+      if (cat === "cardio") {
+        if (bestPace === null) return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };
+        const percentile = getCardioPacePercentile(bestPace, gender, age);
+        return { category: cat, rank: percentileToRank(percentile), percentile, bwRatio: 0, hasData: true };
+      }
       const bwRatio = bestByCategory.get(cat);
       if (bwRatio === undefined || bwRatio <= 0) {
         return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };

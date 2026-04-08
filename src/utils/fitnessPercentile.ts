@@ -307,6 +307,83 @@ export function getCategoryBestBwRatio(
   return bestByCategory;
 }
 
+/**
+ * 러닝 페이스 기반 cardio 퍼센타일
+ * 대상: 이지런/템포만 (인터벌 제외), 최소 2km 이상
+ * 최근 4주 러닝 히스토리에서 최고 페이스 추출
+ */
+// 페이스 기준표 (sec/km) — [90th, 70th, 50th, 30th, 10th] (빠를수록 높은 퍼센타일)
+const PACE_TABLE: Record<string, Record<string, number[]>> = {
+  male: {
+    teens:   [270, 330, 390, 450, 510],
+    "20s":   [270, 330, 390, 450, 510],
+    "30s":   [285, 345, 405, 465, 525],
+    "40s":   [300, 360, 420, 480, 540],
+    "50s":   [330, 390, 450, 510, 570],
+    "60plus":[360, 420, 480, 540, 600],
+  },
+  female: {
+    teens:   [315, 390, 450, 510, 570],
+    "20s":   [315, 390, 450, 510, 570],
+    "30s":   [330, 405, 465, 525, 585],
+    "40s":   [345, 420, 480, 540, 600],
+    "50s":   [375, 450, 510, 570, 630],
+    "60plus":[405, 480, 540, 600, 660],
+  },
+};
+
+export function getCardioPacePercentile(
+  paceSec: number,
+  gender: "male" | "female",
+  age: number,
+): number {
+  const ageGroup = getAgeGroup(age);
+  const table = PACE_TABLE[gender]?.[ageGroup];
+  if (!table) return 50;
+
+  // table = [90th, 70th, 50th, 30th, 10th] — 낮은 페이스 = 빠름 = 높은 퍼센타일
+  const percentiles = [90, 70, 50, 30, 10];
+
+  if (paceSec <= table[0]) return Math.min(99, 90 + Math.round(((table[0] - paceSec) / 60) * 10));
+  if (paceSec >= table[4]) return Math.max(1, 10 - Math.round(((paceSec - table[4]) / 60) * 5));
+
+  for (let i = 0; i < table.length - 1; i++) {
+    if (paceSec >= table[i] && paceSec < table[i + 1]) {
+      const ratio = (paceSec - table[i]) / (table[i + 1] - table[i]);
+      return Math.round(percentiles[i] - ratio * (percentiles[i] - percentiles[i + 1]));
+    }
+  }
+  return 50;
+}
+
+/**
+ * 최근 4주 러닝 히스토리에서 cardio 최고 페이스 추출
+ * 대상: easy/tempo/long만 (인터벌 제외), 2km 이상
+ */
+export function getBestRunningPace(
+  history: { date?: string; runningStats?: { runningType: string; distance: number; avgPace: number | null } }[],
+  cutoffDays = 28,
+): number | null {
+  const cutoff = Date.now() - cutoffDays * 24 * 60 * 60 * 1000;
+  let bestPace: number | null = null;
+
+  for (const h of history) {
+    if (h.date && new Date(h.date).getTime() < cutoff) continue;
+    const rs = h.runningStats;
+    if (!rs || !rs.avgPace || rs.avgPace <= 0) continue;
+    // 이지런/템포/장거리만 (인터벌 제외)
+    if (!["easy", "tempo", "long"].includes(rs.runningType)) continue;
+    // 최소 2km
+    if (rs.distance < 2000) continue;
+
+    if (bestPace === null || rs.avgPace < bestPace) {
+      bestPace = rs.avgPace;
+    }
+  }
+
+  return bestPace;
+}
+
 /** BW ratio → 퍼센타일 (보간) */
 export function bwRatioToPercentile(
   bwRatio: number,
@@ -314,7 +391,7 @@ export function bwRatioToPercentile(
   gender: "male" | "female",
   age: number,
 ): number {
-  if (category === "cardio") return 50; // 체력은 별도 로직 필요 (러닝 데이터 기반)
+  if (category === "cardio") return 50; // cardio는 getCardioPacePercentile 사용
 
   const ageGroup = getAgeGroup(age);
   const table = PERCENTILE_TABLE[gender]?.[ageGroup]?.[category];
