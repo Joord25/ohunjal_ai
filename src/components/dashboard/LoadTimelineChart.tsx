@@ -105,7 +105,7 @@ export const LoadTimelineChart: React.FC<LoadTimelineChartProps> = ({
               if (i === 0) return `M ${x} ${y}`;
               const px = ((i - 1) / (graphData.length - 1)) * 100;
               const py = 100 - ((graphData[i - 1].loadScore / maxScale) * 80);
-              const t = 0.35;
+              const t = 0.2;
               return `C ${px + (x - px) * t} ${py}, ${x - (x - px) * t} ${y}, ${x} ${y}`;
             }).join(" ")}
             fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"

@@ -174,15 +174,33 @@ export const TodayTab: React.FC<TodayTabProps> = ({
             return (
               <>
                 <div className="relative mx-5 mt-2" style={{ height: chartH }}>
-                  {/* 평균선 */}
-                  <div className="absolute inset-x-0 border-t border-dashed border-emerald-300/50" style={{ top: toY(avgCal) }} />
+                  {/* Y축 눈금 */}
+                  {[maxCal, Math.round(avgCal), Math.round(maxCal * 0.3)].map((v, ti) => {
+                    const yPx = toY(v);
+                    if (yPx < 0 || yPx > chartH) return null;
+                    return (
+                      <div key={ti} className="absolute left-0 right-0 pointer-events-none" style={{ top: yPx }}>
+                        <div className="border-t border-dashed border-gray-200/60 w-full" />
+                        <span className="absolute -left-1 -translate-x-full -translate-y-1/2 text-[8px] text-gray-300 font-bold">{v}</span>
+                      </div>
+                    );
+                  })}
                   <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${graphData.length > 1 ? (graphData.length - 1) * 40 : 40} ${chartH}`} preserveAspectRatio="none">
+                    {/* 영역 채움 */}
+                    <path fill="#2D6A4F" fillOpacity="0.08"
+                      d={calData.map((c, i) => {
+                        const x = i * 40, y = toY(c);
+                        if (i === 0) return `M ${x} ${y}`;
+                        const px = (i - 1) * 40, py = toY(calData[i - 1]);
+                        return `C ${px + (x - px) * 0.2} ${py}, ${x - (x - px) * 0.2} ${y}, ${x} ${y}`;
+                      }).join(" ") + ` L ${(calData.length - 1) * 40} ${chartH} L 0 ${chartH} Z`} />
+                    {/* 선 */}
                     <path fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                       d={calData.map((c, i) => {
                         const x = i * 40, y = toY(c);
                         if (i === 0) return `M ${x} ${y}`;
                         const px = (i - 1) * 40, py = toY(calData[i - 1]);
-                        const t = 0.35;
+                        const t = 0.2;
                         return `C ${px + (x - px) * t} ${py}, ${x - (x - px) * t} ${y}, ${x} ${y}`;
                       }).join(" ")} />
                   </svg>
@@ -276,7 +294,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                         if (i === 0) return `M ${x} ${y}`;
                         const px = graphData.length === 1 ? 50 : ((i - 1) / (graphData.length - 1)) * 100;
                         const py = 100 - ((graphData[i - 1].loadScore / maxScale) * 80);
-                        const t = 0.3;
+                        const t = 0.2;
                         return `C ${px + (x - px) * t} ${py}, ${x - (x - px) * t} ${y}, ${x} ${y}`;
                       }).join(" ")}
                       fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"

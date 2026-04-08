@@ -92,7 +92,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({ weightLog, o
               if (i === 0) return `M ${x} ${y}`;
               const px = (i - 1) / (recent.length - 1) * 100;
               const py = 95 - ((weights[i - 1] - minW) / range) * 90;
-              const t = 0.35;
+              const t = 0.2;
               return `C ${px + (x - px) * t} ${py}, ${x - (x - px) * t} ${y}, ${x} ${y}`;
             }).join(" ")}
             fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
