@@ -633,11 +633,18 @@ export default function Home() {
         <div className="w-10 h-10 border-4 border-emerald-100 border-t-[#5C795E] rounded-full animate-spin mb-4" />
         <p className="text-sm text-gray-400 animate-pulse">{locale === "ko" ? "잠시만요..." : "Loading..."}</p>
         {/* 하단 초록 물결 */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 320" className="w-full" preserveAspectRatio="none" style={{ height: "90vh" }}>
-            <path fill="#2D6A4F" fillOpacity="0.15" d="M0,230L60,222C120,214,240,198,360,194C480,190,600,198,720,210C840,222,960,238,1080,234C1200,230,1320,206,1380,194L1440,182L1440,320L0,320Z" />
-            <path fill="#2D6A4F" fillOpacity="0.3" d="M0,242L60,238C120,234,240,226,360,218C480,210,600,202,720,206C840,210,960,226,1080,230C1200,234,1320,226,1380,222L1440,218L1440,320L0,320Z" />
-            <path fill="#2D6A4F" fillOpacity="0.5" d="M0,254L60,250C120,246,240,238,360,234C480,230,600,230,720,234C840,238,960,246,1080,242C1200,238,1320,230,1380,226L1440,222L1440,320L0,320Z" />
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden">
+          {/* 물결 1 — 가장 연한, 느리게 */}
+          <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-[200%]" preserveAspectRatio="none" style={{ height: "50vh", animation: "waveSlide 8s ease-in-out infinite alternate" }}>
+            <path fill="#2D6A4F" fillOpacity="0.12" d="M0,270L80,266C160,262,320,254,480,250C640,246,800,246,960,250C1120,254,1280,262,1360,266L1440,270L1440,320L0,320Z" />
+          </svg>
+          {/* 물결 2 — 중간, 중간 속도 */}
+          <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-[200%]" preserveAspectRatio="none" style={{ height: "45vh", animation: "waveSlide 6s ease-in-out infinite alternate-reverse" }}>
+            <path fill="#2D6A4F" fillOpacity="0.25" d="M0,278L80,274C160,270,320,262,480,258C640,254,800,254,960,258C1120,262,1280,270,1360,274L1440,278L1440,320L0,320Z" />
+          </svg>
+          {/* 물결 3 — 가장 진한, 빠르게 */}
+          <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-[200%]" preserveAspectRatio="none" style={{ height: "40vh", animation: "waveSlide 4s ease-in-out infinite alternate" }}>
+            <path fill="#2D6A4F" fillOpacity="0.4" d="M0,286L80,282C160,278,320,270,480,268C640,266,800,266,960,268C1120,270,1280,278,1360,282L1440,286L1440,320L0,320Z" />
           </svg>
         </div>
       </div>
