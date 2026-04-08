@@ -389,7 +389,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               <button
                 key={tab.key}
                 onClick={() => setProofView(tab.key)}
-                className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
                   proofView === tab.key ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"
                 }`}
               >
