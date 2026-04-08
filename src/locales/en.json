@@ -1,7 +1,7 @@
 {
-  "tab.home": "HOME",
-  "tab.proof": "PROOF",
-  "tab.my": "MY",
+  "tab.home": "Home",
+  "tab.proof": "My Legacy",
+  "tab.my": "Profile",
 
   "common.start": "Start",
   "common.complete": "Complete",

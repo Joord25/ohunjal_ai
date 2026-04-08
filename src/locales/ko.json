@@ -1,7 +1,7 @@
 {
-  "tab.home": "HOME",
-  "tab.proof": "PROOF",
-  "tab.my": "MY",
+  "tab.home": "홈",
+  "tab.proof": "나의 유산",
+  "tab.my": "프로필",
 
   "common.start": "시작하기",
   "common.complete": "완료",

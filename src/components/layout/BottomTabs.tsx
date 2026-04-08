@@ -1,27 +1,24 @@
 "use client";
 
 import React from "react";
-
+import { useTranslation } from "@/hooks/useTranslation";
 
 export type TabId = "home" | "proof" | "my";
 
-interface Tab {
-  id: TabId;
-  label: string;
-}
+const TAB_IDS: TabId[] = ["home", "proof", "my"];
+const TAB_KEYS: Record<TabId, string> = {
+  home: "tab.home",
+  proof: "tab.proof",
+  my: "tab.my",
+};
 
 interface BottomTabsProps {
   active: TabId;
   onChange: (id: TabId) => void;
 }
 
-const TABS: Tab[] = [
-  { id: "home", label: "Home" },
-  { id: "proof", label: "Proof" },
-  { id: "my", label: "My" },
-];
-
 export const BottomTabs: React.FC<BottomTabsProps> = ({ active, onChange }) => {
+  const { t } = useTranslation();
   return (
     <div
       className="absolute bottom-0 left-0 right-0 flex justify-center px-4 sm:px-6"
@@ -38,24 +35,24 @@ export const BottomTabs: React.FC<BottomTabsProps> = ({ active, onChange }) => {
           WebkitBackdropFilter: "blur(12px)",
         }}
       >
-        {TABS.map((tab) => {
-          const isActive = active === tab.id;
+        {TAB_IDS.map((id) => {
+          const isActive = active === id;
           return (
             <button
-              key={tab.id}
-              onClick={() => onChange(tab.id)}
-              className={`relative flex items-center justify-center h-[36px] ${tab.id === "my" ? "w-[84px]" : "px-5"} rounded-full transition-all duration-300 ${
+              key={id}
+              onClick={() => onChange(id)}
+              className={`relative flex items-center justify-center h-[36px] px-5 rounded-full transition-all duration-300 ${
                 isActive
                   ? "bg-[#1B4332] shadow-[0_2px_12px_rgba(27,67,50,0.3)]"
                   : "active:scale-95"
               }`}
             >
               <span
-                className={`text-[11px] font-serif font-bold uppercase tracking-widest transition-colors duration-300 ${
+                className={`text-[11px] font-serif font-bold tracking-widest transition-colors duration-300 ${
                   isActive ? "text-white" : "text-gray-500"
                 }`}
               >
-                {tab.label}
+                {t(TAB_KEYS[id])}
               </span>
             </button>
           );
