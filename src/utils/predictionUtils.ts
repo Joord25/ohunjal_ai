@@ -207,14 +207,14 @@ function getExerciseMET(name: string, type: string): number {
 
   // 고중량 컴파운드 (MET 5.5~6.0)
   if (/스쿼트|squat|데드리프트|deadlift|클린|clean|스내치|snatch|쓰러스터|thruster/.test(lower)) return 6.0;
-  if (/벤치\s*프레스|bench\s*press|오버헤드\s*프레스|overhead\s*press|밀리터리|military|숄더\s*프레스|shoulder\s*press/.test(lower)) return 5.5;
-  if (/로우|row|풀업|pull.?up|턱걸이|chin.?up|딥스|dip/.test(lower)) return 5.5;
+  if (/벤치\s*프레스|bench\s*press|오버헤드\s*프레스|overhead\s*press|밀리터리|military|숄더\s*프레스|shoulder\s*press|아놀드|arnold|플로어\s*프레스|floor\s*press|인클라인.*프레스|incline.*press|랜드마인|landmine|바텀스업|bottoms.?up/.test(lower)) return 5.5;
+  if (/로우|row|풀업|pull.?up|풀다운|pulldown|턱걸이|chin.?up|딥스|dip|랙\s*풀|rack\s*pull/.test(lower)) return 5.5;
   if (/힙\s*쓰러스트|hip\s*thrust|런지|lunge|레그\s*프레스|leg\s*press/.test(lower)) return 5.5;
 
   // 중량 아이솔레이션 (MET 3.5~4.5)
   if (/컬|curl|레이즈|raise|플라이|fly|익스텐션|extension|킥백|kickback|푸쉬\s*다운|pushdown|크로스오버|crossover/.test(lower)) return 4.0;
   if (/레그\s*컬|leg\s*curl|레그\s*익스텐션|leg\s*extension|카프|calf|글루트|glute|페이스\s*풀|face\s*pull/.test(lower)) return 3.8;
-  if (/사이드\s*벤드|side\s*bend|슈러그|shrug/.test(lower)) return 3.5;
+  if (/사이드\s*벤드|side\s*bend|슈러그|shrug|밴드\s*풀\s*어파트|band\s*pull.?apart/.test(lower)) return 3.5;
 
   // 맨몸 운동 (MET 3.5~5.5)
   if (/푸시업|push.?up|푸쉬업/.test(lower)) return 4.0;
@@ -235,7 +235,7 @@ function getExerciseMET(name: string, type: string): number {
   // 코어 (MET 3.0~4.0)
   if (/플랭크|plank/.test(lower)) return 3.0;
   if (/크런치|crunch|시저|scissor|플러터|flutter|v.?up|브이\s*업/.test(lower)) return 3.5;
-  if (/행잉|hanging|Ab\s*휠|ab\s*wheel|롤아웃|rollout|우드찹|woodchop/.test(lower)) return 4.0;
+  if (/행잉|hanging|Ab\s*휠|ab\s*wheel|Ab\s*슬라이드|ab\s*slide|롤아웃|rollout|우드찹|woodchop/.test(lower)) return 4.0;
   if (/러시안\s*트위스트|russian\s*twist|버드\s*독|bird\s*dog|슈퍼맨|superman/.test(lower)) return 3.5;
   if (/데드버그|deadbug|레그\s*레이즈|leg\s*raise|싱글\s*레그|single\s*leg\s*raise/.test(lower)) return 3.5;
 
