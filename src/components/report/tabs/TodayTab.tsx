@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useState } from "react";
 
 // ── 음식 비유 풀 ──
 const FOOD_KO = [
@@ -84,7 +83,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
 }) => {
   const { locale } = useTranslation();
   const ko = locale === "ko";
-  const [activeGraphDot, setActiveGraphDot] = useState<number | null>(null);
+  // 그래프 점 인터랙션 제거 — 오늘 점만 표시
   const dur = totalDurationSec > 0 ? totalDurationSec : (savedDurationSec ?? 0);
   const bw = bodyWeightKg ?? 70;
   const cal = calorieOverride ?? estimateCalories(sessionCategory, dur, bw);
@@ -176,12 +175,14 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                     <polyline fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinejoin="round"
                       points={graphData.map((g, i) => `${i * 40},${toY(g.loadScore)}`).join(" ")} />
                   </svg>
-                  {graphData.map((g, i) => (
-                    <button key={i} className="absolute" style={{ left: `${(i / Math.max(graphData.length - 1, 1)) * 100}%`, top: toY(g.loadScore), transform: "translate(-50%, -50%)" }}
-                      onClick={() => setActiveGraphDot(activeGraphDot === i ? null : i)}>
-                      <div className={`rounded-full border-2 transition-transform ${activeGraphDot === i ? "scale-150" : ""} w-2 h-2 bg-white border-[#2D6A4F]`} />
-                    </button>
-                  ))}
+                  {/* 오늘 점만 표시 */}
+                  {graphData.length > 0 && (() => {
+                    const lastIdx = graphData.length - 1;
+                    return (
+                      <div className="absolute w-3 h-3 rounded-full bg-[#2D6A4F] border-2 border-white shadow-sm"
+                        style={{ left: `${(lastIdx / Math.max(lastIdx, 1)) * 100}%`, top: toY(graphData[lastIdx].loadScore), transform: "translate(-50%, -50%)" }} />
+                    );
+                  })()}
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-100 text-center">
                   <div className="flex items-baseline justify-center gap-2 mb-1">
@@ -270,28 +271,17 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                       fill="none" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
                     />
                   </svg>
-                  {/* 점 */}
-                  {graphData.map((d, i) => {
-                    const xPct = graphData.length === 1 ? 50 : (i / (graphData.length - 1)) * 100;
-                    const yPct = 100 - ((d.loadScore / maxScale) * 80);
-                    const isActive = activeGraphDot === i;
+                  {/* 오늘 점만 표시 */}
+                  {graphData.length > 0 && (() => {
+                    const lastIdx = graphData.length - 1;
+                    const xPct = graphData.length === 1 ? 50 : (lastIdx / (graphData.length - 1)) * 100;
+                    const yPct = 100 - ((graphData[lastIdx].loadScore / maxScale) * 80);
                     return (
-                      <button
-                        type="button"
-                        key={i}
-                        className="absolute z-10 flex items-center justify-center"
-                        style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)", width: 44, height: 44, background: "none", border: "none", padding: 0 }}
-                        onPointerUp={(e) => { e.stopPropagation(); setActiveGraphDot(isActive ? null : i); }}
-                      >
-                        {isActive && (
-                          <span className="absolute -top-7 text-[10px] font-black text-gray-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 z-20 whitespace-nowrap pointer-events-none">
-                            {d.loadScore.toFixed(1)}
-                          </span>
-                        )}
-                        <div className={`rounded-full border-2 transition-transform ${isActive ? "scale-150" : ""} w-2 h-2 bg-white border-[#2D6A4F]`} />
-                      </button>
+                      <div className="absolute z-10" style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)" }}>
+                        <div className="w-3 h-3 rounded-full bg-[#2D6A4F] border-2 border-white shadow-sm" />
+                      </div>
                     );
-                  })}
+                  })()}
                 </div>
                 {/* X축 날짜 */}
                 <div className="relative text-[9px] text-gray-300 font-medium mx-5">
