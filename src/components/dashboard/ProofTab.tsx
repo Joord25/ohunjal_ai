@@ -301,9 +301,13 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           const recent = achievements.slice(0, 10);
           return (
             <div className="mt-3 pb-2">
-              <p className="text-[10px] font-black text-[#95D5B2]/40 uppercase tracking-[0.15em] mb-2 text-left">
-                {locale === "ko" ? "나의 업적" : "Highlights"}
-              </p>
+              <div className="flex items-center gap-3 mb-3 justify-center">
+                <div className="flex-1 h-px bg-[#95D5B2]/15" />
+                <p className="text-[11px] font-serif font-bold text-[#95D5B2]/50 tracking-[0.2em]">
+                  {locale === "ko" ? "HALL OF FAME" : "HALL OF FAME"}
+                </p>
+                <div className="flex-1 h-px bg-[#95D5B2]/15" />
+              </div>
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
                 {recent.map((a, i) => {
                   const cardStyle = a.type === "pr"
