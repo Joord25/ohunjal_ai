@@ -248,10 +248,11 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
 
   return (
     <div className="flex flex-col h-full bg-[#FAFBF9] animate-fade-in relative overflow-hidden">
-      {/* ── 다크 히어로 존 ── */}
-      <div className="bg-[#1B4332] pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 px-4 sm:px-6 text-center z-10 shrink-0 relative">
+      {/* ── 다크 히어로 존 (스포트라이트 radial gradient) ── */}
+      <div className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-8 px-4 sm:px-6 text-center z-10 shrink-0 relative"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, #2D6A4F 0%, #1B4332 70%)" }}>
         {/* 서브타이틀 */}
-        <p className="text-[10px] font-serif font-medium text-[#52B788]/60 uppercase tracking-[0.3em] mb-1">MY LEGACY</p>
+        <p className="text-[10px] font-serif font-medium text-[#52B788]/50 uppercase tracking-[0.3em] mb-1">MY LEGACY</p>
         {/* 월 네비게이션 */}
         <div className="inline-flex items-center gap-1 bg-white/10 rounded-full">
           <button
@@ -277,16 +278,16 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         <div className="mt-4">
           {monthHistory.length > 0 ? (
             <>
-              <h1 className="text-4xl font-black text-white">{monthHistory.length}<span className="text-lg font-bold text-[#95D5B2]/60 ml-1">{t("proof.workoutCount")}</span></h1>
-              <div className="flex justify-center gap-4 mt-2">
-                <span className="text-[11px] text-[#95D5B2]/50">
-                  <span className="font-bold text-white">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg
+              <h1 className="text-6xl font-black text-white" style={{ textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}<span className="text-xl font-bold text-[#95D5B2]/50 ml-2">{t("proof.workoutCount")}</span></h1>
+              <div className="flex justify-center gap-5 mt-3">
+                <span className="text-sm text-[#95D5B2]/40">
+                  <span className="font-bold text-white/90">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg
                 </span>
-                <span className="text-[11px] text-[#95D5B2]/50">
-                  <span className="font-bold text-white">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}
+                <span className="text-sm text-[#95D5B2]/40">
+                  <span className="font-bold text-white/90">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}
                 </span>
-                <span className="text-[11px] text-[#95D5B2]/50">
-                  <span className="font-bold text-white">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
+                <span className="text-sm text-[#95D5B2]/40">
+                  <span className="font-bold text-white/90">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
                 </span>
               </div>
             </>
@@ -312,27 +313,36 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               <p className="text-[10px] font-black text-[#95D5B2]/40 uppercase tracking-[0.15em] mb-2">
                 {locale === "ko" ? "나의 업적" : "Highlights"}
               </p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:-mx-6 sm:px-6">
-                {recent.map((a, i) => (
-                  <div key={i} className="shrink-0 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 px-4 py-3 min-w-[140px]">
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
+                {recent.map((a, i) => {
+                  const cardStyle = a.type === "pr"
+                    ? "border-amber-400/30 shadow-[0_2px_15px_rgba(251,191,36,0.15)]"
+                    : a.type === "streak"
+                      ? "border-[#52B788]/30 shadow-[0_2px_15px_rgba(82,183,136,0.15)]"
+                      : a.type === "milestone"
+                        ? "border-white/20 shadow-[0_2px_15px_rgba(255,255,255,0.1)]"
+                        : "border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.3)]";
+                  return (
+                  <div key={i} className={`shrink-0 bg-white/10 backdrop-blur-md rounded-2xl border px-4 py-3 min-w-[140px] ${cardStyle}`}>
                     <p className="text-[9px] font-bold text-[#95D5B2]/40 mb-1">
                       {a.date.slice(0, 10).replace(/-/g, ".")}
                     </p>
                     <p className="text-sm font-black text-white leading-tight">
                       {locale === "ko" ? a.title : a.titleEn}
                     </p>
-                    <p className="text-[9px] font-bold mt-1 text-[#52B788]/60">
+                    <p className={`text-[9px] font-bold mt-1 ${a.type === "pr" ? "text-amber-400/70" : "text-[#52B788]/60"}`}>
                       {a.type === "pr" ? (locale === "ko" ? "신기록" : "PR") : a.type === "streak" ? (locale === "ko" ? "연속" : "Streak") : a.type === "milestone" ? (locale === "ko" ? "달성" : "Milestone") : (locale === "ko" ? "시작" : "First")}
                     </p>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
         })()}
       </div>
       {/* 다크 → 라이트 그라데이션 전환 */}
-      <div className="h-8 bg-gradient-to-b from-[#1B4332] to-[#FAFBF9] shrink-0" />
+      <div className="h-20 bg-gradient-to-b from-[#1B4332] to-[#FAFBF9] shrink-0" />
 
       {/* Scrollable Content with pull-to-refresh */}
       <div
