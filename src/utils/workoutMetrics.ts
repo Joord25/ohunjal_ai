@@ -966,8 +966,8 @@ export function detectAchievements(history: WorkoutHistory[]): Achievement[] {
   const achievements: Achievement[] = [];
   const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // ── PR 감지: 종목별 최고 무게 ──
-  const exerciseBest = new Map<string, { weight: number; date: string }>();
+  // ── PR 감지: 종목별 최고 무게 (최고 기록만 표시) ──
+  const exerciseBest = new Map<string, { weight: number; date: string; nameEn: string }>();
   for (const h of sorted) {
     if (!h.logs) continue;
     for (let i = 0; i < h.sessionData.exercises.length; i++) {
@@ -977,23 +977,24 @@ export function detectAchievements(history: WorkoutHistory[]): Achievement[] {
       for (const log of exLogs) {
         const w = parseFloat(log.weightUsed || "0");
         if (w <= 0) continue;
-        const name = ex.name.split(" (")[0]; // 한글 이름만
+        const name = ex.name.split(" (")[0];
+        const nameEn = ex.name.includes("(") ? ex.name.split("(")[1].replace(")", "").trim() : name;
         const prev = exerciseBest.get(name);
-        if (!prev) {
-          exerciseBest.set(name, { weight: w, date: h.date });
-        } else if (w > prev.weight) {
-          // PR 달성
-          achievements.push({
-            type: "pr",
-            title: `${name} ${w}kg`,
-            titleEn: `${ex.name.includes("(") ? ex.name.split("(")[1].replace(")", "").trim() : name} ${w}kg`,
-            date: h.date,
-            value: `${w}kg`,
-          });
-          exerciseBest.set(name, { weight: w, date: h.date });
+        if (!prev || w > prev.weight) {
+          exerciseBest.set(name, { weight: w, date: h.date, nameEn });
         }
       }
     }
+  }
+  // 종목별 최고 기록만 업적으로
+  for (const [name, best] of exerciseBest) {
+    achievements.push({
+      type: "pr",
+      title: `${name} ${best.weight}kg`,
+      titleEn: `${best.nameEn} ${best.weight}kg`,
+      date: best.date,
+      value: `${best.weight}kg`,
+    });
   }
 
   // ── 스트릭 감지: 연속 운동일 ──
