@@ -301,12 +301,18 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           const recent = achievements.slice(0, 10);
           return (
             <div className="mt-3 pb-2">
-              <div className="flex items-center gap-3 mb-3 justify-center">
-                <div className="flex-1 h-px bg-[#95D5B2]/15" />
-                <p className="text-[11px] font-serif font-bold text-[#95D5B2]/50 tracking-[0.2em]">
-                  {locale === "ko" ? "HALL OF FAME" : "HALL OF FAME"}
-                </p>
-                <div className="flex-1 h-px bg-[#95D5B2]/15" />
+              <div className="flex flex-col items-center mb-3">
+                {/* 월계관 아이콘 */}
+                <svg className="w-6 h-6 text-[#95D5B2]/40 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-4.5A3.375 3.375 0 0012.75 11h-.5A3.375 3.375 0 009 14.25v4.5m3.75-9V3.75m0 0L10.5 6m2.25-2.25L15 6" />
+                </svg>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[#95D5B2]/20" />
+                  <p className="text-[13px] font-serif font-bold text-[#95D5B2]/60 tracking-[0.25em]" style={{ textShadow: "0 0 15px rgba(82,183,136,0.3)" }}>
+                    HALL OF FAME
+                  </p>
+                  <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#95D5B2]/20" />
+                </div>
               </div>
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
                 {recent.map((a, i) => {
