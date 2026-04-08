@@ -248,11 +248,10 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
 
   return (
     <div className="flex flex-col h-full bg-[#F0F4F1] animate-fade-in relative overflow-hidden">
-      {/* ── 다크 히어로 존 (스포트라이트 radial gradient) ── */}
-      <div className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-8 px-4 sm:px-6 text-center z-10 shrink-0 relative"
+      {/* ── 다크 히어로 존 (스크롤에 포함 — 위로 밀려남) ── */}
+      <div className="shrink-0 pt-[max(1rem,env(safe-area-inset-top))] px-4 sm:px-6 text-center z-10 relative"
         style={{ background: "radial-gradient(ellipse at 50% 0%, #2D6A4F 0%, #1B4332 70%)" }}>
-        {/* 서브타이틀 */}
-        <p className="text-[10px] font-serif font-medium text-[#52B788]/50 uppercase tracking-[0.3em] mb-1">MY LEGACY</p>
+        {/* 서브타이틀 제거 — 월 네비에 이미 정보 충분 */}
         {/* 월 네비게이션 */}
         <div className="inline-flex items-center gap-1 bg-white/10 rounded-full">
           <button
@@ -278,18 +277,10 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         <div className="mt-4">
           {monthHistory.length > 0 ? (
             <>
-              <h1 className="text-6xl font-black text-white" style={{ textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}<span className="text-xl font-bold text-[#95D5B2]/50 ml-2">{t("proof.workoutCount")}</span></h1>
-              <div className="flex justify-center gap-5 mt-3">
-                <span className="text-sm text-[#95D5B2]/40">
-                  <span className="font-bold text-white/90">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span> kg
-                </span>
-                <span className="text-sm text-[#95D5B2]/40">
-                  <span className="font-bold text-white/90">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"}
-                </span>
-                <span className="text-sm text-[#95D5B2]/40">
-                  <span className="font-bold text-white/90">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
-                </span>
-              </div>
+              <h1 className="text-5xl font-black text-white" style={{ textShadow: "0 0 30px rgba(82,183,136,0.3)" }}>{monthHistory.length}<span className="text-base font-bold text-[#95D5B2]/50 ml-1">{t("proof.workoutCount")}</span></h1>
+              <p className="text-[11px] text-[#95D5B2]/40 mt-1.5">
+                <span className="font-bold text-white/80">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0)).toLocaleString()}</span>kg · <span className="font-bold text-white/80">{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span>{locale === "ko" ? "분" : "min"} · <span className="font-bold text-white/80">{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span>{locale === "ko" ? "세트" : "sets"}
+              </p>
             </>
           ) : isCurrentMonth ? (
             <>
@@ -309,7 +300,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           if (achievements.length === 0) return null;
           const recent = achievements.slice(0, 10);
           return (
-            <div className="mt-5 px-4 sm:px-6">
+            <div className="mt-3 pb-2">
               <p className="text-[10px] font-black text-[#95D5B2]/40 uppercase tracking-[0.15em] mb-2">
                 {locale === "ko" ? "나의 업적" : "Highlights"}
               </p>
@@ -341,13 +332,11 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           );
         })()}
       </div>
-      {/* 다크 → 라이트 그라데이션 전환 */}
-      <div className="h-20 bg-gradient-to-b from-[#1B4332] to-[#F0F4F1] shrink-0" />
 
-      {/* Scrollable Content with pull-to-refresh */}
+      {/* 전체 스크롤 영역 (히어로 뒤로 콘텐츠가 자연스럽게 밀려올라감) */}
       <div
         ref={scrollRef}
-        className="flex-1 px-4 sm:px-6 sm:pb-6 overflow-y-auto scrollbar-hide pt-2"
+        className="flex-1 overflow-y-auto scrollbar-hide"
         style={{ paddingBottom: "calc(8px + var(--safe-area-bottom, 0px))" }}
         onTouchStart={(e) => {
           if (scrollRef.current && scrollRef.current.scrollTop === 0) {
@@ -374,6 +363,8 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           isPulling.current = false;
         }}
       >
+        {/* 다크 → 라이트 그라데이션 전환 */}
+        <div className="h-16 bg-gradient-to-b from-[#1B4332] to-[#F0F4F1] -mx-4 sm:-mx-6 px-4 sm:px-6" />
         {/* Pull-to-refresh indicator */}
         <div
           className="flex items-center justify-center overflow-hidden transition-all"
