@@ -595,6 +595,16 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             />
           )}
           {activeReportTab === "today" && (() => {
+            const detectedRunningType = detectRunningType(sessionData.exercises);
+            const isRunning = detectedRunningType !== null;
+            if (isRunning) {
+              const effectiveRS: RunningStats = runningStats ?? {
+                runningType: detectedRunningType, isIndoor: false, gpsAvailable: false,
+                distance: 0, duration: totalDurationSec, avgPace: null, sprintAvgPace: null,
+                recoveryAvgPace: null, bestPace: null, intervalRounds: [], completionRate: 0,
+              };
+              return <RunningReportBody runningStats={effectiveRS} recentHistory={recentHistory} />;
+            }
             let userGoal: string | undefined;
             try { userGoal = JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}").goal; } catch {}
             return (
@@ -711,9 +721,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
 
           const detectedRunningType = detectRunningType(sessionData.exercises);
           const isRunningReport = detectedRunningType !== null;
-          const effectiveRunningStats: RunningStats | null = isRunningReport
-            ? (runningStats ?? { runningType: detectedRunningType, isIndoor: false, gpsAvailable: false, distance: 0, duration: totalDurationSec, avgPace: null, sprintAvgPace: null, recoveryAvgPace: null, bestPace: null, intervalRounds: [], completionRate: 0 })
-            : null;
 
           return (
             <>
@@ -748,11 +755,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 runningStats={runningStats}
                 hideExpCard={isRunningReport}
               />
-              {isRunningReport && effectiveRunningStats && (
-                <div className="mb-5">
-                  <RunningReportBody runningStats={effectiveRunningStats} recentHistory={recentHistory} />
-                </div>
-              )}
               {isRunningReport && (
                 <ExpTierCard seasonExp={currentExp} prevSeasonExp={prevExp} expGained={expGained} insight={insight} streak={heroStreak} nextWorkoutName={nextWorkout} onHelpPress={() => setHelpCard("levelSystem")} onShowPrediction={onShowPrediction} />
               )}
@@ -760,8 +762,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           );
         })()}
 
-        {/* === 러닝 세션 전용 본문 (현재 세션용) === */}
-        {!sessionDate && (() => {
+        {/* === 러닝 세션 전용 본문 (현재 세션 — 오늘 탭에서만) === */}
+        {!sessionDate && activeReportTab === "today" && (() => {
           const detectedRunningType = detectRunningType(sessionData.exercises);
           const isRunningReport = detectedRunningType !== null;
           if (!isRunningReport) return null;
