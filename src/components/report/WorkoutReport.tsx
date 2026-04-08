@@ -239,6 +239,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
       } catch {}
 
       onReportTabsSaved({
+        goal: userGoal,
         status: { percentiles: [], overallRank: 0, fitnessAge: 0, ageGroupLabel: "", genderLabel: "" },
         today: { volumeChangePercent: volChange, caloriesBurned: calBurned, foodAnalogy: "", recoveryHours: recoveryH, stimulusMessage: "" },
         next: { message: "", recommendedPart: "", recommendedIntensity: "", questProgress },
@@ -611,8 +612,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               };
               return <RunningReportBody runningStats={effectiveRS} recentHistory={recentHistory} />;
             }
-            let userGoal: string | undefined;
-            try { userGoal = JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}").goal; } catch {}
+            // 운동 당시 목표 우선, 없으면 현재 목표 폴백
+            const userGoal: string | undefined = savedReportTabs.goal || (() => { try { return JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}").goal; } catch { return undefined; } })();
             return (
               <TodayTab
                 sessionCategory={sessionCategory}

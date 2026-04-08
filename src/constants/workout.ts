@@ -105,6 +105,8 @@ export interface WorkoutHistory {
   runningStats?: RunningStats;     // 회의 41: 러닝 세션만 설정
   /** 회의 37: 4탭 리포트 데이터 */
   reportTabs?: {
+    /** 운동 당시 유저 목표 (히스토리 고정 표시용) */
+    goal?: string;
     status: {
       percentiles: { category: string; rank: number; percentile: number; hasData: boolean }[];
       overallRank: number;
