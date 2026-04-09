@@ -146,7 +146,7 @@ const EXERCISE_CATEGORY_MAP: Record<string, FitnessCategory> = {};
  "펜들레이 로우", "원암 덤벨 로우", "싱글 암 덤벨 로우", "턱걸이", "친업", "인버티드 로우", "TRX 로우",
  "Barbell Row", "Dumbbell Row", "Pull Up", "Pull-Up", "Lat Pulldown", "Seated Row",
  "Cable Row", "T-Bar Row", "Pendlay Row", "One Arm Dumbbell Row", "Single Arm Dumbbell Row", "Chin Up", "Chin-Up", "TRX Row",
- "Inverted Row", "스미스 로우", "Smith Row",
+ "Inverted Row", "스미스 로우", "Smith Row", "랙 풀", "Rack Pull",
  "바벨 컬", "해머 컬", "덤벨 컬", "인클라인 덤벨 컬", "케이블 바이셉 컬", "덤벨 프리쳐 컬",
  "TRX 바이셉스 컬", "밴드 풀 어파트", "바벨 슈러그", "케이블 페이스 풀", "밴드 페이스 풀",
  "어시스티드 풀업", "시티드 케이블 로우",
@@ -201,7 +201,7 @@ export function getExerciseCategory(exerciseName: string): FitnessCategory | nul
   // 부분 매칭
   const lower = exerciseName.toLowerCase();
   if (lower.includes("bench") || lower.includes("벤치") || lower.includes("chest") || lower.includes("가슴") || lower.includes("push up") || lower.includes("push-up") || lower.includes("pushup") || lower.includes("푸시업") || lower.includes("푸쉬업") || lower.includes("플라이") || lower.includes("fly")) return "chest";
-  if (lower.includes("row") || lower.includes("로우") || lower.includes("pull up") || lower.includes("pull-up") || lower.includes("pullup") || lower.includes("풀업") || lower.includes("pulldown") || lower.includes("풀다운") || lower.includes("턱걸이") || lower.includes("chin") || lower.includes("trx")) return "back";
+  if (lower.includes("row") || lower.includes("로우") || lower.includes("pull up") || lower.includes("pull-up") || lower.includes("pullup") || lower.includes("풀업") || lower.includes("pulldown") || lower.includes("풀다운") || lower.includes("턱걸이") || lower.includes("chin") || lower.includes("trx") || lower.includes("rack pull") || lower.includes("랙 풀") || lower.includes("curl") || lower.includes("컬")) return "back";
   if (lower.includes("shoulder") || lower.includes("어깨") || lower.includes("overhead") || lower.includes("오버헤드") || lower.includes("military") || lower.includes("밀리터리") || lower.includes("lateral") || lower.includes("레터럴") || lower.includes("숄더")) return "shoulder";
   if (lower.includes("squat") || lower.includes("스쿼트") || lower.includes("deadlift") || lower.includes("데드") || lower.includes("leg") || lower.includes("레그") || lower.includes("lunge") || lower.includes("런지") || lower.includes("하체") || lower.includes("hip") || lower.includes("힙") || lower.includes("calf") || lower.includes("카프") || lower.includes("글루트") || lower.includes("glute") || lower.includes("burpee") || lower.includes("버피")) return "legs";
   if (lower.includes("plank") || lower.includes("플랭크") || lower.includes("crunch") || lower.includes("크런치") || lower.includes("ab ") || lower.includes("ab휠") || lower.includes("ab wheel") || lower.includes("코어") || lower.includes("core") || lower.includes("leg raise") || lower.includes("레그 레이즈") || lower.includes("시저") || lower.includes("scissor") || lower.includes("flutter") || lower.includes("플러터") || lower.includes("v-up") || lower.includes("브이 업") || lower.includes("mountain") || lower.includes("마운틴") || lower.includes("bird dog") || lower.includes("버드") || lower.includes("superman") || lower.includes("슈퍼맨") || lower.includes("deadbug") || lower.includes("데드버그")) return "core";
@@ -220,7 +220,7 @@ const MACHINE_CORRECTION: Record<string, number> = {
 function getEquipmentCorrection(exerciseName: string): number {
   const lower = exerciseName.toLowerCase();
   if (lower.includes("smith") || lower.includes("스미스")) return MACHINE_CORRECTION.smith;
-  if (lower.includes("machine") || lower.includes("머신") || lower.includes("press machine") || lower.includes("레그 프레스") || lower.includes("leg press") || lower.includes("레그 익스텐션") || lower.includes("레그 컬") || lower.includes("leg extension") || lower.includes("leg curl") || lower.includes("펙 덱") || lower.includes("pec deck") || lower.includes("체스트 프레스") || lower.includes("chest press")) return MACHINE_CORRECTION.machine;
+  if (lower.includes("machine") || lower.includes("머신") || lower.includes("press machine") || lower.includes("레그 프레스") || lower.includes("leg press") || lower.includes("레그 익스텐션") || lower.includes("레그 컬") || lower.includes("leg extension") || lower.includes("leg curl") || lower.includes("펙 덱") || lower.includes("pec deck") || lower.includes("체스트 프레스") || lower.includes("chest press") || lower.includes("핵 스쿼트") || lower.includes("hack squat")) return MACHINE_CORRECTION.machine;
   if (lower.includes("cable") || lower.includes("케이블")) return MACHINE_CORRECTION.cable;
   return 1.0; // 프리웨이트
 }
@@ -279,7 +279,9 @@ function isBodyweightExercise(name: string): boolean {
 function getBodyweightLoadRatio(name: string): number {
   const lower = name.toLowerCase();
   // 전 체중 지지 (100%)
-  if (["딥스", "dips", "dip", "풀업", "pull up", "pull-up", "pullup", "턱걸이", "친업", "chin up", "chin-up", "어시스티드 풀업", "assisted pull"].some(kw => lower.includes(kw))) return 1.0;
+  if (["딥스", "dips", "dip", "풀업", "pull up", "pull-up", "pullup", "턱걸이", "친업", "chin up", "chin-up"].some(kw => lower.includes(kw)) && !["어시스티드", "assisted"].some(kw => lower.includes(kw))) return 1.0;
+  // 어시스티드 풀업 — 보조 받아서 약 50% 부하
+  if (["어시스티드", "assisted"].some(kw => lower.includes(kw))) return 0.50;
   // 불가리안 — 한 다리 지지 85%
   if (["불가리안", "bulgarian"].some(kw => lower.includes(kw))) return 0.85;
   // 스텝업 — 한 다리 주도 80%
