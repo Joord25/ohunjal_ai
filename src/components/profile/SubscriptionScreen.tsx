@@ -144,7 +144,7 @@ export const TERMS_TEXT = `제1조(목적)
 
 제10조(유료 서비스 및 구독)
 
-무료 플랜은 AI 운동 플랜 생성 횟수가 3회로 제한됩니다.
+무료 플랜은 AI 운동 플랜 생성 횟수가 4회로 제한됩니다.
 
 프리미엄 구독 시 AI 맞춤 운동 플랜 무제한 생성, 세션별 AI 분석 리포트, 체중 변화 그래프 추적, 운동 히스토리 무제한 저장 등 모든 기능을 이용할 수 있습니다.
 
@@ -680,9 +680,9 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
           <div className="flex flex-col gap-4">
             {status === "cancelled" && (
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
-                <p className="text-sm font-bold text-amber-700">구독이 취소되었습니다</p>
+                <p className="text-sm font-bold text-amber-700">{t("sub.cancel.header")}</p>
                 <p className="text-xs text-amber-600 mt-1">
-                  {expiresAt ? `${new Date(expiresAt).toLocaleDateString("ko-KR")}까지 이용 가능` : "기간 만료 후 무료 플랜으로 전환됩니다"}
+                  {expiresAt ? t("sub.cancelled.until", { date: new Date(expiresAt).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US") }) : t("sub.cancelled.expire")}
                 </p>
               </div>
             )}
@@ -727,7 +727,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-[#3C1E1E] border-t-transparent rounded-full animate-spin" />
-                  처리 중...
+                  {t("sub.cancel.processing")}
                 </span>
               ) : (
                 t("sub.kakaoPay")

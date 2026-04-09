@@ -552,7 +552,7 @@
   "sub.cancel.resubscribe": "Resubscribe",
   "sub.faq.title": "FAQ",
   "sub.faq.q1": "What's the difference between Free and Premium?",
-  "sub.faq.a1": "Free plan limits AI workout generation to 4 per day with 1 growth prediction report. Premium unlocks unlimited AI plans, full growth reports, detailed analysis, and per-session AI reports.",
+  "sub.faq.a1": "Free plan limits AI workout generation to 4 total with 1 growth prediction report. Premium unlocks unlimited AI plans, full growth reports, detailed analysis, and per-session AI reports.",
   "sub.faq.q2": "How is payment processed?",
   "sub.faq.a2": "Payment is securely processed via KakaoPay. Your payment info is encrypted and the subscription auto-renews monthly.",
   "sub.faq.q3": "Are there other payment options?",
