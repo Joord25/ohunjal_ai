@@ -316,6 +316,12 @@ function getBodyweightLoadRatio(name: string): number {
   return 0.50;
 }
 
+/** 중량 맨몸 운동: 입력 무게 + 체중이 실제 부하 (중량 풀업, 중량 딥스, 중량 친업) */
+function isWeightedBodyweight(name: string): boolean {
+  const lower = name.toLowerCase();
+  return ["중량 풀업", "weighted pull", "중량 딥스", "weighted dip", "중량 친업", "weighted chin"].some(kw => lower.includes(kw));
+}
+
 /** 카테고리별 최고 E1RM BW ratio 추출 (이력 + 오늘) */
 export function getCategoryBestBwRatio(
   exercises: { name: string }[],
@@ -338,6 +344,8 @@ export function getCategoryBestBwRatio(
       const correction = getEquipmentCorrection(ex.name);
       for (const l of exLogs) {
         let w = parseFloat(l.weightUsed || "0");
+        // 중량 맨몸 운동: 추가 무게 + 체중 = 실제 부하
+        if (w > 0 && isWeightedBodyweight(ex.name)) w += bodyWeightKg;
         if (w <= 0 && isBodyweightExercise(ex.name)) w = bodyWeightKg * getBodyweightLoadRatio(ex.name);
         if (w <= 0 || l.repsCompleted <= 0) continue;
         const e1rm = l.repsCompleted === 1 ? w : w * (1 + l.repsCompleted / 30);
@@ -359,6 +367,7 @@ export function getCategoryBestBwRatio(
     const correction = getEquipmentCorrection(ex.name);
     for (const l of exLogs) {
       let w = parseFloat(l.weightUsed || "0");
+      if (w > 0 && isWeightedBodyweight(ex.name)) w += bodyWeightKg;
       if (w <= 0 && isBodyweightExercise(ex.name)) w = bodyWeightKg * getBodyweightLoadRatio(ex.name);
       if (w <= 0 || l.repsCompleted <= 0) continue;
       const e1rm = l.repsCompleted === 1 ? w : w * (1 + l.repsCompleted / 30);
