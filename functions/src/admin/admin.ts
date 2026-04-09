@@ -429,6 +429,14 @@ export const adminLogs = onRequest(
   }
 );
 
+const PORTONE_API_BASE = "https://api.portone.io";
+
+function getPortOneSecret(): string {
+  const secret = process.env.PORTONE_API_SECRET;
+  if (!secret) throw new Error("PORTONE_API_SECRET not configured");
+  return secret;
+}
+
 /**
  * POST /adminRefundRequests
  * Admin only: 환불 요청 목록 조회
@@ -449,24 +457,166 @@ export const adminRefundRequests = onRequest(
         .limit(50)
         .get();
 
-      const requests = snapshot.docs.map(doc => {
+      const requests = await Promise.all(snapshot.docs.map(async (doc) => {
         const data = doc.data();
+        const uid = data.uid as string;
+
+        // Look up planCount info for refund eligibility display
+        let planCountAtPayment: number | null = null;
+        let currentPlanCount = 0;
+        try {
+          const subDoc = await db.collection("subscriptions").doc(uid).get();
+          if (subDoc.exists) {
+            planCountAtPayment = subDoc.data()?.planCountAtPayment ?? null;
+          }
+          const profileDoc = await db.collection("users").doc(uid).get();
+          if (profileDoc.exists) {
+            currentPlanCount = profileDoc.data()?.planCount || 0;
+          }
+        } catch {
+          // proceed with defaults
+        }
+
         return {
           id: doc.id,
-          uid: data.uid,
+          uid,
           email: data.email || "",
           reason: data.reason || "",
           status: data.status || "pending",
           paymentId: data.paymentId || null,
           amount: data.amount || null,
           requestedAt: data.requestedAt?.toDate?.().toISOString() || null,
+          planCountAtPayment,
+          currentPlanCount,
+          planUsed: planCountAtPayment !== null ? currentPlanCount > planCountAtPayment : false,
         };
-      });
+      }));
 
       res.status(200).json({ requests });
     } catch (error) {
       console.error("adminRefundRequests error:", error);
       res.status(500).json({ error: "환불 요청 목록 조회 실패" });
+    }
+  }
+);
+
+/**
+ * POST /adminProcessRefund
+ * Body: { requestId, action: "approve" | "reject" }
+ * Admin only: 환불 요청 승인/거절 처리
+ */
+export const adminProcessRefund = onRequest(
+  { cors: true, secrets: ["PORTONE_API_SECRET"] },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    let adminUid: string;
+    try { adminUid = await verifyAdmin(req.headers.authorization); } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ error: msg });
+      return;
+    }
+
+    const { requestId, action } = req.body;
+    if (!requestId || !action) { res.status(400).json({ error: "Missing requestId or action" }); return; }
+    if (action !== "approve" && action !== "reject") { res.status(400).json({ error: "Invalid action" }); return; }
+
+    try {
+      // 1. Get refund request
+      const refundRef = db.collection("refund_requests").doc(requestId);
+      const refundDoc = await refundRef.get();
+
+      if (!refundDoc.exists) {
+        res.status(404).json({ error: "환불 요청을 찾을 수 없습니다." });
+        return;
+      }
+
+      const refundData = refundDoc.data()!;
+
+      if (refundData.status !== "pending") {
+        res.status(400).json({ error: "이미 처리된 환불 요청입니다." });
+        return;
+      }
+
+      if (action === "approve") {
+        const uid = refundData.uid as string;
+        const paymentId = refundData.paymentId as string;
+
+        if (!paymentId) {
+          res.status(400).json({ error: "결제 ID가 없어 환불을 진행할 수 없습니다." });
+          return;
+        }
+
+        // 2. Get subscription doc
+        const subDoc = await db.collection("subscriptions").doc(uid).get();
+
+        // 3. Call PortOne refund API
+        const secret = getPortOneSecret();
+        const cancelRes = await fetch(`${PORTONE_API_BASE}/payments/${paymentId}/cancel`, {
+          method: "POST",
+          headers: {
+            "Authorization": `PortOne ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason: "고객 환불 요청" }),
+        });
+
+        if (!cancelRes.ok) {
+          const err = await cancelRes.json().catch(() => ({}));
+          console.error("PortOne refund failed:", err);
+          throw new Error("PortOne 환불 처리에 실패했습니다.");
+        }
+
+        // 4. Update refund request → approved
+        await refundRef.update({
+          status: "approved",
+          processedAt: FieldValue.serverTimestamp(),
+        });
+
+        // 5. Update subscription → free
+        if (subDoc.exists) {
+          await db.collection("subscriptions").doc(uid).update({
+            status: "free",
+            billingKey: "",
+            expiresAt: null,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        // 6. Log
+        await db.collection("admin_logs").add({
+          action: "refund_approve",
+          adminUid,
+          targetUid: uid,
+          targetEmail: refundData.email || "",
+          requestId,
+          paymentId,
+          amount: refundData.amount || null,
+          timestamp: FieldValue.serverTimestamp(),
+        });
+
+        res.status(200).json({ status: "approved", requestId });
+      } else {
+        // reject
+        await refundRef.update({
+          status: "rejected",
+          processedAt: FieldValue.serverTimestamp(),
+        });
+
+        await db.collection("admin_logs").add({
+          action: "refund_reject",
+          adminUid,
+          targetUid: refundData.uid || "",
+          targetEmail: refundData.email || "",
+          requestId,
+          timestamp: FieldValue.serverTimestamp(),
+        });
+
+        res.status(200).json({ status: "rejected", requestId });
+      }
+    } catch (error) {
+      console.error("adminProcessRefund error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "환불 처리에 실패했습니다." });
     }
   }
 );

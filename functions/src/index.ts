@@ -8,4 +8,4 @@ export { getCoachMessage } from "./ai/coach";
 export { getNutritionGuide, nutritionChat } from "./ai/nutrition";
 export { planSession } from "./plan/session";
 export { subscribe, getSubscription, cancelSubscription, submitRefundRequest } from "./billing/subscription";
-export { adminActivate, adminCheckUser, adminDeactivate, adminDashboard, adminListUsers, adminLogs, adminCancelFeedbacks, adminRefundRequests } from "./admin/admin";
+export { adminActivate, adminCheckUser, adminDeactivate, adminDashboard, adminListUsers, adminLogs, adminCancelFeedbacks, adminRefundRequests, adminProcessRefund } from "./admin/admin";

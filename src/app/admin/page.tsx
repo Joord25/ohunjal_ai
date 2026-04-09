@@ -64,11 +64,15 @@ interface CancelFeedback {
 }
 
 interface RefundRequest {
+  id: string;
   email: string;
   reason: string;
   amount: number;
   status: "pending" | "approved" | "rejected";
   date: string;
+  planCountAtPayment: number;
+  currentPlanCount: number;
+  planUsed: boolean;
 }
 
 const FUNNEL_EVENTS = [
@@ -308,6 +312,22 @@ export default function AdminPage() {
     } catch (e: unknown) { alert(e instanceof Error ? e.message : "실패"); }
   };
 
+  const handleRefundAction = async (requestId: string, action: "approve" | "reject") => {
+    const actionLabel = action === "approve" ? "승인" : "거부";
+    if (!confirm(`이 환불 요청을 ${actionLabel}하시겠습니까?`)) return;
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/adminProcessRefund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ requestId, action }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      alert(`환불 요청 ${actionLabel} 완료`);
+      loadFeedback();
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : "처리 실패"); }
+  };
+
   const statusLabel = (s: string) => s === "active" ? "구독중" : s === "free" ? "무료" : s === "cancelled" ? "해지됨" : s === "expired" ? "만료됨" : s;
   const statusColor = (s: string) => s === "active" ? "bg-emerald-100 text-emerald-700" : s === "cancelled" ? "bg-amber-100 text-amber-700" : s === "expired" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600";
 
@@ -530,7 +550,7 @@ export default function AdminPage() {
                   ) : (
                     <div className="space-y-2">
                       {refundRequests.map((req, i) => (
-                        <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
+                        <div key={req.id || i} className="py-2.5 border-b border-gray-50 last:border-0">
                           <div className="flex items-center justify-between mb-1">
                             <p className="text-sm font-medium text-gray-800 truncate">{req.email}</p>
                             <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -546,11 +566,31 @@ export default function AdminPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-1.5">
                             <p className="text-xs text-gray-500">{req.reason}</p>
                             <span className="text-xs font-medium text-gray-600 shrink-0 ml-2">
                               {req.amount ? `₩${req.amount.toLocaleString()}` : "-"}
                             </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-gray-400">
+                                플랜 생성: 결제 시 {req.planCountAtPayment ?? "-"}회 → 현재 {req.currentPlanCount ?? "-"}회
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                req.planUsed ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-700"
+                              }`}>
+                                {req.planUsed ? "사용함" : "미사용"}
+                              </span>
+                            </div>
+                            {req.status === "pending" && (
+                              <div className="flex gap-1.5 shrink-0 ml-2">
+                                <button onClick={() => handleRefundAction(req.id, "approve")}
+                                  className="px-2 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100">승인</button>
+                                <button onClick={() => handleRefundAction(req.id, "reject")}
+                                  className="px-2 py-1 text-[10px] font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100">거부</button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
