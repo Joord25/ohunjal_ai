@@ -1171,7 +1171,7 @@ function generateHomeWorkout(
   const homeSquat = pick(["에어 스쿼트 (Air Squat)", "고블렛 스쿼트 (Goblet Squat)", "케틀벨 고블릿 스쿼트 (Kettlebell Goblet Squat)"]);
   const homePush = pick(["푸쉬업 (Push-ups)", "니 푸쉬업 (Knee Push-ups)", "덤벨 벤치 프레스 (Dumbbell Bench Press)", "케틀벨 플로어 프레스 (Kettlebell Floor Press)"]);
   const homePull = pick(["덤벨 로우 (Dumbbell Row)", "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)", "인버티드 로우 (Inverted Row)", "TRX 로우 (TRX Row)"]);
-  const homeHinge = pick(["케틀벨 스윙 (Kettlebell Swing)", "루마니안 데드리프트 (Romanian Deadlift)", "글루트 브릿지 (Glute Bridge)"]);
+  const homeHinge = pick(["케틀벨 스윙 (Kettlebell Swing)", "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)", "글루트 브릿지 (Glute Bridge)"]);
   const homeFullBody = pick([
     "버피 (Burpees)", "덤벨 쓰러스터 (Dumbbell Thruster)", "스텝아웃 버피 (Step-out Burpees)",
     "점핑 잭 (Jumping Jacks)", "하이니즈 (High Knees)", "마운틴 클라이머 (Mountain Climber)",
