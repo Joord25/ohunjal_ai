@@ -12,9 +12,7 @@ function useBodyScroll() {
     return () => { document.body.style.overflow = ""; };
   }, []);
 }
-const GA4_URL = "https://analytics.google.com/analytics/web/#/p/G-BVD88DPW9E";
-
-type Tab = "dashboard" | "users" | "feedback" | "analytics" | "history";
+type Tab = "dashboard" | "users" | "cancel" | "refund" | "history";
 
 interface DashboardData {
   totalUsers: number;
@@ -75,21 +73,6 @@ interface RefundRequest {
   planUsed: boolean;
 }
 
-const FUNNEL_EVENTS = [
-  { name: "onboarding_start", desc: "앱 진입 (로그인/게스트)" },
-  { name: "condition_check_start", desc: "컨디션 체크 시작" },
-  { name: "condition_check_step", desc: "컨디션 체크 각 스텝 완료" },
-  { name: "condition_check_complete", desc: "컨디션 체크 완료 (목표 선택)" },
-  { name: "plan_preview_view", desc: "운동 플랜 프리뷰 도달" },
-  { name: "plan_preview_start", desc: "\"시작\" 버튼 탭" },
-  { name: "workout_start", desc: "운동 세션 시작" },
-  { name: "workout_complete", desc: "운동 세션 완료" },
-  { name: "report_view", desc: "운동 리포트 화면" },
-  { name: "paywall_view", desc: "페이월 노출" },
-  { name: "paywall_tap_subscribe", desc: "구독 버튼 탭" },
-  { name: "paywall_dismiss", desc: "페이월 닫기" },
-  { name: "subscription_complete", desc: "결제 완료" },
-];
 
 export default function AdminPage() {
   useBodyScroll();
@@ -157,7 +140,7 @@ export default function AdminPage() {
   }, [isAdmin, tab, userFilter, userPage]);
 
   useEffect(() => {
-    if (isAdmin && tab === "feedback") loadFeedback();
+    if (isAdmin && (tab === "cancel" || tab === "refund")) loadFeedback();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, tab]);
 
@@ -357,7 +340,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1">
-          {([["dashboard","대시보드"],["users","유저 관리"],["feedback","피드백"],["analytics","분석"],["history","이력"]] as [Tab,string][]).map(([t, label]) => (
+          {([["dashboard","대시보드"],["users","유저"],["cancel","취소"],["refund","환불"],["history","이력"]] as [Tab,string][]).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${tab === t ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"}`}
             >{label}</button>
@@ -514,37 +497,44 @@ export default function AdminPage() {
         )}
 
         {/* Feedback Tab */}
-        {tab === "feedback" && (
+        {/* Cancel Feedbacks Tab */}
+        {tab === "cancel" && (
           <div>
             {loadingFeedback ? (
               <p className="text-center text-gray-400 py-10 text-sm">로딩 중...</p>
             ) : (
-              <>
-                {/* Cancel Feedbacks */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
-                  <p className="font-bold text-[#1B4332] mb-4">취소 피드백</p>
-                  {cancelFeedbacks.length === 0 ? (
-                    <p className="text-xs text-gray-400">피드백이 없습니다</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {cancelFeedbacks.map((fb, i) => (
-                        <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm font-medium text-gray-800 truncate">{fb.email}</p>
-                            <span className="text-[10px] text-gray-400 shrink-0 ml-2">
-                              {fb.date ? new Date(fb.date).toLocaleDateString("ko-KR") : "-"}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500">{fb.reason}</p>
+              <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                <p className="font-bold text-[#1B4332] mb-4">구독 취소 피드백</p>
+                {cancelFeedbacks.length === 0 ? (
+                  <p className="text-xs text-gray-400">피드백이 없습니다</p>
+                ) : (
+                  <div className="space-y-2">
+                    {cancelFeedbacks.map((fb, i) => (
+                      <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium text-gray-800 truncate">{fb.email}</p>
+                          <span className="text-[10px] text-gray-400 shrink-0 ml-2">
+                            {fb.date ? new Date(fb.date).toLocaleDateString("ko-KR") : "-"}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <p className="text-xs text-gray-500">{fb.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-                {/* Refund Requests */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                  <p className="font-bold text-[#1B4332] mb-4">환불 요청</p>
+        {/* Refund Requests Tab */}
+        {tab === "refund" && (
+          <div>
+            {loadingFeedback ? (
+              <p className="text-center text-gray-400 py-10 text-sm">로딩 중...</p>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                <p className="font-bold text-[#1B4332] mb-4">환불 요청</p>
                   {refundRequests.length === 0 ? (
                     <p className="text-xs text-gray-400">환불 요청이 없습니다</p>
                   ) : (
@@ -597,42 +587,7 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
-              </>
             )}
-          </div>
-        )}
-
-        {/* Analytics Tab */}
-        {tab === "analytics" && (
-          <div>
-            <a href={GA4_URL} target="_blank" rel="noopener noreferrer"
-              className="block bg-white rounded-2xl border border-gray-200 p-5 mb-4 hover:border-[#059669] transition-colors">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-[#1B4332]">Google Analytics 4 열기</p>
-                  <p className="text-xs text-gray-400 mt-1">실시간 데이터, 퍼널 분석, 유저 행동</p>
-                </div>
-                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </div>
-            </a>
-
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <p className="font-bold text-[#1B4332] mb-4">심어둔 퍼널 이벤트</p>
-              <p className="text-xs text-gray-400 mb-4">GA4 탐색 → 퍼널 탐색에서 아래 이벤트 순서로 리포트 생성</p>
-              <div className="space-y-2">
-                {FUNNEL_EVENTS.map((evt, i) => (
-                  <div key={evt.name} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                    <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0">{i + 1}</span>
-                    <div>
-                      <p className="text-sm font-mono text-[#1B4332]">{evt.name}</p>
-                      <p className="text-xs text-gray-400">{evt.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
