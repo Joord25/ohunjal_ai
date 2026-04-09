@@ -395,6 +395,9 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showRefund, setShowRefund] = useState(false);
+  const [refundStep, setRefundStep] = useState<0 | 1 | 2>(0); // 0=hidden, 1=form, 2=submitted
+  const [refundReason, setRefundReason] = useState("");
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
 
   // Handle redirect response from mobile KakaoPay (REDIRECTION mode)
   const processRedirectBillingKey = async (billingKey: string) => {
@@ -415,9 +418,11 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         throw new Error(err.error || t("sub.error.failed"));
       }
       trackEvent("subscription_complete");
+      sessionStorage.removeItem("portone_billing_processed");
       setStatus("active");
       await checkSubscription();
     } catch (err) {
+      sessionStorage.removeItem("portone_billing_processed");
       console.error("[Subscribe redirect]", err);
       setError(t("sub.error.generic"));
     } finally {
@@ -438,10 +443,13 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
     // Check for billing key from redirect (mobile REDIRECTION mode)
     const params = new URLSearchParams(window.location.search);
     const billingKey = params.get("billing_key") || params.get("billingKey");
-    if (billingKey) {
-      // Clean up URL params
+    if (billingKey && !sessionStorage.getItem("portone_billing_processed")) {
+      // Clean up URL params + prevent duplicate processing
       window.history.replaceState({}, "", window.location.pathname);
+      sessionStorage.setItem("portone_billing_processed", "1");
       processRedirectBillingKey(billingKey);
+    } else if (billingKey) {
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
@@ -507,7 +515,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       }
 
       if (!response.billingKey) {
-        setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        setError(t("sub.error.generic"));
         return;
       }
 
@@ -535,7 +543,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       await checkSubscription();
     } catch (err) {
       console.error("[Subscribe]", err);
-      setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      setError(t("sub.error.generic"));
     } finally {
       setIsProcessing(false);
     }
@@ -583,16 +591,41 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "구독 취소에 실패했습니다.");
+        throw new Error(err.error || t("sub.error.failed"));
       }
 
       setCancelStep(0);
       setStatus("cancelled");
       await checkSubscription();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "구독 취소 중 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("sub.error.generic"));
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleRefundSubmit = async () => {
+    if (!refundReason.trim()) return;
+    setRefundSubmitting(true);
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`${FUNCTIONS_BASE}/submitRefundRequest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: refundReason.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || t("sub.refundRequest.errorGeneric"));
+      }
+      setRefundStep(2);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("sub.refundRequest.errorGeneric"));
+    } finally {
+      setRefundSubmitting(false);
     }
   };
 
@@ -723,6 +756,12 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                 <p className="text-xs text-amber-600 mt-1">
                   {expiresAt ? t("sub.cancelled.until", { date: new Date(expiresAt).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US") }) : t("sub.cancelled.expire")}
                 </p>
+                <button
+                  onClick={() => { setRefundStep(1); setRefundReason(""); setError(null); }}
+                  className="text-xs text-amber-700 underline underline-offset-2 mt-2"
+                >
+                  {t("sub.refundRequest.link")}
+                </button>
               </div>
             )}
 
@@ -897,6 +936,76 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       {/* Cancel Flow Overlay */}
       {/* 회의 30: 진입 시 onCancelFlowChange(true)로 부모(page.tsx) 탭바 숨김 →
           탭바 높이 padding 불필요. 세이프 에리어만 확보. */}
+      {/* Refund Request Overlay */}
+      {refundStep > 0 && (
+        <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(24px + var(--safe-area-bottom, 0px))" }}>
+          <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0">
+            <button onClick={() => setRefundStep(0)} className="p-2 -ml-2">
+              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-[11px] tracking-[0.3em] uppercase font-serif font-medium text-gray-500">{t("sub.refundRequest.header")}</span>
+            <div className="w-9" />
+          </div>
+
+          {refundStep === 1 ? (
+            <div className="flex-1 px-6 pb-8">
+              <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 mb-6">
+                <p className="text-sm text-gray-600 leading-relaxed">{t("sub.refundRequest.info")}</p>
+              </div>
+
+              <h3 className="text-base font-black text-gray-900 mb-3">{t("sub.refundRequest.reasonLabel")}</h3>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder={t("sub.refundRequest.reasonPlaceholder")}
+                rows={4}
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-sm font-medium text-gray-900 outline-none focus:border-[#059669] transition-colors resize-none"
+              />
+
+              {error && (
+                <div className="bg-red-50 rounded-xl p-3 border border-red-200 mt-4">
+                  <p className="text-xs text-red-600 font-medium">{error}</p>
+                </div>
+              )}
+
+              <div className="mt-8 flex flex-col gap-3">
+                <button
+                  onClick={handleRefundSubmit}
+                  disabled={!refundReason.trim() || refundSubmitting}
+                  className="w-full py-3 rounded-2xl text-sm font-bold text-white bg-[#2D6A4F] active:scale-[0.98] transition-all disabled:opacity-30"
+                >
+                  {refundSubmitting ? t("sub.cancel.processing") : t("sub.refundRequest.submit")}
+                </button>
+                <button
+                  onClick={() => setRefundStep(0)}
+                  className="w-full py-3 text-sm font-bold text-gray-400"
+                >
+                  {t("common.back")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 px-6 pb-8 flex flex-col items-center justify-center">
+              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-7 h-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-base font-bold text-gray-900 text-center mb-2">{t("sub.refundRequest.successTitle")}</p>
+              <p className="text-sm text-gray-500 text-center leading-relaxed">{t("sub.refundRequest.successMessage")}</p>
+              <button
+                onClick={() => setRefundStep(0)}
+                className="mt-8 w-full py-3 rounded-2xl text-sm font-bold text-white bg-[#2D6A4F] active:scale-[0.98] transition-all"
+              >
+                {t("common.confirm")}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {cancelStep > 0 && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(24px + var(--safe-area-bottom, 0px))" }}>
           {/* Header */}

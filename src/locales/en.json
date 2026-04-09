@@ -901,5 +901,15 @@
   "onboarding.done.thanks": "Thanks for sharing, {name}",
   "onboarding.done.goalMsg": "I'll help you based on your info\nand your {goal} goal!",
   "onboarding.done.credential": "Trained on ACSM/NSCA guidelines\nand 200+ latest research papers\nI'll make sure you get the best results!",
-  "onboarding.done.cta": "Start First Workout"
+  "onboarding.done.cta": "Start First Workout",
+
+  "sub.refundRequest.link": "Request Refund",
+  "sub.refundRequest.header": "Refund Request",
+  "sub.refundRequest.info": "Full refund available within 7 days of payment if no premium features were used.",
+  "sub.refundRequest.reasonLabel": "Reason for Refund",
+  "sub.refundRequest.reasonPlaceholder": "Please tell us why you'd like a refund...",
+  "sub.refundRequest.submit": "Submit Refund Request",
+  "sub.refundRequest.successTitle": "Request Submitted",
+  "sub.refundRequest.successMessage": "Your refund request has been submitted. We will review and contact you within 1-3 business days.",
+  "sub.refundRequest.errorGeneric": "An error occurred while submitting your refund request."
 }

@@ -7,5 +7,5 @@ export { generateWorkout, analyzeWorkout } from "./ai/workout";
 export { getCoachMessage } from "./ai/coach";
 export { getNutritionGuide, nutritionChat } from "./ai/nutrition";
 export { planSession } from "./plan/session";
-export { subscribe, getSubscription, cancelSubscription } from "./billing/subscription";
-export { adminActivate, adminCheckUser, adminDeactivate, adminDashboard, adminListUsers, adminLogs, adminCancelFeedbacks } from "./admin/admin";
+export { subscribe, getSubscription, cancelSubscription, submitRefundRequest } from "./billing/subscription";
+export { adminActivate, adminCheckUser, adminDeactivate, adminDashboard, adminListUsers, adminLogs, adminCancelFeedbacks, adminRefundRequests } from "./admin/admin";

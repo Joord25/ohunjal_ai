@@ -280,7 +280,7 @@ export default function Home() {
     }
     return false;
   });
-  const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
+  const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled" | "expired">("loading");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const FREE_PLAN_LIMIT = 4;
@@ -514,7 +514,7 @@ export default function Home() {
       return;
     }
     // Check free usage limit (로그인 유저만 — 게스트는 GUEST_TRIAL_LIMIT으로 제한)
-    if (isLoggedIn && subStatus === "free" && getPlanCount() >= FREE_PLAN_LIMIT) {
+    if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
       trackEvent("paywall_view", { session_number: getPlanCount() });
       setShowPaywall(true);
       return;

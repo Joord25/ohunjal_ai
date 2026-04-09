@@ -44,6 +44,8 @@
       { "source": "/api/getCoachMessage", "function": { "functionId": "getCoachMessage", "region": "us-central1" } },
       { "source": "/api/getNutritionGuide", "function": { "functionId": "getNutritionGuide", "region": "us-central1" } },
       { "source": "/api/nutritionChat", "function": { "functionId": "nutritionChat", "region": "us-central1" } },
+      { "source": "/api/submitRefundRequest", "function": { "functionId": "submitRefundRequest", "region": "us-central1" } },
+      { "source": "/api/adminRefundRequests", "function": { "functionId": "adminRefundRequests", "region": "us-central1" } },
       { "source": "/api/planSession", "function": { "functionId": "planSession", "region": "us-central1" } }
     ]
   },

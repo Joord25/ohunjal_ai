@@ -14,7 +14,7 @@ function useBodyScroll() {
 }
 const GA4_URL = "https://analytics.google.com/analytics/web/#/p/G-BVD88DPW9E";
 
-type Tab = "dashboard" | "users" | "analytics" | "history";
+type Tab = "dashboard" | "users" | "feedback" | "analytics" | "history";
 
 interface DashboardData {
   totalUsers: number;
@@ -55,6 +55,20 @@ interface LogEntry {
   months: number;
   expiresAt: string;
   timestamp: string | null;
+}
+
+interface CancelFeedback {
+  email: string;
+  reason: string;
+  date: string;
+}
+
+interface RefundRequest {
+  email: string;
+  reason: string;
+  amount: number;
+  status: "pending" | "approved" | "rejected";
+  date: string;
 }
 
 const FUNNEL_EVENTS = [
@@ -106,6 +120,11 @@ export default function AdminPage() {
   // Logs
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
+  // Feedback
+  const [cancelFeedbacks, setCancelFeedbacks] = useState<CancelFeedback[]>([]);
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -132,6 +151,11 @@ export default function AdminPage() {
     if (isAdmin && tab === "users") loadUserList();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, tab, userFilter, userPage]);
+
+  useEffect(() => {
+    if (isAdmin && tab === "feedback") loadFeedback();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, tab]);
 
   const loadDashboard = async () => {
     try {
@@ -172,6 +196,32 @@ export default function AdminPage() {
       });
       if (res.ok) setLogs((await res.json()).logs || []);
     } catch { /* ignore */ }
+  };
+
+  const loadFeedback = async () => {
+    setLoadingFeedback(true);
+    try {
+      const token = await getToken();
+      const [cancelRes, refundRes] = await Promise.all([
+        fetch("/api/adminCancelFeedbacks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        }),
+        fetch("/api/adminRefundRequests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        }),
+      ]);
+      if (cancelRes.ok) {
+        const data = await cancelRes.json();
+        setCancelFeedbacks(data.feedbacks || []);
+      }
+      if (refundRes.ok) {
+        const data = await refundRes.json();
+        setRefundRequests(data.requests || []);
+      }
+    } catch { /* ignore */ }
+    setLoadingFeedback(false);
   };
 
   const handleSearch = async () => {
@@ -287,7 +337,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1">
-          {([["dashboard","대시보드"],["users","유저 관리"],["analytics","분석"],["history","이력"]] as [Tab,string][]).map(([t, label]) => (
+          {([["dashboard","대시보드"],["users","유저 관리"],["feedback","피드백"],["analytics","분석"],["history","이력"]] as [Tab,string][]).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${tab === t ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"}`}
             >{label}</button>
@@ -440,6 +490,75 @@ export default function AdminPage() {
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Feedback Tab */}
+        {tab === "feedback" && (
+          <div>
+            {loadingFeedback ? (
+              <p className="text-center text-gray-400 py-10 text-sm">로딩 중...</p>
+            ) : (
+              <>
+                {/* Cancel Feedbacks */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+                  <p className="font-bold text-[#1B4332] mb-4">취소 피드백</p>
+                  {cancelFeedbacks.length === 0 ? (
+                    <p className="text-xs text-gray-400">피드백이 없습니다</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {cancelFeedbacks.map((fb, i) => (
+                        <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-gray-800 truncate">{fb.email}</p>
+                            <span className="text-[10px] text-gray-400 shrink-0 ml-2">
+                              {fb.date ? new Date(fb.date).toLocaleDateString("ko-KR") : "-"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">{fb.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Refund Requests */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                  <p className="font-bold text-[#1B4332] mb-4">환불 요청</p>
+                  {refundRequests.length === 0 ? (
+                    <p className="text-xs text-gray-400">환불 요청이 없습니다</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {refundRequests.map((req, i) => (
+                        <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-gray-800 truncate">{req.email}</p>
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                req.status === "pending" ? "bg-amber-100 text-amber-700" :
+                                req.status === "approved" ? "bg-emerald-100 text-emerald-700" :
+                                "bg-red-100 text-red-600"
+                              }`}>
+                                {req.status === "pending" ? "대기" : req.status === "approved" ? "승인" : "거절"}
+                              </span>
+                              <span className="text-[10px] text-gray-400">
+                                {req.date ? new Date(req.date).toLocaleDateString("ko-KR") : "-"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500">{req.reason}</p>
+                            <span className="text-xs font-medium text-gray-600 shrink-0 ml-2">
+                              {req.amount ? `₩${req.amount.toLocaleString()}` : "-"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 

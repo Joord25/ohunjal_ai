@@ -428,3 +428,45 @@ export const adminLogs = onRequest(
     }
   }
 );
+
+/**
+ * POST /adminRefundRequests
+ * Admin only: 환불 요청 목록 조회
+ */
+export const adminRefundRequests = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    try { await verifyAdmin(req.headers.authorization); } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ error: msg });
+      return;
+    }
+
+    try {
+      const snapshot = await db.collection("refund_requests")
+        .orderBy("requestedAt", "desc")
+        .limit(50)
+        .get();
+
+      const requests = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          uid: data.uid,
+          email: data.email || "",
+          reason: data.reason || "",
+          status: data.status || "pending",
+          paymentId: data.paymentId || null,
+          amount: data.amount || null,
+          requestedAt: data.requestedAt?.toDate?.().toISOString() || null,
+        };
+      });
+
+      res.status(200).json({ requests });
+    } catch (error) {
+      console.error("adminRefundRequests error:", error);
+      res.status(500).json({ error: "환불 요청 목록 조회 실패" });
+    }
+  }
+);

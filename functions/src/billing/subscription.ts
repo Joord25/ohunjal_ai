@@ -1,4 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { getAuth } from "firebase-admin/auth";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, db } from "../helpers";
 
@@ -29,6 +30,20 @@ export const subscribe = onRequest(
 
     try {
       const secret = getPortOneSecret();
+
+      // 0. Verify billing key ownership — prevent using someone else's billing key
+      const verifyRes = await fetch(`${PORTONE_API_BASE}/billing-keys/${billingKey}`, {
+        headers: { "Authorization": `PortOne ${secret}` },
+      });
+      if (verifyRes.ok) {
+        const bkData = await verifyRes.json();
+        if (bkData.customer?.id && bkData.customer.id !== uid) {
+          console.error("Billing key ownership mismatch:", bkData.customer.id, "!==", uid);
+          res.status(403).json({ error: "빌링키 소유자가 일치하지 않습니다." });
+          return;
+        }
+      }
+
       const paymentId = `sub_${uid}_${Date.now()}`;
 
       // 1. Process first payment with billing key
@@ -251,6 +266,75 @@ export const cancelSubscription = onRequest(
     } catch (error) {
       console.error("cancelSubscription error:", error);
       res.status(500).json({ error: "구독 취소에 실패했습니다." });
+    }
+  }
+);
+
+/**
+ * POST /submitRefundRequest
+ * Body: { reason }
+ * 결제 후 7일 이내 환불 요청 접수
+ */
+export const submitRefundRequest = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    let uid: string;
+    try { uid = await verifyAuth(req.headers.authorization); } catch { res.status(401).json({ error: "Unauthorized" }); return; }
+
+    const { reason } = req.body;
+    if (!reason) { res.status(400).json({ error: "Missing reason" }); return; }
+
+    try {
+      // 1. Check subscription exists
+      const subDoc = await db.collection("subscriptions").doc(uid).get();
+      if (!subDoc.exists) {
+        res.status(400).json({ error: "구독 정보가 없습니다." });
+        return;
+      }
+
+      const subData = subDoc.data()!;
+
+      // 2. Validate payment within 7 days
+      if (!subData.lastPaymentAt) {
+        res.status(400).json({ error: "결제 내역이 없습니다." });
+        return;
+      }
+
+      const lastPayment = new Date(subData.lastPaymentAt);
+      const now = new Date();
+      const diffDays = (now.getTime() - lastPayment.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (diffDays > 7) {
+        res.status(400).json({ error: "결제 후 7일이 지나 환불 요청이 불가합니다." });
+        return;
+      }
+
+      // 3. Lookup email from Firebase Auth
+      let email = "";
+      try {
+        const userRecord = await getAuth().getUser(uid);
+        email = userRecord.email || "";
+      } catch {
+        // proceed without email
+      }
+
+      // 4. Save to refund_requests collection
+      await db.collection("refund_requests").add({
+        uid,
+        email,
+        reason,
+        status: "pending",
+        paymentId: subData.lastPaymentId || null,
+        amount: subData.amount || null,
+        requestedAt: FieldValue.serverTimestamp(),
+      });
+
+      res.status(200).json({ status: "pending", message: "환불 요청이 접수되었습니다." });
+    } catch (error) {
+      console.error("submitRefundRequest error:", error);
+      res.status(500).json({ error: "환불 요청에 실패했습니다." });
     }
   }
 );

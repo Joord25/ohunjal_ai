@@ -901,5 +901,15 @@
   "onboarding.done.thanks": "{name}님, 답변 감사해요",
   "onboarding.done.goalMsg": "주신 정보와 {goal} 목적에 맞게\n제가 도와드릴게요!",
   "onboarding.done.credential": "ACSM/NSCA 기반 운동 가이드라인과\n200+ 최신 논문으로 학습했으니\n트렌드에 맞게 확실하게 도와드릴게요!",
-  "onboarding.done.cta": "첫 운동 시작하기"
+  "onboarding.done.cta": "첫 운동 시작하기",
+
+  "sub.refundRequest.link": "환불 문의",
+  "sub.refundRequest.header": "환 불 문 의",
+  "sub.refundRequest.info": "결제일로부터 7일 이내, 프리미엄 기능 미사용 시 전액 환불이 가능합니다.",
+  "sub.refundRequest.reasonLabel": "환불 사유",
+  "sub.refundRequest.reasonPlaceholder": "환불 사유를 알려주세요...",
+  "sub.refundRequest.submit": "환불 요청 접수",
+  "sub.refundRequest.successTitle": "환불 요청 접수 완료",
+  "sub.refundRequest.successMessage": "환불 요청이 접수되었습니다. 1-3영업일 내 검토 후 연락드리겠습니다.",
+  "sub.refundRequest.errorGeneric": "환불 요청 중 오류가 발생했습니다."
 }
