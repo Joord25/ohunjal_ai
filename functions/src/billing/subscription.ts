@@ -30,23 +30,62 @@ export const subscribe = onRequest(
 
     try {
       const secret = getPortOneSecret();
+      const subRef = db.collection("subscriptions").doc(uid);
 
-      // 0. Verify billing key ownership — prevent using someone else's billing key
+      // 0. Atomic pre-check via transaction — prevent race conditions & duplicate charges
+      const preCheck = await db.runTransaction(async (tx) => {
+        const subDoc = await tx.get(subRef);
+        if (subDoc.exists) {
+          const subData = subDoc.data()!;
+          if (subData.status === "active") {
+            return { blocked: true, error: "이미 활성 구독이 있습니다." };
+          }
+        }
+        // Mark as "processing" to block concurrent requests
+        if (subDoc.exists) {
+          tx.update(subRef, { status: "processing", updatedAt: FieldValue.serverTimestamp() });
+        } else {
+          tx.set(subRef, { uid, status: "processing", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+        }
+        return { blocked: false };
+      });
+
+      if (preCheck.blocked) {
+        res.status(400).json({ error: preCheck.error });
+        return;
+      }
+
+      // Check for pending refund request
+      const pendingRefund = await db.collection("refund_requests")
+        .where("uid", "==", uid)
+        .where("status", "==", "pending")
+        .limit(1)
+        .get();
+      if (!pendingRefund.empty) {
+        await subRef.update({ status: "cancelled", updatedAt: FieldValue.serverTimestamp() });
+        res.status(400).json({ error: "환불 요청이 처리 중입니다. 완료 후 다시 시도해주세요." });
+        return;
+      }
+
+      // 0b. Verify billing key ownership
       const verifyRes = await fetch(`${PORTONE_API_BASE}/billing-keys/${billingKey}`, {
         headers: { "Authorization": `PortOne ${secret}` },
       });
       if (verifyRes.ok) {
         const bkData = await verifyRes.json();
         if (bkData.customer?.id && bkData.customer.id !== uid) {
-          console.error("Billing key ownership mismatch:", bkData.customer.id, "!==", uid);
+          await subRef.update({ status: "free", updatedAt: FieldValue.serverTimestamp() });
           res.status(403).json({ error: "빌링키 소유자가 일치하지 않습니다." });
           return;
         }
       }
 
-      const paymentId = `sub_${uid}_${Date.now()}`;
+      const now_ = new Date();
+      const dateStr = `${now_.getFullYear()}${String(now_.getMonth() + 1).padStart(2, "0")}${String(now_.getDate()).padStart(2, "0")}`;
+      const seq = String(now_.getTime()).slice(-6);
+      const paymentId = `OHUNJAL-${dateStr}-${seq}`;
 
-      // 1. Process first payment with billing key
+      // 1. Process payment with billing key
       const payRes = await fetch(`${PORTONE_API_BASE}/payments/${paymentId}/billing-key`, {
         method: "POST",
         headers: {
@@ -64,6 +103,8 @@ export const subscribe = onRequest(
       if (!payRes.ok) {
         const err = await payRes.json().catch(() => ({}));
         console.error("PortOne payment failed:", err);
+        // Rollback processing status
+        await subRef.update({ status: "free", updatedAt: FieldValue.serverTimestamp() });
         throw new Error("결제 처리에 실패했습니다.");
       }
 
@@ -72,41 +113,20 @@ export const subscribe = onRequest(
       const expiresAt = new Date(now);
       expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-      // Snapshot planCount at payment time (for refund eligibility check)
       const profileDoc = await db.collection("users").doc(uid).get();
       const planCountAtPayment = profileDoc.exists ? (profileDoc.data()?.planCount || 0) : 0;
 
-      const subRef = db.collection("subscriptions").doc(uid);
-      const existingDoc = await subRef.get();
-
-      if (existingDoc.exists) {
-        // Re-subscribing: update existing doc, keep original createdAt
-        await subRef.update({
-          billingKey,
-          status: "active",
-          plan: "monthly",
-          amount: SUBSCRIPTION_AMOUNT,
-          lastPaymentId: paymentId,
-          lastPaymentAt: now.toISOString(),
-          expiresAt: expiresAt.toISOString(),
-          planCountAtPayment,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      } else {
-        await subRef.set({
-          uid,
-          billingKey,
-          status: "active",
-          plan: "monthly",
-          amount: SUBSCRIPTION_AMOUNT,
-          lastPaymentId: paymentId,
-          lastPaymentAt: now.toISOString(),
-          expiresAt: expiresAt.toISOString(),
-          planCountAtPayment,
-          createdAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      }
+      await subRef.update({
+        billingKey,
+        status: "active",
+        plan: "monthly",
+        amount: SUBSCRIPTION_AMOUNT,
+        lastPaymentId: paymentId,
+        lastPaymentAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        planCountAtPayment,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
 
       // 3. Save payment record to history subcollection
       await subRef.collection("payments").doc(paymentId).set({

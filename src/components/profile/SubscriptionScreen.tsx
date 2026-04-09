@@ -482,6 +482,8 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       setError(t("sub.error.loading"));
       return;
     }
+    if (status === "active") return;
+    if (isProcessing) return;
 
     trackEvent("paywall_tap_subscribe");
     setIsProcessing(true);
