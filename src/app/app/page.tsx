@@ -272,7 +272,14 @@ export default function Home() {
   const [lastExpGained, setLastExpGained] = useState<ExpLogEntry[]>([]);
   const [lastPrevExp, setLastPrevExp] = useState<number>(0);
   const [recommendedIntensity, setRecommendedIntensity] = useState<"high" | "moderate" | "low" | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
+  // Auto-open paywall if returning from KakaoPay redirect with billing key
+  const [showPaywall, setShowPaywall] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return !!(params.get("billing_key") || params.get("billingKey"));
+    }
+    return false;
+  });
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled">("loading");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 

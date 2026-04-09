@@ -396,6 +396,35 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showRefund, setShowRefund] = useState(false);
 
+  // Handle redirect response from mobile KakaoPay (REDIRECTION mode)
+  const processRedirectBillingKey = async (billingKey: string) => {
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const token = await getIdToken();
+      const serverRes = await fetch(`${FUNCTIONS_BASE}/subscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ billingKey }),
+      });
+      if (!serverRes.ok) {
+        const err = await serverRes.json().catch(() => ({}));
+        throw new Error(err.error || t("sub.error.failed"));
+      }
+      trackEvent("subscription_complete");
+      setStatus("active");
+      await checkSubscription();
+    } catch (err) {
+      console.error("[Subscribe redirect]", err);
+      setError(t("sub.error.generic"));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Always fetch full subscription details (initialStatus only sets initial UI state)
   useEffect(() => {
     checkSubscription();
@@ -405,6 +434,14 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       s.src = "https://cdn.portone.io/v2/browser-sdk.js";
       s.async = true;
       document.head.appendChild(s);
+    }
+    // Check for billing key from redirect (mobile REDIRECTION mode)
+    const params = new URLSearchParams(window.location.search);
+    const billingKey = params.get("billing_key") || params.get("billingKey");
+    if (billingKey) {
+      // Clean up URL params
+      window.history.replaceState({}, "", window.location.pathname);
+      processRedirectBillingKey(billingKey);
     }
   }, []);
 
