@@ -719,17 +719,6 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               </div>
             )}
 
-            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-              <p className="text-sm font-bold text-[#1B4332] mb-2">{t("sub.bankTransfer.title")}</p>
-              <p className="text-xs text-gray-600 leading-relaxed mb-3 whitespace-pre-line">{t("sub.bankTransfer.desc")}</p>
-              <div className="bg-white rounded-lg p-3 text-sm space-y-1">
-                <p className="text-gray-600">{t("sub.bankTransfer.holder")}: <span className="font-bold text-[#1B4332]">{t("sub.bankTransfer.holderName")}</span></p>
-                <p className="text-gray-600">{t("sub.bankTransfer.bank")}: <span className="font-bold text-[#1B4332]">Shinhan</span></p>
-                <p className="text-gray-600">{t("sub.bankTransfer.account")}: <span className="font-bold text-[#1B4332]">100-037-160223</span></p>
-                <p className="text-gray-600">{t("sub.bankTransfer.amount")}: <span className="font-bold text-[#1B4332]">{t("sub.bankTransfer.amountValue")}</span></p>
-              </div>
-            </div>
-
             <button
               onClick={handleSubscribe}
               disabled={isProcessing}
@@ -744,13 +733,6 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                 t("sub.kakaoPay")
               )}
             </button>
-
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
-              <span className="text-amber-500 text-base">⚠️</span>
-              <p className="text-xs text-amber-700 font-medium leading-snug">
-                {t("sub.testMode")}
-              </p>
-            </div>
 
             <p className="text-[10px] text-gray-400 text-center">
               {t("sub.autoRenew")}
