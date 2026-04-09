@@ -1,6 +1,10 @@
 import { onRequest } from "firebase-functions/v2/https";
-import { verifyAuth } from "../helpers";
+import { getAuth } from "firebase-admin/auth";
+import { FieldValue } from "firebase-admin/firestore";
+import { verifyAuth, db } from "../helpers";
 import { generateAdaptiveWorkout } from "../workoutEngine";
+
+const GUEST_TRIAL_LIMIT = 3;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Plan Session — 운동 플랜 생성 (서버사이드 룰베이스)
@@ -14,11 +18,40 @@ export const planSession = onRequest(
       return;
     }
 
+    let uid: string;
     try {
-      await verifyAuth(req.headers.authorization);
+      uid = await verifyAuth(req.headers.authorization);
     } catch {
       res.status(401).json({ error: "Unauthorized" });
       return;
+    }
+
+    // Server-side guest trial limit (IP-based, survives cache clear)
+    try {
+      const userRecord = await getAuth().getUser(uid);
+      const isAnonymous = !userRecord.email;
+
+      if (isAnonymous) {
+        const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
+          || req.socket?.remoteAddress || "unknown";
+
+        const trialRef = db.collection("trial_ips").doc(ip.replace(/[./]/g, "_"));
+        const trialDoc = await trialRef.get();
+        const currentCount = trialDoc.exists ? (trialDoc.data()?.count || 0) : 0;
+
+        if (currentCount >= GUEST_TRIAL_LIMIT) {
+          res.status(429).json({ error: "체험 횟수를 초과했습니다. 로그인 후 이용해주세요.", code: "TRIAL_LIMIT" });
+          return;
+        }
+
+        // Increment after successful generation (moved to after workout gen below)
+        // Store IP ref for later increment
+        (req as any)._trialRef = trialRef;
+        (req as any)._trialCount = currentCount;
+        (req as any)._isGuest = true;
+      }
+    } catch {
+      // Auth lookup failed — proceed anyway
     }
 
     const {
@@ -62,6 +95,17 @@ export const planSession = onRequest(
           const a = mainIndices[mainIndices.length - 1];
           const b = mainIndices[mainIndices.length - 2];
           [session.exercises[a], session.exercises[b]] = [session.exercises[b], session.exercises[a]];
+        }
+      }
+
+      // Increment guest trial count on success
+      if ((req as any)._isGuest && (req as any)._trialRef) {
+        const trialRef = (req as any)._trialRef;
+        const currentCount = (req as any)._trialCount;
+        if (currentCount === 0) {
+          await trialRef.set({ count: 1, firstSeenAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+        } else {
+          await trialRef.update({ count: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
         }
       }
 

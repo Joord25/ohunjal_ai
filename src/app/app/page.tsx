@@ -101,6 +101,7 @@ const lazyGenerateWorkout = async (
     try {
       res = await fetch("/api/planSession", { method: "POST", headers, body });
       if (res.ok) break;
+      if (res.status === 429) break; // Trial limit — don't retry
       console.warn(`planSession attempt ${attempt} failed (${res.status})`);
     } catch (e) {
       console.warn(`planSession attempt ${attempt} network error:`, e);
@@ -108,6 +109,9 @@ const lazyGenerateWorkout = async (
     if (attempt < 3) await new Promise(r => setTimeout(r, 2000)); // 2초 대기 후 재시도
   }
   if (!res || !res.ok) {
+    if (res?.status === 429) {
+      throw new Error("TRIAL_LIMIT");
+    }
     throw new Error("planSession failed after 3 attempts");
   }
   const session = await res.json();
@@ -564,7 +568,18 @@ export default function Home() {
       }
     } catch { /* ignore */ }
 
-    await generatePlan(condition, goal, undefined, intensityCtx, resolvedIntensity, session);
+    try {
+      await generatePlan(condition, goal, undefined, intensityCtx, resolvedIntensity, session);
+    } catch (err) {
+      if (err instanceof Error && err.message === "TRIAL_LIMIT") {
+        trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
+        trackEvent("login_modal_view", { trigger: "server_trial_limit" });
+        setView("home");
+        setShowLoginModal(true);
+        return;
+      }
+      throw err;
+    }
     await incrementPlanCount();
     // sessionMode path: view transition handled by onComplete callback
     if (!session?.sessionMode) {
