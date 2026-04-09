@@ -72,6 +72,10 @@ export const subscribe = onRequest(
       const expiresAt = new Date(now);
       expiresAt.setMonth(expiresAt.getMonth() + 1);
 
+      // Snapshot planCount at payment time (for refund eligibility check)
+      const profileDoc = await db.collection("users").doc(uid).get();
+      const planCountAtPayment = profileDoc.exists ? (profileDoc.data()?.planCount || 0) : 0;
+
       const subRef = db.collection("subscriptions").doc(uid);
       const existingDoc = await subRef.get();
 
@@ -85,6 +89,7 @@ export const subscribe = onRequest(
           lastPaymentId: paymentId,
           lastPaymentAt: now.toISOString(),
           expiresAt: expiresAt.toISOString(),
+          planCountAtPayment,
           updatedAt: FieldValue.serverTimestamp(),
         });
       } else {
@@ -97,6 +102,7 @@ export const subscribe = onRequest(
           lastPaymentId: paymentId,
           lastPaymentAt: now.toISOString(),
           expiresAt: expiresAt.toISOString(),
+          planCountAtPayment,
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         });
@@ -308,6 +314,16 @@ export const submitRefundRequest = onRequest(
 
       if (diffDays > 7) {
         res.status(400).json({ error: "결제 후 7일이 지나 환불 요청이 불가합니다." });
+        return;
+      }
+
+      // 2b. Check if AI workout plan was generated after payment
+      const planCountAtPayment = subData.planCountAtPayment ?? 0;
+      const profileDoc = await db.collection("users").doc(uid).get();
+      const currentPlanCount = profileDoc.exists ? (profileDoc.data()?.planCount || 0) : 0;
+
+      if (currentPlanCount > planCountAtPayment) {
+        res.status(400).json({ error: "AI 운동 플랜을 생성한 이력이 있어 환불이 불가합니다." });
         return;
       }
 
