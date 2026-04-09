@@ -201,6 +201,17 @@ export default function LandingContent() {
 
         <div className="relative max-w-5xl mx-auto px-6 pt-16 sm:pt-24 pb-24 sm:pb-32 text-center">
           <RevealSection>
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8 text-xs sm:text-sm text-white/50">
+              <div className="flex items-center gap-1.5">
+                <span>Backed by</span>
+                <img src="/google-cloud-logo.png" alt="Google Cloud" className="h-6 sm:h-8 inline-block" />
+              </div>
+              <span className="text-white/20">|</span>
+              <div className="flex items-center gap-2">
+                <span>Powered by</span>
+                <img src="/gemini_logo.png" alt="Gemini" className="h-8 sm:h-9 inline-block" />
+              </div>
+            </div>
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
               <span className="text-white opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0s_forwards]">살은 빼고 싶고,</span><br />
               <span className="text-white opacity-0 animate-[fadeSlideUp_0.5s_ease-out_0.3s_forwards]">PT는 비싸고,</span><br />
@@ -216,17 +227,6 @@ export default function LandingContent() {
               >
                 3초 만에 오늘 운동 받기
               </a>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-8 text-xs sm:text-sm text-white/50">
-              <div className="flex items-center gap-1.5">
-                <span>Backed by</span>
-                <img src="/google-cloud-logo.png" alt="Google Cloud" className="h-6 sm:h-8 inline-block" />
-              </div>
-              <span className="text-white/20">|</span>
-              <div className="flex items-center gap-2">
-                <span>Powered by</span>
-                <img src="/gemini_logo.png" alt="Gemini" className="h-8 sm:h-9 inline-block" />
-              </div>
             </div>
           </RevealSection>
 
