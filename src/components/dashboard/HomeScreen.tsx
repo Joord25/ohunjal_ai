@@ -407,6 +407,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
 
   // === 내 상태 (피트니스 나이 + 육각형) ===
   const statusData = useMemo(() => {
+    try {
     const fp = profile;
     const birthYear = fp?.birthYear || parseInt(localStorage.getItem("ohunjal_birth_year") || "0");
     const gender: "male" | "female" = fp?.gender || (localStorage.getItem("ohunjal_gender") as "male" | "female") || "male";
@@ -468,6 +469,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       ageGroupLabel,
       genderLabel,
     };
+    } catch (e) {
+      console.error("statusData computation failed:", e);
+      return { hasData: false, gender: "male" as const, age: 30, bodyWeightKg: 70 };
+    }
   }, [history, profile, locale]);
 
   // 첫 방문자 화면
