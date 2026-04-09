@@ -497,7 +497,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         billingKeyMethod: "EASY_PAY",
         issueName: "오운잘 AI 월간 구독",
         redirectUrl: `${window.location.origin}/app`,
-        windowType: { pc: "REDIRECTION", mobile: "REDIRECTION" },
+        windowType: { pc: "IFRAME", mobile: "REDIRECTION" },
         customer: {
           customerId: user.uid,
           email: user.email || undefined,
