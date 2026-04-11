@@ -257,10 +257,14 @@ export const adminDashboard = onRequest(
       const kstYear = kstNow.getUTCFullYear();
       const kstMonth = kstNow.getUTCMonth();
       const kstDate = kstNow.getUTCDate();
-      const kstDay = kstNow.getUTCDay();
+      const kstDay = kstNow.getUTCDay(); // 0=일, 1=월, ..., 6=토
       const todayStart = new Date(Date.UTC(kstYear, kstMonth, kstDate) - 9 * 60 * 60 * 1000);
       const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-      const weekStart = new Date(todayStart.getTime() - kstDay * 24 * 60 * 60 * 1000);
+      // 버그 수정: 이번주를 "월요일 시작" 주로 변경 (한국 비즈니스 관례)
+      // 기존엔 일요일 시작이라 일요일인 날 "이번주=오늘 00시부터"가 되어 어제 데이터 누락
+      // 월요일까지 며칠 전인지 계산: 월(1)→0일전, 화(2)→1일전, ..., 일(0)→6일전
+      const daysToMonday = (kstDay + 6) % 7;
+      const weekStart = new Date(todayStart.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
       const monthStartDate = new Date(Date.UTC(kstYear, kstMonth, 1) - 9 * 60 * 60 * 1000);
 
       const countByRange = (users: typeof allUsers) => ({
