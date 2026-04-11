@@ -143,11 +143,45 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
   }, []);
 
   const [activeDemo, setActiveDemo] = useState(0);
+  // 회의 58: auto-cycle은 데스크톱 전용. 모바일은 sticky scroll + IntersectionObserver가 트리거.
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveDemo((prev) => (prev + 1) % t.howItWorks.steps.length);
-    }, 3000);
-    return () => clearInterval(interval);
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const startOrStop = () => {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      if (mq.matches) {
+        intervalId = setInterval(() => {
+          setActiveDemo((prev) => (prev + 1) % t.howItWorks.steps.length);
+        }, 3000);
+      }
+    };
+    startOrStop();
+    mq.addEventListener("change", startOrStop);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      mq.removeEventListener("change", startOrStop);
+    };
+  }, [t.howItWorks.steps.length]);
+
+  // 회의 58: 모바일 sticky scroll — 각 스텝 카드 뷰포트 중앙 진입 시 activeDemo 자동 설정
+  const mobileStepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.getAttribute("data-step-idx"));
+            if (!isNaN(idx)) setActiveDemo(idx);
+          }
+        });
+      },
+      { rootMargin: "-35% 0px -35% 0px", threshold: 0 } // 뷰포트 중앙 30% 트리거 존
+    );
+    const refs = mobileStepRefs.current;
+    refs.forEach(ref => { if (ref) observer.observe(ref); });
+    return () => observer.disconnect();
   }, [t.howItWorks.steps.length]);
 
   const stat0 = useCountUp(STAT_VALUES[0] * 10, "", 1000);
@@ -267,8 +301,9 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
             <h2 className="text-2xl sm:text-4xl font-black text-center text-white mb-12 sm:mb-16">{t.howItWorks.title}</h2>
           </RevealOnScroll>
 
-          <div className="flex flex-col sm:flex-row items-center gap-10 sm:gap-16">
-            <RevealOnScroll className="w-full max-w-[300px] sm:w-[393px] shrink-0 mx-auto sm:mx-0">
+          {/* 데스크톱 (sm+): 기존 좌우 분할 레이아웃 */}
+          <div className="hidden sm:flex flex-row items-center gap-16">
+            <RevealOnScroll className="w-[393px] shrink-0">
               <div className="relative">
                 <div className="rounded-[36px] border-[4px] border-white/10 bg-[#1a1a1a] shadow-2xl overflow-hidden aspect-[9/19.5]">
                   <div className="w-full h-full transition-all duration-500">
@@ -283,13 +318,13 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
               </div>
             </RevealOnScroll>
 
-            <div className="flex-1 space-y-6 sm:space-y-8">
+            <div className="flex-1 space-y-8">
               {t.howItWorks.steps.map((step, i) => (
                 <RevealOnScroll key={i} delay={i * 150}>
                   <button
                     type="button"
                     onClick={() => setActiveDemo(i)}
-                    className={`w-full text-left flex items-start gap-4 sm:gap-5 p-4 sm:p-5 rounded-2xl transition-all duration-300 ${
+                    className={`w-full text-left flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 ${
                       activeDemo === i ? "bg-white/5 border border-white/10" : "bg-transparent border border-transparent hover:bg-white/[0.02]"
                     }`}
                   >
@@ -299,11 +334,62 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
                       {String(i + 1).padStart(2, "0")}
                     </div>
                     <div>
-                      <h3 className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${activeDemo === i ? "text-white" : "text-white/40"}`}>{step.title}</h3>
+                      <h3 className={`text-xl font-bold transition-colors duration-300 ${activeDemo === i ? "text-white" : "text-white/40"}`}>{step.title}</h3>
                       <p className={`text-sm mt-1 transition-colors duration-300 ${activeDemo === i ? "text-white/60" : "text-white/20"}`}>{step.desc}</p>
                     </div>
                   </button>
                 </RevealOnScroll>
+              ))}
+            </div>
+          </div>
+
+          {/* 모바일 (sm 미만): 회의 58 — Sticky scroll 레이아웃 */}
+          <div className="sm:hidden">
+            {/* Sticky 폰 프레임 — 스크롤 시 상단 고정 */}
+            <div className="sticky top-4 z-10 mx-auto max-w-[240px] mb-6">
+              <div className="relative">
+                <div className="rounded-[30px] border-[3px] border-white/10 bg-[#1a1a1a] shadow-2xl overflow-hidden aspect-[9/19.5]">
+                  <div className="relative w-full h-full">
+                    {/* 4개 이미지 absolute 스택 → opacity crossfade */}
+                    {[0, 1, 2, 3].map((idx) => (
+                      <img
+                        key={idx}
+                        src={locale === "ko" ? `/how it works ${idx + 1}.png` : `/how it works${idx + 1}_en.png`}
+                        alt={t.howItWorks.steps[idx]?.title}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 motion-reduce:duration-0 ${
+                          activeDemo === idx ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="absolute -inset-4 rounded-[38px] -z-10 opacity-40 blur-2xl bg-[#059669]/20" />
+              </div>
+            </div>
+
+            {/* 스텝 카드 세로 스택 — 각 50vh로 스크롤 페이싱 확보 */}
+            <div className="pt-4 pb-10">
+              {t.howItWorks.steps.map((step, i) => (
+                <div
+                  key={i}
+                  ref={(el) => { mobileStepRefs.current[i] = el; }}
+                  data-step-idx={i}
+                  className="min-h-[50vh] flex items-center"
+                >
+                  <div className={`w-full flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 ${
+                    activeDemo === i ? "bg-white/5 border border-white/10" : "bg-transparent border border-transparent"
+                  }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-sm transition-colors duration-300 ${
+                      activeDemo === i ? "bg-[#059669] text-white" : "bg-white/5 text-white/30"
+                    }`}>
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-bold transition-colors duration-300 ${activeDemo === i ? "text-white" : "text-white/40"}`}>{step.title}</h3>
+                      <p className={`text-sm mt-1 transition-colors duration-300 ${activeDemo === i ? "text-white/60" : "text-white/20"}`}>{step.desc}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
