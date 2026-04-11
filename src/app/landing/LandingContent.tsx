@@ -367,12 +367,12 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
           <div className="mt-12 sm:mt-16 max-w-md mx-auto px-6">
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center">
               <p className="text-xs text-[#34d399] font-bold tracking-[0.15em] uppercase mb-2">
-                {locale === "ko" ? "실제 후기 준비 중" : "Real reviews coming soon"}
+                {locale === "ko" ? "후기 준비 중" : "Reviews coming soon"}
               </p>
               <p className="text-sm text-white/60 leading-relaxed">
                 {locale === "ko"
-                  ? <>실제 사용자 후기를 모으고 있어요.<br />추후 업데이트 예정입니다.</>
-                  : <>We&apos;re collecting real user reviews.<br />Coming in a future update.</>}
+                  ? <>사용자 후기를 모으고 있어요.<br />추후 업데이트 예정입니다.</>
+                  : <>We&apos;re gathering user reviews.<br />Coming in a future update.</>}
               </p>
             </div>
           </div>
