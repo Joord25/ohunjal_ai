@@ -212,10 +212,11 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
           </RevealOnScroll>
 
           <RevealOnScroll delay={200}>
-            <h1 className="text-[7vw] sm:text-5xl lg:text-6xl font-black leading-[1.15] tracking-tight mb-4 sm:mb-6" style={{ wordBreak: "keep-all" }}>
+            <h1 className={`${locale === "ko" ? "text-[7vw]" : "text-[10vw]"} sm:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight mb-4 sm:mb-6`} style={{ wordBreak: "keep-all" }}>
               <span className="text-white">{t.hero.line1}</span><br />
-              <span className="text-white">{t.hero.line2}</span><br />
-              <span className="text-[#34d399]">{t.hero.line3}</span>
+              {t.hero.line1b && <><span className="text-white">{t.hero.line1b}</span><br /></>}
+              {t.hero.line2 && <><span className="text-white">{t.hero.line2}</span><br /></>}
+              <span className={`text-[#34d399] ${locale !== "ko" ? "text-[12vw] sm:text-5xl lg:text-6xl" : ""}`}>{t.hero.line3}</span>
             </h1>
           </RevealOnScroll>
 
@@ -265,7 +266,7 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
                   <div className="w-full h-full transition-all duration-500">
                     {[0, 1, 2, 3].map((idx) => (
                       activeDemo === idx && (
-                        <img key={idx} src={`/how it works ${idx + 1}.png`} alt={t.howItWorks.steps[idx]?.title} className="w-full h-full object-cover animate-[fadeSlideUp_0.5s_ease-out_forwards]" />
+                        <img key={idx} src={locale === "ko" ? `/how it works ${idx + 1}.png` : `/how it works${idx + 1}_en.png`} alt={t.howItWorks.steps[idx]?.title} className="w-full h-full object-cover animate-[fadeSlideUp_0.5s_ease-out_forwards]" />
                       )
                     ))}
                   </div>
@@ -365,7 +366,7 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
           </RevealOnScroll>
 
           <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-12">
-            <RevealOnScroll delay={100}>
+            <RevealOnScroll delay={100} className="hidden sm:block">
               <div className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-white/[0.02] text-left">
                 <p className="text-lg font-bold text-white mb-1">{t.pricing.free.name}</p>
                 <p className="text-sm text-white/30 mb-6">{t.pricing.free.desc}</p>

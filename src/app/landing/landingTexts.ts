@@ -4,6 +4,7 @@ export interface LandingTexts {
   nav: { brand: string; cta: string };
   hero: {
     line1: string;
+    line1b?: string;
     line2: string;
     line3: string;
     sub: string;
@@ -85,11 +86,15 @@ const ko: LandingTexts = {
     ],
   },
   reviews: [
-    { stars: 5, title: "헬스장 가서 벤치만 하다 왔는데", review: "이거 쓰고 나서 진짜 루틴이 생김. 하체도 하게 됐음", name: "jh****" },
-    { stars: 5, title: "맨날 포기했는데 이건 다름", review: "컨디션 안 좋은 날은 가볍게 나와서 끊지 않게 됨. 진짜 신기함", name: "sy****" },
-    { stars: 5, title: "퇴근 후 30분밖에 없는데", review: "딱 맞는 루틴 나옴. 고민하는 시간이 진짜 0초 됨", name: "dh****" },
-    { stars: 4, title: "PT 받을 돈이 없어서 깔았는데", review: "세트 수까지 알아서 조절해줘서 혼자 해도 불안하지 않음", name: "mj****" },
-    { stars: 5, title: "와 이게 무료?", review: "컨디션만 고르면 3초 만에 루틴 나오는 게 말이 됨? 대박", name: "wj****" },
+    { stars: 5, title: "헬스 초보인데 진짜 좋음ㅠㅠ", review: "운동에 ㅇ자도 모르는 초초초보예요. 뭘 해야 할지 몰라서 맨날 러닝머신만 탔는데, 이거 쓰고 나서 진짜 루틴이 생김", name: "sa****" },
+    { stars: 5, title: "오! PT 받는 느낌이 나네여...", review: "저렴하게 이용하면서도 PT 받는 느낌이 날 것 같아 좋다는 작은 의견을 드립니다. 구독했어유. 정말 빛같은 앱이에요~~ 최고최고", name: "nn****" },
+    { stars: 5, title: "루틴 좀 괜ㅊ낳은듯! 굿", review: "그때그때 상황에 맞게 맞춤운동을 알려줘서 너무 좋네요. AI가 알아서 짜줘서 딴 생각 안하고 바로 시작할 수 있어요!", name: "kt****" },
+    { stars: 4, title: "생각보다 괜찮은 앱임 잘써봄!", review: "루틴 추천 기능 자체가 너무 좋고, 운동이 바로 보여서 좋아요. 상황별 루틴추천이 특히 좋음", name: "ej****" },
+    { stars: 5, title: "홈트도 있네? 러닝도 있고?", review: "처음 헬스 시작해서 본인만의 루트가 없고, 집에서 홈트하는 초보에게 좋은듯! 처음 가는 헬스장에서 어떤 기구를 다뤄야 하는지, 어떤 자세로 해야하는지 등 운동의 처음부터 끝까지 다 알려주거 같네여. 헬스장을 못 가는 날엔 그만큼 땀흘리고 적당히 힘든 홈트 루틴을 만들어줘서 정말 편해요", name: "dy****" },
+    { stars: 5, title: "진짜 매일 다른 루틴 나옴", review: "어제 상체 했으면 오늘은 하체, 컨디션 안 좋다고 하면 가볍게 나옴. 이게 진짜 AI인가 싶음", name: "mw****" },
+    { stars: 5, title: "운동 끝나고 분석이 대박임", review: "세트별로 뭘 잘했는지 알려주고 다음에 뭘 바꾸라고 코칭해주네요?. PT 트레이너 없어도 혼자 성장하는 느낌. 필기한걸 토대로 문제 만들어준다는 릴스 보고 깔아봤는데 악필인 내글씨에도 불구하고 핵심내용 정확하게 파악해주고 문제 만들어주는거...", name: "jy****" },
+    { stars: 4, title: "오 트레이너가 만든거 맞는듯 퀄리티 굿", review: "프리미엄 쓰면 분석이랑 영양까지 나와서 놀람. 정확한거 맞죠? ㅋㅋㅋ", name: "sh****" },
+    { stars: 5, title: "개조음 ㅋㅋㅋㅋ", review: "완전 좋고 깔끔하고 누구든 쉽게 쓸 수 있을 것 같네여 강추!!", name: "hk****" },
   ],
   pricing: {
     label: "PRICING",
@@ -141,10 +146,11 @@ const ko: LandingTexts = {
 const en: LandingTexts = {
   nav: { brand: "Ohunjal AI", cta: "Get Started" },
   hero: {
-    line1: "Weight loss, bulk up, running.",
-    line2: "How to do it?",
-    line3: "AI figures it out in 3 seconds.",
-    sub: "9 out of 10 finish their routine. No PT, tailored to your daily condition.",
+    line1: "Lose Weight",
+    line1b: "Build Muscle",
+    line2: "Run Further",
+    line3: "",
+    sub: "No PT needed, AI builds your daily personalized plan",
     stats: [
       { prefix: "", suffix: "x", label: "Avg. weekly sessions" },
       { prefix: "", suffix: "%", label: "Completion rate" },
@@ -164,22 +170,26 @@ const en: LandingTexts = {
   trust: {
     heading: "Backed by\nKNSU · ACSM · NASM",
     sub: [
-      "Built by a certified trainer with 10+ years of experience.",
+      "Built by a 10-year certified trainer.",
       "Reviewed by KNSU exercise science PhDs, powered by the latest ACSM · NASM · NSCA international standards.",
       "",
     ],
   },
   reviews: [
-    { stars: 5, title: "I only did bench press before", review: "Now I actually have a full routine. Even started doing legs", name: "jh****" },
-    { stars: 5, title: "I always quit, but not this time", review: "On low-energy days it gives lighter workouts. Never felt forced to stop", name: "sy****" },
-    { stars: 5, title: "Only 30 min after work", review: "Perfect routine every time. Literally zero time thinking about what to do", name: "dh****" },
-    { stars: 4, title: "Can't afford a PT", review: "It adjusts sets automatically so I feel safe working out alone", name: "mj****" },
-    { stars: 5, title: "Wait, this is free?", review: "Pick your condition and get a routine in 3 seconds. Insane", name: "wj****" },
+    { stars: 5, title: "ok this is actually insane", review: "i literally just did treadmill for months bc idk what else to do. now i have actual routines and i'm even doing legs lol", name: "sa****" },
+    { stars: 5, title: "better than paying for a PT tbh", review: "ngl it honestly feels like someone planned my whole session. if they add meal plans and workout feedback to premium it would literally replace my PT. genuinely one of the best fitness apps i've used. like actually worth paying for when the paid version drops", name: "nn****" },
+    { stars: 5, title: "the routine thing is so good", review: "you just pick how you're feeling and it builds everything. open app, tap start, go. zero thinking", name: "kt****" },
+    { stars: 4, title: "actually really solid", review: "the condition-based routines are my fav part. exercise instructions are super clear too. excited to see where this goes", name: "ej****" },
+    { stars: 5, title: "home workout people NEED this", review: "if you're new to the gym and have no clue what to do, or you work out at home — you need this. it tells you what equipment to use, what form to do, everything from start to finish. on days i can't go to the gym it gives me a home routine that's still solid. genuinely so convenient", name: "dy****" },
+    { stars: 5, title: "different routine every day??", review: "did upper body yesterday, today it gave me lower. told it i'm tired and it went light. actual AI fr", name: "mw****" },
+    { stars: 5, title: "the post-workout analysis tho", review: "it tells you what you did well per set and what to change next time. saw a reel about it and tried it — even with my messy input it understood everything and gave solid feedback. growing without a trainer is actually possible now", name: "jy****" },
+    { stars: 4, title: "wait a trainer actually made this?", review: "free version is already solid but premium gives you full analysis + nutrition. less than a coffee. how", name: "sh****" },
+    { stars: 5, title: "SO good lmaooo", review: "clean af and super easy to use. literally anyone can figure this out. highly recommend!!", name: "hk****" },
   ],
   pricing: {
     label: "PRICING",
-    headingDim: "Personal training: $500/mo.",
-    headingBright: "Ohunjal: $4.99/mo.",
+    headingDim: "Personal training: $500/mo",
+    headingBright: "Ohunjal: $4.99/mo",
     sub: "Try it first, decide later.",
     free: {
       name: "Free",
