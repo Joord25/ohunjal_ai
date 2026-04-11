@@ -89,6 +89,25 @@ export const adminActivate = onRequest(
 );
 
 /**
+ * POST /adminCheckSelf
+ * Admin only: 현재 로그인 유저가 어드민인지 확인 (프론트 게이트키퍼용)
+ * 회의 57 Tier 3: ADMIN_UIDS 하드코딩 제거 — Firestore admins 기반 권한 확인
+ */
+export const adminCheckSelf = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    try {
+      const uid = await verifyAdmin(req.headers.authorization);
+      res.status(200).json({ isAdmin: true, uid });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unauthorized";
+      res.status(msg.includes("Forbidden") ? 403 : 401).json({ isAdmin: false, error: msg });
+    }
+  }
+);
+
+/**
  * POST /adminCheckUser
  * Body: { email }
  * Admin only: 유저 구독 상태 조회
@@ -338,7 +357,7 @@ export const adminListUsers = onRequest(
       return;
     }
 
-    const { status, page = 1, limit = 20 } = req.body;
+    const { status, page = 1, limit = 20, q } = req.body;
 
     try {
       // 1. Firebase Auth — Google 계정 유저만 수집 (익명/체험 유저 제외)
@@ -380,20 +399,31 @@ export const adminListUsers = onRequest(
         };
       });
 
+      // 회의 57 Tier 3: 다중 필드 검색 (email / displayName / uid substring)
+      let searchFiltered = merged;
+      if (q && typeof q === "string" && q.trim()) {
+        const query = q.trim().toLowerCase();
+        searchFiltered = merged.filter(u =>
+          u.email.toLowerCase().includes(query) ||
+          u.displayName.toLowerCase().includes(query) ||
+          u.uid.toLowerCase().includes(query)
+        );
+      }
+
       // 4. 상태 필터 (회의 57: expiring_soon 특수 필터 — 3일 내 만료 예정)
       let filtered;
       if (!status || status === "all") {
-        filtered = merged;
+        filtered = searchFiltered;
       } else if (status === "expiring_soon") {
         const nowMs = Date.now();
         const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-        filtered = merged.filter(u => {
+        filtered = searchFiltered.filter(u => {
           if (u.status !== "active" || !u.expiresAt) return false;
           const expMs = new Date(u.expiresAt).getTime();
           return expMs > nowMs && expMs <= nowMs + threeDaysMs;
         });
       } else {
-        filtered = merged.filter(u => u.status === status);
+        filtered = searchFiltered.filter(u => u.status === status);
       }
 
       // 5. 최근순 정렬 (expiring_soon은 만료일 가까운 순)

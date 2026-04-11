@@ -4,7 +4,17 @@ import React, { useState, useEffect, useCallback } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import { onAuthStateChanged, signInWithPopup, User } from "firebase/auth";
 
-const ADMIN_UIDS = ["jDkXqeAFCMgJj8cFbRZITpokS2H2"];
+// 회의 57 Tier 3: ADMIN_UIDS 하드코딩 제거 — 서버 `/api/adminCheckSelf` 경유로 권한 확인
+// 부트스트랩 UID는 여전히 backend helpers.ts에 있어 초기 어드민 보호됨
+// 어드민 추가: Firestore `admins/{uid}` 문서 생성만 하면 됨 (재배포 불필요)
+
+// 회의 57 Tier 3: 상태 색상 디자인 토큰 — 한 곳에서 관리
+const STATUS_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
+  active:    { bg: "bg-emerald-100", text: "text-emerald-700", ring: "border-emerald-200" },
+  free:      { bg: "bg-gray-100",    text: "text-gray-600",    ring: "border-gray-200" },
+  cancelled: { bg: "bg-amber-100",   text: "text-amber-700",   ring: "border-amber-200" },
+  expired:   { bg: "bg-red-100",     text: "text-red-700",     ring: "border-red-200" },
+};
 
 function useBodyScroll() {
   useEffect(() => {
@@ -149,10 +159,29 @@ export default function AdminPage() {
   const [bulkRunning, setBulkRunning] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
 
+  // 회의 57 Tier 3: 다중 필드 검색 (email / displayName / uid substring)
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      setIsAdmin(u ? ADMIN_UIDS.includes(u.uid) : false);
+      if (!u || u.isAnonymous) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      // 회의 57 Tier 3: 서버 경유 어드민 확인 (Firestore admins + 부트스트랩 UID)
+      try {
+        const token = await u.getIdToken();
+        const res = await fetch("/api/adminCheckSelf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        });
+        setIsAdmin(res.ok);
+      } catch {
+        setIsAdmin(false);
+      }
       setLoading(false);
     });
     return () => unsub();
@@ -176,7 +205,13 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAdmin && tab === "users") loadUserList();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, tab, userFilter, userPage]);
+  }, [isAdmin, tab, userFilter, userPage, debouncedSearchQuery]);
+
+  // 회의 57 Tier 3: 검색 debounce (300ms) — 타이핑마다 API 치지 않도록
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchQuery(userSearchQuery), 300);
+    return () => clearTimeout(t);
+  }, [userSearchQuery]);
 
   const loadDashboard = async () => {
     try {
@@ -196,7 +231,12 @@ export default function AdminPage() {
       const res = await fetch("/api/adminListUsers", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ status: userFilter, page: userPage, limit: 20 }),
+        body: JSON.stringify({
+          status: userFilter,
+          page: userPage,
+          limit: 20,
+          q: debouncedSearchQuery || undefined, // 회의 57 Tier 3: 다중 필드 검색
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -509,7 +549,11 @@ export default function AdminPage() {
   })();
 
   const statusLabel = (s: string) => s === "active" ? "구독중" : s === "free" ? "무료" : s === "cancelled" ? "해지됨" : s === "expired" ? "만료됨" : s;
-  const statusColor = (s: string) => s === "active" ? "bg-emerald-100 text-emerald-700" : s === "cancelled" ? "bg-amber-100 text-amber-700" : s === "expired" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600";
+  // 회의 57 Tier 3: 상태 색상은 STATUS_COLORS 토큰 경유 (free 포함 전 상태 커버)
+  const statusColor = (s: string) => {
+    const token = STATUS_COLORS[s] || STATUS_COLORS.free;
+    return `${token.bg} ${token.text}`;
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-gray-400">로딩 중...</p></div>;
   if (!user || user.isAnonymous) return (
@@ -737,19 +781,45 @@ export default function AdminPage() {
         {/* Users Tab */}
         {tab === "users" && (
           <div>
-            {/* Search */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4">
-              <div className="flex gap-2">
-                <input type="email" placeholder="이메일로 검색" value={searchEmail}
-                  onChange={(e) => setSearchEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#059669]" />
-                <button onClick={handleSearch} disabled={searching}
-                  className="px-4 py-2.5 bg-[#1B4332] text-white text-sm font-bold rounded-xl disabled:opacity-50">
-                  {searching ? "..." : "검색"}
-                </button>
+            {/* 회의 57 Tier 3: 다중 필드 검색 (리스트 필터링) + 기존 이메일 상세 검색 */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 space-y-3">
+              {/* 리스트 실시간 필터 */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="이메일·이름·UID로 리스트 필터"
+                    value={userSearchQuery}
+                    onChange={(e) => { setUserSearchQuery(e.target.value); setUserPage(1); }}
+                    className="flex-1 px-1 py-2 text-sm border-0 focus:outline-none bg-transparent"
+                  />
+                  {userSearchQuery && (
+                    <button onClick={() => setUserSearchQuery("")} className="text-gray-400 hover:text-gray-600 text-xs shrink-0 px-2">✕</button>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">부분 문자열 매칭 · 300ms debounce</p>
               </div>
-              {searchError && <p className="text-xs text-red-500 mt-2">{searchError}</p>}
+
+              <div className="h-px bg-gray-100" />
+
+              {/* 기존 이메일 완전일치 상세 조회 */}
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">상세 조회</p>
+                <div className="flex gap-2">
+                  <input type="email" placeholder="이메일 정확히 입력" value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#059669]" />
+                  <button onClick={handleSearch} disabled={searching}
+                    className="px-4 py-2.5 bg-[#1B4332] text-white text-sm font-bold rounded-xl disabled:opacity-50">
+                    {searching ? "..." : "조회"}
+                  </button>
+                </div>
+                {searchError && <p className="text-xs text-red-500 mt-2">{searchError}</p>}
+              </div>
             </div>
 
             {/* Search Result */}
@@ -878,36 +948,110 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Feedback Tab */}
-        {/* Cancel Feedbacks Tab */}
-        {tab === "cancel" && (
-          <div>
-            {loadingFeedback ? (
-              <p className="text-center text-gray-400 py-10 text-sm">로딩 중...</p>
-            ) : (
-              <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                <p className="font-bold text-[#1B4332] mb-4">구독 취소 피드백</p>
-                {cancelFeedbacks.length === 0 ? (
-                  <p className="text-xs text-gray-400">피드백이 없습니다</p>
-                ) : (
-                  <div className="space-y-2">
-                    {cancelFeedbacks.map((fb, i) => (
-                      <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-gray-800 truncate">{fb.email}</p>
-                          <span className="text-[10px] text-gray-400 shrink-0 ml-2">
-                            {fb.date ? new Date(fb.date).toLocaleDateString("ko-KR") : "-"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">{fb.reason}</p>
+        {/* Cancel Feedbacks Tab — 회의 57 Tier 3: 해지 사유 집계 차트 추가 */}
+        {tab === "cancel" && (() => {
+          // 키워드 기반 그룹핑 — 자유형 사유를 주요 카테고리로 매핑
+          const KEYWORD_GROUPS: { label: string; keywords: string[] }[] = [
+            { label: "가격/비용", keywords: ["비싸", "가격", "비용", "돈", "비싼", "금액", "expensive", "price", "cost"] },
+            { label: "기능 부족", keywords: ["기능", "부족", "미완성", "필요", "없어", "없음", "지원", "feature", "missing"] },
+            { label: "사용성/UX", keywords: ["어려", "복잡", "불편", "헷갈", "UI", "UX", "사용성", "difficult", "hard"] },
+            { label: "결과 불만족", keywords: ["효과", "결과", "변화", "만족", "별로", "실망", "무의미", "result"] },
+            { label: "서비스/버그", keywords: ["버그", "오류", "에러", "느려", "느림", "먹통", "안됨", "bug", "error", "slow"] },
+            { label: "자주 안 씀", keywords: ["안 씀", "안쓰", "잘 안", "많이", "사용 안", "쓸 일", "잊", "바쁨"] },
+            { label: "다른 앱/대체", keywords: ["다른 앱", "대체", "경쟁", "other", "alternative"] },
+            { label: "개인 사정", keywords: ["잠시", "일시", "시간", "개인", "쉴", "잠깐", "personal"] },
+          ];
+          const classifyReason = (reason: string): string => {
+            const lower = reason.toLowerCase();
+            for (const g of KEYWORD_GROUPS) {
+              if (g.keywords.some(k => lower.includes(k.toLowerCase()))) return g.label;
+            }
+            return "기타";
+          };
+          // 최근 30일 vs 전체
+          const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+          const recentFeedbacks = cancelFeedbacks.filter(fb => fb.date && new Date(fb.date).getTime() >= thirtyDaysAgo);
+
+          const groupCounts: Record<string, number> = {};
+          recentFeedbacks.forEach(fb => {
+            const group = classifyReason(fb.reason || "");
+            groupCounts[group] = (groupCounts[group] || 0) + 1;
+          });
+          const sortedGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
+          const maxCount = sortedGroups[0]?.[1] || 1;
+          const totalRecent = recentFeedbacks.length;
+
+          return (
+            <div>
+              {loadingFeedback ? (
+                <p className="text-center text-gray-400 py-10 text-sm">로딩 중...</p>
+              ) : (
+                <>
+                  {/* 집계 차트 */}
+                  {totalRecent > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+                      <div className="flex items-baseline justify-between mb-4">
+                        <p className="font-bold text-[#1B4332]">최근 30일 해지 사유</p>
+                        <p className="text-xs text-gray-400">총 {totalRecent}건</p>
                       </div>
-                    ))}
+                      <div className="space-y-2.5">
+                        {sortedGroups.map(([label, count]) => {
+                          const pct = totalRecent > 0 ? Math.round((count / totalRecent) * 100) : 0;
+                          const barPct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                          return (
+                            <div key={label}>
+                              <div className="flex items-center justify-between mb-1 text-xs">
+                                <span className="font-bold text-gray-700">{label}</span>
+                                <span className="text-gray-500">{count}건 <span className="text-gray-400">({pct}%)</span></span>
+                              </div>
+                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-[#2D6A4F] rounded-full transition-all"
+                                  style={{ width: `${barPct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
+                        키워드 매칭 기반 자동 분류 · 매칭 실패 시 &apos;기타&apos;로 분류
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 원본 리스트 */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                    <p className="font-bold text-[#1B4332] mb-4">전체 피드백 ({cancelFeedbacks.length}건)</p>
+                    {cancelFeedbacks.length === 0 ? (
+                      <p className="text-xs text-gray-400">피드백이 없습니다</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {cancelFeedbacks.map((fb, i) => {
+                          const group = classifyReason(fb.reason || "");
+                          return (
+                          <div key={i} className="py-2.5 border-b border-gray-50 last:border-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm font-medium text-gray-800 truncate">{fb.email}</p>
+                              <div className="flex items-center gap-2 shrink-0 ml-2">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#1B4332]/10 text-[#1B4332]">{group}</span>
+                                <span className="text-[10px] text-gray-400">
+                                  {fb.date ? new Date(fb.date).toLocaleDateString("ko-KR") : "-"}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500">{fb.reason}</p>
+                          </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Refund Requests Tab */}
         {tab === "refund" && (
