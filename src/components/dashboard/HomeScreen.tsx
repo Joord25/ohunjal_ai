@@ -102,7 +102,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   }, []);
 
   const [profile, setProfile] = useState<FitnessProfile | null>(null);
-  const isFirstVisit = history.length === 0 && !localStorage.getItem("ohunjal_onboarding_done");
+  // 회의 53 대표 요청: 웰컴 화면은 최초 1회만 표시, 그 이후엔 바로 홈 렌더
+  const isFirstVisit = history.length === 0
+    && !localStorage.getItem("ohunjal_onboarding_done")
+    && !localStorage.getItem("ohunjal_home_welcome_seen");
+
+  // 웰컴 화면이 처음 렌더되면 플래그 마킹 → 다음 방문부터는 바로 홈
+  useEffect(() => {
+    if (isFirstVisit && typeof window !== "undefined") {
+      localStorage.setItem("ohunjal_home_welcome_seen", "1");
+    }
+  }, [isFirstVisit]);
 
   useEffect(() => {
     try {

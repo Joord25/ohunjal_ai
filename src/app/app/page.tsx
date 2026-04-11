@@ -1002,7 +1002,7 @@ export default function Home() {
                 {loginModalReason === "trial_exhausted" ? (
                   <>
                     <p className="text-center text-gray-800 font-bold text-base">
-                      {locale === "ko" ? "무료 체험 3회 완료" : "Free trial complete"}
+                      {locale === "ko" ? "무료체험 3회를 모두 사용하셨습니다!" : "You've used all 3 free trials!"}
                     </p>
                     <p className="text-center text-gray-500 text-sm">
                       {locale === "ko" ? <>로그인하고 계속 이용해 주세요</> : <>Sign in to continue</>}
