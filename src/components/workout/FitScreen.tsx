@@ -135,13 +135,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const [showAiTip, setShowAiTip] = useState(!!lastSessionRecord && (lastSessionRecord.maxWeight ?? 0) > 0);
 
   const [view, setView] = useState<"active" | "feedback">("active");
-  const [autoFeedbackToast, setAutoFeedbackToast] = useState(false);
   const [failedReps, setFailedReps] = useState(Math.max(0, setInfo.targetReps - 1));
   const [easyExtraReps, setEasyExtraReps] = useState(4);
   const [isDoneAnimating, setIsDoneAnimating] = useState(false);
-  const [feedbackGiven, setFeedbackGiven] = useState(false);
+  // 회의: 피드백은 선택만 저장하고 "휴식 종료" 버튼 클릭 시 실제 제출 (Flow B)
+  const [selectedFeedback, setSelectedFeedback] = useState<{ type: FeedbackType; reps: number } | null>(null);
   const [localRestSec, setLocalRestSec] = useState(0);
-  const pendingFeedbackRef = useRef<{ feedback: FeedbackType; reps: number } | null>(null);
   const [timerCompleted, setTimerCompleted] = useState(false);
   const [showRepsEdit, setShowRepsEdit] = useState(false);
   const [adjustedReps, setAdjustedReps] = useState(setInfo.targetReps);
@@ -692,8 +691,6 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         ? "text-3xl"
         : "text-2xl";
 
-  // NEXT 표시 여부만 판별 (사이즈는 항상 동일)
-  const isLastSet = setInfo.current === setInfo.total && !!nextExerciseName;
   const timerSize = "text-7xl";
   const timerColor = "#74A68D";
   const valueSize = "text-6xl";
@@ -746,16 +743,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     return () => clearInterval(interval);
   }, [view, localRestSec]);
 
-  // Auto-advance when both feedback given AND local timer done
-  useEffect(() => {
-    if (feedbackGiven && localRestSec <= 0 && pendingFeedbackRef.current) {
-      const { feedback, reps } = pendingFeedbackRef.current;
-      pendingFeedbackRef.current = null;
-      onSetComplete(reps, feedback, hasWeight ? selectedWeight : undefined);
-      // Skip parent's rest since we already rested locally
-      setTimeout(() => onSkipRest(), 50);
-    }
-  }, [feedbackGiven, localRestSec]);
+  // 회의: 타이머 0초 자동 진행 제거 — 사용자가 반드시 "휴식 종료" 버튼을 눌러야 넘어감 (Flow B)
 
   const handleDoneClick = () => {
     if (exercise.type !== "strength" && exercise.type !== "core") {
@@ -807,44 +795,31 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     const restBySets = adjustedReps <= 6 ? 150 : adjustedReps <= 12 ? 75 : 45;
     const restByType = exercise.type === "core" ? 45 : restBySets;
 
-    // 목표 렙 달성 시 자동 "target" 처리 (피드백 시트 생략)
-    if (adjustedReps === setInfo.targetReps) {
-      setAutoFeedbackToast(true);
-      setLocalRestSec(restByType);
-      setView("feedback");
-      setFeedbackGiven(true);
-      pendingFeedbackRef.current = null;
-      onSetComplete(adjustedReps, "target", hasWeight ? selectedWeight : undefined);
-      setTimeout(() => onSkipRest(), 50);
-      setTimeout(() => setAutoFeedbackToast(false), 3000);
-      return;
-    }
-
-    // 목표 미달 or 초과 → 피드백 시트 표시
+    // 회의: 매 세트마다 피드백 시트 노출 (자동 target 스킵 제거)
     setView("feedback");
-    setFeedbackGiven(false);
+    setSelectedFeedback(null);
     setLocalRestSec(restByType);
-    pendingFeedbackRef.current = null;
   };
 
   const actualWeight = hasWeight ? selectedWeight : undefined;
 
-  const submitFeedback = (feedback: FeedbackType, reps: number) => {
-    setFeedbackGiven(true);
-    pendingFeedbackRef.current = null;
-    onSetComplete(reps, feedback, actualWeight);
+  // Flow B: 선택만 저장 (즉시 제출 X). 사용자는 마음 바꿀 수 있음.
+  const handleSelectFeedback = (type: FeedbackType, reps: number) => {
+    setSelectedFeedback({ type, reps });
+  };
+
+  // Flow B: "휴식 종료" 버튼 → 실제 제출. selectedFeedback 없으면 호출 안 됨 (버튼 disabled).
+  const handleEndRest = () => {
+    if (!selectedFeedback) return;
+    const { type, reps } = selectedFeedback;
+    setLocalRestSec(0);
+    setSelectedFeedback(null);
+    onSetComplete(reps, type, actualWeight);
     setTimeout(() => onSkipRest(), 50);
   };
 
-  const handleSkipLocalRest = () => {
-    setLocalRestSec(0);
-    if (feedbackGiven && pendingFeedbackRef.current) {
-      const { feedback, reps } = pendingFeedbackRef.current;
-      pendingFeedbackRef.current = null;
-      onSetComplete(reps, feedback, actualWeight);
-      setTimeout(() => onSkipRest(), 50);
-    }
-  };
+  const handleRestMinus15 = () => setLocalRestSec(prev => Math.max(0, prev - 15));
+  const handleRestPlus15 = () => setLocalRestSec(prev => prev + 15);
 
   // Weight Picker View (First set of strength exercises)
   if (hasWeight && !weightConfirmed) {
@@ -1905,46 +1880,34 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       )}
 
       {/* Feedback + Rest Bottom Sheet */}
-      {view === "feedback" && (
+      {view === "feedback" && (() => {
+        const isLastSetInExercise = setInfo.current === setInfo.total;
+        const hasSelection = selectedFeedback !== null;
+        return (
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-          {!feedbackGiven && <div className="absolute inset-0" onClick={() => { setView("active"); setLocalRestSec(0); }} />}
+          {/* 백드롭 클릭: 피드백 미선택 시에만 닫힘 (선택 후엔 '다시 선택' 링크로 복귀) */}
+          {!hasSelection && <div className="absolute inset-0" onClick={() => { setView("active"); setLocalRestSec(0); }} />}
 
           <div className="w-full rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.2)] animate-slide-up flex flex-col relative z-10 bg-white px-4 sm:px-6 pt-6" style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}>
-             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-            {/* 마지막 세트: 다음 운동 미리보기 */}
-            {nextExerciseName && setInfo.current === setInfo.total && (
+            {/* 1. 마지막 세트: 다음 운동 미리보기 (맨 위) */}
+            {nextExerciseName && isLastSetInExercise && (
               <div className="mb-3 bg-gray-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
                 <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] shrink-0">NEXT</p>
                 <p className="text-[13px] font-semibold text-gray-600 truncate">{getExerciseName(nextExerciseName, locale)}</p>
               </div>
             )}
 
-            {/* Rest Timer + 격려 */}
-            <div className="mb-5 bg-[#1B4332] rounded-2xl px-5 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <p className="text-xs font-bold text-emerald-300/70 uppercase tracking-[0.15em]">REST</p>
-                  <div className="text-3xl font-black text-white tracking-tighter">
-                    {Math.floor(localRestSec / 60)}:{(localRestSec % 60).toString().padStart(2, "0")}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setLocalRestSec(prev => prev + 30)}
-                    className="px-3 py-2 bg-white/10 rounded-full text-xs font-bold text-white active:scale-95 transition-all"
-                  >
-                    {t("fit.plus30sec")}
-                  </button>
-                  <button
-                    onClick={handleSkipLocalRest}
-                    className="px-4 py-2 bg-emerald-500 rounded-full text-xs font-bold text-white tracking-widest hover:bg-emerald-400 active:scale-95 transition-all"
-                  >
-                    {feedbackGiven ? t("fit.skipRest") : t("fit.skipRestFull")}
-                  </button>
-                </div>
+            {/* 2. 세트 진행 카드 (NEW) */}
+            <div className="mb-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3.5 flex items-center justify-between gap-3">
+              <div className="shrink-0">
+                <p className="text-[9px] font-black text-[#2D6A4F]/50 uppercase tracking-[0.2em]">{t("fit.progressLabel")}</p>
+                <p className="text-xl font-black text-[#1B4332] mt-0.5 tracking-tight">
+                  {setInfo.current}/{setInfo.total}
+                </p>
               </div>
-              <p className="text-[11px] font-bold text-emerald-300/50 mt-2">
+              <p className="text-[11px] font-bold text-[#2D6A4F]/70 text-right leading-snug">
                 {setInfo.current >= setInfo.total
                   ? t("fit.lastSetNext")
                   : setInfo.current >= setInfo.total - 1
@@ -1953,20 +1916,47 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </p>
             </div>
 
+            {/* 3. REST 카드 (타이머 + -15/+15 + 휴식 종료) */}
+            <div className="mb-4 bg-[#1B4332] rounded-2xl px-5 py-4">
+              {/* Row 1: REST 라벨 + -15s / 타이머 / +15s */}
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-bold text-emerald-300/70 uppercase tracking-[0.15em]">REST</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleRestMinus15}
+                    disabled={localRestSec <= 0}
+                    className="w-11 h-11 rounded-full bg-white/10 text-white text-[11px] font-bold active:scale-95 transition-all disabled:opacity-30"
+                  >
+                    {t("fit.minus15sec")}
+                  </button>
+                  <div className="min-w-[72px] text-center text-3xl font-black text-white tracking-tighter tabular-nums">
+                    {localRestSec}s
+                  </div>
+                  <button
+                    onClick={handleRestPlus15}
+                    className="w-11 h-11 rounded-full bg-white/10 text-white text-[11px] font-bold active:scale-95 transition-all"
+                  >
+                    {t("fit.plus15sec")}
+                  </button>
+                </div>
+              </div>
 
-            {/* 자동 피드백 토스트 */}
-            {autoFeedbackToast && feedbackGiven && (
+              {/* Row 2: 휴식 종료 버튼 (disabled → enabled+pulse) */}
               <button
-                onClick={() => { setAutoFeedbackToast(false); setFeedbackGiven(false); }}
-                className="mb-4 w-full py-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center active:scale-[0.98] transition-all"
+                onClick={handleEndRest}
+                disabled={!hasSelection}
+                className={`w-full mt-4 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all ${
+                  hasSelection
+                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 active:scale-[0.98] animate-pulse"
+                    : "bg-white/10 text-white/30 cursor-not-allowed"
+                }`}
               >
-                <p className="text-[14px] font-bold text-[#1B4332]">{t("fit.autoFeedback")}</p>
-                <p className="text-[10px] text-[#2D6A4F]/60 mt-0.5">{t("fit.autoFeedbackSub")}</p>
+                {hasSelection ? `${t("fit.endRest")} →` : t("fit.endRestDisabled")}
               </button>
-            )}
+            </div>
 
-            {!feedbackGiven ? (
-              /* === FEEDBACK OPTIONS === */
+            {/* 4. 피드백 영역: 선택 전엔 3옵션, 선택 후엔 '다시 선택' 링크 */}
+            {!hasSelection ? (
               <>
                 <div className="text-center mb-3">
                   <h2 className="text-lg font-black tracking-tight" style={{ color: THEME.textMain }}>
@@ -1978,25 +1968,25 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   {/* Option: EASY */}
                   <div className="w-full p-4 rounded-2xl text-white shadow-lg overflow-hidden bg-[#1B4332]">
                     <div className="flex items-center justify-between">
-                       <div className="flex flex-col items-start">
+                      <div className="flex flex-col items-start">
                         <span className="font-bold text-base">{t("fit.couldDoMore", { count: String(easyExtraReps) })}</span>
                         <span className="text-[10px] text-emerald-300 font-medium tracking-wide">{t("fit.couldDoMoreSub")} ▲</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center bg-[#2D6A4F]/50 rounded-lg px-1.5">
-                            <button onClick={() => setEasyExtraReps(Math.max(1, easyExtraReps - 1))} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">-</button>
-                            <input type="number" value={easyExtraReps} onChange={(e) => setEasyExtraReps(Math.max(1, Number(e.target.value)))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-white" />
-                            <button onClick={() => setEasyExtraReps(easyExtraReps + 1)} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">+</button>
+                          <button onClick={() => setEasyExtraReps(Math.max(1, easyExtraReps - 1))} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">-</button>
+                          <input type="number" value={easyExtraReps} onChange={(e) => setEasyExtraReps(Math.max(1, Number(e.target.value)))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-white" />
+                          <button onClick={() => setEasyExtraReps(easyExtraReps + 1)} className="w-7 h-7 flex items-center justify-center text-emerald-200 font-bold">+</button>
                         </div>
-                        <button onClick={() => submitFeedback(easyExtraReps > 5 ? "too_easy" : "easy", adjustedReps + easyExtraReps)} className="bg-emerald-400 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        <button onClick={() => handleSelectFeedback(easyExtraReps > 5 ? "too_easy" : "easy", adjustedReps + easyExtraReps)} className="bg-emerald-400 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm active:scale-95 transition-all">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Option: TARGET */}
-                  <button onClick={() => submitFeedback("target", adjustedReps)} className="w-full p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-100 active:scale-[0.98] transition-all">
+                  <button onClick={() => handleSelectFeedback("target", adjustedReps)} className="w-full p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-100 active:scale-[0.98] transition-all">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col items-start">
                         <span className="font-bold text-base text-[#1B4332]">{t("fit.justRight")}</span>
@@ -2010,36 +2000,48 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
                   {/* Option: FAIL */}
                   <div className="w-full p-4 rounded-2xl bg-red-50 border-2 border-red-100 flex items-center justify-between">
-                      <div className="flex flex-col items-start shrink-0">
-                        <span className="font-bold text-base text-red-500">{t("fit.failedHere")}</span>
-                        <span className="text-[10px] text-red-300 font-bold tracking-wide">{t("fit.failedReps")}</span>
+                    <div className="flex flex-col items-start shrink-0">
+                      <span className="font-bold text-base text-red-500">{t("fit.failedHere")}</span>
+                      <span className="text-[10px] text-red-300 font-bold tracking-wide">{t("fit.failedReps")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-red-100/60 rounded-lg px-1.5">
+                        <button onClick={() => setFailedReps(Math.max(0, failedReps - 1))} className="w-7 h-7 flex items-center justify-center text-red-400 font-bold">-</button>
+                        <input type="number" value={failedReps} onChange={(e) => setFailedReps(Math.min(adjustedReps - 1, Math.max(0, Number(e.target.value))))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-red-600" />
+                        <button onClick={() => setFailedReps(Math.min(adjustedReps - 1, failedReps + 1))} className="w-7 h-7 flex items-center justify-center text-red-400 font-bold">+</button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center bg-red-100/60 rounded-lg px-1.5">
-                            <button onClick={() => setFailedReps(Math.max(0, failedReps - 1))} className="w-7 h-7 flex items-center justify-center text-red-400 font-bold">-</button>
-                            <input type="number" value={failedReps} onChange={(e) => setFailedReps(Math.min(adjustedReps - 1, Math.max(0, Number(e.target.value))))} className="w-10 text-center bg-transparent font-bold text-base outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-red-600" />
-                            <button onClick={() => setFailedReps(Math.min(adjustedReps - 1, failedReps + 1))} className="w-7 h-7 flex items-center justify-center text-red-400 font-bold">+</button>
-                        </div>
-                        <button onClick={() => submitFeedback("fail", failedReps)} className="bg-red-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                        </button>
-                      </div>
+                      <button onClick={() => handleSelectFeedback("fail", failedReps)} className="bg-red-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm active:scale-95 transition-all">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                {/* 마지막 세트일 때 세트 추가 옵션 */}
-                {setInfo.current === setInfo.total && onAddSet && (
-                  <button
-                    onClick={() => { onAddSet(); setView("active"); setLocalRestSec(0); }}
-                    className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-center active:scale-[0.98] transition-all"
-                  >
-                    <span className="text-sm font-bold text-gray-500">{t("fit.addOneSet")}</span>
-                  </button>
-                )}
               </>
-            ) : null}
+            ) : (
+              /* 선택 완료 후: 다시 선택 링크 */
+              <button
+                onClick={() => setSelectedFeedback(null)}
+                className="w-full py-2 text-center active:scale-[0.98] transition-all"
+              >
+                <span className="text-[12px] font-bold text-[#2D6A4F]/70">
+                  ← {t("fit.reselectFeedback")}
+                </span>
+              </button>
+            )}
+
+            {/* 5. 마지막 세트: 1세트 추가 버튼 (항상 노출, 선택 전후 모두) */}
+            {isLastSetInExercise && onAddSet && (
+              <button
+                onClick={() => { onAddSet(); setView("active"); setLocalRestSec(0); setSelectedFeedback(null); }}
+                className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-center active:scale-[0.98] transition-all"
+              >
+                <span className="text-sm font-bold text-gray-500">{t("fit.addOneSet")}</span>
+              </button>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* 회의 41: GPS 권한 중앙 팝업 (인터벌 러닝 첫 진입 시 1회) */}
       <GpsPermissionDialog
