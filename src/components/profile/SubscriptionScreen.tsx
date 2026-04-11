@@ -5,6 +5,8 @@ import { User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
+import { detectPersona } from "@/utils/personaSystem";
+import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 
 const REFUND_EN = `NOTICE: This English translation is provided for reference purposes only. The legally binding version is the Korean original.
 
@@ -763,6 +765,30 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
                 </p>
               </div>
             )}
+
+            {/* Brand Admiration 인트로 — 회의 53 (박충환 Enrich) */}
+            {status === "free" && (() => {
+              const history = getCachedWorkoutHistory();
+              if (history.length < 3) return null;
+              const persona = detectPersona(history);
+              return (
+                <div className="rounded-3xl bg-gradient-to-br from-[#1B4332] to-[#2D6A4F] p-5 text-white">
+                  <p className="text-[10px] font-black text-emerald-300 uppercase tracking-[0.2em] mb-2">
+                    {locale === "ko" ? `★ ${history.length}번의 여정 ★` : `★ ${history.length} workouts in ★`}
+                  </p>
+                  <p className="text-xl font-black leading-tight mb-1">
+                    {locale === "ko"
+                      ? <>지금까지의 당신,<br />{persona.name}형이 완성되고 있어요</>
+                      : <>You are becoming<br />a {persona.nameEn}</>}
+                  </p>
+                  <p className="text-sm text-emerald-100/80 mt-3 leading-relaxed">
+                    {locale === "ko"
+                      ? "이 정체성과 기록, 당신만의 것이에요. 계속 지키시겠어요?"
+                      : "This identity and record is yours alone. Will you keep it?"}
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Pricing Card */}
             <div className="p-6 rounded-2xl border-2 border-[#2D6A4F] bg-[#f0fdf4] relative text-center">

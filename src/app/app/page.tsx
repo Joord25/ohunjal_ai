@@ -14,6 +14,7 @@ import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, Worko
 import { generateAIWorkoutPlan } from "@/utils/gemini";
 import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { saveWorkoutHistory, updateWorkoutAnalysis, updateReportTabs, getCachedWorkoutHistory } from "@/utils/workoutHistory";
+import { detectPersona } from "@/utils/personaSystem";
 import { auth, googleProvider } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, signInWithPopup, signInAnonymously, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/profile/SubscriptionScreen";
@@ -183,9 +184,9 @@ export default function Home() {
 
   const locale = typeof window !== "undefined" ? (localStorage.getItem("ohunjal_language") || "ko") : "ko";
   const [activeTab, setActiveTab] = useState<TabId>("home");
-  // 회의 30: 구독 취소 플로우 활성 시 탭바 숨김 (유저 집중 + 리텐션)
+  // 구독 취소 플로우 활성 시 탭바 숨김 (유저 집중 + 리텐션)
   const [cancelFlowActive, setCancelFlowActive] = useState(false);
-  // 회의 34: 스크롤 내릴 때 탭바 숨김 (인스타 스타일)
+  // 스크롤 내릴 때 탭바 숨김 (인스타 스타일)
   const [tabsVisible, setTabsVisible] = useState(true);
   const [view, setView] = useState<ViewState>("login"); // Start with login
   const [autoEdit1RM, setAutoEdit1RM] = useState(false);
@@ -498,9 +499,17 @@ export default function Home() {
         }
     } catch (e) {
         console.error("Error generating workout:", e);
-        // 실패 시 로딩 종료 + 컨디션 체크로 복귀 (alert 없이)
+        // 실패 시 로딩 종료 (회의 53 Bug #1 수정)
         pendingSessionRef.current = null;
         setIsLoading(false);
+
+        // TRIAL_LIMIT은 handleConditionComplete catch가 로그인 모달 띄우도록 re-throw
+        // 이 re-throw가 없으면 서버 429 응답 시 유저가 아무 알림도 못 보고 홈으로 튕김
+        if (e instanceof Error && e.message === "TRIAL_LIMIT") {
+          throw e;
+        }
+
+        // 그 외 에러 (네트워크 장애, 서버 500 등)는 기존대로 조용히 condition_check 복귀
         setView("condition_check");
     } finally {
         // sessionMode path: onComplete callback handles isLoading
@@ -607,7 +616,7 @@ export default function Home() {
     setCurrentWorkoutSession(session);
   };
 
-  // 회의 31: 로그아웃 시 삭제할 localStorage 키 — 유저별 데이터만.
+  // 로그아웃 시 삭제할 localStorage 키 — 유저별 데이터만.
   // 유지: ohunjal_language(기기 언어), ohunjal_tip_*(튜토리얼 dismiss), ohunjal_guest_trial_count(비로그인 악용 방지)
   const LOGOUT_CLEAR_KEYS = [
     "auth_logged_in",
@@ -979,22 +988,44 @@ export default function Home() {
           </div>
         )}
 
-        {/* Login Modal — 비로그인 게이트 */}
+        {/* Login Modal — 비로그인 게이트*/}
         {showLoginModal && (
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl p-6 mx-6 shadow-xl max-w-[320px] w-full">
+            <div className="bg-white rounded-2xl p-6 mx-6 shadow-xl max-w-[340px] w-full">
               <div className="flex flex-col items-center gap-1 mb-5">
-                <img src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"} alt="Ohunjal AI" className="w-32 h-auto mb-2" />
-                {!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT ? (
-                  <>
-                    <p className="text-center text-gray-800 font-bold text-base">
-                      {locale === "ko" ? "운동 기록을 저장하세요" : "Save your workout records"}
-                    </p>
-                    <p className="text-center text-gray-500 text-sm">
-                      {locale === "ko" ? <>{getGuestTrialCount()}회 운동 잘 하셨어요!<br />로그인하면 기록이 저장되고<br />AI 성장 분석도 받을 수 있어요</> : <>{getGuestTrialCount()} workouts done!<br />Sign in to save your records<br />and get AI growth analysis</>}
-                    </p>
-                  </>
-                ) : (
+                <img src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"} alt="Ohunjal AI" className="w-28 h-auto mb-2" />
+                {!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT ? (() => {
+                
+                  const persona = detectPersona(getCachedWorkoutHistory());
+                  return (
+                    <>
+                      <p className="text-center text-[10px] font-black text-[#2D6A4F] uppercase tracking-[0.2em] mb-1">
+                        {locale === "ko" ? "★ 3회 운동 완료 ★" : "★ 3 workouts done ★"}
+                      </p>
+                      <p className="text-center text-[#1B4332] font-black text-lg leading-tight">
+                        {locale === "ko"
+                          ? <>3번의 운동으로 드러난<br />당신의 운동 스타일</>
+                          : <>3 workouts revealed<br />your training style</>}
+                      </p>
+                      <div className="w-full my-3 px-4 py-3 rounded-xl bg-gradient-to-br from-[#2D6A4F]/10 to-[#2D6A4F]/5 border border-[#2D6A4F]/20 text-center">
+                        <p className="text-[11px] font-bold text-[#2D6A4F]/70 mb-0.5">
+                          {locale === "ko" ? "당신은" : "You are"}
+                        </p>
+                        <p className="text-[#1B4332] font-black text-xl">
+                          {locale === "ko" ? `${persona.name}형` : persona.nameEn}
+                        </p>
+                        <p className="text-[11px] font-medium text-gray-600 mt-1">
+                          {locale === "ko" ? persona.tagline : persona.taglineEn}
+                        </p>
+                      </div>
+                      <p className="text-center text-gray-600 text-[13px] leading-relaxed">
+                        {locale === "ko"
+                          ? <>이 기록과 정체성은 당신만의 것이에요.<br />로그인하면 영구 저장되고 운동 4회가 더 열려요.</>
+                          : <>This record and identity is yours.<br />Sign in to keep it and unlock 4 more workouts.</>}
+                      </p>
+                    </>
+                  );
+                })() : (
                   <>
                     <p className="text-center text-gray-800 font-bold text-base">
                       {locale === "ko" ? "로그인하고 계속하기" : "Sign in to continue"}
@@ -1034,7 +1065,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Exit Confirmation Dialog — 회의 32: i18n 지원 + PWA 나가기 버그 수정 */}
+        {/* Exit Confirmation Dialog PWA 나가기 버그 수정 */}
         {showExitConfirm && (
           <ExitConfirmDialog
             inWorkoutSession={view === "workout_session"}

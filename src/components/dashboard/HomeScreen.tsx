@@ -6,6 +6,8 @@ import { getOrCreateWeeklyQuests, getCurrentWeekQuestWindow, type QuestDefinitio
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression, calcSessionCalories } from "@/utils/predictionUtils";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
+import { getTrialStatus } from "@/utils/trialStatus";
+import { getPlanCount } from "@/utils/userProfile";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type FitnessCategory,
@@ -614,6 +616,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
+        {/* 체험 진행 배지 — 회의 53 (소비심리학 + Brand Admiration 기반) */}
+        {!isPremium && (() => {
+          const trial = getTrialStatus(isLoggedIn ?? false, isPremium ?? false, getPlanCount());
+          if (trial.stage === "premium") return null;
+          const dots = Array.from({ length: trial.currentLimit });
+          return (
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#2D6A4F]/5 rounded-xl border border-[#2D6A4F]/10">
+              <div className="flex gap-1 shrink-0">
+                {dots.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      i < trial.currentCompleted ? "bg-[#2D6A4F]" : "bg-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-[11px] font-bold text-[#1B4332] flex-1 truncate">
+                {locale === "ko"
+                  ? (trial.stage === "guest"
+                      ? `체험 ${trial.currentCompleted}/${trial.currentLimit}${trial.remaining === 0 ? " · 로그인 안내가 있어요" : trial.remaining === 1 ? " · 1회 남았어요" : ""}`
+                      : trial.stage === "exhausted"
+                      ? "무료 체험 완료 · 프리미엄으로 계속해요"
+                      : `무료 ${trial.currentCompleted}/${trial.currentLimit}${trial.remaining === 1 ? " · 1회 남았어요" : ""}`)
+                  : (trial.stage === "guest"
+                      ? `Trial ${trial.currentCompleted}/${trial.currentLimit}${trial.remaining === 0 ? " · sign in next" : trial.remaining === 1 ? " · 1 left" : ""}`
+                      : trial.stage === "exhausted"
+                      ? "Free trial done · continue with premium"
+                      : `Free ${trial.currentCompleted}/${trial.currentLimit}${trial.remaining === 1 ? " · 1 left" : ""}`)}
+              </p>
+            </div>
+          );
+        })()}
+
         {/* 내부 탭 토글: [홈] [영양] */}
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
           <button

@@ -2,6 +2,74 @@
 
 ---
 
+### 회의 53: 게스트 체험 한도 버그 + 체험 라이프사이클 안내 설계
+**참석:** 대표(임주용), 기획자, 평가자, 프론트엔드 개발자, 백엔드 개발자, UX/UI 디자이너, 콘텐츠 MD, 카피라이터, 그로스 마케터, **박충환 교수 (USC Marshall, Brand Admiration 3E)**, **Nir Eyal (Hook Model 저자)**, 페르소나 유저 4명
+**일자:** 2026-04-11
+
+**배경 (대표 직접 제보 + 실 유저 제보):**
+- 무료 체험 IP 기반 제한은 있는데 한도 도달 시 유저에게 아무 알림 없음
+- 실제 유저 "스미스_직장인"이 다른 브라우저로 재시도 → 콘솔 에러만 보고 이탈
+- 근본 원인: generatePlan catch가 TRIAL_LIMIT 에러를 silently swallow
+
+**평가자 전수조사 결과:**
+- `GUEST_TRIAL_LIMIT`, `isGuest`, `planCount` 관련 UI가 HomeScreen/WorkoutReport/ConditionCheck/MasterPlanPreview **전부 0건**
+- 닐슨 Usability Heuristic #1 "Visibility of System Status" 완전 위반
+
+**Bug #1 원인:**
+- `generatePlan` catch ([page.tsx:499-510](src/app/app/page.tsx#L499-L510))가 TRIAL_LIMIT 에러를 console.error + setView로 삼킴
+- `handleConditionComplete` try/catch가 죽은 코드 → `setShowLoginModal(true)` 절대 호출 안 됨
+
+**박충환 교수 진단 (Brand Admiration 3E):**
+- Enable 80, Entice 50, **Enrich 20** — 치명적
+- "유저가 '도구'로 인식, '브랜드'로 인식 못 함 → 결제 거부"
+- "트라이얼 양은 잘못된 질문. 양 유지 + 3회/7회에 Enrich 모멘트"
+
+**Nir Eyal 진단 (Hook Model):**
+- Trigger ✓, Action ✓, Variable Reward ○, **Investment ❌**
+- "양 유지 + 1회째부터 Investment 점진 축적"
+
+**두 전문가 합의:**
+- **7회 구조 유지** (게스트 3 + 로그인 4)
+- "체험 종료" 언어 금지 → "완성/여정" 언어
+- 3회째 페르소나 카드 + 7회째 Brand Admiration 카피 paywall
+
+**김난도 교수 제외:** 대표 명시적 요청. 박충환 + Nir Eyal 2인 듀오로 대체. project_team_roster.md에 "소비 전략 자문단" 신설.
+
+**구현된 것 (이 세션, P0 + P1 주요부):**
+
+1. **Bug #1 수정** ([page.tsx:499-510](src/app/app/page.tsx#L499-L510))
+   - generatePlan catch에 `if (e.message === "TRIAL_LIMIT") throw e;` 추가
+   - handleConditionComplete catch 재활성화 → 로그인 모달 정상
+
+2. **신규 유틸 2개**:
+   - [src/utils/personaSystem.ts](src/utils/personaSystem.ts): 페르소나 4종 (power_builder / endurance_runner / balanced_athlete / rising_beginner) + `detectPersona()` 순수 함수
+   - [src/utils/trialStatus.ts](src/utils/trialStatus.ts): 체험 상태 중앙 조회 (`getTrialStatus`, `getGuestTrialCount`)
+
+3. **HomeScreen 체험 배지**: 도트 + "체험 1/3" 텍스트 + 단계별 문구 자동 전환
+
+4. **WorkoutReport "오늘의 나" 카드**: 페르소나 catchphrase + 카운트 도트 + 마지막 1회 선제 고지
+
+5. **로그인 모달 페르소나 카드화**: 3회 완료자에게 특별 모드 ("★ 3회 운동 완료 ★" + persona 이름/tagline + Brand Admiration 카피)
+
+6. **SubscriptionScreen Brand Admiration 인트로**: status=free + 3회+ 시 표시 ("지금까지의 당신, X형이 완성되고 있어요")
+
+**검증:**
+- tsc: 0 errors
+- lint (수정 파일): pre-existing warnings만, 신규 에러 0
+
+**추가 구현 필요 (P2/P3, 다음 세션):**
+- Nir Eyal Investment 질문 (1회째 목표 입력, 2회째 약속)
+- 4~6회째 페르소나 진화 시각화
+- 로그인 환영 토스트
+- SVG 아이콘 4종 (페르소나 전용) — 디자인 자산
+
+**대표 결정 요청 (다음 세션):**
+- 페르소나 SVG 디자인 자산 방식
+- 트랙 C Phase 1 (dual write) 통합 시점
+- 4종 페르소나 이름/색상 최종 확정
+
+---
+
 ### 회의 52: DA 전수조사 + 스키마 리팩토링 설계
 **참석:** 대표(임주용), 기획자, 평가자, 이화식(엔코아), 박서진(Toss FE Head), 황보현우(한남대), 프론트엔드 개발자, 백엔드 개발자
 **장기 출석(간접):** Thomas Davenport, Bill Inmon (DA 자문단)

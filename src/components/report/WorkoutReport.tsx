@@ -7,6 +7,9 @@ import { detectRunningType } from "@/utils/runningFormat";
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation, getWeeklyIntensityTarget } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
 import { loadRecentHistory as loadRecentHistoryFromStore, updateCoachMessages, getCachedWorkoutHistory, updateReportTabs } from "@/utils/workoutHistory";
+import { getTrialStatus } from "@/utils/trialStatus";
+import { getPlanCount } from "@/utils/userProfile";
+import { detectPersona } from "@/utils/personaSystem";
 import { type ExpLogEntry, sumExp, getOrRebuildSeasonExp } from "@/utils/questSystem";
 import { calcSessionCalories } from "@/utils/predictionUtils";
 import { trackEvent } from "@/utils/analytics";
@@ -388,6 +391,63 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-5 scrollbar-hide" style={{ paddingBottom: "calc(96px + var(--safe-area-bottom, 0px))" }}>
+
+        {/* === 체험 진행 + 오늘의 나 — 회의 53 (박충환 Enrich + 소비심리학) — 현재 세션에서만 === */}
+        {!sessionDate && !isPremium && (() => {
+          const isLoggedIn = typeof window !== "undefined" && localStorage.getItem("auth_logged_in") === "1";
+          const trial = getTrialStatus(isLoggedIn, isPremium ?? false, getPlanCount());
+          if (trial.stage === "premium") return null;
+          const persona = detectPersona(recentHistory);
+          return (
+            <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-[#2D6A4F]/5 to-[#2D6A4F]/10 border border-[#2D6A4F]/15">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-black text-[#2D6A4F] uppercase tracking-[0.15em]">
+                  {locale === "ko" ? "오늘의 나" : "Today's You"}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-[#1B4332]/70">
+                    {trial.stage === "guest"
+                      ? `${locale === "ko" ? "체험" : "Trial"} ${trial.currentCompleted}/${trial.currentLimit}`
+                      : trial.stage === "exhausted"
+                      ? (locale === "ko" ? "무료 완료" : "Free done")
+                      : `${locale === "ko" ? "무료" : "Free"} ${trial.currentCompleted}/${trial.currentLimit}`}
+                  </span>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: trial.currentLimit }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-1 rounded-full ${
+                          i < trial.currentCompleted ? "bg-[#2D6A4F]" : "bg-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-[14px] font-black text-[#1B4332] leading-tight">
+                {locale === "ko" ? persona.catchphrase : persona.catchphraseEn}
+              </p>
+              {recentHistory.length >= 3 && (
+                <p className="text-[11px] font-bold text-[#2D6A4F] mt-1">
+                  {locale === "ko"
+                    ? `당신의 운동 스타일: ${persona.name}형`
+                    : `Your style: ${persona.nameEn}`}
+                </p>
+              )}
+              {trial.stage !== "exhausted" && trial.remaining <= 1 && (
+                <p className="text-[11px] font-medium text-gray-500 mt-2">
+                  {locale === "ko"
+                    ? (trial.stage === "guest"
+                        ? "다음 운동 후 로그인 안내가 있어요"
+                        : "다음 운동 후 프리미엄 안내가 있어요")
+                    : (trial.stage === "guest"
+                        ? "Sign in reminder after next workout"
+                        : "Premium reminder after next workout")}
+                </p>
+              )}
+            </div>
+          );
+        })()}
 
         {/* === 4탭 네비게이션 (회의 37) — 현재 세션에서만, 히스토리에서는 숨김 === */}
         {!sessionDate && <div className="flex bg-white rounded-2xl border border-gray-100 p-1 mb-5 shadow-sm">
