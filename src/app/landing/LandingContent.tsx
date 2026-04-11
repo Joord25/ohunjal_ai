@@ -404,8 +404,8 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
           <RevealOnScroll>
             <p className="text-sm text-[#34d399] font-bold tracking-wide mb-3">{t.pricing.label}</p>
             <h2 className="text-2xl sm:text-4xl font-black text-white mb-4">
-              <span className="text-white/40">{t.pricing.headingDim}</span><br />
-              <span className="text-white">{t.pricing.headingBright}</span>
+              <span className="block text-white/40">{t.pricing.headingDim}</span>
+              <span className="block text-white mt-3 sm:mt-4">{t.pricing.headingBright}</span>
             </h2>
             <p className="text-base text-white/40 mb-12">{t.pricing.sub}</p>
           </RevealOnScroll>
