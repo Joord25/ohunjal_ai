@@ -5,7 +5,7 @@ import type { WorkoutHistory, WorkoutGoal } from "@/constants/workout";
 import { getOrCreateWeeklyQuests, getCurrentWeekQuestWindow, type QuestDefinition, type QuestProgress } from "@/utils/questSystem";
 import { getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { calcE1RMTrendByExercise, calcVolumeGrowthRate, calcCalorieBalanceTrend, linearRegression, calcSessionCalories } from "@/utils/predictionUtils";
-import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
+import { getCachedWorkoutHistory, loadWorkoutHistory } from "@/utils/workoutHistory";
 import { getTrialStatus } from "@/utils/trialStatus";
 import { getPlanCount } from "@/utils/userProfile";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -115,15 +115,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
   }, [isFirstVisit]);
 
   useEffect(() => {
-    try {
-      const all = getCachedWorkoutHistory();
+    // history 기반 state 일괄 업데이트 헬퍼 (캐시/Firestore 로드 후 공통 적용)
+    const applyHistoryData = (all: WorkoutHistory[]) => {
       setHistory(all);
-
       const birthYear = parseInt(localStorage.getItem("ohunjal_birth_year") || "");
       const gender = (localStorage.getItem("ohunjal_gender") as "male" | "female") || undefined;
       if (all.length > 0) {
         setQuestData(getOrCreateWeeklyQuests(all, isNaN(birthYear) ? undefined : birthYear, gender));
-
         // 강도 추천
         const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
         const recent = all.filter(h => new Date(h.date).getTime() > cutoff);
@@ -133,6 +131,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
           setIntensityLabel(labels[rec.nextRecommended] || "중간");
         }
       }
+    };
+
+    try {
+      // 1) 즉시 캐시 로드 (빠른 초기 렌더)
+      const cached = getCachedWorkoutHistory();
+      applyHistoryData(cached);
 
       // 저장된 프로필 불러오기
       const profileRaw = localStorage.getItem("ohunjal_fitness_profile");
@@ -146,6 +150,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
         if (p.bodyWeight && p.weeklyFrequency) setProfile(p as FitnessProfile);
       }
     } catch { /* ignore */ }
+
+    // 2) Firestore에서 최신 동기화 (회의 53: 내 현재 상태 섹션이 초기 빈 상태 이슈 수정)
+    // 로그인 유저가 탭 전환 없이도 홈에서 최신 데이터 보이게 함
+    loadWorkoutHistory().then(applyHistoryData).catch(() => { /* network fail 시 캐시 유지 */ });
   }, []);
 
   // 연속 운동일 계산 (이번 달 범위만)
