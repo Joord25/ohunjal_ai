@@ -318,18 +318,18 @@ export const adminDashboard = onRequest(
     }
 
     try {
-      const subsSnap = await db.collection("subscriptions").get();
-      let active = 0, cancelled = 0, expired = 0, expiringIn3Days = 0, monthlyRevenue = 0;
-      // 회의 57 Tier 2: 매출 분해 (결제 건수, 평균, 이전 달 매출)
-      let monthlyPaymentCount = 0;
-      let lastMonthRevenue = 0;
-      let lastMonthPaymentCount = 0;
+      // 회의: 매출 집계 소스 단일화 — subscriptions.amount 대신 payments 서브컬렉션 사용
+      // 이유: subscriptions 상위 문서의 amount는 수동 편집/관리자 활성화에 오염되기 쉬움.
+      //       payments 서브컬렉션은 PortOne 실결제 시점에만 기록되어 source of truth로 적합.
       const now = new Date();
       const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastMonthEnd = monthStart; // exclusive
 
+      // 1) subscriptions 상위 문서 → 구독 상태 카운트만 (매출은 분리)
+      const subsSnap = await db.collection("subscriptions").get();
+      let active = 0, cancelled = 0, expired = 0, expiringIn3Days = 0;
       subsSnap.forEach(doc => {
         const d = doc.data();
         if (d.status === "active") {
@@ -340,17 +340,27 @@ export const adminDashboard = onRequest(
           }
         } else if (d.status === "cancelled") { cancelled++; }
         else if (d.status === "expired") { expired++; }
+      });
 
-        // 결제 집계 (상태 무관 — 결제 이력 기준)
-        if (d.lastPaymentAt && d.amount > 0) {
-          const paymentDate = new Date(d.lastPaymentAt);
-          if (paymentDate >= monthStart) {
-            monthlyRevenue += d.amount;
-            monthlyPaymentCount++;
-          } else if (paymentDate >= lastMonthStart && paymentDate < lastMonthEnd) {
-            lastMonthRevenue += d.amount;
-            lastMonthPaymentCount++;
-          }
+      // 2) payments 서브컬렉션 → 실제 결제 기록 기반 매출 집계 (SSOT)
+      let monthlyRevenue = 0;
+      let monthlyPaymentCount = 0;
+      let lastMonthRevenue = 0;
+      let lastMonthPaymentCount = 0;
+      const paymentsSnap = await db.collectionGroup("payments").get();
+      paymentsSnap.forEach(doc => {
+        const p = doc.data();
+        const amount = Number(p.amount || 0);
+        if (!p.paidAt || amount <= 0) return;
+        // status 필드가 있으면 "paid"만 카운트 (refunded/failed 제외)
+        if (p.status && p.status !== "paid") return;
+        const paymentDate = new Date(p.paidAt);
+        if (paymentDate >= monthStart) {
+          monthlyRevenue += amount;
+          monthlyPaymentCount++;
+        } else if (paymentDate >= lastMonthStart && paymentDate < lastMonthEnd) {
+          lastMonthRevenue += amount;
+          lastMonthPaymentCount++;
         }
       });
 
