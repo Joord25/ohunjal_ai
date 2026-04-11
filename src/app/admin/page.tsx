@@ -129,6 +129,7 @@ interface LogEntry {
   action: string;
   targetEmail: string;
   months: number;
+  days?: number;
   expiresAt: string;
   timestamp: string | null;
 }
@@ -178,6 +179,7 @@ export default function AdminPage() {
 
   // Activate
   const [months, setMonths] = useState(1);
+  const [days, setDays] = useState(0); // > 0 이면 days 사용, 아니면 months 사용
   const [activating, setActivating] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
   const [activateResult, setActivateResult] = useState("");
@@ -204,7 +206,7 @@ export default function AdminPage() {
     variant: "default" | "danger";
     onConfirm: () => void | Promise<void>;
   } | null>(null);
-  const [activateModal, setActivateModal] = useState<{ email: string; months: number } | null>(null);
+  const [activateModal, setActivateModal] = useState<{ email: string; months: number; days: number } | null>(null);
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
@@ -388,14 +390,16 @@ export default function AdminPage() {
     setActivating(true); setActivateResult("");
     try {
       const token = await getToken();
+      const body = days > 0 ? { email: searchResult.email, days } : { email: searchResult.email, months };
       const res = await fetch("/api/adminActivate", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ email: searchResult.email, months }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setActivateResult(`${data.email} → ${data.months}개월 활성화 완료`);
+      const label = data.days > 0 ? `${data.days}일` : `${data.months}개월`;
+      setActivateResult(`${data.email} → ${label} 활성화 완료`);
       handleSearch(); loadLogs(); loadDashboard();
     } catch (e: unknown) { setActivateResult(e instanceof Error ? e.message : "실패"); }
     finally { setActivating(false); }
@@ -421,22 +425,24 @@ export default function AdminPage() {
 
   // 회의 57 Tier 2: prompt/confirm → ActivateModal로 교체
   const handleQuickActivate = (email: string) => {
-    setActivateModal({ email, months: 1 });
+    setActivateModal({ email, months: 1, days: 0 });
   };
 
   const executeActivate = async () => {
     if (!activateModal) return;
-    const { email, months } = activateModal;
+    const { email, months, days } = activateModal;
     try {
       const token = await getToken();
+      const body = days > 0 ? { email, days } : { email, months };
       const res = await fetch("/api/adminActivate", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ email, months }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       setActivateModal(null);
-      alert(`${email} → ${months}개월 활성화 완료`);
+      const label = days > 0 ? `${days}일` : `${months}개월`;
+      alert(`${email} → ${label} 활성화 완료`);
       loadUserList(); loadDashboard(); loadLogs();
     } catch (e: unknown) { alert(e instanceof Error ? e.message : "실패"); }
   };
@@ -534,7 +540,7 @@ export default function AdminPage() {
     });
   };
 
-  const executeBulkAction = async (action: "activate" | "deactivate", months = 1) => {
+  const executeBulkAction = async (action: "activate" | "deactivate", opts: { months?: number; days?: number } = { months: 1 }) => {
     const selectedUsers = userList.filter(u => selectedUids.has(u.uid));
     if (selectedUsers.length === 0) return;
 
@@ -545,7 +551,9 @@ export default function AdminPage() {
     for (const u of selectedUsers) {
       try {
         const endpoint = action === "activate" ? "/api/adminActivate" : "/api/adminDeactivate";
-        const body = action === "activate" ? { email: u.email, months } : { email: u.email };
+        const body = action === "activate"
+          ? (opts.days && opts.days > 0 ? { email: u.email, days: opts.days } : { email: u.email, months: opts.months ?? 1 })
+          : { email: u.email };
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -1108,9 +1116,19 @@ export default function AdminPage() {
                   {searchResult.billingKey && <div className="flex justify-between"><span>결제</span><span>{searchResult.billingKey}</span></div>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <select value={months} onChange={(e) => setMonths(Number(e.target.value))}
+                  <select
+                    value={days > 0 ? `d${days}` : `m${months}`}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v.startsWith("d")) { setDays(Number(v.slice(1))); setMonths(0); }
+                      else { setMonths(Number(v.slice(1))); setDays(0); }
+                    }}
                     className="px-2 py-2 border border-gray-200 rounded-lg text-sm">
-                    <option value={1}>1개월</option><option value={3}>3개월</option><option value={6}>6개월</option><option value={12}>12개월</option>
+                    <option value="d7">1주</option>
+                    <option value="m1">1개월</option>
+                    <option value="m3">3개월</option>
+                    <option value="m6">6개월</option>
+                    <option value="m12">12개월</option>
                   </select>
                   <button onClick={handleActivate} disabled={activating}
                     className="flex-1 py-2 bg-[#059669] text-white text-sm font-bold rounded-lg disabled:opacity-50">
@@ -1511,7 +1529,11 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <span className={`text-xs font-bold ${log.action === "deactivate" ? "text-red-500" : "text-[#059669]"}`}>
-                      {log.action === "deactivate" ? "비활성화" : `${log.months}개월 활성화`}
+                      {log.action === "deactivate"
+                        ? "비활성화"
+                        : (log.days && log.days > 0)
+                          ? `${log.days}일 활성화`
+                          : `${log.months}개월 활성화`}
                     </span>
                   </div>
                 ))}
@@ -1533,7 +1555,7 @@ export default function AdminPage() {
                 description: `선택된 ${selectedUids.size}명을 ${1}개월 활성화합니다.`,
                 confirmLabel: `${selectedUids.size}명 활성화`,
                 variant: "default",
-                onConfirm: () => executeBulkAction("activate", 1),
+                onConfirm: () => executeBulkAction("activate", { months: 1 }),
               });
             }}
             disabled={bulkRunning}
@@ -1573,13 +1595,23 @@ export default function AdminPage() {
             <p className="text-sm text-gray-500 mb-4 break-all">{activateModal.email}</p>
             <div className="mb-5">
               <p className="text-xs font-bold text-gray-400 mb-2">활성화 기간</p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
+                <button
+                  onClick={() => setActivateModal({ ...activateModal, months: 0, days: 7 })}
+                  className={`py-2 rounded-lg text-sm font-bold transition-colors ${
+                    activateModal.days === 7
+                      ? "bg-[#1B4332] text-white"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  1주
+                </button>
                 {[1, 3, 6, 12].map(m => (
                   <button
                     key={m}
-                    onClick={() => setActivateModal({ ...activateModal, months: m })}
+                    onClick={() => setActivateModal({ ...activateModal, months: m, days: 0 })}
                     className={`py-2 rounded-lg text-sm font-bold transition-colors ${
-                      activateModal.months === m
+                      activateModal.days === 0 && activateModal.months === m
                         ? "bg-[#1B4332] text-white"
                         : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     }`}

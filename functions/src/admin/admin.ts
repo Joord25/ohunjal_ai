@@ -5,8 +5,10 @@ import { verifyAdmin, db } from "../helpers";
 
 /**
  * POST /adminActivate
- * Body: { email, months? }
+ * Body: { email, months?, days? }
  * Admin only: 이메일로 유저 찾아서 구독 활성화
+ * - days 가 주어지면 일 단위 만료 (1 ~ 1825일 clamp)
+ * - 없으면 months 사용 (1 ~ 60개월 clamp, 기본 1개월)
  */
 export const adminActivate = onRequest(
   { cors: true },
@@ -23,9 +25,15 @@ export const adminActivate = onRequest(
     const { email } = req.body;
     if (!email) { res.status(400).json({ error: "Missing email" }); return; }
 
-    // 회의: months 범위 검증 (1 ~ 60개월 clamp, 음수/huge/NaN 차단)
+    // 회의: days 우선, 없으면 months 사용 (하위호환)
+    // days: 1 ~ 1825일(5년) clamp, months: 1 ~ 60개월 clamp
+    const rawDays = Number(req.body.days);
     const rawMonths = Number(req.body.months);
-    const months = Number.isFinite(rawMonths) ? Math.max(1, Math.min(60, Math.floor(rawMonths))) : 1;
+    const hasDays = Number.isFinite(rawDays) && rawDays > 0;
+    const days = hasDays ? Math.max(1, Math.min(1825, Math.floor(rawDays))) : 0;
+    const months = hasDays
+      ? 0
+      : (Number.isFinite(rawMonths) ? Math.max(1, Math.min(60, Math.floor(rawMonths))) : 1);
 
     try {
       // 이메일로 유저 UID 조회
@@ -35,7 +43,11 @@ export const adminActivate = onRequest(
       // 구독 활성화
       const now = new Date();
       const expiresAt = new Date(now);
-      expiresAt.setMonth(expiresAt.getMonth() + months);
+      if (hasDays) {
+        expiresAt.setDate(expiresAt.getDate() + days);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + months);
+      }
 
       const subRef = db.collection("subscriptions").doc(uid);
       const existingDoc = await subRef.get();
@@ -71,6 +83,7 @@ export const adminActivate = onRequest(
         targetEmail: email,
         targetUid: uid,
         months,
+        days,
         expiresAt: expiresAt.toISOString(),
         timestamp: FieldValue.serverTimestamp(),
       });
@@ -80,6 +93,7 @@ export const adminActivate = onRequest(
         email,
         uid,
         months,
+        days,
         expiresAt: expiresAt.toISOString(),
       });
     } catch (error: unknown) {
@@ -797,6 +811,7 @@ export const adminLogs = onRequest(
           action: data.action,
           targetEmail: data.targetEmail,
           months: data.months,
+          days: data.days || 0,
           expiresAt: data.expiresAt,
           timestamp: data.timestamp?.toDate?.().toISOString() || null,
         };
