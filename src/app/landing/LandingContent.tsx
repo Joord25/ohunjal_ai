@@ -191,7 +191,7 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
   const ctaHref = `/app?lang=${locale}`;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden font-[var(--font-instrument),_var(--font-sans)]" style={{ overflow: "auto" }}>
+    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-clip font-[var(--font-instrument),_var(--font-sans)]">
       {/* ═══ Top Nav ═══ */}
       <nav
         className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300"
@@ -345,10 +345,10 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
 
           {/* 모바일 (sm 미만): 회의 58 — Sticky scroll 레이아웃 */}
           <div className="sm:hidden">
-            {/* Sticky 폰 프레임 — 스크롤 시 상단 고정 */}
-            <div className="sticky top-4 z-10 mx-auto max-w-[240px] mb-6">
+            {/* Sticky 폰 프레임 — 스크롤 시 상단 고정 (aspect 9/16으로 짧게 조정해 step 카드 공간 확보) */}
+            <div className="sticky top-4 z-10 mx-auto w-[75%] max-w-[300px] mb-6">
               <div className="relative">
-                <div className="rounded-[30px] border-[3px] border-white/10 bg-[#1a1a1a] shadow-2xl overflow-hidden aspect-[9/19.5]">
+                <div className="rounded-[30px] border-[3px] border-white/10 bg-[#1a1a1a] shadow-2xl overflow-hidden aspect-[9/16]">
                   <div className="relative w-full h-full">
                     {/* 4개 이미지 absolute 스택 → opacity crossfade */}
                     {[0, 1, 2, 3].map((idx) => (
@@ -356,7 +356,7 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
                         key={idx}
                         src={locale === "ko" ? `/how it works ${idx + 1}.png` : `/how it works${idx + 1}_en.png`}
                         alt={t.howItWorks.steps[idx]?.title}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 motion-reduce:duration-0 ${
+                        className={`absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-500 motion-reduce:duration-0 ${
                           activeDemo === idx ? "opacity-100" : "opacity-0"
                         }`}
                       />
