@@ -62,6 +62,16 @@ interface DashboardData {
   revenueChangePercent?: number | null;
   trial: UserStats;
   registered: UserStats;
+  // 결제 건수 행 (체험/가입 테이블 3번째 행)
+  paid?: {
+    today: number;
+    yesterday: number;
+    week: number;
+    lastWeek: number;
+    month: number;
+    lastMonth: number;
+    total: number;
+  };
 }
 
 interface ListUser {
@@ -751,6 +761,10 @@ export default function AdminPage() {
                   const trialMonthDelta = delta(dashboard.trial.month, dashboard.trial.lastMonth);
                   const regWeekDelta = delta(dashboard.registered.week, dashboard.registered.lastWeek);
                   const regMonthDelta = delta(dashboard.registered.month, dashboard.registered.lastMonth);
+                  // 결제 행 (회의: payments 서브컬렉션 기반)
+                  const paid = dashboard.paid;
+                  const paidWeekDelta = paid ? delta(paid.week, paid.lastWeek) : { pct: null, up: false };
+                  const paidMonthDelta = paid ? delta(paid.month, paid.lastMonth) : { pct: null, up: false };
                   const renderDelta = (d: { pct: number | null; up: boolean }) => {
                     if (d.pct === null) return null;
                     return (
@@ -801,6 +815,23 @@ export default function AdminPage() {
                             </td>
                             <td className="py-2.5 text-center font-bold text-gray-400">{dashboard.registered.total}</td>
                           </tr>
+                          {/* 결제 행 (회의: payments 서브컬렉션 기반) */}
+                          {paid && (
+                            <tr className="border-t border-gray-50">
+                              <td className="py-2.5 text-xs font-bold text-[#059669]">결제</td>
+                              <td className="py-2.5 text-center font-bold text-[#059669]">{paid.today}</td>
+                              <td className="py-2.5 text-center font-bold text-[#059669]/80">{paid.yesterday}</td>
+                              <td className="py-2.5 text-center font-bold text-[#059669]">
+                                {paid.week}
+                                {renderDelta(paidWeekDelta)}
+                              </td>
+                              <td className="py-2.5 text-center font-bold text-[#059669]">
+                                {paid.month}
+                                {renderDelta(paidMonthDelta)}
+                              </td>
+                              <td className="py-2.5 text-center font-bold text-gray-400">{paid.total}</td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                       <p className="text-[9px] text-gray-400 mt-2 leading-relaxed">▲▼ 지난 주/지난 달 대비 증감률</p>

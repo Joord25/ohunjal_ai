@@ -347,6 +347,11 @@ export const adminDashboard = onRequest(
       let monthlyPaymentCount = 0;
       let lastMonthRevenue = 0;
       let lastMonthPaymentCount = 0;
+      // 회의: 결제 건수 체험/가입 테이블의 결제 행용 — 기간별 카운트
+      let paidToday = 0, paidYesterday = 0;
+      let paidWeek = 0, paidLastWeek = 0;
+      let paidMonth = 0, paidLastMonth = 0;
+      let paidTotal = 0;
       const paymentsSnap = await db.collectionGroup("payments").get();
       paymentsSnap.forEach(doc => {
         const p = doc.data();
@@ -355,12 +360,33 @@ export const adminDashboard = onRequest(
         // status 필드가 있으면 "paid"만 카운트 (refunded/failed 제외)
         if (p.status && p.status !== "paid") return;
         const paymentDate = new Date(p.paidAt);
+
+        // 전체 카운트
+        paidTotal++;
+
+        // 이번달/전월 매출 + 건수
         if (paymentDate >= monthStart) {
           monthlyRevenue += amount;
           monthlyPaymentCount++;
+          paidMonth++;
         } else if (paymentDate >= lastMonthStart && paymentDate < lastMonthEnd) {
           lastMonthRevenue += amount;
           lastMonthPaymentCount++;
+          paidLastMonth++;
+        }
+
+        // 오늘/어제 카운트 (월 집계와 독립)
+        if (paymentDate >= todayStart) {
+          paidToday++;
+        } else if (paymentDate >= yesterdayStart && paymentDate < todayStart) {
+          paidYesterday++;
+        }
+
+        // 이번주/지난주 카운트 (월 집계와 독립)
+        if (paymentDate >= weekStart) {
+          paidWeek++;
+        } else if (paymentDate >= lastWeekStart && paymentDate < weekStart) {
+          paidLastWeek++;
         }
       });
 
@@ -431,6 +457,16 @@ export const adminDashboard = onRequest(
         revenueChangePercent,
         trial: countByRange(trialUsers),
         registered: countByRange(googleUsers),
+        // 회의: 결제 행 (체험/가입 테이블 3번째 행) — 기간별 건수
+        paid: {
+          today: paidToday,
+          yesterday: paidYesterday,
+          week: paidWeek,
+          lastWeek: paidLastWeek,
+          month: paidMonth,
+          lastMonth: paidLastMonth,
+          total: paidTotal,
+        },
       });
     } catch (error) {
       console.error("adminDashboard error:", error);
