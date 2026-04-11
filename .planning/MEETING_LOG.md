@@ -2,6 +2,81 @@
 
 ---
 
+### 회의 56: 홈 vs 리포트 "내 상태" 일원화 + 네이밍 분리
+**참석:** 대표(임주용), 기획자(PM), **박충환 교수 (USC Marshall)**, **Nir Eyal (Hook Model 저자)**, 데이터 자문, UX 디자이너, 트레이너, 현지화 전문가
+**일자:** 2026-04-12
+
+**배경:**
+- 회의 54~55에서 발견: 홈화면과 리포트의 "내 상태"가 **다른 데이터 범위**를 쓰면서 **같은 이름**을 공유 → 수치 불일치 + 사용자 혼란
+- 홈: 전체 히스토리 (cutoff 없음), 리포트: 최근 90일 + 오늘 세션
+- 같은 사용자가 홈 66등, 리포트 72등 볼 수 있음
+
+**3대 문제:**
+- 🔴 P0: 수치 불일치 (사용자 혼란)
+- 🟡 P1: "내 상태" 네이밍 모호 (오늘인가 누적인가)
+- 🟡 P2: 갱신 주기 불투명
+
+**전문가 논의 요약:**
+
+| 역할 | 핵심 의견 |
+|---|---|
+| 박충환 교수 | "네이밍 분리 필수. 같은 이름 + 다른 값은 절대 금물. 두 의미를 각각 명시" |
+| Nir Eyal | "홈은 최근 90일, 리포트는 더 좁게 (30일 이하). Variable Reward 빈도 높여야 Hook 유지" |
+| 데이터 자문 | "단일 함수 + 범위 인자(options)로 리팩토링. 프로덕트 결정이 우선" |
+| UX 디자이너 | "홈=자부심, 리포트=진전. 둘 다 필요. 이름만 다르면 해결" |
+| 트레이너 | "홈=평생, 리포트=30일 분리 찬성. 현장 체감 우선" |
+
+**대표 결정 (기존 제안보다 더 나은 구조 제시):**
+- **홈화면** = 최근 90일 집약체 (실시간 계산, 오늘 시점 기준 90일)
+- **리포트 "내 상태"** = **이번 세션의 운동 데이터만** 기반 (그날 프로그램 등수)
+- **이름 분리 필요**
+
+**중요 질문 — 히스토리 캡처 동작:**
+
+Q: 과거 세션 리포트를 다시 열면 수치가 캡처인가 실시간인가?
+
+A: **자동 캡처 효과** — 세션 데이터(`exercises`, `logs`)는 불변이므로, 리포트가 그 세션 데이터만 기반이면 언제 열어도 같은 결과. 별도 snapshot 저장 로직 불필요.
+
+**현지화 전문가 패널 (라벨 선정):**
+- `Today's Form` 영어권 오해 가능성 — "form"은 헬스 문맥에서 "자세/테크닉" 의미 우세
+- 영어권 웨이트 유튜브/SNS 99% "form = technique"
+- 권고: 영문은 `Form` 피하고 `Rank`/`Progress` 계열 사용
+
+**최종 라벨 확정:**
+
+| 화면 | 한국어 | 영어 |
+|---|---|---|
+| 홈화면 | 최근 90일 폼 | 90-Day Progress |
+| 리포트 탭 | 오늘 폼 | Today's Rank |
+
+**구현 설계:**
+```typescript
+// 단일 함수 + 범위 옵션 (데이터 자문 제안)
+getCategoryBestBwRatio(exercises, logs, history, bw, {
+  sessionOnly: true,  // 이번 세션만 (리포트용)
+  rangeDays: 90,      // N일 내 필터 (홈용)
+});
+```
+
+**구현 범위:**
+- `src/utils/fitnessPercentile.ts` — options 인자 추가 (sessionOnly, rangeDays)
+- `src/components/dashboard/HomeScreen.tsx` — `{ rangeDays: 90 }` + `getBestRunningPace(history, 90)`
+- `src/components/report/tabs/StatusTab.tsx` — `{ sessionOnly: true }` + `recentHistory` prop 제거
+- `src/components/report/WorkoutReport.tsx` — StatusTab 호출부에서 `recentHistory` 제거
+- `src/locales/ko.json` / `en.json` — home.status.title, report.tab.status 업데이트
+- `src/components/report/ReportHelpModal.tsx` — 측정 범위 안내 문구 추가
+
+**자동 캡처 효과 (부가 혜택):**
+- 과거 세션 리포트 재방문 시 → 그때 데이터 그대로 → 같은 결과
+- 별도 스냅샷 저장 로직 불필요 (Firestore 쓰기 절약)
+
+**남은 회의:**
+- 회의 57: 구현 후 사용자 피드백 수집 + 기타 개선
+
+**대표 최종 컨펌:** "A로" — 2026-04-12 (홈 90-Day Progress / 리포트 Today's Rank)
+
+---
+
 ### 회의 55: 칼로리 로직 재설계 (EPOC + 볼륨 강도 + 활동 시간 + 밥공기 환산)
 **참석:** 대표(임주용), 기획자(PM), **황지윤 박사 (임상영양사)**, **김진석 박사 (운동영양사, ISSN)**, 한체대 운동과학 교수, **박충환 교수 (USC Marshall)**, 트레이너
 **일자:** 2026-04-12

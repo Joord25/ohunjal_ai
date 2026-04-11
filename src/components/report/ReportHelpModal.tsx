@@ -231,6 +231,11 @@ export const ReportHelpModal: React.FC<ReportHelpModalProps> = ({ helpCard, onCl
                     <p>{locale === "ko" ? "머신 운동은 프리웨이트 대비 0.7~0.75 보정 적용" : "Machine exercises adjusted by 0.7-0.75 vs free weights"}</p>
                   </div>
                 </div>
+                <div className="bg-emerald-50 rounded-xl p-3 space-y-1 border border-emerald-100">
+                  <p className="text-[11px] font-bold text-[#1B4332]">{locale === "ko" ? "측정 범위" : "Measurement Scope"}</p>
+                  <p className="text-[11px] text-gray-600 leading-relaxed">{locale === "ko" ? "홈화면 '최근 90일 폼' = 최근 90일 내 최고 기록 기준 (꾸준히 운동해야 유지)" : "Home '90-Day Progress' = best from past 90 days (requires consistency)"}</p>
+                  <p className="text-[11px] text-gray-600 leading-relaxed">{locale === "ko" ? "리포트 '오늘 폼' = 이번 세션의 운동만 기준 (오늘의 스냅샷)" : "Report 'Today's Rank' = based on this session's exercises only (today's snapshot)"}</p>
+                </div>
                 <p className="text-[11px] text-gray-400">{locale === "ko" ? "운동 기록이 쌓일수록 정확도가 올라가요. 최소 3회 이상 기록하면 신뢰도가 높아집니다." : "Accuracy improves with more data. At least 3 sessions recommended for reliable results."}</p>
               </div>
             </>
@@ -267,6 +272,11 @@ export const ReportHelpModal: React.FC<ReportHelpModalProps> = ({ helpCard, onCl
                     <p>{locale === "ko" ? "코어 & 팔: 플랭크, 크런치, 바이셉 컬, 트라이셉 푸쉬다운 등" : "Core & Arms: Plank, Crunch, Bicep Curl, Tricep Pushdown, etc."}</p>
                     <p>{locale === "ko" ? "체력: 러닝 기록 기반 (데이터 있을 때)" : "Cardio: Based on running data (when available)"}</p>
                   </div>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-3 space-y-1 border border-emerald-100">
+                  <p className="text-[11px] font-bold text-[#1B4332]">{locale === "ko" ? "홈 vs 리포트 차이" : "Home vs Report"}</p>
+                  <p className="text-[11px] text-gray-600 leading-relaxed">{locale === "ko" ? "홈 '최근 90일 폼' = 최근 90일의 모든 세션 중 최고 기록" : "Home '90-Day Progress' = best across all sessions in the past 90 days"}</p>
+                  <p className="text-[11px] text-gray-600 leading-relaxed">{locale === "ko" ? "리포트 '오늘 폼' = 이번 세션 운동만의 등수 (과거 무시)" : "Report 'Today's Rank' = ranks based only on this session (ignores past)"}</p>
                 </div>
                 <p className="text-[11px] text-gray-400">{locale === "ko" ? "머신 운동은 프리웨이트 대비 0.7~0.75 보정 적용. 운동 기록이 쌓일수록 정확해져요." : "Machine exercises adjusted 0.7-0.75 vs free weights. Accuracy improves with more data."}</p>
                 <p className="text-[10px] text-gray-400 pt-2 border-t border-gray-100">{locale === "ko" ? "근거: ACSM 11th ed, NSCA 4th ed, Brzycki/Epley/Lombardi E1RM 공식" : "Source: ACSM 11th ed, NSCA 4th ed, Brzycki/Epley/Lombardi E1RM formulas"}</p>

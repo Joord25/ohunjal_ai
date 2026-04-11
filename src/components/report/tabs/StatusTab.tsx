@@ -12,15 +12,12 @@ import {
   computeFitnessAge,
   percentileToRank,
   getAgeGroupLabel,
-  getBestRunningPace,
-  getCardioPacePercentile,
 } from "@/utils/fitnessPercentile";
-import { WorkoutHistory } from "@/constants/workout";
 
+// 회의 56: recentHistory 의존성 제거 — 이번 세션 데이터만 사용 (sessionOnly 모드)
 export interface StatusTabProps {
   exercises: { name: string }[];
   logs: Record<number, { weightUsed?: string; repsCompleted: number }[]>;
-  recentHistory: WorkoutHistory[];
   bodyWeightKg: number;
   gender: "male" | "female";
   age: number;
@@ -43,7 +40,6 @@ const CATEGORIES: FitnessCategory[] = ["chest", "back", "shoulder", "legs", "cor
 export const StatusTab: React.FC<StatusTabProps> = ({
   exercises,
   logs,
-  recentHistory,
   bodyWeightKg,
   gender,
   age,
@@ -53,32 +49,22 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   const { t, locale } = useTranslation();
   const isKo = locale === "ko";
 
-  // 카테고리별 BW ratio 추출
+  // 회의 56: 리포트 "오늘 폼" — 이번 세션 데이터만 사용 (과거 이력 무시)
+  // → 자동으로 히스토리 캡처 효과 (과거 리포트 재방문 시 같은 수치)
   const bestByCategory = getCategoryBestBwRatio(
     exercises,
     logs,
-    recentHistory,
+    [], // sessionOnly 모드에서는 history 전달 불필요 (함수 내부에서 무시됨)
     bodyWeightKg,
+    { sessionOnly: true },
   );
 
-  // cardio: 러닝 페이스 기반 퍼센타일
-  const bestPace = getBestRunningPace(recentHistory);
-
-  // 카테고리별 퍼센타일 계산
+  // 카테고리별 퍼센타일 계산 (sessionOnly: cardio는 데이터 없음 처리)
   const categoryPercentiles: CategoryPercentile[] = CATEGORIES.map((cat) => {
-    // cardio는 러닝 페이스 기반
+    // 회의 56: sessionOnly 모드에선 cardio는 이번 세션 데이터가 없는 한 표시 안 함
+    // (러닝 pace는 runningStats에 있지만 StatusTab props엔 없으므로 일단 false)
     if (cat === "cardio") {
-      if (bestPace === null) {
-        return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };
-      }
-      const percentile = getCardioPacePercentile(bestPace, gender, age);
-      return {
-        category: cat,
-        rank: percentileToRank(percentile),
-        percentile,
-        bwRatio: 0,
-        hasData: true,
-      };
+      return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };
     }
 
     const bwRatio = bestByCategory.get(cat);

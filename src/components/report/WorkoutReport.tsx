@@ -479,7 +479,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             <StatusTab
               exercises={sessionData.exercises}
               logs={logs}
-              recentHistory={recentHistory}
               bodyWeightKg={bodyWeightKg ?? 70}
               gender={gender ?? "male"}
               age={userAge}
@@ -645,7 +644,6 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             <StatusTab
               exercises={sessionData.exercises}
               logs={logs}
-              recentHistory={recentHistory}
               bodyWeightKg={bodyWeightKg ?? 70}
               gender={gender ?? "male"}
               age={birthYear ? new Date().getFullYear() - birthYear : 30}

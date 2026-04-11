@@ -99,7 +99,7 @@
   "home.checklist.workout.done": "Workout Done!",
   "home.checklist.nutrition": "Check Today's Diet",
   "home.checklist.quest": "Weekly Quests",
-  "home.status.title": "My Current Status",
+  "home.status.title": "90-Day Progress",
   "home.status.noData": "Your ranking will appear as you work out",
   "home.prediction.noData": "Growth predictions start after your first workout",
 
@@ -756,7 +756,7 @@
   "report.insight.volumeDown": "Total volume {volume}kg ({diff}% vs last)",
   "report.insight.volumeSame": "Total volume {volume}kg (same as last)",
   "report.scienceSub": "1RM · Load · Intensity · Fatigue",
-  "report.tab.status": "Status",
+  "report.tab.status": "Today's Rank",
   "report.tab.today": "Today",
   "report.tab.next": "Next",
   "report.tab.nutrition": "Nutrition",

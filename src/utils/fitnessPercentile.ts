@@ -375,18 +375,39 @@ function isWeightedBodyweight(name: string): boolean {
   return ["중량 풀업", "weighted pull", "중량 딥스", "weighted dip", "중량 친업", "weighted chin"].some(kw => lower.includes(kw));
 }
 
-/** 카테고리별 최고 E1RM BW ratio 추출 (이력 + 오늘) */
+/**
+ * 카테고리별 최고 E1RM BW ratio 추출
+ *
+ * 회의 56 (2026-04-12): 범위 인자 도입
+ * - sessionOnly: true → history 무시, 현재 exercises/logs만 사용 (리포트 "오늘 폼"용)
+ * - rangeDays: number → history를 N일 내로 필터 (홈 "최근 90일 폼"용)
+ * - 옵션 미지정 → 기존 동작 (전체 history)
+ */
 export function getCategoryBestBwRatio(
   exercises: { name: string }[],
   logs: Record<number, { weightUsed?: string; repsCompleted: number }[]>,
-  history: { sessionData: { exercises: { name: string }[] }; logs?: Record<number, { weightUsed?: string; repsCompleted: number }[]> }[],
+  history: { date?: string; sessionData: { exercises: { name: string }[] }; logs?: Record<number, { weightUsed?: string; repsCompleted: number }[]> }[],
   bodyWeightKg: number,
+  options?: { sessionOnly?: boolean; rangeDays?: number },
 ): Map<FitnessCategory, number> {
   const bestByCategory = new Map<FitnessCategory, number>();
   if (!bodyWeightKg || bodyWeightKg <= 0) return bestByCategory;
 
+  // 회의 56: 범위 필터
+  const sessionOnly = options?.sessionOnly ?? false;
+  const rangeDays = options?.rangeDays;
+  const effectiveHistory = sessionOnly
+    ? [] // sessionOnly 모드: history 완전 무시
+    : rangeDays
+      ? history.filter(h => {
+          if (!h.date) return true; // 날짜 없으면 일단 포함
+          const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
+          return new Date(h.date).getTime() >= cutoff;
+        })
+      : history;
+
   // 이력에서
-  for (const h of history) {
+  for (const h of effectiveHistory) {
     if (!h.logs) continue;
     for (let i = 0; i < h.sessionData.exercises.length; i++) {
       const ex = h.sessionData.exercises[i];

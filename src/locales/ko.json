@@ -99,7 +99,7 @@
   "home.checklist.workout.done": "오늘 운동 완료!",
   "home.checklist.nutrition": "오늘 식단 확인",
   "home.checklist.quest": "주간 퀘스트",
-  "home.status.title": "내 현재 상태",
+  "home.status.title": "최근 90일 폼",
   "home.status.noData": "운동 기록이 쌓이면 나의 위치가 보여요",
   "home.prediction.noData": "첫 운동 후 성장 예측이 시작돼요",
 
@@ -756,7 +756,7 @@
   "report.insight.volumeDown": "총 볼륨 {volume}kg (지난번 대비 {diff}%)",
   "report.insight.volumeSame": "총 볼륨 {volume}kg (지난번과 동일)",
   "report.scienceSub": "1RM · 부하 · 강도 · 피로",
-  "report.tab.status": "내 상태",
+  "report.tab.status": "오늘 폼",
   "report.tab.today": "오늘",
   "report.tab.next": "다음",
   "report.tab.nutrition": "영양",

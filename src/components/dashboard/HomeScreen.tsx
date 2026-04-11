@@ -443,9 +443,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ userName, onStartWorkout
     const exercises = lastSession.sessionData?.exercises || [];
     const logs = lastSession.logs || {};
 
-    const bestByCategory = getCategoryBestBwRatio(exercises, logs, history, bodyWeightKg);
+    // 회의 56: 홈화면은 최근 90일 기준 (전체 히스토리 아님)
+    const bestByCategory = getCategoryBestBwRatio(exercises, logs, history, bodyWeightKg, { rangeDays: 90 });
 
-    const bestPace = getBestRunningPace(history);
+    const bestPace = getBestRunningPace(history, 90);
 
     const categoryPercentiles: CategoryPercentile[] = CATEGORIES.map((cat) => {
       if (cat === "cardio") {
