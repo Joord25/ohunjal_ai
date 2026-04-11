@@ -2,8 +2,15 @@
  * ACSM/NSCA 기반 연령·성별별 퍼센타일 기준표
  * BW(체중) 대비 1RM 비율로 퍼센타일 산출
  *
- * 카테고리: 가슴(chest), 등(back), 어깨(shoulder), 하체(legs), 코어(core), 체력(cardio)
+ * 카테고리: 가슴(chest), 등(back), 어깨(shoulder), 하체(legs), 코어 & 팔(core), 체력(cardio)
  * 종합(overall)은 6개 가중 평균으로 산출
+ *
+ * 회의 54 (2026-04-12): 일반인 기준 완화 + 팔 → 코어 통합
+ * - 기존 ACSM 테이블은 엘리트 중심이라 일반인이 점수 올리기 힘든 문제
+ * - 50th percentile 목표 = "헬스장 1년 꾸준히 다닌 일반 성인" 수준
+ * - EASING_FACTORS로 부위별 완화 비율 적용 (raw 표는 원본 유지)
+ * - 이두/삼두 운동을 back/chest에서 core로 이동 ("코어 & 팔" 통합 카테고리)
+ * - 육각형 차트 라벨: "코어" → "코어 & 팔" / "Core & Arms"
  */
 
 // 연령대 구간
@@ -122,6 +129,24 @@ const PERCENTILE_TABLE: PercentileTable = {
 
 export type FitnessCategory = "chest" | "back" | "shoulder" | "legs" | "cardio" | "core";
 
+/**
+ * 회의 54: 일반인 기준 완화 비율
+ * - 원본 ACSM 표는 엘리트 기준. 각 카테고리 표 값에 이 계수를 곱해서 lookup 시점에 threshold를 낮춤
+ * - 예: chest 50th 원본 0.90 × 0.93 = 0.837 → 체중 75kg이면 벤치 63kg 1RM이 50th
+ * - 코어 & 팔은 가장 크게 완화 (20%) — 이두/삼두가 새로 편입되어 측정 대상 확대
+ * - 어깨는 크게 완화 (18%) — OHP 기준이 가장 빡센 부위
+ * - 가슴/등/하체는 작게 완화 (7%) — 컴파운드 기본기라 기준 유지 쪽
+ * - cardio는 페이스 기반 별도 체계라 건드리지 않음
+ */
+const EASING_FACTORS: Record<FitnessCategory, number> = {
+  chest: 0.93,
+  back: 0.93,
+  shoulder: 0.82,
+  legs: 0.93,
+  core: 0.80,
+  cardio: 1.0,
+};
+
 /** 운동명 → 카테고리 매핑 */
 const EXERCISE_CATEGORY_MAP: Record<string, FitnessCategory> = {};
 
@@ -133,12 +158,10 @@ const EXERCISE_CATEGORY_MAP: Record<string, FitnessCategory> = {};
  "Push Up", "Push-Up", "Dips", "스미스 벤치 프레스", "Smith Bench Press",
  "웨이티드 푸쉬업", "니 푸쉬업", "다이아몬드 푸쉬업", "와이드 푸쉬업", "아처 푸쉬업", "힌두 푸쉬업",
  "케틀벨 플로어 프레스", "인클라인 바벨 프레스", "중량 딥스", "랜드마인 프레스", "덤벨 플로어 프레스",
- "트라이셉 로프 푸쉬다운", "스컬 크러셔", "케이블 푸쉬 다운", "트라이셉스 킥백", "트라이셉스 딥스",
  "바텀스업 케틀벨 프레스",
  "Weighted Push-Up", "Knee Push-Up", "Diamond Push-Up", "Wide Push-Up", "Archer Push-Up",
  "Hindu Push-Up", "Kettlebell Floor Press", "Incline Barbell Press", "Weighted Dips",
- "Landmine Press", "Dumbbell Floor Press", "Tricep Rope Pushdown", "Skullcrushers",
- "Cable Pushdown", "Tricep Kickback", "Tricep Dips", "Bottoms-Up Kettlebell Press",
+ "Landmine Press", "Dumbbell Floor Press", "Bottoms-Up Kettlebell Press",
 ].forEach(name => EXERCISE_CATEGORY_MAP[name] = "chest");
 
 // 등 (back)
@@ -147,11 +170,9 @@ const EXERCISE_CATEGORY_MAP: Record<string, FitnessCategory> = {};
  "Barbell Row", "Dumbbell Row", "Pull Up", "Pull-Up", "Lat Pulldown", "Seated Row",
  "Cable Row", "T-Bar Row", "Pendlay Row", "One Arm Dumbbell Row", "Single Arm Dumbbell Row", "Chin Up", "Chin-Up", "TRX Row",
  "Inverted Row", "스미스 로우", "Smith Row", "랙 풀", "Rack Pull",
- "바벨 컬", "해머 컬", "덤벨 컬", "인클라인 덤벨 컬", "케이블 바이셉 컬", "덤벨 프리쳐 컬",
- "TRX 바이셉스 컬", "밴드 풀 어파트", "바벨 슈러그", "케이블 페이스 풀", "밴드 페이스 풀",
+ "밴드 풀 어파트", "바벨 슈러그", "케이블 페이스 풀", "밴드 페이스 풀",
  "어시스티드 풀업", "시티드 케이블 로우",
- "Barbell Curl", "Hammer Curl", "Dumbbell Curl", "Incline Dumbbell Curl", "Cable Bicep Curl",
- "Dumbbell Preacher Curl", "TRX Biceps Curl", "Band Pull-Apart", "Barbell Shrug",
+ "Band Pull-Apart", "Barbell Shrug",
  "Cable Face Pull", "Band Face Pull", "Assisted Pull-Up", "Seated Cable Row",
 ].forEach(name => EXERCISE_CATEGORY_MAP[name] = "back");
 
@@ -180,7 +201,7 @@ const EXERCISE_CATEGORY_MAP: Record<string, FitnessCategory> = {};
  "Cable Pull-Through", "Dumbbell Thruster", "Step-Up",
 ].forEach(name => EXERCISE_CATEGORY_MAP[name] = "legs");
 
-// 코어 (core)
+// 코어 & 팔 (core) — 회의 54: 이두/삼두 통합
 ["플랭크", "사이드 플랭크", "웨이티드 플랭크", "러시안 트위스트", "버드 독",
  "행잉 니 레이즈", "행잉 레그 레이즈", "Ab 휠 롤아웃", "바벨 롤아웃",
  "케이블 우드찹", "크런치", "바이시클 크런치", "오블리크 크런치", "리버스 크런치",
@@ -191,6 +212,16 @@ const EXERCISE_CATEGORY_MAP: Record<string, FitnessCategory> = {};
  "Cable Woodchop", "Crunch", "Bicycle Crunch", "Oblique Crunch", "Reverse Crunch",
  "Mountain Climber", "Scissor Kick", "Toe Touch Crunch", "Flutter Kick", "Cable Crunch",
  "Dumbbell Side Bend", "V-Up", "Ab Slide", "Superman",
+ // 팔 운동 (이두) — 회의 54: back → core 이동
+ "바벨 컬", "해머 컬", "덤벨 컬", "인클라인 덤벨 컬", "케이블 바이셉 컬", "덤벨 프리쳐 컬",
+ "TRX 바이셉스 컬", "컨센트레이션 컬", "스파이더 컬", "리버스 컬",
+ "Barbell Curl", "Hammer Curl", "Dumbbell Curl", "Incline Dumbbell Curl", "Cable Bicep Curl",
+ "Dumbbell Preacher Curl", "TRX Biceps Curl", "Concentration Curl", "Spider Curl", "Reverse Curl",
+ // 팔 운동 (삼두) — 회의 54: chest → core 이동
+ "트라이셉 로프 푸쉬다운", "스컬 크러셔", "케이블 푸쉬 다운", "트라이셉스 킥백", "트라이셉스 딥스",
+ "오버헤드 트라이셉 익스텐션", "라잉 트라이셉 익스텐션", "클로즈 그립 벤치 프레스",
+ "Tricep Rope Pushdown", "Skullcrushers", "Cable Pushdown", "Tricep Kickback", "Tricep Dips",
+ "Overhead Tricep Extension", "Lying Tricep Extension", "Close Grip Bench Press",
 ].forEach(name => EXERCISE_CATEGORY_MAP[name] = "core");
 
 /** 운동명으로 카테고리 찾기 (부분 매칭 지원) */
@@ -199,11 +230,31 @@ export function getExerciseCategory(exerciseName: string): FitnessCategory | nul
   if (EXERCISE_CATEGORY_MAP[exerciseName]) return EXERCISE_CATEGORY_MAP[exerciseName];
 
   // 부분 매칭
+  // 회의 54: 순서 주의 — (1) legs가 먼저 체크되어 "leg curl"이 legs로 매칭 (2) 팔(이두/삼두) 패턴을 core보다 먼저 체크
   const lower = exerciseName.toLowerCase();
-  if (lower.includes("bench") || lower.includes("벤치") || lower.includes("chest") || lower.includes("가슴") || lower.includes("push up") || lower.includes("push-up") || lower.includes("pushup") || lower.includes("푸시업") || lower.includes("푸쉬업") || lower.includes("플라이") || lower.includes("fly") || lower.includes("floor press") || lower.includes("플로어 프레스") || lower.includes("incline") || lower.includes("인클라인") || lower.includes("decline") || lower.includes("디클라인") || lower.includes("dip") || lower.includes("딥스") || lower.includes("체스트")) return "chest";
-  if (lower.includes("row") || lower.includes("로우") || lower.includes("pull up") || lower.includes("pull-up") || lower.includes("pullup") || lower.includes("풀업") || lower.includes("pulldown") || lower.includes("풀다운") || lower.includes("턱걸이") || lower.includes("chin") || lower.includes("trx") || lower.includes("rack pull") || lower.includes("랙 풀") || lower.includes("curl") || lower.includes("컬") || lower.includes("슈러그") || lower.includes("shrug")) return "back";
-  if (lower.includes("shoulder") || lower.includes("어깨") || lower.includes("overhead") || lower.includes("오버헤드") || lower.includes("military") || lower.includes("밀리터리") || lower.includes("lateral") || lower.includes("레터럴") || lower.includes("숄더") || lower.includes("arnold") || lower.includes("아놀드") || lower.includes("face pull") || lower.includes("페이스 풀") || lower.includes("rear delt") || lower.includes("리어 델트") || lower.includes("upright") || lower.includes("업라이트")) return "shoulder";
+
+  // 1. 하체 (leg curl을 먼저 잡기 위해 최우선)
   if (lower.includes("squat") || lower.includes("스쿼트") || lower.includes("deadlift") || lower.includes("데드") || lower.includes("leg") || lower.includes("레그") || lower.includes("lunge") || lower.includes("런지") || lower.includes("하체") || lower.includes("hip") || lower.includes("힙") || lower.includes("calf") || lower.includes("카프") || lower.includes("글루트") || lower.includes("glute") || lower.includes("burpee") || lower.includes("버피") || lower.includes("thruster") || lower.includes("쓰러스터") || lower.includes("swing") || lower.includes("스윙")) return "legs";
+
+  // 2. 팔 (이두/삼두) → core로 재분류 (회의 54)
+  if (lower.includes("이두") || lower.includes("bicep") ||
+      lower.includes("삼두") || lower.includes("tricep") ||
+      lower.includes("컬") || lower.includes("curl") ||
+      lower.includes("푸쉬 다운") || lower.includes("푸쉬다운") || lower.includes("pushdown") || lower.includes("push down") ||
+      lower.includes("킥백") || lower.includes("kickback") || lower.includes("kick back") ||
+      lower.includes("스컬") || lower.includes("skull") ||
+      lower.includes("클로즈 그립") || lower.includes("close grip")) return "core";
+
+  // 3. 가슴
+  if (lower.includes("bench") || lower.includes("벤치") || lower.includes("chest") || lower.includes("가슴") || lower.includes("push up") || lower.includes("push-up") || lower.includes("pushup") || lower.includes("푸시업") || lower.includes("푸쉬업") || lower.includes("플라이") || lower.includes("fly") || lower.includes("floor press") || lower.includes("플로어 프레스") || lower.includes("incline") || lower.includes("인클라인") || lower.includes("decline") || lower.includes("디클라인") || lower.includes("dip") || lower.includes("딥스") || lower.includes("체스트")) return "chest";
+
+  // 4. 등 (회의 54: curl/컬 제거됨 — 팔로 이동)
+  if (lower.includes("row") || lower.includes("로우") || lower.includes("pull up") || lower.includes("pull-up") || lower.includes("pullup") || lower.includes("풀업") || lower.includes("pulldown") || lower.includes("풀다운") || lower.includes("턱걸이") || lower.includes("chin") || lower.includes("trx") || lower.includes("rack pull") || lower.includes("랙 풀") || lower.includes("슈러그") || lower.includes("shrug")) return "back";
+
+  // 5. 어깨
+  if (lower.includes("shoulder") || lower.includes("어깨") || lower.includes("overhead") || lower.includes("오버헤드") || lower.includes("military") || lower.includes("밀리터리") || lower.includes("lateral") || lower.includes("레터럴") || lower.includes("숄더") || lower.includes("arnold") || lower.includes("아놀드") || lower.includes("face pull") || lower.includes("페이스 풀") || lower.includes("rear delt") || lower.includes("리어 델트") || lower.includes("upright") || lower.includes("업라이트")) return "shoulder";
+
+  // 6. 코어 (체간)
   if (lower.includes("plank") || lower.includes("플랭크") || lower.includes("crunch") || lower.includes("크런치") || lower.includes("ab ") || lower.includes("ab휠") || lower.includes("ab wheel") || lower.includes("코어") || lower.includes("core") || lower.includes("leg raise") || lower.includes("레그 레이즈") || lower.includes("시저") || lower.includes("scissor") || lower.includes("flutter") || lower.includes("플러터") || lower.includes("v-up") || lower.includes("브이 업") || lower.includes("mountain") || lower.includes("마운틴") || lower.includes("bird dog") || lower.includes("버드") || lower.includes("superman") || lower.includes("슈퍼맨") || lower.includes("deadbug") || lower.includes("데드버그") || lower.includes("twist") || lower.includes("트위스트") || lower.includes("woodchop") || lower.includes("우드찹") || lower.includes("side bend") || lower.includes("사이드 벤드")) return "core";
 
   return null;
@@ -470,8 +521,12 @@ export function bwRatioToPercentile(
   if (category === "cardio") return 50; // cardio는 getCardioPacePercentile 사용
 
   const ageGroup = getAgeGroup(age);
-  const table = PERCENTILE_TABLE[gender]?.[ageGroup]?.[category];
-  if (!table) return 50;
+  const rawTable = PERCENTILE_TABLE[gender]?.[ageGroup]?.[category];
+  if (!rawTable) return 50;
+
+  // 회의 54: 부위별 완화 계수 적용 (원본 표 × easing) → threshold가 낮아져 일반인이 더 높은 percentile 획득
+  const easing = EASING_FACTORS[category] ?? 1.0;
+  const table = rawTable.map(v => v * easing);
 
   // 보간: table[0]=10th ... table[8]=90th
   const percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90];

@@ -51,7 +51,7 @@ const CATEGORY_LABELS: Record<FitnessCategory, { ko: string; en: string }> = {
   back: { ko: "등", en: "Back" },
   shoulder: { ko: "어깨", en: "Shoulder" },
   legs: { ko: "하체", en: "Legs" },
-  core: { ko: "코어", en: "Core" },
+  core: { ko: "코어 & 팔", en: "Core & Arms" },
   cardio: { ko: "체력", en: "Cardio" },
 };
 
