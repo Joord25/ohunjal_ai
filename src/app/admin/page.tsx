@@ -72,6 +72,16 @@ interface DashboardData {
     lastMonth: number;
     total: number;
   };
+  // 성장 지표 (CVR / LTV / Churn)
+  growth?: {
+    cvrTrialToRegistered: number | null;
+    cvrRegisteredToPaid: number | null;
+    cvrTrialToPaid: number | null;
+    ltv: number;
+    churnRate: number | null;
+    paidUniqueUsers: number;
+    totalRevenue: number;
+  };
 }
 
 interface ListUser {
@@ -748,6 +758,89 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+
+                {/* 성장 지표 카드 — 회의: CVR / LTV / Churn */}
+                {dashboard.growth && (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+                    <div className="flex items-baseline justify-between mb-3">
+                      <p className="font-bold text-[#1B4332]">성장 지표</p>
+                      <p className="text-[10px] text-gray-400">누적 기준</p>
+                    </div>
+
+                    {/* CVR 퍼널 */}
+                    <div className="mb-4">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">CVR · 전환율</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">체험 → 가입</span>
+                          <span className="font-bold text-[#1B4332]">
+                            {dashboard.growth.cvrTrialToRegistered !== null ? `${dashboard.growth.cvrTrialToRegistered}%` : "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">가입 → 결제</span>
+                          <span className="font-bold text-emerald-600">
+                            {dashboard.growth.cvrRegisteredToPaid !== null ? `${dashboard.growth.cvrRegisteredToPaid}%` : "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">체험 → 결제 (전체 전환)</span>
+                          <span className="font-bold text-[#1B4332]">
+                            {dashboard.growth.cvrTrialToPaid !== null ? `${dashboard.growth.cvrTrialToPaid}%` : "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-gray-100 my-3" />
+
+                    {/* LTV */}
+                    <div className="flex items-baseline justify-between mb-3">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">LTV · 생애가치</p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">
+                          누적매출 ÷ 유니크 결제유저 ({dashboard.growth.paidUniqueUsers}명)
+                        </p>
+                      </div>
+                      <p className="text-lg font-black text-[#1B4332]">₩{dashboard.growth.ltv.toLocaleString()}</p>
+                    </div>
+
+                    <div className="h-px bg-gray-100 my-3" />
+
+                    {/* Churn */}
+                    <div className="flex items-baseline justify-between mb-3">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Churn · 이탈률</p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">
+                          (해지 + 만료) ÷ 전체 구독 이력
+                        </p>
+                      </div>
+                      <p className={`text-lg font-black ${
+                        dashboard.growth.churnRate === null ? "text-gray-400"
+                          : dashboard.growth.churnRate >= 10 ? "text-red-500"
+                          : dashboard.growth.churnRate >= 5 ? "text-amber-600"
+                          : "text-emerald-600"
+                      }`}>
+                        {dashboard.growth.churnRate !== null ? `${dashboard.growth.churnRate}%` : "-"}
+                      </p>
+                    </div>
+
+                    <div className="h-px bg-gray-100 my-3" />
+
+                    {/* 누적 총 매출 */}
+                    <div className="flex items-baseline justify-between">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Revenue</p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">PortOne 실결제 누적 (환불 제외)</p>
+                      </div>
+                      <p className="text-sm font-bold text-gray-600">₩{dashboard.growth.totalRevenue.toLocaleString()}</p>
+                    </div>
+
+                    <p className="text-[9px] text-gray-400 mt-3 leading-relaxed">
+                      ⓘ 모든 수치는 현재 시점 누적값입니다. 시계열 추이는 Looker Studio 권장.
+                    </p>
+                  </div>
+                )}
 
                 {/* User Segment Stats + 회의 57 Tier 2: 증감률 */}
                 {dashboard.trial && dashboard.registered && (() => {

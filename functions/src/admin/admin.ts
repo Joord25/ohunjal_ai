@@ -368,6 +368,8 @@ export const adminDashboard = onRequest(
       let paidWeek = 0, paidLastWeek = 0;
       let paidMonth = 0, paidLastMonth = 0;
       let paidTotal = 0;
+      let totalRevenue = 0;
+      const paidUserIds = new Set<string>(); // 유니크 결제 유저 (CVR 계산용)
       const paymentsSnap = await db.collectionGroup("payments").get();
       paymentsSnap.forEach(doc => {
         const p = doc.data();
@@ -377,8 +379,11 @@ export const adminDashboard = onRequest(
         if (p.status && p.status !== "paid") return;
         const paymentDate = new Date(p.paidAt);
 
-        // 전체 카운트
+        // 전체 카운트 + 누적 매출 + 유니크 유저 (LTV/Churn/CVR 계산용)
         paidTotal++;
+        totalRevenue += amount;
+        const uid = doc.ref.parent.parent?.id;
+        if (uid) paidUserIds.add(uid);
 
         // 이번달/전월 매출 + 건수
         if (paymentDate >= monthStart) {
@@ -405,6 +410,7 @@ export const adminDashboard = onRequest(
           paidLastWeek++;
         }
       });
+      const paidUniqueUsers = paidUserIds.size;
 
       // Collect all users from Firebase Auth
       const allUsers: Array<{ email: string; isAnonymous: boolean; createdAt: Date }> = [];
@@ -444,6 +450,32 @@ export const adminDashboard = onRequest(
         ? Math.round(((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
         : null;
 
+      // 회의: 성장 지표 — CVR (전환율) / LTV (생애가치) / Churn (이탈률)
+      const trialCount = trialUsers.length;
+      const registeredCount = googleUsers.length;
+
+      // CVR — 각 단계 전환율 (%)
+      const cvrTrialToRegistered = trialCount > 0
+        ? Math.round((registeredCount / trialCount) * 1000) / 10  // 소수점 1자리
+        : null;
+      const cvrRegisteredToPaid = registeredCount > 0
+        ? Math.round((paidUniqueUsers / registeredCount) * 1000) / 10
+        : null;
+      const cvrTrialToPaid = trialCount > 0
+        ? Math.round((paidUniqueUsers / trialCount) * 1000) / 10
+        : null;
+
+      // LTV — 생애가치 = (누적 매출 / 유니크 결제 유저) (보수적 집계, 환불 제외)
+      // 이상적으로는 ARPU × 평균 구독 개월이지만 시계열 데이터 부재 → 누적 실매출 기반
+      const ltv = paidUniqueUsers > 0 ? Math.round(totalRevenue / paidUniqueUsers) : 0;
+
+      // Churn — 이탈률 = (해지 + 만료) / (전체 구독 이력)
+      // 누적 기준 (시계열 없음). 월간 churn은 별도 집계 필요
+      const totalSubscribersEver = active + cancelled + expired;
+      const churnRate = totalSubscribersEver > 0
+        ? Math.round(((cancelled + expired) / totalSubscribersEver) * 1000) / 10
+        : null;
+
       res.status(200).json({
         totalUsers: allUsers.length,
         active,
@@ -469,6 +501,16 @@ export const adminDashboard = onRequest(
           month: paidMonth,
           lastMonth: paidLastMonth,
           total: paidTotal,
+        },
+        // 회의: 성장 지표 — CVR/LTV/Churn
+        growth: {
+          cvrTrialToRegistered,     // 체험 → 가입 %
+          cvrRegisteredToPaid,      // 가입 → 결제 %
+          cvrTrialToPaid,           // 체험 → 결제 %
+          ltv,                      // 생애가치 (누적 매출 / 유니크 결제 유저)
+          churnRate,                // 이탈률 % (누적 기준)
+          paidUniqueUsers,          // 유니크 결제 유저 수
+          totalRevenue,             // 누적 총 매출
         },
       });
     } catch (error) {
