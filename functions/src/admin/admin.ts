@@ -327,6 +327,22 @@ export const adminDashboard = onRequest(
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastMonthEnd = monthStart; // exclusive
 
+      // 시간 범위 변수들 (KST 기준) — payments iteration 전에 먼저 계산 필요
+      // (결제 행 집계가 Firebase Auth 섹션보다 앞에 있어서 TDZ 방지)
+      const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+      const kstYear = kstNow.getUTCFullYear();
+      const kstMonth = kstNow.getUTCMonth();
+      const kstDate = kstNow.getUTCDate();
+      const kstDay = kstNow.getUTCDay(); // 0=일, 1=월, ..., 6=토
+      const todayStart = new Date(Date.UTC(kstYear, kstMonth, kstDate) - 9 * 60 * 60 * 1000);
+      const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+      // 월요일 시작 주 (한국 비즈니스 관례)
+      const daysToMonday = (kstDay + 6) % 7;
+      const weekStart = new Date(todayStart.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
+      const lastWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthStartDate = new Date(Date.UTC(kstYear, kstMonth, 1) - 9 * 60 * 60 * 1000);
+      const lastMonthStartDate = new Date(Date.UTC(kstYear, kstMonth - 1, 1) - 9 * 60 * 60 * 1000);
+
       // 1) subscriptions 상위 문서 → 구독 상태 카운트만 (매출은 분리)
       const subsSnap = await db.collection("subscriptions").get();
       let active = 0, cancelled = 0, expired = 0, expiringIn3Days = 0;
@@ -409,20 +425,7 @@ export const adminDashboard = onRequest(
       const googleUsers = allUsers.filter(u => !u.isAnonymous);
       const trialUsers = allUsers.filter(u => u.isAnonymous);
 
-      // Time ranges (KST = UTC+9)
-      const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-      const kstYear = kstNow.getUTCFullYear();
-      const kstMonth = kstNow.getUTCMonth();
-      const kstDate = kstNow.getUTCDate();
-      const kstDay = kstNow.getUTCDay(); // 0=일, 1=월, ..., 6=토
-      const todayStart = new Date(Date.UTC(kstYear, kstMonth, kstDate) - 9 * 60 * 60 * 1000);
-      const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-      // 월요일 시작 주 (한국 비즈니스 관례)
-      const daysToMonday = (kstDay + 6) % 7;
-      const weekStart = new Date(todayStart.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
-      const lastWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const monthStartDate = new Date(Date.UTC(kstYear, kstMonth, 1) - 9 * 60 * 60 * 1000);
-      const lastMonthStartDate = new Date(Date.UTC(kstYear, kstMonth - 1, 1) - 9 * 60 * 60 * 1000);
+      // Time ranges는 위에서 이미 계산됨 (payments iteration 전에 선언)
 
       const countByRange = (users: typeof allUsers) => ({
         today: users.filter(u => u.createdAt >= todayStart).length,
