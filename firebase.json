@@ -49,7 +49,8 @@
       { "source": "/api/submitRefundRequest", "function": { "functionId": "submitRefundRequest", "region": "us-central1" } },
       { "source": "/api/adminRefundRequests", "function": { "functionId": "adminRefundRequests", "region": "us-central1" } },
       { "source": "/api/adminProcessRefund", "function": { "functionId": "adminProcessRefund", "region": "us-central1" } },
-      { "source": "/api/planSession", "function": { "functionId": "planSession", "region": "us-central1" } }
+      { "source": "/api/planSession", "function": { "functionId": "planSession", "region": "us-central1" } },
+      { "source": "/api/selfDeleteAccount", "function": { "functionId": "selfDeleteAccount", "region": "us-central1" } }
     ]
   },
   "functions": {

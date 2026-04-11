@@ -33,6 +33,7 @@ Article 4 (Retention and Destruction)
 1. Personal information is retained for the duration of membership.
 2. Upon withdrawal, personal information is destroyed without delay, except where retention is required by law.
 3. Workout records and derived metrics are deleted simultaneously upon account deletion.
+4. Records retained under legal retention periods (e.g., payment records under the Electronic Commerce Act) shall be anonymized and stored separately from identifying information such as name and email, in accordance with Article 21(2) of the Personal Information Protection Act. Such records shall not be used for any purpose other than those specified by law, including tax audits, refunds, dispute resolution, and law enforcement.
 
 Article 5 (Third-Party Provision)
 The Company does not provide personal information to third parties without Member consent, except as required by law.
