@@ -343,25 +343,40 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
           </div>
         </div>
 
-        {/* User reviews */}
-        <div className="overflow-hidden mt-12 sm:mt-16">
-          <div className="flex items-stretch w-max gap-4 sm:gap-6 px-6" style={{ animation: "scroll-right 35s linear infinite" }}>
-            {[...Array(2)].map((_, setIdx) => (
-              <div key={setIdx} className="flex items-stretch shrink-0 gap-4 sm:gap-6">
-                {t.reviews.map((r, i) => (
-                  <div key={`${setIdx}-${i}`} className="w-[280px] sm:w-[320px] shrink-0 bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 flex flex-col">
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {Array.from({ length: 5 }).map((_, s) => <StarSvg key={s} filled={s < r.stars} />)}
+        {/* User reviews — 회의 53: 가상 리뷰 제거, 실제 후기 수집까지 "Coming soon" */}
+        {t.reviews.length > 0 ? (
+          <div className="overflow-hidden mt-12 sm:mt-16">
+            <div className="flex items-stretch w-max gap-4 sm:gap-6 px-6" style={{ animation: "scroll-right 35s linear infinite" }}>
+              {[...Array(2)].map((_, setIdx) => (
+                <div key={setIdx} className="flex items-stretch shrink-0 gap-4 sm:gap-6">
+                  {t.reviews.map((r, i) => (
+                    <div key={`${setIdx}-${i}`} className="w-[280px] sm:w-[320px] shrink-0 bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 flex flex-col">
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {Array.from({ length: 5 }).map((_, s) => <StarSvg key={s} filled={s < r.stars} />)}
+                      </div>
+                      <p className="font-bold text-[#1B4332] text-sm mb-1.5">{r.title}</p>
+                      <p className="text-sm text-gray-500 leading-relaxed flex-1">{r.review}</p>
+                      <p className="text-xs text-gray-400 mt-3">{r.name}</p>
                     </div>
-                    <p className="font-bold text-[#1B4332] text-sm mb-1.5">{r.title}</p>
-                    <p className="text-sm text-gray-500 leading-relaxed flex-1">{r.review}</p>
-                    <p className="text-xs text-gray-400 mt-3">{r.name}</p>
-                  </div>
-                ))}
-              </div>
-            ))}
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-12 sm:mt-16 max-w-md mx-auto px-6">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center">
+              <p className="text-xs text-[#34d399] font-bold tracking-[0.15em] uppercase mb-2">
+                {locale === "ko" ? "실제 후기 준비 중" : "Real reviews coming soon"}
+              </p>
+              <p className="text-sm text-white/60 leading-relaxed">
+                {locale === "ko"
+                  ? <>실제 사용자 후기를 모으고 있어요.<br />추후 업데이트 예정입니다.</>
+                  : <>We&apos;re collecting real user reviews.<br />Coming in a future update.</>}
+              </p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ═══ Section 4: Pricing ═══ */}
