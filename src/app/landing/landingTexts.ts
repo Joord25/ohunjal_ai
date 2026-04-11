@@ -1,5 +1,20 @@
 export type LandingLocale = "ko" | "en";
 
+/**
+ * Hero 부제 — 단순 문자열 또는 부분 강조 객체.
+ * 객체 형태: prefix → highlight1(grren) → middle → highlight2(grren) → suffix
+ * 한국어처럼 강조 불필요할 때는 그냥 string 사용 가능.
+ */
+export type HeroSub =
+  | string
+  | {
+      prefix: string;
+      highlight1: string;
+      middle?: string;
+      highlight2?: string;
+      suffix?: string;
+    };
+
 export interface LandingTexts {
   nav: { brand: string; cta: string };
   hero: {
@@ -7,7 +22,7 @@ export interface LandingTexts {
     line1b?: string;
     line2: string;
     line3: string;
-    sub: string;
+    sub: HeroSub;
     stats: { prefix: string; suffix: string; label: string }[];
     statNote: string;
   };
@@ -150,7 +165,13 @@ const en: LandingTexts = {
     line1b: "Build Muscle",
     line2: "Run Further",
     line3: "",
-    sub: "No PT needed, AI builds your daily personalized plan",
+    sub: {
+      prefix: "AI builds your day ",
+      highlight1: "in 3 seconds",
+      middle: ". ",
+      highlight2: "No PT",
+      suffix: " needed",
+    },
     stats: [
       { prefix: "", suffix: "x", label: "Avg. weekly sessions" },
       { prefix: "", suffix: "%", label: "Completion rate" },

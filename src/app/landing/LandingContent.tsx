@@ -221,7 +221,21 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
           </RevealOnScroll>
 
           <RevealOnScroll delay={400}>
-            <p className="text-sm sm:text-lg text-white/50 leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto">{t.hero.sub}</p>
+            <p className="text-sm sm:text-lg text-white/50 leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto">
+              {typeof t.hero.sub === "string" ? (
+                t.hero.sub
+              ) : (
+                <>
+                  {t.hero.sub.prefix}
+                  <span className="text-[#34d399] font-semibold">{t.hero.sub.highlight1}</span>
+                  {t.hero.sub.middle}
+                  {t.hero.sub.highlight2 && (
+                    <span className="text-[#34d399] font-semibold">{t.hero.sub.highlight2}</span>
+                  )}
+                  {t.hero.sub.suffix}
+                </>
+              )}
+            </p>
           </RevealOnScroll>
 
           <RevealOnScroll delay={600} className="mt-10 sm:mt-20">
