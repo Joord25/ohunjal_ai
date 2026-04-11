@@ -7,6 +7,7 @@ import { PlanShareCard } from "./PlanShareCard";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName, translateWeightGuide } from "@/utils/exerciseName";
+import { translateDesc } from "@/components/report/reportUtils";
 
 interface MasterPlanPreviewProps {
   sessionData: WorkoutSessionData;
@@ -28,56 +29,8 @@ function tLabel(label: string, locale: string): string {
   return locale === "ko" ? label : (MUSCLE_GROUP_EN[label] || label);
 }
 
-/** Translate Korean description/title to English at render time.
- *  주의: 특정 패턴(상체(밀기)/상체(당기기))은 일반 단어보다 먼저 치환해야
- *  "상체" 단독 치환이 괄호 내용을 망가뜨리지 않음. (회의 21)
- */
-function translateDescription(desc: string, locale: string): string {
-  if (locale === "ko") return desc;
-  return desc
-    // 복합 패턴 먼저 (회의 21: "상체(당기기)" 실제 서버 포맷 반영)
-    .replace(/상체\(밀기\)/g, "Upper (Push)")
-    .replace(/상체\(당기기\)/g, "Upper (Pull)")
-    .replace(/상체 \+ 밀기/g, "Upper + Push")
-    .replace(/상체 \+ 당기기/g, "Upper + Pull")
-    // 단일 부위
-    .replace(/하체/g, "Lower")
-    .replace(/상체/g, "Upper")
-    .replace(/가슴/g, "Chest")
-    .replace(/등/g, "Back")
-    .replace(/어깨/g, "Shoulders")
-    .replace(/팔/g, "Arms")
-    .replace(/밀기/g, "Push")
-    .replace(/당기기/g, "Pull")
-    // 수량 단위
-    .replace(/(\d+)종/g, "$1 exercises")
-    .replace(/(\d+)세트/g, "$1 sets")
-    // 세션/목표/컨디션 레이블
-    .replace(/집중 운동/g, "Focus")
-    .replace(/인터벌 러닝/g, "Interval Running")
-    .replace(/이지 런/g, "Easy Run")
-    .replace(/장거리 러닝/g, "Long Distance Run")
-    .replace(/러너 코어/g, "Runner Core")
-    .replace(/맨몸 \+ 덤벨 전신 서킷/g, "Bodyweight + Dumbbell Full-body Circuit")
-    .replace(/근비대/g, "Hypertrophy")
-    .replace(/근력 강화/g, "Strength")
-    .replace(/체지방 감량/g, "Fat Loss")
-    .replace(/전반적 체력 향상/g, "General Fitness")
-    .replace(/살 빼기/g, "Fat Loss")
-    .replace(/근육 키우기/g, "Muscle Gain")
-    .replace(/힘 세지기/g, "Strength")
-    .replace(/기초체력/g, "Fitness")
-    .replace(/기초체력강화/g, "Fitness")
-    .replace(/홈트레이닝/g, "Home Training")
-    .replace(/러닝/g, "Running")
-    .replace(/상체 뻣뻣함 개선/g, "Upper body stiffness relief")
-    .replace(/하체 무거움 완화/g, "Lower body heaviness relief")
-    .replace(/전반적 피로 회복/g, "Fatigue recovery")
-    .replace(/최적 컨디션/g, "Optimal condition");
-}
-
-// 무게 가이드 번역은 @/utils/exerciseName 의 translateWeightGuide 사용 (회의 20)
-
+// 세션 설명/타이틀 번역은 @/components/report/reportUtils 의 translateDesc 사용
+// 무게 가이드 번역은 @/utils/exerciseName 의 translateWeightGuide 사용
 // 회의 36: 4가지 러닝 인터벌 타입 템플릿 (유저가 MasterPlanPreview에서 직접 교체)
 // 서버 workoutEngine.ts의 generateRunningWorkout과 동일 스펙 유지 필수
 type RunningVariant = "walkrun" | "tempo" | "fartlek" | "sprint";
@@ -544,7 +497,7 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
             )}
           </div>
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-2">
-            {translateDescription(sessionData.description, locale)}
+            {translateDesc(sessionData.description, locale)}
           </p>
           {/* 회의 41 M-H: 러닝 타입 가이드 한 줄 (러닝 코치 권고) */}
           {isRunningSession && currentRunningVariant && (

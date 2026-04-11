@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { WorkoutHistory as WorkoutHistoryType } from "@/constants/workout";
 import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useTranslation } from "@/hooks/useTranslation";
+import { translateDesc } from "@/components/report/reportUtils";
 
 interface WorkoutHistoryProps {
   history: WorkoutHistoryType[];
@@ -26,31 +27,7 @@ function formatMonthLabel(key: string, locale: string): string {
   return `${y}년 ${parseInt(m)}월`;
 }
 
-function translateDesc(desc: string, locale: string): string {
-  if (locale === "ko") return desc;
-  return desc
-    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
-    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
-    .replace(/상체\(밀기\(Push\)\)/g, "Upper (Push)").replace(/상체\(당기기\(Pull\)\)/g, "Upper (Pull)")
-    .replace(/(\d+)종/g, "$1 ex").replace(/(\d+)세트/g, "$1 sets")
-    .replace(/집중 운동/g, "Focus")
-    .replace(/근비대/g, "Hypertrophy").replace(/근력 강화/g, "Strength")
-    .replace(/체지방 감량/g, "Fat Loss").replace(/전반적 체력 향상/g, "Fitness");
-}
-
-function translateTitle(title: string, locale: string): string {
-  if (locale === "ko") return title;
-  return title
-    .replace(/살 빼기/g, "Fat Loss").replace(/근육 키우기/g, "Muscle Gain")
-    .replace(/힘 세지기/g, "Strength").replace(/기초체력/g, "Fitness")
-    .replace(/기초체력강화/g, "Fitness")
-    .replace(/하체/g, "Lower").replace(/가슴/g, "Chest").replace(/등/g, "Back")
-    .replace(/어깨/g, "Shoulders").replace(/팔/g, "Arms")
-    .replace(/밀기/g, "Push").replace(/당기기/g, "Pull")
-    .replace(/집중 운동/g, "Focus").replace(/홈트레이닝/g, "Home Training")
-    .replace(/러닝/g, "Running").replace(/인터벌/g, "Interval")
-    .replace(/이지 런/g, "Easy Run").replace(/장거리/g, "Long Distance");
-}
+// 세션 타이틀/설명 번역은 @/components/report/reportUtils 의 translateDesc 사용 (회의 53 단일화)
 
 export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
   history,
@@ -236,7 +213,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                     <p className="text-xs font-bold text-gray-400 mb-1">
                       {new Date(session.date).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
-                    <h3 className="text-lg font-black text-[#1B4332] mb-1">{translateTitle(session.sessionData.title, locale)}</h3>
+                    <h3 className="text-lg font-black text-[#1B4332] mb-1">{translateDesc(session.sessionData.title, locale)}</h3>
                     <p className="text-sm text-gray-500 line-clamp-1">{translateDesc(session.sessionData.description, locale)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
