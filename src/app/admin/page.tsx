@@ -18,7 +18,9 @@ interface UserStats {
   today: number;
   yesterday: number;
   week: number;
+  lastWeek?: number;  // 회의 57 Tier 2: 증감률 계산용
   month: number;
+  lastMonth?: number; // 회의 57 Tier 2: 증감률 계산용
   total: number;
 }
 
@@ -30,6 +32,12 @@ interface DashboardData {
   expired: number;
   expiringIn3Days: number;
   monthlyRevenue: number;
+  // 회의 57 Tier 2: 매출 분해 + 증감률
+  monthlyPaymentCount?: number;
+  avgPayment?: number;
+  lastMonthRevenue?: number;
+  lastMonthPaymentCount?: number;
+  revenueChangePercent?: number | null;
   trial: UserStats;
   registered: UserStats;
 }
@@ -127,6 +135,19 @@ export default function AdminPage() {
   const [refundUserContext, setRefundUserContext] = useState<Record<string, UserInfo>>({});
   const [loadingRefundContext, setLoadingRefundContext] = useState<string | null>(null);
   const [confirmRefund, setConfirmRefund] = useState<{ id: string; action: "approve" | "reject"; email: string; amount: number } | null>(null);
+
+  // 회의 57 Tier 2: 일반 Confirm 모달 + Activate 모달 + Bulk + Export 상태
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    variant: "default" | "danger";
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+  const [activateModal, setActivateModal] = useState<{ email: string; months: number } | null>(null);
+  const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -277,35 +298,147 @@ export default function AdminPage() {
     finally { setDeactivating(false); }
   };
 
-  const handleQuickActivate = async (email: string) => {
-    const m = prompt(`${email} 활성화 기간 (개월 수)`, "1");
-    if (!m) return;
+  // 회의 57 Tier 2: prompt/confirm → ActivateModal로 교체
+  const handleQuickActivate = (email: string) => {
+    setActivateModal({ email, months: 1 });
+  };
+
+  const executeActivate = async () => {
+    if (!activateModal) return;
+    const { email, months } = activateModal;
     try {
       const token = await getToken();
       const res = await fetch("/api/adminActivate", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ email, months: parseInt(m) || 1 }),
+        body: JSON.stringify({ email, months }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      alert(`${email} → ${m}개월 활성화 완료`);
+      setActivateModal(null);
+      alert(`${email} → ${months}개월 활성화 완료`);
       loadUserList(); loadDashboard(); loadLogs();
     } catch (e: unknown) { alert(e instanceof Error ? e.message : "실패"); }
   };
 
-  const handleQuickDeactivate = async (email: string) => {
-    if (!confirm(`${email} 비활성화?`)) return;
+  // 회의 57 Tier 2: confirm → ConfirmDialog로 교체
+  const handleQuickDeactivate = (email: string) => {
+    setConfirmDialog({
+      title: "구독 비활성화",
+      description: `${email} 유저의 구독을 비활성화합니다. 실제 구독 권한이 즉시 회수됩니다.`,
+      confirmLabel: "비활성화",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const token = await getToken();
+          const res = await fetch("/api/adminDeactivate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({ email }),
+          });
+          if (!res.ok) throw new Error((await res.json()).error);
+          setConfirmDialog(null);
+          alert(`${email} → 비활성화 완료`);
+          loadUserList(); loadDashboard(); loadLogs();
+        } catch (e: unknown) { alert(e instanceof Error ? e.message : "실패"); }
+      },
+    });
+  };
+
+  // 회의 57 Tier 2: CSV Export — 현재 필터의 전체 유저 다운로드
+  const exportUsersToCsv = async () => {
+    setExportingCsv(true);
     try {
       const token = await getToken();
-      const res = await fetch("/api/adminDeactivate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error);
-      alert(`${email} → 비활성화 완료`);
-      loadUserList(); loadDashboard(); loadLogs();
-    } catch (e: unknown) { alert(e instanceof Error ? e.message : "실패"); }
+      // 모든 페이지 fetch (100씩, 최대 50페이지 = 5000명 상한)
+      const allUsers: ListUser[] = [];
+      for (let page = 1; page <= 50; page++) {
+        const res = await fetch("/api/adminListUsers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ status: userFilter, page, limit: 100 }),
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        allUsers.push(...(data.users || []));
+        if (data.users?.length < 100) break; // 마지막 페이지
+      }
+
+      // CSV 생성
+      const headers = ["이메일", "이름", "상태", "만료일", "마지막 결제", "금액", "결제 수단", "UID"];
+      const escape = (v: string | number | null | undefined) => {
+        const s = String(v ?? "");
+        return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const rows = allUsers.map(u => [
+        u.email, u.displayName, statusLabel(u.status),
+        u.expiresAt ? new Date(u.expiresAt).toLocaleDateString("ko-KR") : "",
+        u.lastPaymentAt ? new Date(u.lastPaymentAt).toLocaleDateString("ko-KR") : "",
+        u.amount || 0, u.billingKey, u.uid,
+      ].map(escape).join(","));
+      const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n"); // BOM for 한글 Excel
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `users_${userFilter}_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : "CSV 다운로드 실패"); }
+    setExportingCsv(false);
+  };
+
+  // 회의 57 Tier 2: Bulk Action — 선택된 유저에 일괄 반영
+  const toggleSelectUser = (uid: string) => {
+    setSelectedUids(prev => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid); else next.add(uid);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelectedUids(prev => {
+      const allVisible = userList.every(u => prev.has(u.uid));
+      if (allVisible) {
+        const next = new Set(prev);
+        userList.forEach(u => next.delete(u.uid));
+        return next;
+      } else {
+        const next = new Set(prev);
+        userList.forEach(u => next.add(u.uid));
+        return next;
+      }
+    });
+  };
+
+  const executeBulkAction = async (action: "activate" | "deactivate", months = 1) => {
+    const selectedUsers = userList.filter(u => selectedUids.has(u.uid));
+    if (selectedUsers.length === 0) return;
+
+    setBulkRunning(true);
+    let successCount = 0;
+    const token = await getToken();
+
+    for (const u of selectedUsers) {
+      try {
+        const endpoint = action === "activate" ? "/api/adminActivate" : "/api/adminDeactivate";
+        const body = action === "activate" ? { email: u.email, months } : { email: u.email };
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) successCount++;
+      } catch { /* skip */ }
+    }
+
+    setBulkRunning(false);
+    setSelectedUids(new Set());
+    setConfirmDialog(null);
+    alert(`${successCount}/${selectedUsers.length}명 ${action === "activate" ? "활성화" : "비활성화"} 완료`);
+    loadUserList(); loadDashboard(); loadLogs();
   };
 
   // 회의 57 Tier 1: 2단계 확인 모달 경유 (confirmRefund state로 중간 단계 거침)
@@ -487,46 +620,106 @@ export default function AdminPage() {
                     <p className="text-xs text-gray-400 mt-1">3일 내 만료 <span className="text-[9px]">→</span></p>
                   </button>
                 </div>
+                {/* 회의 57 Tier 2: 매출 카드 분해 + 전월 대비 */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
-                  <p className="text-xs text-gray-400 mb-1">이번 달 매출</p>
+                  <div className="flex items-baseline justify-between mb-1">
+                    <p className="text-xs text-gray-400">이번 달 매출</p>
+                    {dashboard.revenueChangePercent !== null && dashboard.revenueChangePercent !== undefined && (
+                      <span className={`text-xs font-bold ${dashboard.revenueChangePercent >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        {dashboard.revenueChangePercent >= 0 ? "▲" : "▼"} {Math.abs(dashboard.revenueChangePercent)}% <span className="text-gray-400 font-medium">전월 대비</span>
+                      </span>
+                    )}
+                  </div>
                   <p className="text-2xl font-black text-[#1B4332]">₩{dashboard.monthlyRevenue.toLocaleString()}</p>
+                  {/* 분해 정보 */}
+                  {(dashboard.monthlyPaymentCount ?? 0) > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between text-xs">
+                      <span className="text-gray-400">결제 건수</span>
+                      <span className="font-bold text-gray-700">{dashboard.monthlyPaymentCount}건</span>
+                    </div>
+                  )}
+                  {(dashboard.avgPayment ?? 0) > 0 && (
+                    <div className="mt-1.5 flex items-center justify-between text-xs">
+                      <span className="text-gray-400">평균 결제액 (ARPU)</span>
+                      <span className="font-bold text-gray-700">₩{dashboard.avgPayment!.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {(dashboard.lastMonthRevenue ?? 0) > 0 && (
+                    <div className="mt-1.5 flex items-center justify-between text-xs">
+                      <span className="text-gray-400">전월 매출</span>
+                      <span className="text-gray-500">₩{dashboard.lastMonthRevenue!.toLocaleString()} ({dashboard.lastMonthPaymentCount}건)</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* User Segment Stats */}
-                {dashboard.trial && dashboard.registered && (
-                  <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-xs text-gray-400">
-                          <th className="text-left pb-3 font-medium"></th>
-                          <th className="text-center pb-3 font-medium">오늘</th>
-                          <th className="text-center pb-3 font-medium">어제</th>
-                          <th className="text-center pb-3 font-medium">이번 주</th>
-                          <th className="text-center pb-3 font-medium">이번 달</th>
-                          <th className="text-center pb-3 font-medium">전체</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-t border-gray-50">
-                          <td className="py-2.5 text-xs font-bold text-gray-500">체험</td>
-                          <td className="py-2.5 text-center font-bold text-gray-700">{dashboard.trial.today}</td>
-                          <td className="py-2.5 text-center font-bold text-gray-600">{dashboard.trial.yesterday ?? 0}</td>
-                          <td className="py-2.5 text-center font-bold text-gray-700">{dashboard.trial.week}</td>
-                          <td className="py-2.5 text-center font-bold text-gray-700">{dashboard.trial.month}</td>
-                          <td className="py-2.5 text-center font-bold text-gray-400">{dashboard.trial.total}</td>
-                        </tr>
-                        <tr className="border-t border-gray-50">
-                          <td className="py-2.5 text-xs font-bold text-[#2D6A4F]">가입</td>
-                          <td className="py-2.5 text-center font-bold text-[#2D6A4F]">{dashboard.registered.today}</td>
-                          <td className="py-2.5 text-center font-bold text-[#2D6A4F]/80">{dashboard.registered.yesterday ?? 0}</td>
-                          <td className="py-2.5 text-center font-bold text-[#2D6A4F]">{dashboard.registered.week}</td>
-                          <td className="py-2.5 text-center font-bold text-[#2D6A4F]">{dashboard.registered.month}</td>
-                          <td className="py-2.5 text-center font-bold text-gray-400">{dashboard.registered.total}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                {/* User Segment Stats + 회의 57 Tier 2: 증감률 */}
+                {dashboard.trial && dashboard.registered && (() => {
+                  // 증감률 계산: 지난주/지난달 대비
+                  const delta = (current: number, prev: number | undefined): { pct: number | null; up: boolean } => {
+                    if (prev === undefined || prev === 0) return { pct: null, up: current > 0 };
+                    const pct = Math.round(((current - prev) / prev) * 100);
+                    return { pct, up: pct >= 0 };
+                  };
+                  const trialWeekDelta = delta(dashboard.trial.week, dashboard.trial.lastWeek);
+                  const trialMonthDelta = delta(dashboard.trial.month, dashboard.trial.lastMonth);
+                  const regWeekDelta = delta(dashboard.registered.week, dashboard.registered.lastWeek);
+                  const regMonthDelta = delta(dashboard.registered.month, dashboard.registered.lastMonth);
+                  const renderDelta = (d: { pct: number | null; up: boolean }) => {
+                    if (d.pct === null) return null;
+                    return (
+                      <span className={`block text-[9px] font-bold ${d.up ? "text-emerald-600" : "text-red-500"}`}>
+                        {d.up ? "▲" : "▼"}{Math.abs(d.pct)}%
+                      </span>
+                    );
+                  };
+                  return (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-xs text-gray-400">
+                            <th className="text-left pb-3 font-medium"></th>
+                            <th className="text-center pb-3 font-medium">오늘</th>
+                            <th className="text-center pb-3 font-medium">어제</th>
+                            <th className="text-center pb-3 font-medium">이번 주</th>
+                            <th className="text-center pb-3 font-medium">이번 달</th>
+                            <th className="text-center pb-3 font-medium">전체</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t border-gray-50">
+                            <td className="py-2.5 text-xs font-bold text-gray-500">체험</td>
+                            <td className="py-2.5 text-center font-bold text-gray-700">{dashboard.trial.today}</td>
+                            <td className="py-2.5 text-center font-bold text-gray-600">{dashboard.trial.yesterday ?? 0}</td>
+                            <td className="py-2.5 text-center font-bold text-gray-700">
+                              {dashboard.trial.week}
+                              {renderDelta(trialWeekDelta)}
+                            </td>
+                            <td className="py-2.5 text-center font-bold text-gray-700">
+                              {dashboard.trial.month}
+                              {renderDelta(trialMonthDelta)}
+                            </td>
+                            <td className="py-2.5 text-center font-bold text-gray-400">{dashboard.trial.total}</td>
+                          </tr>
+                          <tr className="border-t border-gray-50">
+                            <td className="py-2.5 text-xs font-bold text-[#2D6A4F]">가입</td>
+                            <td className="py-2.5 text-center font-bold text-[#2D6A4F]">{dashboard.registered.today}</td>
+                            <td className="py-2.5 text-center font-bold text-[#2D6A4F]/80">{dashboard.registered.yesterday ?? 0}</td>
+                            <td className="py-2.5 text-center font-bold text-[#2D6A4F]">
+                              {dashboard.registered.week}
+                              {renderDelta(regWeekDelta)}
+                            </td>
+                            <td className="py-2.5 text-center font-bold text-[#2D6A4F]">
+                              {dashboard.registered.month}
+                              {renderDelta(regMonthDelta)}
+                            </td>
+                            <td className="py-2.5 text-center font-bold text-gray-400">{dashboard.registered.total}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p className="text-[9px] text-gray-400 mt-2 leading-relaxed">▲▼ 지난 주/지난 달 대비 증감률</p>
+                    </div>
+                  );
+                })()}
 
                 <div className="bg-white rounded-2xl border border-gray-200 p-4">
                   <div className="flex justify-between text-xs text-gray-400">
@@ -593,14 +786,24 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Filter */}
-            <div className="flex gap-1 mb-3">
-              {[["all","전체"],["active","구독중"],["free","무료"],["expired","만료"]].map(([v, l]) => (
-                <button key={v} onClick={() => { setUserFilter(v); setUserPage(1); }}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg ${userFilter === v ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500"}`}>
-                  {l}
-                </button>
-              ))}
+            {/* Filter + CSV Export — 회의 57 Tier 2 */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex gap-1 flex-wrap">
+                {[["all","전체"],["active","구독중"],["free","무료"],["expired","만료"],["expiring_soon","만료 임박"]].map(([v, l]) => (
+                  <button key={v} onClick={() => { setUserFilter(v); setUserPage(1); setSelectedUids(new Set()); }}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${userFilter === v ? "bg-[#1B4332] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={exportUsersToCsv}
+                disabled={exportingCsv}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 shrink-0"
+                title="현재 필터 기준 전체 유저 CSV 다운로드"
+              >
+                {exportingCsv ? "..." : "⬇ CSV"}
+              </button>
             </div>
 
             {/* User List */}
@@ -611,28 +814,53 @@ export default function AdminPage() {
                 <p className="text-center text-gray-400 py-8 text-sm">유저가 없습니다</p>
               ) : (
                 <>
-                  {userList.map((u, i) => (
-                    <div key={u.uid} className={`px-4 py-3 ${i < userList.length - 1 ? "border-b border-gray-50" : ""}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-gray-800 truncate flex-1 min-w-0">{u.email}</p>
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold shrink-0 ml-2 ${statusColor(u.status)}`}>{statusLabel(u.status)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-400">
-                          {u.expiresAt ? `만료: ${new Date(u.expiresAt).toLocaleDateString("ko-KR")}` : "구독 없음"}
-                          {u.billingKey !== "-" ? ` · ${u.billingKey}` : ""}
-                        </p>
-                        <div className="flex gap-1.5 shrink-0 ml-2">
-                          <button onClick={() => handleQuickActivate(u.email)}
-                            className="px-2 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100">활성화</button>
-                          {u.status !== "free" && (
-                            <button onClick={() => handleQuickDeactivate(u.email)}
-                              className="px-2 py-1 text-[10px] font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100">비활성화</button>
-                          )}
+                  {/* 전체 선택 헤더 — 회의 57 Tier 2 Bulk Action */}
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                    <input
+                      type="checkbox"
+                      checked={userList.length > 0 && userList.every(u => selectedUids.has(u.uid))}
+                      onChange={toggleSelectAllVisible}
+                      className="w-4 h-4 accent-[#1B4332] cursor-pointer"
+                    />
+                    <span className="text-[11px] font-bold text-gray-500">
+                      {selectedUids.size > 0 ? `${selectedUids.size}명 선택됨` : "현재 페이지 전체 선택"}
+                    </span>
+                  </div>
+                  {userList.map((u, i) => {
+                    const isSelected = selectedUids.has(u.uid);
+                    return (
+                    <div key={u.uid} className={`px-4 py-3 ${i < userList.length - 1 ? "border-b border-gray-50" : ""} ${isSelected ? "bg-emerald-50/40" : ""}`}>
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectUser(u.uid)}
+                          className="w-4 h-4 accent-[#1B4332] cursor-pointer mt-1 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-gray-800 truncate flex-1 min-w-0">{u.email}</p>
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold shrink-0 ml-2 ${statusColor(u.status)}`}>{statusLabel(u.status)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-400">
+                              {u.expiresAt ? `만료: ${new Date(u.expiresAt).toLocaleDateString("ko-KR")}` : "구독 없음"}
+                              {u.billingKey !== "-" ? ` · ${u.billingKey}` : ""}
+                            </p>
+                            <div className="flex gap-1.5 shrink-0 ml-2">
+                              <button onClick={() => handleQuickActivate(u.email)}
+                                className="px-2 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100">활성화</button>
+                              {u.status !== "free" && (
+                                <button onClick={() => handleQuickDeactivate(u.email)}
+                                  className="px-2 py-1 text-[10px] font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100">비활성화</button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {/* Pagination */}
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-50 text-xs text-gray-400">
                     <span>총 {userTotal}명</span>
@@ -817,6 +1045,121 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* 회의 57 Tier 2: Bulk Action 플로팅 바 */}
+      {selectedUids.size > 0 && tab === "users" && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-[#1B4332] text-white rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-3 max-w-[calc(100%-32px)]">
+          <span className="text-sm font-bold whitespace-nowrap">{selectedUids.size}명 선택됨</span>
+          <div className="w-px h-5 bg-white/20" />
+          <button
+            onClick={() => {
+              setConfirmDialog({
+                title: "일괄 활성화",
+                description: `선택된 ${selectedUids.size}명을 ${1}개월 활성화합니다.`,
+                confirmLabel: `${selectedUids.size}명 활성화`,
+                variant: "default",
+                onConfirm: () => executeBulkAction("activate", 1),
+              });
+            }}
+            disabled={bulkRunning}
+            className="px-3 py-1.5 text-xs font-bold bg-emerald-500 rounded-lg hover:bg-emerald-400 disabled:opacity-50"
+          >
+            활성화
+          </button>
+          <button
+            onClick={() => {
+              setConfirmDialog({
+                title: "일괄 비활성화",
+                description: `선택된 ${selectedUids.size}명의 구독을 즉시 비활성화합니다.`,
+                confirmLabel: `${selectedUids.size}명 비활성화`,
+                variant: "danger",
+                onConfirm: () => executeBulkAction("deactivate"),
+              });
+            }}
+            disabled={bulkRunning}
+            className="px-3 py-1.5 text-xs font-bold bg-red-500 rounded-lg hover:bg-red-400 disabled:opacity-50"
+          >
+            비활성화
+          </button>
+          <button
+            onClick={() => setSelectedUids(new Set())}
+            className="px-2 py-1.5 text-xs font-bold text-white/60 hover:text-white"
+          >
+            취소
+          </button>
+        </div>
+      )}
+
+      {/* 회의 57 Tier 2: ActivateModal — Quick Activate prompt 교체 */}
+      {activateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setActivateModal(null)}>
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-[#1B4332] mb-2">구독 활성화</h3>
+            <p className="text-sm text-gray-500 mb-4 break-all">{activateModal.email}</p>
+            <div className="mb-5">
+              <p className="text-xs font-bold text-gray-400 mb-2">활성화 기간</p>
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 3, 6, 12].map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setActivateModal({ ...activateModal, months: m })}
+                    className={`py-2 rounded-lg text-sm font-bold transition-colors ${
+                      activateModal.months === m
+                        ? "bg-[#1B4332] text-white"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  >
+                    {m}개월
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActivateModal(null)}
+                className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                onClick={executeActivate}
+                className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700"
+              >
+                활성화
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 회의 57 Tier 2: ConfirmDialog — 일반 확인 모달 (confirm() 교체) */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setConfirmDialog(null)}>
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-[#1B4332] mb-2">{confirmDialog.title}</h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">{confirmDialog.description}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => confirmDialog.onConfirm()}
+                disabled={bulkRunning}
+                className={`flex-1 py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50 ${
+                  confirmDialog.variant === "danger"
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
+              >
+                {bulkRunning ? "처리 중..." : confirmDialog.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 회의 57 Tier 1: 환불 승인/거부 2단계 확인 모달 */}
       {confirmRefund && (

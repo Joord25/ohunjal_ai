@@ -214,9 +214,15 @@ export const adminDashboard = onRequest(
     try {
       const subsSnap = await db.collection("subscriptions").get();
       let active = 0, cancelled = 0, expired = 0, expiringIn3Days = 0, monthlyRevenue = 0;
+      // 회의 57 Tier 2: 매출 분해 (결제 건수, 평균, 이전 달 매출)
+      let monthlyPaymentCount = 0;
+      let lastMonthRevenue = 0;
+      let lastMonthPaymentCount = 0;
       const now = new Date();
       const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = monthStart; // exclusive
 
       subsSnap.forEach(doc => {
         const d = doc.data();
@@ -226,11 +232,20 @@ export const adminDashboard = onRequest(
             const exp = new Date(d.expiresAt);
             if (exp <= threeDaysLater && exp > now) expiringIn3Days++;
           }
-          if (d.lastPaymentAt && new Date(d.lastPaymentAt) >= monthStart && d.amount > 0) {
-            monthlyRevenue += d.amount;
-          }
         } else if (d.status === "cancelled") { cancelled++; }
         else if (d.status === "expired") { expired++; }
+
+        // 결제 집계 (상태 무관 — 결제 이력 기준)
+        if (d.lastPaymentAt && d.amount > 0) {
+          const paymentDate = new Date(d.lastPaymentAt);
+          if (paymentDate >= monthStart) {
+            monthlyRevenue += d.amount;
+            monthlyPaymentCount++;
+          } else if (paymentDate >= lastMonthStart && paymentDate < lastMonthEnd) {
+            lastMonthRevenue += d.amount;
+            lastMonthPaymentCount++;
+          }
+        }
       });
 
       // Collect all users from Firebase Auth
@@ -260,21 +275,29 @@ export const adminDashboard = onRequest(
       const kstDay = kstNow.getUTCDay(); // 0=일, 1=월, ..., 6=토
       const todayStart = new Date(Date.UTC(kstYear, kstMonth, kstDate) - 9 * 60 * 60 * 1000);
       const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-      // 버그 수정: 이번주를 "월요일 시작" 주로 변경 (한국 비즈니스 관례)
-      // 기존엔 일요일 시작이라 일요일인 날 "이번주=오늘 00시부터"가 되어 어제 데이터 누락
-      // 월요일까지 며칠 전인지 계산: 월(1)→0일전, 화(2)→1일전, ..., 일(0)→6일전
+      // 월요일 시작 주 (한국 비즈니스 관례)
       const daysToMonday = (kstDay + 6) % 7;
       const weekStart = new Date(todayStart.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
+      const lastWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthStartDate = new Date(Date.UTC(kstYear, kstMonth, 1) - 9 * 60 * 60 * 1000);
+      const lastMonthStartDate = new Date(Date.UTC(kstYear, kstMonth - 1, 1) - 9 * 60 * 60 * 1000);
 
       const countByRange = (users: typeof allUsers) => ({
         today: users.filter(u => u.createdAt >= todayStart).length,
-        // 어제: yesterdayStart 이상 AND todayStart 미만
         yesterday: users.filter(u => u.createdAt >= yesterdayStart && u.createdAt < todayStart).length,
         week: users.filter(u => u.createdAt >= weekStart).length,
+        // 회의 57 Tier 2: 증감률 계산용 이전 기간
+        lastWeek: users.filter(u => u.createdAt >= lastWeekStart && u.createdAt < weekStart).length,
         month: users.filter(u => u.createdAt >= monthStartDate).length,
+        lastMonth: users.filter(u => u.createdAt >= lastMonthStartDate && u.createdAt < monthStartDate).length,
         total: users.length,
       });
+
+      // 회의 57 Tier 2: 매출 분해 데이터
+      const avgPayment = monthlyPaymentCount > 0 ? Math.round(monthlyRevenue / monthlyPaymentCount) : 0;
+      const revenueChangePercent = lastMonthRevenue > 0
+        ? Math.round(((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
+        : null;
 
       res.status(200).json({
         totalUsers: allUsers.length,
@@ -284,6 +307,12 @@ export const adminDashboard = onRequest(
         expired,
         expiringIn3Days,
         monthlyRevenue,
+        // 회의 57 Tier 2: 매출 분해
+        monthlyPaymentCount,
+        avgPayment,
+        lastMonthRevenue,
+        lastMonthPaymentCount,
+        revenueChangePercent,
         trial: countByRange(trialUsers),
         registered: countByRange(googleUsers),
       });
