@@ -870,6 +870,21 @@ export default function Home() {
                  const newCompleted = completedRitualIds.filter(id => id !== "workout");
                  setCompletedRitualIds(newCompleted);
                  localStorage.setItem("ohunjal_completed_rituals", JSON.stringify(newCompleted));
+                 // 회의: 바로 직전 운동 완료로 planCount 소진된 케이스 대비 — 홈 CTA와 동일 가드
+                 if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
+                   trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
+                   trackEvent("login_modal_view", { trigger: "trial_limit_restart" });
+                   setView("home");
+                   setLoginModalReason("trial_exhausted");
+                   setShowLoginModal(true);
+                   return;
+                 }
+                 if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
+                   trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "workout_restart" });
+                   setView("home");
+                   setShowPaywall(true);
+                   return;
+                 }
                  setView("condition_check");
                }}
                initialAnalysis={currentWorkoutSession ?
@@ -894,11 +909,20 @@ export default function Home() {
             key={getCachedWorkoutHistory().length}
             userName={getDisplayName(user, "")}
             onStartWorkout={() => {
+              // 1) 비로그인 게스트 체험 소진 → 즉시 Google 로그인 모달
               if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
                 trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
                 trackEvent("login_modal_view", { trigger: "trial_limit_home" });
                 setLoginModalReason("trial_exhausted");
                 setShowLoginModal(true);
+                return;
+              }
+              // 2) 로그인 무료 풀 소진 → 즉시 구독/결제 페이지 (페이월)
+              //    기존엔 condition_check → plan 단계에서 차단했는데,
+              //    홈 CTA 시점에서 차단해 컨디션 선택 수고를 덜어줌.
+              if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
+                trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "home_cta" });
+                setShowPaywall(true);
                 return;
               }
               setView("condition_check");
