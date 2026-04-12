@@ -260,6 +260,8 @@ export default function Home() {
   }, [activeTab, view]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // 게스트 체험 서버 동기화 카운터 (HomeScreen key bump 용)
+  const [guestTrialSyncVersion, setGuestTrialSyncVersion] = useState(0);
   const [isLoading, setIsLoading] = useState(false); // AI Loading State
   const pendingSessionRef = useRef<WorkoutSessionData | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -305,6 +307,22 @@ export default function Home() {
         setSubStatus("free");
         setView("home");
         setIsInitialized(true);
+        // 게스트 체험 카운트 서버 동기화 — IP 기반 SSOT
+        // 이유: 캐시 지우거나 다른 기기로 접속해도 trial_ips 는 유지됨.
+        //       localStorage 만 보면 "0/3" 으로 뜨는 버그 방지.
+        firebaseUser.getIdToken().then(token => {
+          return fetch("/api/getGuestTrialStatus", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          });
+        }).then(res => res.ok ? res.json() : null).then(data => {
+          if (data && typeof data.count === "number") {
+            const local = parseInt(localStorage.getItem("ohunjal_guest_trial_count") || "0", 10);
+            const synced = Math.max(local, data.count);
+            localStorage.setItem("ohunjal_guest_trial_count", String(synced));
+            setGuestTrialSyncVersion(v => v + 1); // HomeScreen remount → 배지 재계산
+          }
+        }).catch(() => { /* 네트워크 실패 시 localStorage 로 폴백 */ });
         return;
       }
 
@@ -906,7 +924,7 @@ export default function Home() {
         // 홈 화면: 로그인/비로그인 모두 진입 가능
         return (
           <HomeScreen
-            key={getCachedWorkoutHistory().length}
+            key={`${getCachedWorkoutHistory().length}-${guestTrialSyncVersion}`}
             userName={getDisplayName(user, "")}
             onStartWorkout={() => {
               // 1) 비로그인 게스트 체험 소진 → 즉시 Google 로그인 모달

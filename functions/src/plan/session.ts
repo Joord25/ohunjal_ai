@@ -3,8 +3,50 @@ import { getAuth } from "firebase-admin/auth";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, db } from "../helpers";
 import { generateAdaptiveWorkout } from "../workoutEngine";
+import * as crypto from "crypto";
 
 const GUEST_TRIAL_LIMIT = 3;
+
+// IP 해시 헬퍼 — planSession 과 공통 로직
+function hashClientIp(req: { headers: Record<string, string | string[] | undefined>; socket?: { remoteAddress?: string } }): string {
+  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
+    || req.socket?.remoteAddress || "unknown";
+  return crypto.createHash("sha256").update(ip).digest("hex").slice(0, 16);
+}
+
+/**
+ * POST /getGuestTrialStatus
+ * Auth: anonymous OK (이메일 없어도 Firebase ID token 필요)
+ * Returns: { count, limit } — 현재 IP 기반 체험 소진 상태
+ *
+ * 이유: 클라이언트 localStorage 는 캐시/기기 의존이라 stale 가능.
+ * 서버의 trial_ips/{ipHash} 가 SSOT. 홈 진입 시 이걸로 localStorage 를 동기화.
+ */
+export const getGuestTrialStatus = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    // Auth 필수 — 익명 토큰이라도 있어야 함 (abuse 방지)
+    try { await verifyAuth(req.headers.authorization); } catch {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    try {
+      const ipHash = hashClientIp(req);
+      const doc = await db.collection("trial_ips").doc(ipHash).get();
+      const count = doc.exists ? Number(doc.data()?.count || 0) : 0;
+      res.status(200).json({ count, limit: GUEST_TRIAL_LIMIT });
+    } catch (error) {
+      console.error("getGuestTrialStatus error:", error);
+      res.status(500).json({ error: "Failed to read trial status" });
+    }
+  },
+);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Plan Session — 운동 플랜 생성 (서버사이드 룰베이스)
@@ -34,10 +76,7 @@ export const planSession = onRequest(
 
       if (isAnonymous) {
         // Guest: IP-based trial limit (survives cache clear)
-        const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
-          || req.socket?.remoteAddress || "unknown";
-        const ipHash = require("crypto").createHash("sha256").update(ip).digest("hex").slice(0, 16);
-
+        const ipHash = hashClientIp(req);
         const trialRef = db.collection("trial_ips").doc(ipHash);
         const trialDoc = await trialRef.get();
         const currentCount = trialDoc.exists ? (trialDoc.data()?.count || 0) : 0;
