@@ -544,24 +544,64 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
       {/* Sections */}
       <div className="flex flex-col gap-4 px-8 pb-8">
 
-        {/* ── 1. ACCOUNT ── */}
-        <p className="text-[11px] font-serif font-medium text-gray-400 uppercase tracking-widest px-2">Account</p>
+        {/* ── 1. ACCOUNT — MY INFO 패턴의 드롭다운 (구독 / 로그아웃 / 회원 탈퇴) ── */}
         <div className="bg-gray-50 rounded-2xl p-5 flex flex-col gap-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-bold text-gray-500">{t("my.subscription")}</span>
-            {subStatus === "loading" ? (
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <button onClick={() => setShowSubscription(true)} className="flex items-center gap-2 active:opacity-60">
-                <span className={`text-sm font-medium ${subStatus === "active" ? "text-[#2D6A4F]" : "text-gray-900"}`}>
-                  {subStatus === "active" ? t("my.sub.premium") : subStatus === "cancelled" ? t("my.sub.cancelled") : t("my.sub.free")}
-                </span>
+          <button
+            onClick={() => setShowAccount(!showAccount)}
+            className="flex items-center justify-between active:opacity-60"
+          >
+            <span className="text-[11px] font-serif font-medium text-gray-400 uppercase tracking-widest">Account</span>
+            <svg className={`w-4 h-4 text-gray-400 transition-transform ${showAccount ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showAccount && (
+            <div className="flex flex-col gap-3">
+              <div className="h-px bg-gray-100" />
+
+              {/* 구독 */}
+              <div className="flex justify-between items-center min-h-[32px]">
+                <span className="text-sm font-bold text-gray-500">{t("my.subscription")}</span>
+                {subStatus === "loading" ? (
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <button onClick={() => setShowSubscription(true)} className="flex items-center gap-2 active:opacity-60">
+                    <span className={`text-sm font-medium ${subStatus === "active" ? "text-[#2D6A4F]" : "text-gray-900"}`}>
+                      {subStatus === "active" ? t("my.sub.premium") : subStatus === "cancelled" ? t("my.sub.cancelled") : t("my.sub.free")}
+                    </span>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <div className="h-px bg-gray-100" />
+
+              {/* 로그아웃 */}
+              <button
+                onClick={handleLogoutClick}
+                className="flex justify-between items-center min-h-[32px] active:opacity-60"
+              >
+                <span className="text-sm font-bold text-gray-500">{t("my.logout")}</span>
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </button>
-            )}
-          </div>
+              <div className="h-px bg-gray-100" />
+
+              {/* 회원 탈퇴 */}
+              <button
+                onClick={() => { setWithdrawStep(1); setWithdrawError(""); }}
+                className="flex justify-between items-center min-h-[32px] active:opacity-60"
+              >
+                <span className="text-sm font-bold text-red-500">{t("my.withdraw")}</span>
+                <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── 2. MY INFO ── */}
@@ -804,69 +844,22 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
           </>}
         </div>
 
-        {/* ── 4. 계정 관리 (ACCOUNT) — 프리미엄 구독 / 로그아웃 / 회원 탈퇴 ── */}
-        <div className="bg-gray-50 rounded-2xl p-5 flex flex-col gap-3">
-          <button
-            onClick={() => setShowAccount(!showAccount)}
-            className="flex items-center justify-between active:opacity-60"
-          >
-            <div className="flex flex-col items-start gap-0.5">
-              <span className="text-[11px] font-serif font-medium text-gray-400 uppercase tracking-widest">{t("my.account")}</span>
-              <span className="text-[10px] text-gray-400">{t("my.account.manage")}</span>
+        {/* ── 4. 프리미엄 구독 배너 (독립) ── */}
+        <button
+          onClick={() => setShowSubscription(true)}
+          className="w-full bg-gradient-to-r from-[#1B4332] to-[#2D6A4F] rounded-2xl p-6 flex items-center justify-between transition-all active:scale-[0.98] shadow-lg shadow-[#1B4332]/20"
+        >
+          <div className="flex flex-col items-start gap-1">
+            <span className="text-lg font-bold text-white">{t("my.premium")}</span>
+            <span className="text-xs text-emerald-300/60">{t("my.premium.desc")}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-emerald-300/50 line-through">{t("my.premium.originalPrice")}</span>
+            <div className="bg-[#FEE500] rounded-full px-3 py-1">
+              <span className="text-xs font-black text-[#3C1E1E]">{t("my.premium.price")}</span>
             </div>
-            <svg className={`w-4 h-4 text-gray-400 transition-transform ${showAccount ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {showAccount && <>
-            <div className="h-px bg-gray-100" />
-
-            {/* 프리미엄 구독 */}
-            <button
-              onClick={() => setShowSubscription(true)}
-              className="w-full bg-gradient-to-r from-[#1B4332] to-[#2D6A4F] rounded-2xl p-5 flex items-center justify-between transition-all active:scale-[0.98] shadow-md shadow-[#1B4332]/20"
-            >
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-base font-bold text-white">{t("my.premium")}</span>
-                <span className="text-[11px] text-emerald-300/60">{t("my.premium.desc")}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-emerald-300/50 line-through">{t("my.premium.originalPrice")}</span>
-                <div className="bg-[#FEE500] rounded-full px-2.5 py-1">
-                  <span className="text-[11px] font-black text-[#3C1E1E]">{t("my.premium.price")}</span>
-                </div>
-              </div>
-            </button>
-
-            {/* 로그아웃 */}
-            <button
-              onClick={handleLogoutClick}
-              className="w-full bg-white hover:bg-gray-50 rounded-2xl p-5 flex items-center justify-between transition-all active:scale-[0.98] border border-gray-100"
-            >
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="text-base font-bold text-gray-700">{t("my.logout")}</span>
-                <span className="text-[11px] text-gray-400">{t("my.logout.desc")}</span>
-              </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-
-            {/* 회원 탈퇴 */}
-            <button
-              onClick={() => { setWithdrawStep(1); setWithdrawError(""); }}
-              className="w-full bg-white hover:bg-red-50 rounded-2xl p-5 flex items-center justify-between transition-all active:scale-[0.98] border border-gray-100"
-            >
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="text-base font-bold text-red-500">{t("my.withdraw")}</span>
-                <span className="text-[11px] text-gray-400">{t("my.withdraw.desc")}</span>
-              </div>
-              <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </>}
-        </div>
+          </div>
+        </button>
 
         {/* ── 5. 버그/개선사항 ── */}
         <a
