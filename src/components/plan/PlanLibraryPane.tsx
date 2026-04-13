@@ -3,6 +3,7 @@
 import React from "react";
 import { ExerciseStep, getExerciseMuscleGroups } from "@/constants/workout";
 import { getExerciseName } from "@/utils/exerciseName";
+import { translateMuscleGroup } from "./muscleColor";
 
 interface PhaseBlock {
   key: string;
@@ -94,7 +95,7 @@ export const PlanLibraryPane: React.FC<PlanLibraryPaneProps> = ({
                             <div className="flex gap-1 mt-1 flex-wrap">
                               {groups.map((g) => (
                                 <span key={g} className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                                  {g}
+                                  {translateMuscleGroup(g, locale)}
                                 </span>
                               ))}
                             </div>

@@ -36,3 +36,14 @@ export function getMuscleColor(exerciseName: string): MuscleColor {
 export function getMuscleColorByGroup(group: string): MuscleColor {
   return GROUP_COLORS[group] || DEFAULT_COLOR;
 }
+
+const MUSCLE_GROUP_EN: Record<string, string> = {
+  "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
+  "등": "Back", "후면 어깨": "Rear Delts", "이두": "Biceps", "하체": "Legs",
+  "종아리": "Calves", "전신": "Full Body", "코어": "Core", "가동성": "Mobility",
+};
+
+/** 근육 그룹 라벨을 locale에 맞춰 변환 */
+export function translateMuscleGroup(group: string, locale: string): string {
+  return locale === "ko" ? group : (MUSCLE_GROUP_EN[group] || group);
+}

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ExerciseStep, deriveSetDetails, getExerciseMuscleGroups } from "@/constants/workout";
 import { getExerciseName } from "@/utils/exerciseName";
-import { getMuscleColor } from "./muscleColor";
+import { getMuscleColor, translateMuscleGroup } from "./muscleColor";
 import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
 
 interface PlanExerciseDetailProps {
@@ -78,7 +78,7 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
             <div className="flex gap-1 mt-1 flex-wrap">
               {muscleGroups.map((g) => (
                 <span key={g} className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                  {g}
+                  {translateMuscleGroup(g, locale)}
                 </span>
               ))}
             </div>
