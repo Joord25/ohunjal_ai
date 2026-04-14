@@ -40,6 +40,32 @@ export interface ParsedIntent {
   clarifyQuestion?: string;
 }
 
+/** 회의 57 후속: advice 모드 응답 스키마 (마스터플랜 스타일 조언 카드용) */
+export interface AdviceContent {
+  headline: string;                 // 한 줄 요약 (예: "근력 회복 + 균형 복원 최적 구조")
+  goals: string[];                  // 목표 설정 (현실적 범위) — 2~4개 bullet
+  intensity?: string[];             // 강도 설정 (RPE, 실패지점 등) — 2~4개
+  monthProgram?: {                  // 1개월 구조 — 선택적
+    week1?: string;
+    week2?: string;
+    week3?: string;
+    week4?: string;
+  };
+  principles: string[];             // 핵심 원칙 — 2~4개
+  criticalPoints?: string[];        // 중요 포인트 / 실패 원인 — 2~3개
+  supplements?: string[];           // 보충 전략 — 2~3개
+  conclusion?: string[];            // 현실적 결론 / 우선순위 — 2~4개
+  recommendedWorkout: {             // 하단 "오늘 운동" 버튼용 권장
+    condition: ParsedIntent["condition"];
+    goal: ParsedIntent["goal"];
+    sessionMode: ParsedIntent["sessionMode"];
+    targetMuscle?: ParsedIntent["targetMuscle"];
+    runType?: ParsedIntent["runType"];
+    intensityOverride?: ParsedIntent["intensityOverride"];
+    reasoning: string;              // 왜 이 운동을 추천했는지 (1문장)
+  };
+}
+
 export const parseIntent = onRequest(
   { cors: true, secrets: ["GEMINI_API_KEY"] },
   async (req, res) => {
@@ -115,19 +141,25 @@ ${historyBlock}
 [이번 유저 입력]
 "${text.trim()}"
 
-[두 가지 모드 중 하나를 선택]
+[세 가지 모드 중 하나를 선택]
 
-**모드 A — 플랜 생성 (planReady: true)**
+**모드 A — 플랜 생성 (mode: "plan")**
 아래 조건 모두 만족 시에만 선택:
-- 입력 또는 이전 대화에서 "어느 부위/무슨 운동/얼마나"가 충분히 드러났다
+- 입력에서 "어느 부위 + 얼마나"가 구체적으로 드러났다
 - 예: "가슴 30분", "하체 40분 하고 싶어", "러닝 5km", "오늘 전신 운동"
 
-**모드 B — 자연 대화 (planReady: false)**
-아래 경우 선택:
-- 유저가 그냥 대화/질문/잡담 ("내 정보 없잖아?", "뭐 어떻게 알고?", "어떻게 써?", "안녕")
-- 운동 의도가 애매해 한 가지 확인이 필요 ("운동하고 싶어" → 부위/시간 되물음)
-- 오프토픽/장난/욕설·음담 → 한 문장으로 부드럽게 운동 얘기로 돌리되 설교 금지
-이 모드에선 reply 필드에 친근한 한 문장 답변을 넣어라. 같은 문장 반복 절대 금지(이전 대화 참조).
+**모드 B — 전략·조언 카드 (mode: "advice") — 기본값에 가까움**
+아래 중 하나라도 해당하면 이 모드. 애매하면 B를 우선 선택.
+- 전략/계획 질문: "공백 후 복귀 어떻게?", "주 2회만 가능한데?", "4주 프로그램 짜줘"
+- 평가/분석: "내 3대 120/220/180인데 평가해줘", "체중 정체인데 왜?"
+- 추천/가이드: "뭐 할까?", "오늘 추천 운동", "살 빼려면?", "근력 어떻게 늘려?"
+- 컨디션/조건 섞인 상담: "무릎 아픈데 하체 가능?", "잠 3시간 잤는데 해야 해?"
+이 모드는 마스터플랜처럼 섹션별 깊이 있는 조언 카드 반환.
+
+**모드 C — 자연 대화 (mode: "chat")**
+- 순수 인사/잡담: "안녕", "고마워", "좋아", "오케이", "하이"
+- 오프토픽/장난/욕설·음담 — 한 문장으로 부드럽게 운동으로 유도
+이 모드 reply 필드 40자 이내 단답. 같은 문장 반복 절대 금지.
 
 [토큰 절약 — 최우선]
 - reply는 **최대 2문장, 40자 이내**. 길게 쓰지 말 것.
@@ -174,26 +206,79 @@ ${historyBlock}
 9. pushupLevel: 0개 → zero, 1~5 → 1_to_5, 10+ → 10_plus.
 10. recentGymFrequency: 안 함 → none, 가끔 → 1_2_times, 꾸준히/경력 → regular.
 
-[출력 스키마 — JSON만]
+[출력 스키마 — JSON만, mode 필드로 분기]
 
 모드 A (플랜 생성) 예시:
 {
-  "planReady": true,
+  "mode": "plan",
   "intent": {
     "condition": { "bodyPart": "good", "energyLevel": 3, "availableTime": 30, "bodyWeightKg": 58, "gender": "female", "birthYear": 1991 },
     "goal": "fat_loss",
     "sessionMode": "split",
-    "targetMuscle": "legs",
-    "recentGymFrequency": "regular",
-    "pushupLevel": "1_to_5"
+    "targetMuscle": "legs"
   }
 }
 
-모드 B (자연 대화) 예시:
+모드 B (조언 카드) 예시:
 {
-  "planReady": false,
-  "reply": "정보 없어도 괜찮아요! 오늘 어느 부위 할지만 알려주시면 맞춰 짜드릴게요 ㅎㅎ"
+  "mode": "advice",
+  "advice": {
+    "headline": "공백 후 복귀 — 근력 회복 4주 구조",
+    "goals": [
+      "4주: 신경계 재적응 + 폼 회복, 체중 ±1~2kg 이내 유지",
+      "8~12주: 기존 3대 80~90% 회복"
+    ],
+    "intensity": [
+      "Week 1: 1RM 70~75% / RPE 7~8",
+      "실패 지점 금지, 2~3 reps in reserve"
+    ],
+    "monthProgram": {
+      "week1": "가벼운 중량 / 폼 회복 / 주 2회",
+      "week2": "중량 증가 (기본 적응 완료)",
+      "week3": "최고 강도 (핵심 주)",
+      "week4": "피로 제거 (Deload)"
+    },
+    "principles": [
+      "탄수화물 충분 확보 — 근력 회복 핵심",
+      "식사 횟수보다 총량이 중요"
+    ],
+    "criticalPoints": [
+      "탄수화물 부족 시 근력 회복 실패",
+      "운동보다 식단 영향이 큼 — 주 2회는 자극 역할",
+      "무게 욕심 금지 — 신경계 복구가 먼저"
+    ],
+    "supplements": [
+      "크레아틴 5g/day",
+      "카페인 운동 전",
+      "수분 충분히"
+    ],
+    "conclusion": [
+      "현재 조건에서 성과 순서: 총 칼로리 > 탄수화물 > 수면 > 운동 강도"
+    ],
+    "recommendedWorkout": {
+      "condition": { "bodyPart": "good", "energyLevel": 3, "availableTime": 50 },
+      "goal": "strength",
+      "sessionMode": "split",
+      "targetMuscle": "chest",
+      "intensityOverride": "moderate",
+      "reasoning": "복귀 첫 주 기준 가슴 중강도 50분이 가장 안전합니다."
+    }
+  }
 }
+
+모드 C (자연 대화) 예시:
+{
+  "mode": "chat",
+  "reply": "정보 없어도 괜찮아요! 오늘 어느 부위 할지만 알려주시면 ㅎㅎ"
+}
+
+[advice 모드 작성 규칙]
+- headline: 한 줄 요약 (20자 이내)
+- goals, principles, criticalPoints, conclusion, intensity, supplements: bullet 2~4개, 각 1문장
+- 불필요한 섹션은 omit (예: 초보자엔 monthProgram·supplements 생략 가능)
+- 이모지 절대 금지 (❗·✅·👉 등 사용 시 실패 처리됨)
+- 유저 프로필(1RM·경력·나이·목표)과 운동 이력 요약을 반드시 반영
+- recommendedWorkout은 planSession 호출용이라 enum 정확히 — condition.availableTime은 30|50|90만, non-long-run은 30|50, split일 때만 targetMuscle
 
 JSON만 반환. 설명 문장 금지.`;
 
@@ -217,14 +302,25 @@ JSON만 반환. 설명 문장 금지.`;
         return;
       }
 
-      // Gemini가 planReady 플래그로 모드 선택
-      if (parsedRaw?.planReady === true && parsedRaw?.intent) {
+      // 3-way 모드 분기: plan | advice | chat
+      const mode = parsedRaw?.mode;
+
+      if (mode === "plan" && parsedRaw?.intent) {
         const intent = sanitize(parsedRaw.intent);
         res.status(200).json({ mode: "plan", intent, model: "gemini-2.5-flash" });
         return;
       }
 
-      // 자연 대화 모드 (기본)
+      if (mode === "advice" && parsedRaw?.advice) {
+        const advice = sanitizeAdvice(parsedRaw.advice);
+        if (advice) {
+          res.status(200).json({ mode: "advice", advice, model: "gemini-2.5-flash" });
+          return;
+        }
+        // advice 스키마 훼손 시 chat으로 폴백
+      }
+
+      // chat 모드 (기본 및 폴백)
       const reply = typeof parsedRaw?.reply === "string" && parsedRaw.reply.trim()
         ? parsedRaw.reply.trim()
         : (locale === "en"
@@ -245,6 +341,51 @@ function buildFallbackReply(locale: "ko" | "en", model: string) {
       ? "Hmm, connection hiccup. Try again in a sec — or just say 'chest 30 min' style."
       : "잠깐 연결이 흔들렸어요. 다시 말씀해주시거나 '가슴 30분' 같이 편하게 보내주세요.",
     model,
+  };
+}
+
+/**
+ * advice 응답 sanitize — 최소 필드 검증 + recommendedWorkout을 planSession 계약에 맞게 스냅.
+ * 필수 필드(goals/principles/recommendedWorkout) 하나라도 결손이면 null 반환 → chat 폴백.
+ */
+function sanitizeAdvice(a: any): AdviceContent | null {
+  if (!a || typeof a !== "object") return null;
+  const strArr = (v: any): string[] => Array.isArray(v)
+    ? v.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()).slice(0, 6)
+    : [];
+  const goals = strArr(a.goals);
+  const principles = strArr(a.principles);
+  if (goals.length === 0 || principles.length === 0) return null;
+  if (!a.recommendedWorkout) return null;
+  const rec = sanitize(a.recommendedWorkout);
+
+  const monthProgram = a.monthProgram && typeof a.monthProgram === "object" ? {
+    week1: typeof a.monthProgram.week1 === "string" ? a.monthProgram.week1.trim() : undefined,
+    week2: typeof a.monthProgram.week2 === "string" ? a.monthProgram.week2.trim() : undefined,
+    week3: typeof a.monthProgram.week3 === "string" ? a.monthProgram.week3.trim() : undefined,
+    week4: typeof a.monthProgram.week4 === "string" ? a.monthProgram.week4.trim() : undefined,
+  } : undefined;
+
+  return {
+    headline: typeof a.headline === "string" ? a.headline.trim().slice(0, 80) : "",
+    goals,
+    intensity: strArr(a.intensity),
+    monthProgram: monthProgram && Object.values(monthProgram).some(Boolean) ? monthProgram : undefined,
+    principles,
+    criticalPoints: strArr(a.criticalPoints),
+    supplements: strArr(a.supplements),
+    conclusion: strArr(a.conclusion),
+    recommendedWorkout: {
+      condition: rec.condition,
+      goal: rec.goal,
+      sessionMode: rec.sessionMode,
+      targetMuscle: rec.targetMuscle,
+      runType: rec.runType,
+      intensityOverride: rec.intensityOverride,
+      reasoning: typeof a.recommendedWorkout.reasoning === "string"
+        ? a.recommendedWorkout.reasoning.trim().slice(0, 140)
+        : "",
+    },
   };
 }
 

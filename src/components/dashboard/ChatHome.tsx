@@ -19,6 +19,7 @@ import { getTrialStatus } from "@/utils/trialStatus";
 import { getPlanCount } from "@/utils/userProfile";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { buildHistoryDigest, buildInitialGreeting } from "@/utils/historyDigest";
+import { AdviceCard, type AdviceContent } from "./AdviceCard";
 
 interface ChatHomeProps {
   userName?: string;
@@ -68,8 +69,15 @@ const EXAMPLE_KEYS = [
 ] as const;
 
 type ChatMsg =
-  | { role: "user"; content: string }
-  | { role: "assistant"; content: string; tone?: "info" | "error" };
+  | { role: "user"; kind?: "text"; content: string }
+  | { role: "assistant"; kind?: "text"; content: string; tone?: "info" | "error" }
+  | { role: "assistant"; kind: "advice"; advice: AdviceContent };
+
+/** advice 변종은 content 없으므로 history 전달 시 문자열 요약으로 대체 */
+function msgToHistoryContent(m: ChatMsg): string {
+  if ("content" in m) return m.content;
+  return "[advice card shown]";
+}
 
 export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProfile, isLoggedIn, isPremium, canSubmit }) => {
   const { t, locale } = useTranslation();
@@ -202,6 +210,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setText("");
     setBusy(true);
+    // 새 입력이 들어오면 이전 확인 카드 즉시 제거 (유저가 마음 바꾼 상태로 간주)
+    setPendingIntent(null);
 
     try {
       const { auth } = await import("@/lib/firebase");
@@ -216,7 +226,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       // 같은 질문 반복 방지를 위해 최근 대화 8개까지 전달
       const recentHistory = messages.slice(-8).map((m) => ({
         role: m.role,
-        content: m.content,
+        content: msgToHistoryContent(m),
       }));
 
       // 운동 이력 요약 (localStorage 캐시 기반, 0~50ms) — 개인화 추천용
@@ -236,10 +246,17 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
 
       const data = (await res.json()) as
         | { mode: "chat"; reply: string }
-        | { mode: "plan"; intent: ParsedIntent };
+        | { mode: "plan"; intent: ParsedIntent }
+        | { mode: "advice"; advice: AdviceContent };
 
       if (data.mode === "chat") {
         setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+        setBusy(false);
+        return;
+      }
+
+      if (data.mode === "advice") {
+        setMessages((prev) => [...prev, { role: "assistant", kind: "advice", advice: data.advice }]);
         setBusy(false);
         return;
       }
@@ -321,36 +338,80 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           <div className="flex gap-2.5">
             <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
             <div className="bg-white rounded-2xl rounded-tl-md px-3.5 py-2.5 shadow-sm border border-gray-100">
-              <p className="text-[13px] text-[#1B4332] leading-relaxed">
-                {buildInitialGreeting(getCachedWorkoutHistory(), locale)}
+              <p className="text-[13px] text-[#1B4332] leading-relaxed whitespace-pre-wrap">
+                {buildInitialGreeting(getCachedWorkoutHistory(), locale, {
+                  goal: userProfile?.goal,
+                  weeklyFrequency: userProfile?.weeklyFrequency,
+                  bench1RM: userProfile?.bench1RM,
+                  squat1RM: userProfile?.squat1RM,
+                  deadlift1RM: userProfile?.deadlift1RM,
+                }, userName)}
               </p>
             </div>
           </div>
 
           {/* 대화 히스토리 */}
-          {messages.map((msg, i) =>
-            msg.role === "user" ? (
-              <div key={i} className="flex gap-2.5 mt-3 justify-end">
-                <div className="max-w-[85%] bg-[#1B4332] text-white rounded-2xl rounded-tr-md px-3.5 py-2.5 shadow-sm text-[13px] leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
+          {messages.map((msg, i) => {
+            if (msg.role === "user") {
+              return (
+                <div key={i} className="flex gap-2.5 mt-3 justify-end">
+                  <div className="max-w-[85%] bg-[#1B4332] text-white rounded-2xl rounded-tr-md px-3.5 py-2.5 shadow-sm text-[13px] leading-relaxed whitespace-pre-wrap">
+                    {msg.content}
+                  </div>
                 </div>
-              </div>
-            ) : (
+              );
+            }
+            if ("kind" in msg && msg.kind === "advice") {
+              return (
+                <div key={i} className="flex gap-2.5 mt-3">
+                  <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <AdviceCard
+                      advice={msg.advice}
+                      onStartRecommended={async () => {
+                        if (canSubmit && !canSubmit()) return;
+                        setRouting(true);
+                        try {
+                          await onSubmit(
+                            msg.advice.recommendedWorkout.condition,
+                            msg.advice.recommendedWorkout.goal,
+                            {
+                              goal: msg.advice.recommendedWorkout.goal,
+                              sessionMode: msg.advice.recommendedWorkout.sessionMode,
+                              targetMuscle: msg.advice.recommendedWorkout.targetMuscle,
+                              runType: msg.advice.recommendedWorkout.runType,
+                            },
+                            { skipLoadingAnim: true },
+                          );
+                        } catch (e) {
+                          console.error("AdviceCard start error:", e);
+                          setRouting(false);
+                        }
+                      }}
+                      starting={routing}
+                    />
+                  </div>
+                </div>
+              );
+            }
+            // 남은 variant: { role: "assistant"; content: string; tone?: ... }
+            const textMsg = msg as { role: "assistant"; content: string; tone?: "info" | "error" };
+            return (
               <div key={i} className="flex gap-2.5 mt-3">
                 <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
-                <div className={`max-w-[85%] rounded-2xl rounded-tl-md px-3.5 py-2.5 shadow-sm text-[13px] leading-relaxed ${
-                  msg.tone === "error"
+                <div className={`max-w-[85%] rounded-2xl rounded-tl-md px-3.5 py-2.5 shadow-sm text-[13px] leading-relaxed whitespace-pre-wrap ${
+                  textMsg.tone === "error"
                     ? "bg-amber-50 border border-amber-100 text-amber-900"
                     : "bg-white border border-gray-100 text-[#1B4332]"
                 }`}>
-                  {msg.content}
+                  {textMsg.content}
                 </div>
               </div>
-            )
-          )}
+            );
+          })}
 
-          {/* 플랜 확인 카드 — 자동 전환 대신 유저 탭 요구 */}
-          {pendingIntent && !routing && (
+          {/* 플랜 확인 카드 — 자동 전환 대신 유저 탭 요구. busy 중이면 숨김 (새 분석 중) */}
+          {pendingIntent && !routing && !busy && (
             <div className="flex gap-2.5 mt-3">
               <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
               <div className="flex-1 bg-white rounded-2xl rounded-tl-md px-3.5 py-3 shadow-sm border border-[#2D6A4F]/20">

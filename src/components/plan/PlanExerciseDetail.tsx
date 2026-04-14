@@ -46,15 +46,22 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
   const hasIntervalMarker = /×|x\s*\d+/i.test(exercise.count);
   const canEditSetTime = isTimeBased && !!timeUnit && !hasIntervalMarker;
   const isStaticTime = isTimeBased && !canEditSetTime;
-  // 시간 단위별 step/min/max
-  const timeStep = timeUnit === "초" || timeUnit === "sec" ? 15 : 1;
-  const timeMinVal = timeUnit === "초" || timeUnit === "sec" ? 15 : 1;
-  const timeMaxVal = timeUnit === "초" || timeUnit === "sec" ? 600 : 120;
-  // 시간 모드에서 SET 값 도출: setDetails.reps 사용, 1 이하(초기값)면 count에서 추출한 값 사용
+  // 분 단위도 내부적으로 초로 편집 (30초 step, mm:ss 표시). 회의 57 후속.
+  const isMinutesUnit = timeUnit === "분" || timeUnit === "min";
+  const timeStep = isMinutesUnit ? 30 : (timeUnit === "초" || timeUnit === "sec" ? 15 : 1);
+  const timeMinVal = isMinutesUnit ? 30 : (timeUnit === "초" || timeUnit === "sec" ? 15 : 1);
+  const timeMaxVal = isMinutesUnit ? 7200 : (timeUnit === "초" || timeUnit === "sec" ? 600 : 120);
+  // 시간 모드에서 SET 값 도출: setDetails.reps 사용. 분 단위는 초로 변환하여 저장/표시.
   const effectiveTimeForSet = (i: number): number => {
     const stored = setDetails[i]?.reps;
     if (stored && stored > 1) return stored;
-    return timeBaseValue;
+    return isMinutesUnit ? timeBaseValue * 60 : timeBaseValue;
+  };
+  /** 분 단위 편집 시 mm:ss 표시 (2:00, 1:30 등). 초/세트 단위는 raw number 유지. */
+  const formatMMSS = (totalSec: number): string => {
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
   };
 
   const [active, setActive] = useState<ActivePill>(null);
@@ -117,10 +124,13 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
             const repsActive = isActive(i, "reps");
             const weightActive = isActive(i, "weight");
             const displayReps = canEditSetTime ? effectiveTimeForSet(i) : set.reps;
-            const repsLabel = canEditSetTime ? (timeUnit as string) : t("plan.reps");
-            const repsMin = canEditSetTime ? timeMinVal : 1;
+            const repsLabel = canEditSetTime ? (isMinutesUnit ? "mm:ss" : (timeUnit as string)) : t("plan.reps");
+            // 코어 횟수 편집은 5회 단위 (회의 57 후속, 대표 지시)
+            const isCoreReps = !canEditSetTime && exercise.type === "core";
+            const repsMin = canEditSetTime ? timeMinVal : (isCoreReps ? 5 : 1);
             const repsMax = canEditSetTime ? timeMaxVal : 100;
-            const repsStep = canEditSetTime ? timeStep : 1;
+            const repsStep = canEditSetTime ? timeStep : (isCoreReps ? 5 : 1);
+            const repsDisplayValue = canEditSetTime && isMinutesUnit ? formatMMSS(displayReps) : undefined;
             return (
               <div key={`${globalIdx}-set-${i}`} className="flex items-center py-3 gap-2 border-b border-gray-100 last:border-b-0">
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] w-10 shrink-0">
@@ -155,6 +165,7 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
                 <div className="flex-1 flex items-center justify-center">
                   <PillEditor
                     value={displayReps}
+                    displayValue={repsDisplayValue}
                     label={repsLabel}
                     color="text-[#1B4332]"
                     active={!!repsActive}
@@ -267,6 +278,8 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
 /** 숫자 pill — 기본은 숫자+라벨 세로 스택, 활성화 시 ± 좌우 펼침 */
 interface PillEditorProps {
   value: number;
+  /** 시간(m:ss) 같이 포맷된 표시값이 필요할 때 override. 미지정 시 value 그대로 표시. */
+  displayValue?: string;
   label: string;
   color: string;
   active: boolean;
@@ -274,7 +287,8 @@ interface PillEditorProps {
   onDecrement: () => void;
   onIncrement: () => void;
 }
-const PillEditor: React.FC<PillEditorProps> = ({ value, label, color, active, onActivate, onDecrement, onIncrement }) => {
+const PillEditor: React.FC<PillEditorProps> = ({ value, displayValue, label, color, active, onActivate, onDecrement, onIncrement }) => {
+  const shown = displayValue ?? value;
   if (!active) {
     return (
       <button
@@ -282,7 +296,7 @@ const PillEditor: React.FC<PillEditorProps> = ({ value, label, color, active, on
         className="flex flex-col items-center justify-center py-1 px-3 rounded-full active:bg-gray-50 transition-colors min-w-[52px]"
       >
         <span className={`font-plan-num text-[20px] font-bold leading-none ${color}`}>
-          {value}
+          {shown}
         </span>
         <span className="text-[10px] font-medium text-gray-400 mt-0.5">{label}</span>
       </button>
@@ -301,7 +315,7 @@ const PillEditor: React.FC<PillEditorProps> = ({ value, label, color, active, on
       </button>
       <div className="flex flex-col items-center justify-center min-w-[36px]">
         <span className={`font-plan-num text-[18px] font-bold leading-none ${color}`}>
-          {value}
+          {shown}
         </span>
         <span className="text-[9px] font-medium text-gray-400 mt-0.5">{label}</span>
       </div>

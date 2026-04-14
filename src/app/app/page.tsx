@@ -813,8 +813,23 @@ export default function Home() {
           />
         );
       }
+      // 당일 영양 가이드 캐시 읽기 (HomeScreen과 동일 키 사용, 날짜 변경 시 자동 리셋)
+      const cachedNutritionGuide = (() => {
+        try {
+          const cached = localStorage.getItem("ohunjal_nutrition_cache");
+          if (!cached) return null;
+          const { data, date, locale: cachedLocale } = JSON.parse(cached);
+          const currentLocale = localStorage.getItem("ohunjal_language") || "ko";
+          if (date === new Date().toDateString() && cachedLocale === currentLocale) return data;
+        } catch { /* ignore */ }
+        return null;
+      })();
       return (
-        <div key={`nutrition-${nutritionProfileVersion}`} className="h-full overflow-y-auto p-4">
+        <div
+          key={`nutrition-${nutritionProfileVersion}`}
+          className="h-full overflow-y-auto overflow-x-hidden px-4 pt-4"
+          style={{ paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" }}
+        >
           <NutritionTab
             bodyWeightKg={fp.bodyWeight || 70}
             heightCm={fp.height || 170}
@@ -825,6 +840,17 @@ export default function Home() {
             todaySession={{ type: "general", durationMin: 0, estimatedCalories: 0 }}
             isPremium={subStatus === "active"}
             readOnly={false}
+            cachedGuide={cachedNutritionGuide}
+            onGuideLoaded={(g) => {
+              try {
+                const lang = localStorage.getItem("ohunjal_language") || "ko";
+                localStorage.setItem("ohunjal_nutrition_cache", JSON.stringify({
+                  data: g,
+                  date: new Date().toDateString(),
+                  locale: lang,
+                }));
+              } catch { /* ignore */ }
+            }}
           />
         </div>
       );

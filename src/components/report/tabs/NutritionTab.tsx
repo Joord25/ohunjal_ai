@@ -385,8 +385,8 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
                 disabled={!chatInput.trim() || chatLoading}
                 className="w-10 h-10 bg-[#1B4332] text-white rounded-xl flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all shrink-0"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a1 1 0 00-1.39 1.2L4.5 11l7.5 1-7.5 1-2.49 6.2a1 1 0 001.39 1.2z" />
                 </svg>
               </button>
             </div>
