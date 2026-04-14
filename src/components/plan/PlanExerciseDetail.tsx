@@ -46,19 +46,21 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
   const hasIntervalMarker = /×|x\s*\d+/i.test(exercise.count);
   const canEditSetTime = isTimeBased && !!timeUnit && !hasIntervalMarker;
   const isStaticTime = isTimeBased && !canEditSetTime;
-  // 분 단위도 내부적으로 초로 편집 (30초 step, mm:ss 표시). 회의 57 후속.
+  // 분 단위는 0.5(=30초) 스텝으로 편집. 내부 저장은 "분"(소수) 유지 — 운동 세션 타이머 호환.
+  // 회의 57 후속: 초 단위 편집/표시는 mm:ss 포맷, 값은 분으로 영구 저장.
   const isMinutesUnit = timeUnit === "분" || timeUnit === "min";
-  const timeStep = isMinutesUnit ? 30 : (timeUnit === "초" || timeUnit === "sec" ? 15 : 1);
-  const timeMinVal = isMinutesUnit ? 30 : (timeUnit === "초" || timeUnit === "sec" ? 15 : 1);
-  const timeMaxVal = isMinutesUnit ? 7200 : (timeUnit === "초" || timeUnit === "sec" ? 600 : 120);
-  // 시간 모드에서 SET 값 도출: setDetails.reps 사용. 분 단위는 초로 변환하여 저장/표시.
+  const timeStep = isMinutesUnit ? 0.5 : (timeUnit === "초" || timeUnit === "sec" ? 15 : 1);
+  const timeMinVal = isMinutesUnit ? 0.5 : (timeUnit === "초" || timeUnit === "sec" ? 15 : 1);
+  const timeMaxVal = isMinutesUnit ? 120 : (timeUnit === "초" || timeUnit === "sec" ? 600 : 120);
+  // 시간 모드에서 SET 값 도출. 분 단위도 분(소수)로 저장/반환.
   const effectiveTimeForSet = (i: number): number => {
     const stored = setDetails[i]?.reps;
-    if (stored && stored > 1) return stored;
-    return isMinutesUnit ? timeBaseValue * 60 : timeBaseValue;
+    if (stored && stored >= timeMinVal) return stored;
+    return timeBaseValue;
   };
-  /** 분 단위 편집 시 mm:ss 표시 (2:00, 1:30 등). 초/세트 단위는 raw number 유지. */
-  const formatMMSS = (totalSec: number): string => {
+  /** 분(소수) → mm:ss. 2→"2:00", 1.5→"1:30", 0.5→"0:30" */
+  const formatMMSS = (minutes: number): string => {
+    const totalSec = Math.round(minutes * 60);
     const m = Math.floor(totalSec / 60);
     const s = totalSec % 60;
     return `${m}:${String(s).padStart(2, "0")}`;
