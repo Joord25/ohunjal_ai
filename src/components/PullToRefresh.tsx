@@ -23,32 +23,31 @@ export const PullToRefresh: React.FC<{ children: React.ReactNode; enabled?: bool
     setIsStandalone(standalone);
   }, []);
 
-  // Find the nearest scrollable child element
-  const getScrollableChild = useCallback((): HTMLElement | null => {
+  // 회의 57: 터치가 발생한 요소의 가장 가까운 세로 스크롤 조상을 찾아 scrollTop을 검사.
+  // (이전 방식은 data-scroll-container 마커/첫 overflow 요소에 의존해 채팅 메시지처럼
+  //  중첩된 스크롤 영역을 구분하지 못했고, 가로 스크롤러를 세로 스크롤로 오판했음.)
+  const findVerticalScrollAncestor = (target: EventTarget | null): HTMLElement | null => {
     const container = containerRef.current;
-    if (!container) return null;
-    // The scrollable element is the overflow-y-auto div inside page content
-    const scrollable = container.querySelector("[data-scroll-container]") as HTMLElement | null;
-    if (scrollable) return scrollable;
-    // Fallback: find first child with overflow scroll/auto
-    const children = container.querySelectorAll("*");
-    for (const child of children) {
-      const style = window.getComputedStyle(child);
-      if (style.overflowY === "auto" || style.overflowY === "scroll") {
-        return child as HTMLElement;
+    let node = target as HTMLElement | null;
+    while (node && node !== container) {
+      const style = window.getComputedStyle(node);
+      const oy = style.overflowY;
+      if ((oy === "auto" || oy === "scroll") && node.scrollHeight > node.clientHeight) {
+        return node;
       }
+      node = node.parentElement;
     }
     return null;
-  }, []);
+  };
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (isRefreshing) return;
-    // Check if the scrollable content is at the top
-    const scrollEl = getScrollableChild();
+    const scrollEl = findVerticalScrollAncestor(e.target);
+    // 터치한 요소 기준으로 실제 세로 스크롤이 가능한 조상이 있고 최상단이 아니면 pull 비활성
     if (scrollEl && scrollEl.scrollTop > 0) return;
     startYRef.current = e.touches[0].clientY;
     pullingRef.current = true;
-  }, [isRefreshing, getScrollableChild]);
+  }, [isRefreshing]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!pullingRef.current || isRefreshing) return;
