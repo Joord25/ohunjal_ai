@@ -243,7 +243,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
   const fatPct = 100 - proteinPct - carbPct;
 
   return (
-    <div>
+    <div className="min-h-full flex flex-col">
       {/* 칼로리 + 목표 — 스크롤 시 상단 고정 */}
       <div className="sticky top-0 z-10 bg-[#FAFBF9] py-5 px-1 relative">
         <button onClick={() => setShowCalorieHelp(true)} className="absolute top-4 right-1 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
@@ -308,7 +308,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
       </div>
 
       {/* 채팅 영역 */}
-      <div className="border-t border-gray-200">
+      <div className="border-t border-gray-200 flex-1 flex flex-col min-h-0">
         {/* 채팅 헤더 */}
         <div className="flex items-center gap-3 py-3 px-1 border-b border-gray-200">
           <img src="/favicon_backup.png" alt="AI" className="w-7 h-7 rounded-full shrink-0" />
@@ -322,7 +322,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
         </div>
 
         {/* 채팅 메시지 */}
-        <div className="py-4 px-1 max-h-[400px] overflow-y-auto">
+        <div className="py-4 px-1 flex-1 min-h-0 overflow-y-auto">
           {chatMessages.length === 0 && (
             <p className="text-xs text-gray-500 break-keep">
               {isKo ? "식단이나 영양에 대해 궁금한 거 물어보세요" : "Ask me anything about your diet or nutrition"}
