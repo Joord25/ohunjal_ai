@@ -276,7 +276,7 @@ ${historyBlock}
 - headline: 한 줄 요약 (20자 이내)
 - goals, principles, criticalPoints, conclusion, intensity, supplements: bullet 2~4개, 각 1문장
 - 불필요한 섹션은 omit (예: 초보자엔 monthProgram·supplements 생략 가능)
-- 이모지 절대 금지 (❗·✅·👉 등 사용 시 실패 처리됨)
+- 이모지 사용 허용 (채팅 맥락이라 자연스럽게 1~2개 정도 가능, 과도한 사용은 금지)
 - 유저 프로필(1RM·경력·나이·목표)과 운동 이력 요약을 반드시 반영
 - recommendedWorkout은 planSession 호출용이라 enum 정확히 — condition.availableTime은 30|50|90만, non-long-run은 30|50, split일 때만 targetMuscle
 
