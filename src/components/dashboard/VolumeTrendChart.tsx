@@ -22,7 +22,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ monthHistory
 
   if (sessionsWithVolume.length === 0) {
     return (
-      <div className="p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
+      <div className="py-6 px-1 border-t border-b border-gray-200">
         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">{t("proof.monthVolume")}</p>
         <h3 className="text-xl font-black text-gray-300">{t("proof.noVolume")}</h3>
       </div>
@@ -81,7 +81,7 @@ export const VolumeTrendChart: React.FC<VolumeTrendChartProps> = ({ monthHistory
   const getY = (v: number) => 95 - ((v - minV) / range) * 90;
 
   return (
-    <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm overflow-visible">
+    <div className="py-4 px-1 border-t border-b border-gray-200 overflow-visible">
       <div className="flex justify-between items-baseline mb-3 sm:mb-4">
         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.monthVolume")}</p>
         <span className="text-[9px] font-black text-gray-300">{t("proof.recentDays", { count: String(recentGroups.length) })}</span>

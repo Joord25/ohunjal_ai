@@ -60,7 +60,7 @@ export const LoadTimelineChart: React.FC<LoadTimelineChartProps> = ({
     : t("proof.loadLow.desc");
 
   return (
-    <div className="p-4 sm:p-6 bg-white rounded-3xl border border-[#2D6A4F]/10 shadow-sm">
+    <div className="py-4 px-1 border-t border-b border-gray-200">
       <div className="flex items-center justify-between mb-1">
         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("proof.4weekVolume")}</p>
         <button onClick={onHelpPress} className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
