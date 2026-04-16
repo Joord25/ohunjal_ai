@@ -591,10 +591,30 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       }
 
       type FollowupResp = { icon: string; label: string; prompt: string };
+      type SelfCheck = { safety: "ok" | "warning" | "risky"; completeness: number; concerns: string[] };
+      type IntentAnalysis = { surface: string; latent: string };
+      type SourceRef = { title: string; url: string };
+      type CommonMeta = { reasoning?: string[]; followups?: FollowupResp[]; selfCheck?: SelfCheck; intentAnalysis?: IntentAnalysis; sources?: SourceRef[] };
       const data = (await res.json()) as
-        | { mode: "chat"; reply: string; reasoning?: string[]; followups?: FollowupResp[] }
-        | { mode: "plan"; intent: ParsedIntent; reasoning?: string[]; followups?: FollowupResp[] }
-        | { mode: "advice"; advice: AdviceContent; reasoning?: string[]; followups?: FollowupResp[] };
+        | ({ mode: "chat"; reply: string } & CommonMeta)
+        | ({ mode: "plan"; intent: ParsedIntent } & CommonMeta)
+        | ({ mode: "advice"; advice: AdviceContent } & CommonMeta);
+
+      // Phase 7D: selfCheck.safety가 warning/risky면 concerns를 reasoning에 prepend
+      const safetyConcerns = data.selfCheck?.safety && data.selfCheck.safety !== "ok"
+        ? (data.selfCheck.concerns ?? []).filter(Boolean)
+        : [];
+      if (safetyConcerns.length > 0 && Array.isArray(data.reasoning)) {
+        data.reasoning = [...safetyConcerns.map((c) => `안전 안내: ${c}`), ...data.reasoning];
+      }
+      // Phase 7E: Google Search 출처가 있으면 reasoning 끝에 "출처 N건" 한 줄 추가
+      const sourceRefs = Array.isArray(data.sources) ? data.sources.filter(Boolean) : [];
+      if (sourceRefs.length > 0 && Array.isArray(data.reasoning)) {
+        const srcMsg = locale === "en"
+          ? `Cross-referenced ${sourceRefs.length} external sources`
+          : `외부 자료 ${sourceRefs.length}건 교차 검증`;
+        data.reasoning = [...data.reasoning, srcMsg];
+      }
 
       // Phase 7 B-lite: Gemini가 반환한 reasoning을 순차로 표시 (800ms 간격)
       const reasoning = Array.isArray(data.reasoning) ? data.reasoning.filter(Boolean) : [];

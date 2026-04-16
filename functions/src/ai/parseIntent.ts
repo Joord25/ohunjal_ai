@@ -208,7 +208,16 @@ ${historyBlock}
 
 [출력 스키마 — JSON만, mode 필드로 분기]
 
-**모든 모드에 공통: "reasoning" 배열 필드 포함 (3~5개 원소).**
+**모든 모드에 공통 — Phase 7D/7F:**
+
+(1) "intentAnalysis" 객체 — Stage 1 의도 파악 :
+{
+  "surface": "유저가 명시적으로 요청한 것 (핵심 키워드 분해, 30자 내)",
+  "latent": "유저가 진짜 원하는 변화/숨겨진 요구사항 (60자 내)"
+}
+예: { "surface": "3개월 다이어트 계획표", "latent": "지속 가능한 감량 습관 + 직장인 현실 반영" }
+
+(2) "reasoning" 배열 — Stage 3 논리 구조 (CoT 액션 서사, 3~5개):
 마누스처럼 **액션 동사형**으로 네가 수행하는 단계를 narrating. 유저가 "AI가 실제로 일하고 있다" 체감하게 함.
 - 각 줄은 **명사형 요약 + 동사형 액션** (예: "지난 이력 확인", "부상 제약 조사 및 안전 각도 검토", "운동 조합 구성 완료")
 - 1번째: 요청 파악 ("X 요청 파악")
@@ -224,10 +233,24 @@ ${historyBlock}
   "완성된 플랜 전달 준비"
 ]
 
+(3) "selfCheck" 객체 — Stage 5 자기 검증 (응답 송출 전 자체 점검):
+{
+  "safety": "ok" | "warning" | "risky",
+  "completeness": 0.0~1.0 (응답이 즉시 실행 가능한 정도),
+  "concerns": ["우려사항 0~2개, 각 30자 내"]
+}
+- safety="risky" 판정 기준: 의학적 위험(극단 단식, 1일 500kcal 이하, 부상 무시), 안전하지 않은 운동 (부상 부위 무리한 부하), 권장량 초과 보충제
+- safety="risky"면 응답 자체를 안전한 보수적 버전으로 다시 작성한 후 반환할 것 (재작성 후 selfCheck.safety는 "warning" 또는 "ok")
+- completeness < 0.7이면 reasoning에 "추가 정보 필요 안내" 한 줄 포함
+예 (안전): { "safety": "ok", "completeness": 0.9, "concerns": [] }
+예 (경고): { "safety": "warning", "completeness": 0.85, "concerns": ["어깨 통증 시 즉시 중단 권고"] }
+
 모드 A (플랜 생성) 예시:
 {
   "mode": "plan",
+  "intentAnalysis": { "surface": "...", "latent": "..." },
   "reasoning": ["...", "...", "..."],
+  "selfCheck": { "safety": "ok", "completeness": 0.9, "concerns": [] },
   "intent": {
     "condition": { "bodyPart": "good", "energyLevel": 3, "availableTime": 30, "bodyWeightKg": 58, "gender": "female", "birthYear": 1991 },
     "goal": "fat_loss",
@@ -239,7 +262,9 @@ ${historyBlock}
 모드 B (조언 카드) 예시:
 {
   "mode": "advice",
+  "intentAnalysis": { "surface": "...", "latent": "..." },
   "reasoning": ["...", "...", "..."],
+  "selfCheck": { "safety": "ok", "completeness": 0.9, "concerns": [] },
   "advice": {
     "headline": "공백 후 복귀 — 근력 회복 4주 구조",
     "goals": [
@@ -287,7 +312,9 @@ ${historyBlock}
 모드 C (자연 대화) 예시:
 {
   "mode": "chat",
+  "intentAnalysis": { "surface": "...", "latent": "..." },
   "reasoning": ["...", "..."],
+  "selfCheck": { "safety": "ok", "completeness": 0.8, "concerns": [] },
   "reply": "정보 없어도 괜찮아요! 오늘 어느 부위 할지만 알려주시면 ㅎㅎ"
 }
 
@@ -353,19 +380,30 @@ JSON만 반환. 설명 문장 금지.`;
 
     try {
       const ai = getGemini();
+      // Phase 7E: 장기 프로그램·트렌드·최신 가이드 요청에는 Google Search Grounding 활성
+      // (responseMimeType=application/json과 tools 동시 사용 불가하므로 분기 처리)
+      const TREND_PATTERN = /(2026|2025|최신|트렌드|요즘|신기능|화제|유행|new\s|latest|trend)/i;
+      const useGrounding = TREND_PATTERN.test(text);
+      const baseConfig = useGrounding
+        ? { temperature: 0.3, tools: [{ googleSearch: {} }] as any }
+        : { responseMimeType: "application/json" as const, temperature: 0.2 };
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          temperature: 0.2, // 추출 작업이라 결정성 우선
-        },
+        contents: useGrounding
+          ? prompt + "\n\n참고: 외부 검색 결과를 활용해 답하되, 최종 출력은 위 JSON 스키마 그대로 ```json ``` 코드블록으로 감싸지 말고 바로 JSON만 반환할 것."
+          : prompt,
+        config: baseConfig,
       });
 
       const raw = response.text || "";
+      // grounding 사용 시 코드블록 마크다운으로 감싸질 수 있어 안전 추출
+      const cleanRaw = raw.replace(/^```json\s*|\s*```$/g, "").trim();
+      const jsonStart = cleanRaw.indexOf("{");
+      const jsonEnd = cleanRaw.lastIndexOf("}");
+      const sliced = jsonStart >= 0 && jsonEnd > jsonStart ? cleanRaw.slice(jsonStart, jsonEnd + 1) : cleanRaw;
       let parsedRaw: any;
       try {
-        parsedRaw = JSON.parse(raw);
+        parsedRaw = JSON.parse(sliced);
       } catch {
         res.status(200).json(buildFallbackReply(locale, "fallback-parse-error"));
         return;
@@ -378,6 +416,61 @@ JSON만 반환. 설명 문장 금지.`;
             .slice(0, 5)
             .map((r: string) => r.trim().slice(0, 120))
         : [];
+
+      // intentAnalysis 추출 (Phase 7F — Stage 1 표면/심층 의도)
+      const intentAnalysis = (typeof parsedRaw?.intentAnalysis === "object" && parsedRaw.intentAnalysis !== null)
+        ? {
+            surface: typeof parsedRaw.intentAnalysis.surface === "string"
+              ? parsedRaw.intentAnalysis.surface.trim().slice(0, 60) : "",
+            latent: typeof parsedRaw.intentAnalysis.latent === "string"
+              ? parsedRaw.intentAnalysis.latent.trim().slice(0, 120) : "",
+          }
+        : { surface: "", latent: "" };
+
+      // selfCheck 추출 + 룰베이스 안전 필터 (Phase 7D — Stage 5 자기 검증)
+      const DANGER_PATTERN = /(굶기|단식|1일\s*[1-4]\d{2}\s*kcal|매일\s*무산소|\bml\s*굶|뼈만\s*남|토.*감량|살\s*빼.*하루\s*[1-4]\d{2})/i;
+      const userDanger = DANGER_PATTERN.test(text);
+      const sc = parsedRaw?.selfCheck;
+      let safety: "ok" | "warning" | "risky" = "ok";
+      let completeness = 0.8;
+      let concerns: string[] = [];
+      if (typeof sc === "object" && sc !== null) {
+        if (sc.safety === "warning" || sc.safety === "risky") safety = sc.safety;
+        if (typeof sc.completeness === "number") completeness = Math.max(0, Math.min(1, sc.completeness));
+        if (Array.isArray(sc.concerns)) {
+          concerns = sc.concerns
+            .filter((c: unknown): c is string => typeof c === "string" && c.trim().length > 0)
+            .slice(0, 3)
+            .map((c: string) => c.trim().slice(0, 80));
+        }
+      }
+      // 유저 입력에 위험 키워드 있으면 무조건 warning 격상 + 안전 안내 추가
+      if (userDanger) {
+        if (safety === "ok") safety = "warning";
+        const warnMsg = locale === "en"
+          ? "Extreme calorie restriction is unsafe — recommending sustainable approach instead."
+          : "극단적 칼로리 제한은 위험해요. 지속 가능한 방향으로 안내드릴게요.";
+        if (!concerns.some((c) => c.includes("극단") || c.includes("Extreme"))) {
+          concerns.unshift(warnMsg);
+        }
+      }
+      const selfCheck = { safety, completeness, concerns };
+
+      // Phase 7E: Google Search Grounding sources 추출 (사용 시)
+      const sources: Array<{ title: string; url: string }> = (() => {
+        try {
+          const grounding = (response as any).candidates?.[0]?.groundingMetadata;
+          const chunks = grounding?.groundingChunks ?? [];
+          return chunks
+            .map((c: any) => c?.web)
+            .filter((w: any) => w && typeof w.uri === "string")
+            .slice(0, 3)
+            .map((w: any) => ({
+              title: typeof w.title === "string" ? w.title.slice(0, 80) : w.uri,
+              url: w.uri,
+            }));
+        } catch { return []; }
+      })();
 
       // followups 추출 (Phase 7C — 마누스 4단계 프레임워크 개인화 후속 질문)
       const ALLOWED_ICONS = new Set([
@@ -408,14 +501,14 @@ JSON만 반환. 설명 문장 금지.`;
 
       if (mode === "plan" && parsedRaw?.intent) {
         const intent = sanitize(parsedRaw.intent);
-        res.status(200).json({ mode: "plan", reasoning, followups, intent, model: "gemini-2.5-flash" });
+        res.status(200).json({ mode: "plan", intentAnalysis, reasoning, selfCheck, sources, followups, intent, model: "gemini-2.5-flash" });
         return;
       }
 
       if (mode === "advice" && parsedRaw?.advice) {
         const advice = sanitizeAdvice(parsedRaw.advice);
         if (advice) {
-          res.status(200).json({ mode: "advice", reasoning, followups, advice, model: "gemini-2.5-flash" });
+          res.status(200).json({ mode: "advice", intentAnalysis, reasoning, selfCheck, sources, followups, advice, model: "gemini-2.5-flash" });
           return;
         }
         // advice 스키마 훼손 시 chat으로 폴백
@@ -427,7 +520,7 @@ JSON만 반환. 설명 문장 금지.`;
         : (locale === "en"
           ? "Tell me which area and how long — I'll build a plan for you."
           : "어느 부위로, 몇 분 할지만 말씀해주시면 바로 짜드려요.");
-      res.status(200).json({ mode: "chat", reasoning, followups, reply, model: "gemini-2.5-flash" });
+      res.status(200).json({ mode: "chat", intentAnalysis, reasoning, selfCheck, sources, followups, reply, model: "gemini-2.5-flash" });
     } catch (error) {
       console.error("parseIntent error:", error);
       res.status(200).json(buildFallbackReply(locale, "fallback-exception"));
