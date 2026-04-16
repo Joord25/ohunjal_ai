@@ -257,10 +257,14 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
         {/* 히어로: 좌 숫자 + 우 통계 */}
         <div className="mt-5 mb-2">
           {monthHistory.length > 0 ? (
-            <div className="flex items-end gap-2 px-2 flex-nowrap">
+            <div className="flex items-end gap-2 px-2">
               <h1 className="font-black text-[#1B4332] leading-none shrink-0" style={{ fontSize: "clamp(2.75rem, 12vw, 3rem)" }}>{monthHistory.length}<span className="font-bold text-[#2D6A4F]/50 ml-1" style={{ fontSize: "clamp(0.875rem, 4vw, 1rem)" }}>{t("proof.workoutCount")}</span></h1>
-              <p className="text-[#2D6A4F]/50 ml-auto font-bold whitespace-nowrap" style={{ fontSize: "clamp(0.75rem, 3vw, 0.875rem)" }}>
-                <span className="font-black text-[#1B4332]" style={{ fontSize: "clamp(1.125rem, 4.5vw, 1.25rem)" }}>{Math.round(toDisplayWeight(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0))).toLocaleString()}</span> {unitLabels.weight} · <span className="font-black text-[#1B4332]" style={{ fontSize: "clamp(1.125rem, 4.5vw, 1.25rem)" }}>{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span> {locale === "ko" ? "분" : "min"} · <span className="font-black text-[#1B4332]" style={{ fontSize: "clamp(1.125rem, 4.5vw, 1.25rem)" }}>{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span> {locale === "ko" ? "세트" : "sets"}
+              <p className="text-[#2D6A4F]/50 ml-auto font-bold text-right leading-tight min-w-0 break-keep" style={{ fontSize: "clamp(0.7rem, 2.6vw, 0.8rem)" }}>
+                <span className="font-black text-[#1B4332]" style={{ fontSize: "clamp(1rem, 4vw, 1.125rem)" }}>{Math.round(toDisplayWeight(monthHistory.reduce((s, h) => s + (h.stats.totalVolume || 0), 0))).toLocaleString()}</span>{unitLabels.weight}
+                {" · "}
+                <span className="font-black text-[#1B4332]" style={{ fontSize: "clamp(1rem, 4vw, 1.125rem)" }}>{Math.round(monthHistory.reduce((s, h) => s + (h.stats.totalDurationSec || 0), 0) / 60)}</span>{locale === "ko" ? "분" : "m"}
+                {" · "}
+                <span className="font-black text-[#1B4332]" style={{ fontSize: "clamp(1rem, 4vw, 1.125rem)" }}>{monthHistory.reduce((s, h) => s + (h.stats.totalSets || 0), 0)}</span>{locale === "ko" ? "세트" : "s"}
               </p>
             </div>
           ) : isCurrentMonth ? (
