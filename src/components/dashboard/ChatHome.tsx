@@ -21,6 +21,7 @@ import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { buildHistoryDigest, buildInitialGreeting } from "@/utils/historyDigest";
 import { AdviceCard, type AdviceContent } from "./AdviceCard";
 import { trackEvent } from "@/utils/analytics";
+import { buildIntentEcho, detectCategory } from "@/utils/intentEcho";
 
 interface ChatHomeProps {
   userName?: string;
@@ -72,7 +73,7 @@ interface ParsedIntent {
 
 // 예시 프롬프트 (마누스식 칩). key = i18n 프롬프트, label = 짧은 칩 라벨, icon = SVG path
 type ExampleChip = { key: string; labelKo: string; labelEn: string; icon: ChipIconType };
-type ChipIconType = "chest" | "home" | "run" | "legs" | "diet" | "back" | "full" | "cycle" | "shoulder" | "posture" | "calendar";
+type ChipIconType = "chest" | "home" | "run" | "legs" | "diet" | "back" | "full" | "cycle" | "shoulder" | "posture" | "calendar" | "creatine" | "pump" | "sleep" | "food" | "plateau" | "split" | "protein";
 // 기본 노출 (4개 — 가벼운 진입용)
 const EXAMPLE_CHIPS: ExampleChip[] = [
   { key: "chat_home.example.short_chest", labelKo: "가슴 30분", labelEn: "Chest 30m", icon: "chest" },
@@ -103,6 +104,13 @@ const ChipIcon: React.FC<{ type: ChipIconType }> = ({ type }) => {
     shoulder: "M4 14c2-6 6-8 8-8s6 2 8 8M4 14v4h16v-4",
     posture: "M8 3a2 2 0 104 0 2 2 0 00-4 0zM10 7c-2 2-4 3-4 6l2 0 1 8h3l-1-8h2l1 8h3l-1-8 2 0c0-3-2-4-4-6",
     calendar: "M4 6h16v14H4V6zM8 3v4M16 3v4M4 10h16",
+    creatine: "M9 3h6v4l3 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2V9l3-2V3zM9 13h6",
+    pump: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+    sleep: "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
+    food: "M3 8h18M6 8V6a2 2 0 012-2h8a2 2 0 012 2v2M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12",
+    plateau: "M3 17l6-6 4 4 8-8M14 7h7v7",
+    split: "M4 6h6v4H4zM14 6h6v4h-6zM4 14h6v6H4zM14 14h6v6h-6z",
+    protein: "M12 2a3 3 0 00-3 3v2H6a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3V5a3 3 0 00-3-3z",
   };
   return (
     <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -128,6 +136,184 @@ function msgToHistoryContent(m: ChatMsg): string {
   if ("kind" in m && m.kind === "upgrade") return "[upgrade card shown]";
   return "[advice card shown]";
 }
+
+/** 심화 후속 질문 카탈로그 — Phase 6B (마누스식 아이콘 + 세로 리스트) */
+type DeepFollowup = {
+  id: string;
+  icon: ChipIconType;
+  labelKo: string;
+  labelEn: string;
+  promptKo: string;
+  promptEn: string;
+  /** 컨텍스트 매칭 태그. "any" 항상 매칭 */
+  tags: string[];
+};
+
+const DEEP_FOLLOWUPS: DeepFollowup[] = [
+  {
+    id: "pump",
+    icon: "pump",
+    labelKo: "자극 제대로 느끼는 법",
+    labelEn: "Mind-muscle connection",
+    promptKo: "이 운동할 때 자극 제대로 느끼는 법 알려줘",
+    promptEn: "How do I feel the target muscle properly during this workout?",
+    tags: ["any"],
+  },
+  {
+    id: "creatine",
+    icon: "creatine",
+    labelKo: "크레아틴 언제 얼마나 먹어?",
+    labelEn: "How to take creatine",
+    promptKo: "크레아틴 언제 얼마나 어떻게 먹어야 효과적인지 알려줘",
+    promptEn: "When and how much creatine should I take for best results?",
+    tags: ["any", "bulk", "strength", "chest", "back", "legs", "arms"],
+  },
+  {
+    id: "protein",
+    icon: "protein",
+    labelKo: "단백질 얼마나 먹어야 해?",
+    labelEn: "How much protein do I need?",
+    promptKo: "내 몸무게 기준으로 단백질 하루에 얼마나 먹어야 해?",
+    promptEn: "How much protein per day should I eat for my body weight?",
+    tags: ["any", "bulk", "diet"],
+  },
+  {
+    id: "food",
+    icon: "food",
+    labelKo: "운동 끝나고 뭐 먹지?",
+    labelEn: "What to eat after workout",
+    promptKo: "운동 끝나고 회복에 좋은 음식 추천해줘",
+    promptEn: "What should I eat after this workout to recover?",
+    tags: ["any"],
+  },
+  {
+    id: "sleep",
+    icon: "sleep",
+    labelKo: "회복과 수면 관리",
+    labelEn: "Recovery & sleep tips",
+    promptKo: "근육 회복이랑 수면 어떻게 관리해야 해?",
+    promptEn: "How should I manage muscle recovery and sleep?",
+    tags: ["any"],
+  },
+  {
+    id: "plateau",
+    icon: "plateau",
+    labelKo: "정체기 돌파법",
+    labelEn: "Breaking plateaus",
+    promptKo: "벤치/스쿼트/데드리프트 정체된 거 어떻게 뚫어?",
+    promptEn: "How do I break through bench/squat/deadlift plateaus?",
+    tags: ["bulk", "strength", "chest", "back", "legs"],
+  },
+  {
+    id: "split",
+    icon: "split",
+    labelKo: "3분할 vs 5분할 뭐가 나아?",
+    labelEn: "3-day vs 5-day split",
+    promptKo: "3분할이랑 5분할 중 뭐가 더 나아?",
+    promptEn: "Which is better: 3-day split or 5-day split?",
+    tags: ["any"],
+  },
+  {
+    id: "posture",
+    icon: "posture",
+    labelKo: "자세 교정 운동",
+    labelEn: "Posture correction",
+    promptKo: "거북목이랑 굽은등 교정하는 10분 루틴 알려줘",
+    promptEn: "Give me a 10-min routine to fix text neck and hunched back",
+    tags: ["any", "rehab", "posture"],
+  },
+];
+
+/** 메시지 컨텍스트에서 태그 추출 */
+function extractTagsFromContent(content: string): string[] {
+  const tags: string[] = ["any"];
+  if (/다이어트|감량|체지방|살\s*빼/.test(content)) tags.push("diet");
+  if (/증량|벌크|근육.*키|늘리/.test(content)) tags.push("bulk");
+  if (/1rm|벤치|스쿼트|데드|프레스|맥스/i.test(content)) tags.push("strength");
+  if (/가슴|chest/i.test(content)) tags.push("chest");
+  if (/등|back/i.test(content)) tags.push("back");
+  if (/어깨|shoulder/i.test(content)) tags.push("shoulders");
+  if (/팔|이두|삼두|arm/i.test(content)) tags.push("arms");
+  if (/하체|다리|legs?/i.test(content)) tags.push("legs");
+  if (/부상|회피|통증|재활/.test(content)) tags.push("rehab");
+  if (/거북목|굽은등|자세/.test(content)) tags.push("posture");
+  return tags;
+}
+
+/** 컨텍스트 기반 추천 (최대 4개) */
+function selectDeepFollowups(contextTags: string[], limit = 4): DeepFollowup[] {
+  const scored = DEEP_FOLLOWUPS.map((f) => {
+    let score = 0;
+    for (const t of f.tags) {
+      if (t === "any") score += 1;
+      else if (contextTags.includes(t)) score += 3;
+    }
+    return { f, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((s) => s.f);
+}
+
+/** 심화 후속 질문 리스트 — 마누스식 세로 아이콘 리스트 */
+const DeepFollowupList: React.FC<{
+  contextTags: string[];
+  locale: "ko" | "en";
+  onTap: (prompt: string) => void;
+}> = ({ contextTags, locale, onTap }) => {
+  const items = selectDeepFollowups(contextTags);
+  return (
+    <div className="mt-3 border-t border-gray-100 pt-3">
+      <p className="text-[10px] font-black text-gray-400 tracking-wider uppercase mb-2 px-0.5">
+        {locale === "en" ? "Recommended follow-ups" : "추천 후속 질문"}
+      </p>
+      <div className="flex flex-col gap-1">
+        {items.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => onTap(locale === "en" ? f.promptEn : f.promptKo)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-gray-100 hover:border-[#2D6A4F]/40 hover:bg-emerald-50/30 active:scale-[0.98] transition-all text-left"
+          >
+            <span className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-[#2D6A4F] shrink-0">
+              <ChipIcon type={f.icon} />
+            </span>
+            <span className="text-[12.5px] font-medium text-[#1B4332] flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
+              {locale === "en" ? f.labelEn : f.labelKo}
+            </span>
+            <svg className="w-3 h-3 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/** 진행 체크 스텝 — 실제 단계 시각화 (Phase 6A) */
+const ProgressStep: React.FC<{ state: "done" | "active" | "pending"; label: string; last?: boolean }> = ({ state, label, last }) => (
+  <div className={`flex items-center gap-2 ${last ? "" : "mb-1.5"}`}>
+    <span className="shrink-0 w-3.5 h-3.5 flex items-center justify-center">
+      {state === "done" && (
+        <svg className="w-3.5 h-3.5 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+      {state === "active" && (
+        <svg className="w-3.5 h-3.5 animate-spin text-[#2D6A4F]" fill="none" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
+        </svg>
+      )}
+      {state === "pending" && (
+        <span className="w-2.5 h-2.5 rounded-full border border-gray-300" />
+      )}
+    </span>
+    <span className={`text-[12px] ${
+      state === "done" ? "text-[#1B4332] font-medium" : state === "active" ? "text-[#1B4332] font-semibold" : "text-gray-400"
+    }`}>
+      {label}
+    </span>
+  </div>
+);
 
 /** 각 assistant 메시지 상단에 붙는 미니 헤더 — 마누스 스타일 (회의 60) */
 const AssistantMiniHeader: React.FC<{ locale: "ko" | "en"; planLabel?: string }> = ({ locale, planLabel }) => (
@@ -301,8 +487,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     });
   };
 
-  const handleSubmit = async () => {
-    const trimmed = text.trim();
+  const handleSubmit = async (override?: string) => {
+    const trimmed = (override ?? text).trim();
     if (!trimmed || busy) return;
 
     // 회의 57 Phase 3: 체험 소진/페이월 사전 가드 — Gemini 호출 전에 차단
@@ -322,15 +508,33 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       return;
     }
 
-    trackEvent("chat_submit", { char_length: trimmed.length });
+    // Phase 6A: 의도 분류 + 즉시 Ack 버블 (마누스식 질문 재진술)
+    const category = detectCategory(trimmed);
+    const { echo, redirect } = buildIntentEcho(trimmed, locale);
+
+    trackEvent("chat_submit", {
+      char_length: trimmed.length,
+      intent_category: category,
+      skipped_parse: redirect,
+    });
     const submitStart = Date.now();
 
-    // 유저 메시지 먼저 채팅에 반영 (대표 지시: 내 입력이 보여야 대화 느낌)
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+    // 유저 메시지 → Ack 버블 순차 반영
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: trimmed },
+      { role: "assistant", content: echo, tone: "info" },
+    ]);
     setText("");
-    setBusy(true);
     // 새 입력이 들어오면 이전 확인 카드 즉시 제거 (유저가 마음 바꾼 상태로 간주)
     setPendingIntent(null);
+
+    // off_topic이면 parseIntent 건너뜀 (비용 절감)
+    if (redirect) {
+      return;
+    }
+
+    setBusy(true);
 
     try {
       const { auth } = await import("@/lib/firebase");
@@ -551,6 +755,63 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             );
           })}
 
+          {/* 후속 질문 — 마지막 메시지 컨텍스트에 따라 노출 (회의 60 Phase 6A+6B) */}
+          {(() => {
+            if (busy || routing || pendingIntent) return null;
+            const last = messages[messages.length - 1];
+            if (!last || last.role !== "assistant") return null;
+            if ("kind" in last && last.kind === "upgrade") return null;
+
+            const content = "content" in last ? last.content : "";
+            const isAdvice = "kind" in last && last.kind === "advice";
+
+            // 컨텍스트 태그 추출 (심화 후속 질문 스코어링용)
+            const contextTags = extractTagsFromContent(content);
+
+            // 단축 칩 (빠른 재조정) — advice가 아닌 일반 텍스트일 때만
+            const mentionsBack = /등|back/i.test(content);
+            const mentionsLegs = /하체|다리|legs?/i.test(content);
+            const mentionsChest = /가슴|chest/i.test(content);
+            const shortChips: string[] = isAdvice ? [] : (locale === "en"
+              ? (mentionsBack ? ["back routine today", "different body part", "make it shorter"]
+                 : mentionsLegs ? ["legs 40 min", "different body part", "add cardio"]
+                 : mentionsChest ? ["chest 30 min", "different body part", "add cardio"]
+                 : ["today's workout", "I'm tired today", "any body part suggestion"])
+              : (mentionsBack ? ["등 운동 오늘", "다른 부위로", "시간 짧게"]
+                 : mentionsLegs ? ["하체 40분", "다른 부위로", "유산소 추가"]
+                 : mentionsChest ? ["가슴 30분", "다른 부위로", "유산소 추가"]
+                 : ["오늘 운동 추천해줘", "오늘은 피곤해", "아무 부위나 골라줘"]));
+
+            return (
+              <div className="mt-2">
+                {shortChips.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {shortChips.map((hint) => (
+                      <button
+                        key={hint}
+                        onClick={() => {
+                          setText(hint);
+                          requestAnimationFrame(() => inputRef.current?.focus());
+                        }}
+                        className="text-[11.5px] px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95 transition-all hover:border-[#2D6A4F]/40 hover:text-[#1B4332]"
+                      >
+                        {hint}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <DeepFollowupList
+                  contextTags={contextTags}
+                  locale={locale}
+                  onTap={(prompt) => {
+                    trackEvent("chat_submit", { source: "deep_followup", char_length: prompt.length });
+                    handleSubmit(prompt);
+                  }}
+                />
+              </div>
+            );
+          })()}
+
           {/* 플랜 확인 카드 — 자동 전환 대신 유저 탭 요구. busy 중이면 숨김 (새 분석 중) */}
           {pendingIntent && !routing && !busy && (
             <div className="mt-3">
@@ -598,25 +859,27 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             </div>
           )}
 
-          {/* 로딩 인라인 카드 — 순차 메시지 cycling (회의 60 Phase 2) */}
-          {busy && (
-            <div className="mt-3">
-              <AssistantMiniHeader locale={locale} planLabel={miniPlanLabel} />
-              <div className="inline-flex items-center gap-2.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-                <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
-                </svg>
-                <span key={loadingStage} className="text-[12px] font-medium text-[#1B4332] animate-[fadeIn_220ms_ease-out]">
-                  {(locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO)[loadingStage]}…
-                </span>
-                <span className="flex gap-0.5 ml-0.5">
-                  <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-                </span>
+          {/* 진짜 진행 체크 카드 — 실제 단계 매핑 (Phase 6A 회의 60) */}
+          {busy && (() => {
+            const historyCount = getCachedWorkoutHistory().length;
+            const historyHint = locale === "en"
+              ? (historyCount > 0 ? `${historyCount} past sessions` : "first-time session")
+              : (historyCount > 0 ? `지난 ${historyCount}회 반영` : "첫 운동");
+            // 단계 활성 계산: loadingStage 0-1 → intent active, 2+ → history done + selection active
+            const intentDone = loadingStage >= 1;
+            const selectionActive = loadingStage >= 2;
+            return (
+              <div className="mt-3">
+                <AssistantMiniHeader locale={locale} planLabel={miniPlanLabel} />
+                <div className="bg-white border border-gray-200 rounded-xl px-3.5 py-3 shadow-sm w-full max-w-[280px]">
+                  <ProgressStep state={intentDone ? "done" : "active"} label={locale === "en" ? "Reading your intent" : "운동 의도 분석"} />
+                  <ProgressStep state={intentDone ? "done" : "pending"} label={locale === "en" ? `Checking history · ${historyHint}` : `지난 이력 확인 · ${historyHint}`} />
+                  <ProgressStep state={selectionActive ? "active" : "pending"} label={locale === "en" ? "Selecting the right moves" : "맞춤 운동 조합 선택"} />
+                  <ProgressStep state="pending" label={locale === "en" ? "Calibrating intensity & sets" : "강도·세트 수 계산"} last />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* 플랜 라우팅 인라인 카드 (확인 버튼 탭 후 master_plan_preview 이동 대기) */}
           {routing && (
@@ -687,7 +950,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                 </button>
               </div>
               <button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
                 disabled={!text.trim() || busy}
                 className="w-9 h-9 bg-[#1B4332] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:bg-gray-300 active:scale-95 transition-all shrink-0"
                 aria-label={t("chat_home.send")}
@@ -701,7 +964,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
         </div>
       </div>
 
-      {/* 예시 프롬프트 — 기본 4개 칩 + 더보기(팝오버로 심화 예시). 회의 60 대표 지시. */}
+      {/* 예시 프롬프트 — 기본 4개 칩 + 더보기(팝오버로 심화 예시). 회의 60: 채팅 시작 후 숨김. */}
+      {messages.length === 0 && (
       <div className="shrink-0 pt-2 pb-4 px-4 relative" data-examples-container>
         <div className="flex flex-wrap gap-1.5 justify-center">
           {EXAMPLE_CHIPS.map((chip) => (
@@ -726,6 +990,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           </button>
         </div>
       </div>
+      )}
 
       {/* 더보기 팝오버 — 심화 예시 (마누스 스타일 세로 리스트) */}
       {showMoreExamples && (
