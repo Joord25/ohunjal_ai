@@ -21,7 +21,7 @@ import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { buildHistoryDigest, buildInitialGreeting } from "@/utils/historyDigest";
 import { AdviceCard, type AdviceContent } from "./AdviceCard";
 import { trackEvent } from "@/utils/analytics";
-import { buildIntentEcho, detectCategory } from "@/utils/intentEcho";
+import { buildIntentEcho, detectCategory, isPivot } from "@/utils/intentEcho";
 
 interface ChatHomeProps {
   userName?: string;
@@ -348,6 +348,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   const [pendingIntent, setPendingIntent] = useState<ParsedIntent | null>(null);
   const [routing, setRouting] = useState(false);
   const [showMoreExamples, setShowMoreExamples] = useState(false);
+  const [ackPending, setAckPending] = useState(false); // 타이핑 지연 중 (Phase 6A 보완)
 
   // 미니 헤더 옆 플랜 라벨 — 프리미엄/무료/체험 구분 (회의 60 대표 피드백)
   const miniPlanLabel = (() => {
@@ -508,26 +509,29 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       return;
     }
 
-    // Phase 6A: 의도 분류 + 즉시 Ack 버블 (마누스식 질문 재진술)
+    // Phase 6A: 의도 분류 + Ack 버블 (마누스식 질문 재진술)
     const category = detectCategory(trimmed);
     const { echo, redirect } = buildIntentEcho(trimmed, locale);
+    const pivoted = isPivot(trimmed);
 
     trackEvent("chat_submit", {
       char_length: trimmed.length,
       intent_category: category,
       skipped_parse: redirect,
+      pivoted,
     });
     const submitStart = Date.now();
 
-    // 유저 메시지 → Ack 버블 순차 반영
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: trimmed },
-      { role: "assistant", content: echo, tone: "info" },
-    ]);
+    // 유저 메시지 먼저 추가, Ack은 타이핑 지연 후 (너무 즉시 뜨면 룰베이스 티남)
+    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setText("");
-    // 새 입력이 들어오면 이전 확인 카드 즉시 제거 (유저가 마음 바꾼 상태로 간주)
     setPendingIntent(null);
+    setAckPending(true);
+
+    // 400ms 타이핑 지연 후 Ack 삽입 — 분석 중 체감 제공
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    setMessages((prev) => [...prev, { role: "assistant", content: echo, tone: "info" }]);
+    setAckPending(false);
 
     // off_topic이면 parseIntent 건너뜀 (비용 절감)
     if (redirect) {
@@ -547,7 +551,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       const token = await user.getIdToken();
 
       // 같은 질문 반복 방지를 위해 최근 대화 8개까지 전달
-      const recentHistory = messages.slice(-8).map((m) => ({
+      // 피벗 감지 시 history 비움 — Gemini가 이전 목표/맥락 재소환하는 문제 방지
+      const recentHistory = pivoted ? [] : messages.slice(-8).map((m) => ({
         role: m.role,
         content: msgToHistoryContent(m),
       }));
@@ -855,6 +860,18 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                     {hint}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* 타이핑 인디케이터 — Ack 등장 전 분석 중 체감 (Phase 6A 보완) */}
+          {ackPending && (
+            <div className="mt-3">
+              <AssistantMiniHeader locale={locale} planLabel={miniPlanLabel} />
+              <div className="inline-flex items-center gap-1 bg-white border border-gray-100 rounded-full px-3 py-2 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
             </div>
           )}

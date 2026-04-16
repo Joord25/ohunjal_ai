@@ -16,6 +16,16 @@ const FITNESS_PATTERN = /(운동|헬스|트레이닝|근육|근력|자극|세트
 // 명확한 off-topic 시그널 (운동과 전혀 무관)
 const OFF_TOPIC_PATTERN = /(주식|코인|비트코인|이더리움|부동산|집값|대출|정치|대통령|선거|뉴스|기사|날씨|비\s*온|영화|드라마|예능|넷플릭스|유튜브|게임|롤|배그|피파|코딩|프로그래밍|파이썬|리액트|자바|업무|회사|상사|연애|썸|데이트|결혼|이혼|레시피|요리법|맛집|주문|배달|음식점|카페|메뉴\s*추천|여행|항공권|호텔|책\s*추천|소설|시험|수능|토익|자격증)/i;
 
+/**
+ * 피벗 시그널 — 이전 대화 목표(다이어트/증량)와 다른 맥락으로 전환하는 키워드.
+ * 감지되면 parseIntent에 history 안 넘겨서 Gemini가 이전 목표 재소환 방지.
+ */
+const PIVOT_PATTERN = /(부상|통증|아파|아픈|다쳤|다치|갑자기|이제|쉴래|그만|바꿀래|바꾸|다른|새로|대신|그건\s*됐|취소|리셋|처음부터|새 요청)/i;
+
+export function isPivot(text: string): boolean {
+  return PIVOT_PATTERN.test(text);
+}
+
 export function detectCategory(text: string): IntentCategory {
   const normalized = text.trim().toLowerCase();
   if (!normalized) return "ambiguous";
@@ -83,71 +93,71 @@ export function buildIntentEcho(text: string, locale: "ko" | "en" = "ko"): EchoR
 
   if (locale === "en") {
     if (hasMenstrual && hasDiet) {
-      echo = "Cycle-synced 3-month diet plan — I'll tailor it to your phases and start with today's session.";
+      echo = "Got it — cycle-synced diet plan request.";
     } else if (hasLongProgram && hasDiet) {
-      echo = "3-month fat-loss plan — starting with today's session and we'll dial intensity week by week.";
+      echo = "Got it — 3-month fat-loss plan.";
     } else if (hasShortBurst) {
-      echo = "Short-burst focused plan — I'll go high-intensity for the days you have.";
+      echo = "Got it — short-burst focused plan.";
     } else if (hasPosture) {
-      echo = "Posture correction routine — I'll center on joint-safe, low-impact moves.";
+      echo = "Got it — posture correction routine.";
     } else if (hasRehab) {
-      echo = "Injury-safe routine — I'll avoid stressful angles and keep joints protected.";
+      echo = "Got it — injury-safe workout.";
     } else if (hasAdvanced && matchedPart) {
-      echo = `Advanced ${matchedPart.en} routine — I'll build around heavy compound movements.`;
+      echo = `Got it — advanced ${matchedPart.en} routine.`;
     } else if (isRun && runKm) {
-      echo = `${runKm}km run target — I'll pace-manage and prep your session.`;
+      echo = `Got it — ${runKm}km run target.`;
     } else if (matchedPart && minutes) {
-      echo = `${matchedPart.en.charAt(0).toUpperCase() + matchedPart.en.slice(1)} ${minutes}-min session — building it with enough stimulus.`;
+      echo = `Got it — ${matchedPart.en} ${minutes}-min session.`;
     } else if (matchedPart) {
-      echo = `Got ${matchedPart.en} focus — I'll put together a solid session.`;
+      echo = `Got it — ${matchedPart.en} focus.`;
     } else if (hasBulk) {
-      echo = "Muscle-gain plan — I'll build a progressive-overload session for you.";
+      echo = "Got it — muscle-gain focus.";
     } else if (hasDiet) {
-      echo = "Fat-loss session — pairing strength work with conditioning.";
+      echo = "Got it — fat-loss session.";
     } else if (category === "ambiguous") {
-      echo = "Got it — tell me a bit more so I can prep the right session. Or try a quick example below.";
+      echo = "Tell me a bit more so I can prep the right session.";
     } else {
-      echo = "Got it — starting your personalized analysis.";
+      echo = "Got it.";
     }
   } else {
     if (hasMenstrual && hasDiet) {
-      echo = "생리주기 반영 3개월 다이어트 플랜이네요. 주기별 컨디션 맞춰 오늘 세션부터 시작해드릴게요.";
+      echo = "생리주기 반영 다이어트 플랜으로 이해했어요.";
       tags.push("menstrual_diet");
     } else if (hasLongProgram && hasDiet) {
-      echo = "3개월 체지방 감량 플랜이네요. 오늘 세션부터 시작해 주차별로 강도 조절해드릴게요.";
+      echo = "3개월 체지방 감량 플랜으로 이해했어요.";
       tags.push("long_diet");
     } else if (hasShortBurst) {
-      echo = "단기 집중 플랜이네요. 짧은 기간에 최대 효과 나오는 고강도 구성으로 준비할게요.";
+      echo = "단기 집중 플랜 요청이네요.";
       tags.push("short_burst");
     } else if (hasPosture) {
-      echo = "체형 교정 루틴이네요. 관절 부담 적고 자세 개선에 효과적인 동작 위주로 구성해드릴게요.";
+      echo = "체형 교정 루틴 요청이네요.";
       tags.push("posture");
     } else if (hasRehab) {
-      echo = "부상 회피 운동이네요. 통증 없는 각도와 안전한 동작 위주로 준비할게요.";
+      echo = "부상 회피 운동 요청으로 이해했어요.";
       tags.push("rehab");
     } else if (hasAdvanced && matchedPart) {
-      echo = `상급자 ${matchedPart.ko} 루틴이네요. 고강도 복합 운동 중심으로 짜드릴게요.`;
+      echo = `상급자 ${matchedPart.ko} 루틴 요청이네요.`;
       tags.push("advanced", matchedPart.tag);
     } else if (isRun && runKm) {
-      echo = `${runKm}km 러닝 목표네요. 페이스 관리하면서 완주 가능한 구성으로 준비할게요.`;
+      echo = `${runKm}km 러닝 목표로 이해했어요.`;
       tags.push("run");
     } else if (matchedPart && minutes) {
-      echo = `${matchedPart.ko} ${minutes}분 세션이네요. 충분한 자극 오는 구성으로 준비할게요.`;
+      echo = `${matchedPart.ko} ${minutes}분 세션으로 이해했어요.`;
       tags.push(matchedPart.tag, `time:${minutes}`);
     } else if (matchedPart) {
-      echo = `${matchedPart.ko} 중심 운동이네요. 효과 나오는 구성으로 짜볼게요.`;
+      echo = `${matchedPart.ko} 중심 운동 요청이네요.`;
       tags.push(matchedPart.tag);
     } else if (hasBulk) {
-      echo = "근육량 증대 플랜이네요. 점진적 과부하 구성으로 오늘 세션부터 시작할게요.";
+      echo = "근육량 증대 요청으로 이해했어요.";
       tags.push("bulk");
     } else if (hasDiet) {
-      echo = "체지방 감량 세션이네요. 근력과 유산소 균형 맞춰 구성해드릴게요.";
+      echo = "체지방 감량 세션 요청이네요.";
       tags.push("diet");
     } else if (category === "ambiguous") {
-      echo = "조금 더 구체적으로 말씀해주시면 딱 맞게 짜드릴게요. 아래 예시 칩을 눌러도 좋아요.";
+      echo = "조금 더 구체적으로 말씀해주시면 딱 맞게 짜드릴게요.";
       tags.push("ambiguous");
     } else {
-      echo = "요청 확인했어요. 맞춤 분석 시작할게요.";
+      echo = "요청 확인했어요.";
     }
   }
 
