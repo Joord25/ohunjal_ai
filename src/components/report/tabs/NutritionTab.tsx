@@ -52,6 +52,10 @@ async function getIdToken(): Promise<string> {
   return user.getIdToken();
 }
 
+// 세션 내 영양 채팅 히스토리 캐시 (탭 전환해도 유지, 새로고침 시 리셋)
+// ChatHome의 sessionCachedMessages와 동일 패턴
+let sessionCachedNutritionChat: ChatMessage[] = [];
+
 /** 시간대별 영양 코치 Quick Chips (룰베이스, Gemini 호출 없음) */
 function getNutritionChips(locale: "ko" | "en", hour: number): FollowupItem[] {
   if (locale === "en") {
@@ -139,7 +143,14 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
   const isKo = locale === "ko";
   const [guide, setGuide] = useState<NutritionGuide | null>(cachedGuide ?? null);
   const [loading, setLoading] = useState(!cachedGuide);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(savedChatHistory ?? []);
+  // 우선순위: props(savedChatHistory, 히스토리 뷰용) > 세션 캐시(탭 스위치 유지) > 빈 배열
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
+    savedChatHistory ?? sessionCachedNutritionChat
+  );
+  // 메시지 변경 시 세션 캐시에 동기화 (readOnly 모드가 아닐 때만)
+  useEffect(() => {
+    if (!readOnly) sessionCachedNutritionChat = chatMessages;
+  }, [chatMessages, readOnly]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatCount, setChatCount] = useState(0);
