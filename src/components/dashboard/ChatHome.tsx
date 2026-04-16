@@ -775,7 +775,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
         </div>
 
         {/* 입력 */}
-        {/* 입력창 — 마누스식 2단 구조 (회의 60 대표 지시): 위=입력, 아래=도구+전송 */}
+        {/* 입력창 — 2단 구조 (회의 60 대표 지시): 위=입력, 아래=도구+전송 */}
         <div className="px-4 pt-2 pb-3">
           <div className="bg-white border border-gray-200 rounded-3xl px-4 pt-3 pb-2 shadow-sm focus-within:border-[#2D6A4F]/50 transition-colors">
             <input
@@ -811,18 +811,6 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                     )}
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    const container = document.querySelector<HTMLElement>("[data-examples-container]");
-                    container?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                  }}
-                  className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#1B4332] hover:border-[#2D6A4F]/40 active:scale-95 transition-all"
-                  aria-label={locale === "en" ? "Examples" : "예시"}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </button>
               </div>
               <button
                 onClick={() => handleSubmit()}
@@ -867,7 +855,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       </div>
       )}
 
-      {/* 더보기 팝오버 — 심화 예시 (마누스 스타일 세로 리스트) */}
+      {/* 더보기 팝오버 — 심화 예시 (세로 리스트) */}
       {showMoreExamples && (
         <>
           <div

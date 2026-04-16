@@ -1,7 +1,7 @@
 {
   "chat_home.greeting": "{name}님, 안녕하세요",
   "chat_home.subtitle": "오늘은 어떤 운동을 해볼까요?",
-  "chat_home.placeholder": "예: 가슴 30분 / 어깨 뻐근한데 하체 40분 / 오늘은 러닝 5km",
+  "chat_home.placeholder": "오늘 어떻게 운동할까요?",
   "chat_home.hint": "Enter로 보내기, Shift+Enter로 줄바꿈",
   "chat_home.send": "보내기",
   "chat_home.thinking": "플랜 만드는 중…",

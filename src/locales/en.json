@@ -1,7 +1,7 @@
 {
   "chat_home.greeting": "Hi {name}",
   "chat_home.subtitle": "What kind of workout are we doing today?",
-  "chat_home.placeholder": "e.g., chest 30 min / shoulders tight so legs 40 min / easy 5km run",
+  "chat_home.placeholder": "What are you training today?",
   "chat_home.hint": "Enter to send, Shift+Enter for new line",
   "chat_home.send": "Send",
   "chat_home.thinking": "Building your plan…",
