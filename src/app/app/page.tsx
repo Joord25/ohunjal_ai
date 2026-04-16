@@ -881,7 +881,7 @@ export default function Home() {
       return (
         <div
           key={`nutrition-${nutritionProfileVersion}`}
-          className="h-full overflow-y-auto overflow-x-hidden px-4 pt-4"
+          className="h-full overflow-y-auto overflow-x-hidden px-4 bg-[#FAFBF9]"
           style={{ paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" }}
         >
           <NutritionTab
