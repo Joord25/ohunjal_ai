@@ -143,33 +143,37 @@ function msgToHistoryContent(m: ChatMsg): string {
   return "[advice card shown]";
 }
 
-/** 후속 질문 리스트 — 세로 아이콘 리스트 (Phase 7 보완) */
+/** 후속 질문 리스트 — 마누스식 미니멀 (답변보다 눈에 덜 띄게) */
 const QuickFollowupList: React.FC<{
   locale: "ko" | "en";
   items: Array<{ icon: ChipIconType; label: string; prompt: string }>;
   onTap: (prompt: string) => void;
 }> = ({ locale, items, onTap }) => (
-  <div className="mt-2 flex flex-col gap-1">
-    <p className="text-[10px] font-black text-gray-400 tracking-wider uppercase mb-0.5 px-0.5">
+  <div className="mt-3">
+    <p className="text-[10px] font-medium text-gray-400 mb-1 px-0.5">
       {locale === "en" ? "Recommended follow-ups" : "추천 후속 질문"}
     </p>
-    {items.map((f) => (
-      <button
-        key={f.label}
-        onClick={() => onTap(f.prompt)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-gray-100 hover:border-[#2D6A4F]/40 hover:bg-emerald-50/30 active:scale-[0.98] transition-all text-left"
-      >
-        <span className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-[#2D6A4F] shrink-0">
-          <ChipIcon type={f.icon} />
-        </span>
-        <span className="text-[12.5px] font-medium text-[#1B4332] flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
-          {f.label}
-        </span>
-        <svg className="w-3 h-3 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    ))}
+    <div className="flex flex-col">
+      {items.map((f, i) => (
+        <button
+          key={f.label}
+          onClick={() => onTap(f.prompt)}
+          className={`w-full flex items-center gap-2.5 py-2 px-0.5 text-left active:opacity-60 transition-opacity ${
+            i < items.length - 1 ? "border-b border-gray-100" : ""
+          }`}
+        >
+          <span className="text-gray-400 shrink-0">
+            <ChipIcon type={f.icon} />
+          </span>
+          <span className="text-[12px] text-gray-500 flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
+            {f.label}
+          </span>
+          <svg className="w-2.5 h-2.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      ))}
+    </div>
   </div>
 );
 
