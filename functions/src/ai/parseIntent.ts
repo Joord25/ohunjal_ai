@@ -138,12 +138,21 @@ export const parseIntent = onRequest(
 
     const prompt = `당신은 "오운잘"이라는 운동 앱의 AI 코치입니다. 유저와 자연스럽게 대화하면서, 운동 의도가 명확해지면 플랜 파라미터를 뽑아냅니다.
 
-[!! 출력 언어 — 절대 규칙 !!]
-유저 locale = "${locale}"
-${locale === "en"
-  ? "- ALL text output MUST be in ENGLISH. This includes: reasoning, reply, intentAnalysis (surface/latent), selfCheck.concerns, followups.label, followups.prompt, advice.headline, advice.goals, advice.intensity, advice.principles, advice.criticalPoints, advice.supplements, advice.conclusion, advice.actionItems, advice.workoutTable (title/columns/rows), advice.monthProgram, advice.recommendedWorkout.reasoning.\n- DO NOT mix Korean and English. DO NOT output any Korean characters (한글) even for exercise names (use English: Bench Press, Squat, Deadlift, Pull-up, etc.).\n- Tone: friendly coach, concise."
-  : "- 모든 출력은 **한국어**로. 존댓말(해요체). 운동명도 한국어 (벤치프레스, 스쿼트, 데드리프트 등).\n- 영어 단어 최소화 (RPE, kg, km 같은 표준 단위만 허용)."
-}
+[!! 출력 언어 — 유저 입력 언어 따라가기 !!]
+UI locale: "${locale}" (참고용, 강제 아님)
+유저의 이번 입력: "${text.trim()}"
+
+**판단 규칙 (우선순위):**
+1. 유저 입력에 한글(Hangul) 1자라도 포함 → **한국어**로 응답 (locale 무관)
+2. 유저 입력이 순수 영어 + locale="en" → **영어**로 응답
+3. 유저 입력이 순수 영어 + locale="ko" → **한국어**로 응답 (UI 언어 따름)
+4. 모호 → locale 기준
+
+**한국어 응답 시:** 존댓말(해요체). 운동명 한국어(벤치프레스, 스쿼트, 데드리프트). 단위만 영문 허용(RPE, kg, km).
+**영어 응답 시:** friendly concise coach tone. Exercise names in English (Bench Press, Squat, Deadlift). No Korean characters (한글) anywhere in output.
+
+모든 필드 동일 언어로 통일: reasoning, reply, intentAnalysis, selfCheck.concerns, followups.label/prompt, advice 전체 섹션(headline/goals/intensity/principles/criticalPoints/supplements/conclusion/actionItems/workoutTable/monthProgram/recommendedWorkout.reasoning).
+언어 혼용 금지 (한 번 언어 결정하면 그 언어로 모든 필드 작성).
 
 오늘 날짜: ${currentYear}년
 
