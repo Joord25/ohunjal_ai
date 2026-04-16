@@ -540,8 +540,24 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   return (
     <div className="h-full flex flex-col bg-[#FAFBF9] relative overflow-hidden">
       {/* 상단 CTA — HomeScreen과 동일 형태로 고정 */}
-      <div className="pt-[max(2.5rem,env(safe-area-inset-top))] px-6 pb-2 shrink-0">
-        <h1 className="font-black leading-snug">
+      <div className="pt-[max(2.5rem,env(safe-area-inset-top))] px-6 pb-2 shrink-0 relative">
+        {onOpenMyPlans && (
+          <button
+            onClick={onOpenMyPlans}
+            className="absolute right-5 top-[max(2.5rem,env(safe-area-inset-top))] p-2 text-gray-400 active:text-[#1B4332] transition-colors"
+            aria-label={locale === "en" ? "My Plans" : "내 플랜"}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+            {savedPlansCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#2D6A4F] text-white text-[9px] font-black flex items-center justify-center">
+                {savedPlansCount}
+              </span>
+            )}
+          </button>
+        )}
+        <h1 className="font-black leading-snug pr-12">
           <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
           <span className={`text-[#1B4332] ${greetingMsg.length > 14 ? "text-base" : "text-xl"}`}> {locale === "en" ? "" : "님, "}{greetingMsg}</span>
         </h1>
@@ -829,25 +845,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
               rows={1}
               className="w-full text-[14px] bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 disabled:opacity-50 resize-none overflow-y-auto leading-[1.5]"
             />
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center gap-1.5">
-                {onOpenMyPlans && (
-                  <button
-                    onClick={onOpenMyPlans}
-                    className="relative w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#1B4332] hover:border-[#2D6A4F]/40 active:scale-95 transition-all"
-                    aria-label={locale === "en" ? "My Plans" : "내 플랜"}
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                    {savedPlansCount > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-1 rounded-full bg-[#2D6A4F] text-white text-[8px] font-black flex items-center justify-center">
-                        {savedPlansCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-              </div>
+            <div className="flex items-center justify-end mt-1">
               {busy ? (
                 <button
                   onClick={abortSubmit}
