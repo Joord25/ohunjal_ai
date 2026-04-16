@@ -229,6 +229,27 @@ export function buildInitialGreeting(
       : `회원님 목표는 ${goalLabel}${profile?.weeklyFrequency ? `, 주 ${profile.weeklyFrequency}회 페이스` : ""}예요.`)
     : "";
 
+  // Phase 10: 목표별 인과관계 reasoning — 왜 오늘 이 부위인가 (마누스식)
+  const GOAL_REASONING_KO: Record<string, string> = {
+    fat_loss: "**근손실 방지·대사량 유지**",
+    muscle_gain: "**전신 균형·회복 최적화**",
+    strength: "**주동근 강화·신경 적응**",
+    endurance: "**심폐 지구력 강화**",
+    health: "**관절·순환 개선**",
+    general_fitness: "**전신 균형 개선**",
+  };
+  const GOAL_REASONING_EN: Record<string, string> = {
+    fat_loss: "**prevent muscle loss, keep metabolism up**",
+    muscle_gain: "**whole-body balance and recovery**",
+    strength: "**prime mover strength, neural adaptation**",
+    endurance: "**cardio capacity boost**",
+    health: "**joint and circulation health**",
+    general_fitness: "**overall balance**",
+  };
+  const goalReasoning = profile?.goal
+    ? (locale === "en" ? GOAL_REASONING_EN[profile.goal] : GOAL_REASONING_KO[profile.goal])
+    : "";
+
   // 줄바꿈으로 3~4문장 조립. 빈 줄은 필터링.
   const join = (lines: (string | "")[]): string => lines.filter(Boolean).join("\n");
 
@@ -299,14 +320,18 @@ export function buildInitialGreeting(
     return join([todayLine, recapLine, goalLine, rest]);
   }
 
-  // 대표 요청 템플릿 — 지난 운동·오늘 추천·목표·무게·확인 질문
+  // 대표 요청 템플릿 — 지난 운동·오늘 추천·목표·무게·확인 질문 (Phase 10: 인과관계 주입)
   if (lastPart && (lastMovesLabel || lastMovesLabelEn)) {
     const pastLine = locale === "en"
       ? `Your last session (${daysSince} day${daysSince === 1 ? "" : "s"} ago) was mostly **${partLabelEn}**${lastMovesLabelEn ? ` — **${lastMovesLabelEn}**` : ""}.`
       : `지난 마지막 시간 ${lastMovesLabel} **${lastPart} 위주**로 했었네요.`;
     const todayPlanLine = locale === "en"
-      ? `Today I'm planning **${oppositePart}**${goalLabel ? `, and since your goal is **${goalLabel}**` : ""},`
-      : `오늘은 **${oppositePart}** 계획하고 있으며${goalLabel ? ` ${namePrefix}${goalLabel}을 목적으로 하셨으니,` : ","}`;
+      ? (goalReasoning
+          ? `Today's ${oppositePart} — ${goalReasoning} for your ${goalLabel} goal.`
+          : `Today I'm planning **${oppositePart}**${goalLabel ? `, and since your goal is **${goalLabel}**` : ""},`)
+      : (goalReasoning
+          ? `오늘은 ${goalReasoning}를 위해 **${oppositePart}** 추천드려요.`
+          : `오늘은 **${oppositePart}** 계획하고 있으며${goalLabel ? ` ${namePrefix}${goalLabel}을 목적으로 하셨으니,` : ","}`);
     return join([pastLine, todayPlanLine, todaySuggestion, confirmQuestion]);
   }
 
