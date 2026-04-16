@@ -47,6 +47,17 @@ interface AdviceCardProps {
   starting?: boolean;
 }
 
+/** 인라인 마크다운 파서 — **굵게**만 처리 (Gemini 응답 대응) */
+const renderInline = (text: string): React.ReactNode => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return <strong key={i} className="font-bold">{p.slice(2, -2)}</strong>;
+    }
+    return <React.Fragment key={i}>{p}</React.Fragment>;
+  });
+};
+
 /** 섹션 한 블록 — 라벨 + bullet 리스트 */
 const Section: React.FC<{ label: string; items: string[] }> = ({ label, items }) => {
   if (items.length === 0) return null;
@@ -57,7 +68,7 @@ const Section: React.FC<{ label: string; items: string[] }> = ({ label, items })
         {items.map((it, i) => (
           <li key={i} className="text-[12.5px] text-[#1B4332] leading-relaxed flex gap-1.5">
             <span className="text-[#2D6A4F] shrink-0">·</span>
-            <span className="flex-1">{it}</span>
+            <span className="flex-1">{renderInline(it)}</span>
           </li>
         ))}
       </ul>
@@ -71,7 +82,7 @@ const WeekRow: React.FC<{ label: string; content?: string }> = ({ label, content
   return (
     <div className="flex gap-2 items-start py-1">
       <span className="text-[10px] font-black text-[#2D6A4F] tracking-wider shrink-0 w-12 pt-0.5">{label}</span>
-      <span className="text-[12.5px] text-[#1B4332] leading-relaxed flex-1">{content}</span>
+      <span className="text-[12.5px] text-[#1B4332] leading-relaxed flex-1">{renderInline(content)}</span>
     </div>
   );
 };
