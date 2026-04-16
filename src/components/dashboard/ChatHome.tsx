@@ -73,7 +73,7 @@ interface ParsedIntent {
 
 // 예시 프롬프트 (마누스식 칩). key = i18n 프롬프트, label = 짧은 칩 라벨, icon = SVG path
 type ExampleChip = { key: string; labelKo: string; labelEn: string; icon: ChipIconType };
-type ChipIconType = "chest" | "home" | "run" | "legs" | "diet" | "back" | "full" | "cycle" | "shoulder" | "posture" | "calendar" | "creatine" | "pump" | "sleep" | "food" | "plateau" | "split" | "protein";
+type ChipIconType = "chest" | "home" | "run" | "legs" | "diet" | "back" | "full" | "cycle" | "shoulder" | "posture" | "calendar" | "creatine" | "pump" | "sleep" | "food" | "plateau" | "split" | "protein" | "flame" | "swap" | "timer";
 // 기본 노출 (4개 — 가벼운 진입용)
 const EXAMPLE_CHIPS: ExampleChip[] = [
   { key: "chat_home.example.short_chest", labelKo: "가슴 30분", labelEn: "Chest 30m", icon: "chest" },
@@ -111,6 +111,9 @@ const ChipIcon: React.FC<{ type: ChipIconType }> = ({ type }) => {
     plateau: "M3 17l6-6 4 4 8-8M14 7h7v7",
     split: "M4 6h6v4H4zM14 6h6v4h-6zM4 14h6v6H4zM14 14h6v6h-6z",
     protein: "M12 2a3 3 0 00-3 3v2H6a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3V5a3 3 0 00-3-3z",
+    flame: "M8.5 14.5A2.5 2.5 0 0011 17c1 0 1.8-.5 2.5-1.5C14 12 12 10 14 8c0-1.5-.5-3-2-4.5-.5 2-1 3-2 4s-2 2.5-2 4 .5 2 1 3zM12 2v3",
+    swap: "M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4",
+    timer: "M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z",
   };
   return (
     <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -253,6 +256,36 @@ function selectDeepFollowups(contextTags: string[], limit = 4): DeepFollowup[] {
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, limit).map((s) => s.f);
 }
+
+/** 빠른 재조정 후속 — 세로 아이콘 리스트 (마누스식, Phase 7 보완) */
+const QuickFollowupList: React.FC<{
+  locale: "ko" | "en";
+  items: Array<{ icon: ChipIconType; label: string; prompt: string }>;
+  onTap: (prompt: string) => void;
+}> = ({ locale, items, onTap }) => (
+  <div className="mt-2 flex flex-col gap-1">
+    <p className="text-[10px] font-black text-gray-400 tracking-wider uppercase mb-0.5 px-0.5">
+      {locale === "en" ? "Quick adjust" : "빠른 재조정"}
+    </p>
+    {items.map((f) => (
+      <button
+        key={f.label}
+        onClick={() => onTap(f.prompt)}
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-gray-100 hover:border-[#2D6A4F]/40 hover:bg-emerald-50/30 active:scale-[0.98] transition-all text-left"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-[#2D6A4F] shrink-0">
+          <ChipIcon type={f.icon} />
+        </span>
+        <span className="text-[12.5px] font-medium text-[#1B4332] flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
+          {f.label}
+        </span>
+        <svg className="w-3 h-3 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    ))}
+  </div>
+);
 
 /** 심화 후속 질문 리스트 — 마누스식 세로 아이콘 리스트 */
 const DeepFollowupList: React.FC<{
@@ -769,33 +802,27 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             const mentionsBack = /등|back/i.test(content);
             const mentionsLegs = /하체|다리|legs?/i.test(content);
             const mentionsChest = /가슴|chest/i.test(content);
-            const shortChips: string[] = isAdvice ? [] : (locale === "en"
-              ? (mentionsBack ? ["back routine today", "different body part", "make it shorter"]
-                 : mentionsLegs ? ["legs 40 min", "different body part", "add cardio"]
-                 : mentionsChest ? ["chest 30 min", "different body part", "add cardio"]
-                 : ["today's workout", "I'm tired today", "any body part suggestion"])
-              : (mentionsBack ? ["등 운동 오늘", "다른 부위로", "시간 짧게"]
-                 : mentionsLegs ? ["하체 40분", "다른 부위로", "유산소 추가"]
-                 : mentionsChest ? ["가슴 30분", "다른 부위로", "유산소 추가"]
-                 : ["오늘 운동 추천해줘", "오늘은 피곤해", "아무 부위나 골라줘"]));
+            type QuickItem = { icon: ChipIconType; label: string; prompt: string };
+            const quickItems: QuickItem[] = isAdvice ? [] : (locale === "en"
+              ? (mentionsBack
+                  ? [{ icon: "back", label: "Back routine today", prompt: "back routine today" }, { icon: "swap", label: "Different body part", prompt: "different body part" }, { icon: "timer", label: "Make it shorter", prompt: "make it shorter" }]
+                  : mentionsLegs
+                  ? [{ icon: "legs", label: "Legs 40 min", prompt: "legs 40 min" }, { icon: "swap", label: "Different body part", prompt: "different body part" }, { icon: "run", label: "Add cardio", prompt: "add cardio" }]
+                  : mentionsChest
+                  ? [{ icon: "chest", label: "Chest 30 min", prompt: "chest 30 min" }, { icon: "swap", label: "Different body part", prompt: "different body part" }, { icon: "run", label: "Add cardio", prompt: "add cardio" }]
+                  : [{ icon: "full", label: "Today's workout", prompt: "today's workout" }, { icon: "timer", label: "I'm tired today", prompt: "I'm tired today" }, { icon: "swap", label: "Any body part", prompt: "any body part suggestion" }])
+              : (mentionsBack
+                  ? [{ icon: "back", label: "등 운동 오늘", prompt: "등 운동 오늘" }, { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" }, { icon: "timer", label: "시간 짧게", prompt: "시간 짧게" }]
+                  : mentionsLegs
+                  ? [{ icon: "legs", label: "하체 40분", prompt: "하체 40분" }, { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" }, { icon: "run", label: "유산소 추가", prompt: "유산소 추가" }]
+                  : mentionsChest
+                  ? [{ icon: "chest", label: "가슴 30분", prompt: "가슴 30분" }, { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" }, { icon: "run", label: "유산소 추가", prompt: "유산소 추가" }]
+                  : [{ icon: "full", label: "오늘 운동 추천해줘", prompt: "오늘 운동 추천해줘" }, { icon: "timer", label: "오늘은 피곤해", prompt: "오늘은 피곤해" }, { icon: "swap", label: "아무 부위나 골라줘", prompt: "아무 부위나 골라줘" }]));
 
             return (
               <div className="mt-2">
-                {shortChips.length > 0 && (
-                  <div className="flex gap-1.5 flex-wrap">
-                    {shortChips.map((hint) => (
-                      <button
-                        key={hint}
-                        onClick={() => {
-                          setText(hint);
-                          requestAnimationFrame(() => inputRef.current?.focus());
-                        }}
-                        className="text-[11.5px] px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95 transition-all hover:border-[#2D6A4F]/40 hover:text-[#1B4332]"
-                      >
-                        {hint}
-                      </button>
-                    ))}
-                  </div>
+                {quickItems.length > 0 && (
+                  <QuickFollowupList locale={locale} items={quickItems} onTap={(p) => handleSubmit(p)} />
                 )}
                 <DeepFollowupList
                   contextTags={contextTags}
@@ -835,24 +862,24 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                   </button>
                 </div>
               </div>
-              {/* Phase 3: 후속 질문 칩 — 탭 시 입력창에 채워서 재조정 유도 */}
-              <div className="mt-2 flex gap-1.5 flex-wrap">
-                {(locale === "en"
-                  ? ["go harder", "different body part", "make it shorter", "add cardio"]
-                  : ["강도 세게", "다른 부위로", "시간 줄여서", "유산소 추가"]
-                ).map((hint) => (
-                  <button
-                    key={hint}
-                    onClick={() => {
-                      setText(hint);
-                      requestAnimationFrame(() => inputRef.current?.focus());
-                    }}
-                    className="text-[11.5px] px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-600 active:scale-95 transition-all hover:border-[#2D6A4F]/40 hover:text-[#1B4332]"
-                  >
-                    {hint}
-                  </button>
-                ))}
-              </div>
+              {/* Phase 3+7: 후속 질문 — 마누스식 세로 아이콘 리스트 (회의 60 대표 피드백) */}
+              <QuickFollowupList
+                locale={locale}
+                items={locale === "en"
+                  ? [
+                      { icon: "flame", label: "Go harder", prompt: "make it harder" },
+                      { icon: "swap", label: "Different body part", prompt: "different body part" },
+                      { icon: "timer", label: "Make it shorter", prompt: "make it shorter" },
+                      { icon: "run", label: "Add cardio", prompt: "add cardio" },
+                    ]
+                  : [
+                      { icon: "flame", label: "강도 세게", prompt: "강도 세게" },
+                      { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" },
+                      { icon: "timer", label: "시간 줄여서", prompt: "시간 줄여서" },
+                      { icon: "run", label: "유산소 추가", prompt: "유산소 추가" },
+                    ]}
+                onTap={(prompt) => handleSubmit(prompt)}
+              />
             </div>
           )}
 
