@@ -684,7 +684,7 @@ JSON만 반환. 설명 문장 금지.`;
               goals: [],
               intensity: undefined,
               workoutTable: undefined,
-              monthProgram: undefined,
+              // monthProgram 유지 — 프로그램 저장 버튼 노출에 필요
               supplements: undefined,
               conclusion: undefined,
             };

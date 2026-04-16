@@ -277,7 +277,7 @@ export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommend
       <div className="px-4 py-3 border-t border-gray-100 bg-[#FAFBF9]">
         {advice.recommendedWorkout.reasoning && (
           <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
-            {advice.recommendedWorkout.reasoning}
+            {renderInline(advice.recommendedWorkout.reasoning)}
           </p>
         )}
         <div className="flex flex-col gap-2">
