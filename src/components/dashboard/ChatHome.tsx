@@ -55,6 +55,9 @@ interface ChatHomeProps {
   getBlockReason?: () => UpgradeTrigger | null;
   onRequestLogin?: () => void;
   onRequestPaywall?: () => void;
+  /** 직전 플랜 요약 — 뒤로가기 후 같은 플랜 이어서 하기 (A안) */
+  lastPlanSummary?: { title: string; exerciseCount: number } | null;
+  onResumeLastPlan?: () => void;
 }
 
 interface ParsedIntent {
@@ -220,7 +223,7 @@ function renderMarkdownBold(text: string): React.ReactNode {
   });
 }
 
-export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProfile, isLoggedIn, isPremium, canSubmit, getBlockReason, onRequestLogin, onRequestPaywall, onOpenMyPlans, savedPlansCount = 0 }) => {
+export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProfile, isLoggedIn, isPremium, canSubmit, getBlockReason, onRequestLogin, onRequestPaywall, onOpenMyPlans, savedPlansCount = 0, lastPlanSummary, onResumeLastPlan }) => {
   const { t, locale } = useTranslation();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -782,6 +785,27 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
         </div>
 
         {/* 입력 */}
+        {/* 직전 플랜 이어서 하기 (A안) — 뒤로가기 후 동일 플랜 복원 */}
+        {lastPlanSummary && onResumeLastPlan && !busy && !routing && !pendingIntent && (
+          <div className="px-4 pt-1 pb-1 shrink-0">
+            <button
+              onClick={onResumeLastPlan}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F0FDF4] border border-[#2D6A4F]/30 hover:bg-emerald-50 active:scale-[0.98] transition-all text-left"
+            >
+              <svg className="w-4 h-4 text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              <span className="flex-1 text-[12px] text-[#1B4332]">
+                {locale === "en" ? "Resume last plan" : "이전 플랜 이어서"} · <span className="font-bold">{lastPlanSummary.title}</span>
+                <span className="text-gray-400"> ({lastPlanSummary.exerciseCount}{locale === "en" ? " exercises" : "개 운동"})</span>
+              </span>
+              <svg className="w-3 h-3 text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* 입력창 — 2단 구조 (회의 60 대표 지시): 위=입력, 아래=도구+전송 */}
         <div className="px-4 pt-2 pb-3">
           <div className="bg-white border border-gray-200 rounded-3xl px-4 pt-3 pb-2 shadow-sm focus-within:border-[#2D6A4F]/50 transition-colors">

@@ -1144,6 +1144,13 @@ export default function Home() {
               trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "chat_inline_retap", surface: "modal" });
               setShowPaywall(true);
             }}
+            lastPlanSummary={currentWorkoutSession ? {
+              title: currentWorkoutSession.description?.split("·")[0].trim() || currentWorkoutSession.title || "",
+              exerciseCount: currentWorkoutSession.exercises.length,
+            } : null}
+            onResumeLastPlan={() => {
+              if (currentWorkoutSession) setView("master_plan_preview");
+            }}
           />
         );
       }
