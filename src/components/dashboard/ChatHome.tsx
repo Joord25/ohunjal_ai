@@ -229,7 +229,6 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   const [pendingIntent, setPendingIntent] = useState<ParsedIntent | null>(null);
   const [routing, setRouting] = useState(false);
   const [showMoreExamples, setShowMoreExamples] = useState(false);
-  const [ackPending, setAckPending] = useState(false); // 타이핑 지연 중 (Phase 6A 보완)
   const [reasoningLines, setReasoningLines] = useState<string[]>([]); // Phase 7 B-lite 사고 과정 스트림
   const [aiFollowups, setAiFollowups] = useState<Array<{ icon: ChipIconType; label: string; prompt: string }>>([]); // Phase 7C Gemini 개인화 후속 질문
 
@@ -373,10 +372,10 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       return;
     }
 
-    // Phase 6A: 의도 분류 + Ack 버블 (마누스식 질문 재진술)
+    // Phase 11: Ack 버블 제거 — Gemini reasoning 첫 줄이 동일 역할 (중복+오분류 해소)
     const category = detectCategory(trimmed);
-    const { echo, redirect } = buildIntentEcho(trimmed, locale);
     const pivoted = isPivot(trimmed);
+    const { echo, redirect } = buildIntentEcho(trimmed, locale);
 
     trackEvent("chat_submit", {
       char_length: trimmed.length,
@@ -386,23 +385,19 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     });
     const submitStart = Date.now();
 
-    // 유저 메시지 먼저 추가, Ack은 타이핑 지연 후 (너무 즉시 뜨면 룰베이스 티남)
+    // 유저 메시지 추가
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setText("");
     setPendingIntent(null);
-    setAiFollowups([]); // 새 요청 시 이전 followups 제거
-    setAckPending(true);
+    setAiFollowups([]);
 
-    // 1.2초 타이핑 지연 후 Ack 삽입 — "유저 메시지 파악 중" 체감 제공 (회의 60 대표 피드백)
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setMessages((prev) => [...prev, { role: "assistant", content: echo, tone: "info" }]);
-    setAckPending(false);
-
-    // off_topic이면 parseIntent 건너뜀 (비용 절감)
+    // off_topic: 리다이렉트 메시지만 추가하고 parseIntent 건너뜀 (비용 절감)
     if (redirect) {
+      setMessages((prev) => [...prev, { role: "assistant", content: echo, tone: "info" }]);
       return;
     }
 
+    // fitness/ambiguous: 즉시 진행 카드로 (Gemini reasoning 스트림이 의도 파악 표시)
     setBusy(true);
 
     try {
@@ -726,18 +721,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           )}
 
           {/* 타이핑 인디케이터 — Ack 등장 전 분석 중 체감 (Phase 6A 보완) */}
-          {ackPending && (
-            <div className="mt-3">
-              <AssistantMiniHeader locale={locale} planLabel={miniPlanLabel} />
-              <div className="inline-flex items-center gap-1 bg-white border border-gray-100 rounded-full px-3 py-2 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          )}
-
-          {/* Phase 7 B-lite + 10.2: 진짜 Gemini reasoning 스트림만 (하드코딩 이력 줄 제거) */}
+          {/* Phase 7 B-lite + 10.2 + 11: 진짜 Gemini reasoning 스트림만 */}
           {busy && (() => {
             return (
               <div className="mt-3">
