@@ -242,6 +242,20 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     return locale === "en" ? "Free" : "무료";
   })();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortCtrlRef = useRef<AbortController | null>(null);
+
+  // 제출 취소 (Stop 버튼)
+  const abortSubmit = () => {
+    abortCtrlRef.current?.abort();
+    abortCtrlRef.current = null;
+    setBusy(false);
+    setReasoningLines([]);
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: locale === "en" ? "Got it, stopped. Send something else when ready." : "멈췄어요. 다시 말씀해주시면 돼요.",
+      tone: "info",
+    }]);
+  };
   const scrollEndRef = useRef<HTMLDivElement>(null);
 
   const buildIntentSummary = (intent: ParsedIntent): string => {
@@ -420,10 +434,13 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       // 운동 이력 요약 (localStorage 캐시 기반, 0~50ms) — 개인화 추천용
       const workoutDigest = buildHistoryDigest(getCachedWorkoutHistory(), locale);
 
+      // AbortController 등록 — Stop 버튼으로 중단 가능
+      abortCtrlRef.current = new AbortController();
       const res = await fetch("/api/parseIntent", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ text: trimmed, locale, userProfile, history: recentHistory, workoutDigest, intentDepth: opts?.intentDepth }),
+        signal: abortCtrlRef.current.signal,
       });
 
       if (!res.ok) {
@@ -504,10 +521,16 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       setBusy(false);
       setReasoningLines([]);
     } catch (e) {
+      // AbortError는 유저가 Stop 눌러서 발생 — 에러 메시지 없이 조용히 종료
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return;
+      }
       console.error("ChatHome submit error:", e);
       trackEvent("chat_plan_failed", { reason: "exception", latency_ms: Date.now() - submitStart });
       setMessages((prev) => [...prev, { role: "assistant", content: t("chat_home.error.generic"), tone: "error" }]);
       setBusy(false);
+    } finally {
+      abortCtrlRef.current = null;
     }
   };
 
@@ -801,16 +824,28 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                   </button>
                 )}
               </div>
-              <button
-                onClick={() => handleSubmit()}
-                disabled={!text.trim() || busy}
-                className="w-9 h-9 bg-[#1B4332] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:bg-gray-300 active:scale-95 transition-all shrink-0"
-                aria-label={t("chat_home.send")}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              </button>
+              {busy ? (
+                <button
+                  onClick={abortSubmit}
+                  className="w-9 h-9 bg-[#1B4332] text-white rounded-full flex items-center justify-center active:scale-95 transition-all shrink-0 hover:bg-[#2D6A4F]"
+                  aria-label={locale === "en" ? "Stop" : "정지"}
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="1.5" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSubmit()}
+                  disabled={!text.trim()}
+                  className="w-9 h-9 bg-[#1B4332] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:bg-gray-300 active:scale-95 transition-all shrink-0"
+                  aria-label={t("chat_home.send")}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
