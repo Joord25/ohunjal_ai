@@ -99,6 +99,14 @@ function msgToHistoryContent(m: ChatMsg): string {
   return "[advice card shown]";
 }
 
+/** 각 assistant 메시지 상단에 붙는 미니 헤더 — 마누스 스타일 (회의 60) */
+const AssistantMiniHeader: React.FC<{ locale: "ko" | "en" }> = ({ locale }) => (
+  <div className="flex items-center gap-1.5 mb-1">
+    <img src="/favicon_backup.png" alt="AI" className="w-5 h-5 rounded-full" />
+    <span className="text-[11.5px] font-black text-[#1B4332]">{locale === "en" ? "Ohunjal" : "오운잘"}</span>
+  </div>
+);
+
 /** **bold** 마크다운만 렌더링. 나머지는 평문. */
 function renderMarkdownBold(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -180,10 +188,33 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     ]);
   };
 
-  // 메시지 추가 시 자동 스크롤
+  // 메시지 추가 시 자동 스크롤 (routing 추가 — 플랜 시작 후 로딩 카드 가시화)
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, busy]);
+  }, [messages, busy, routing, pendingIntent]);
+
+  // 로딩 메시지 순차 cycling — 마누스 스타일 (회의 60 Phase 2)
+  const LOADING_STAGES_KO = ["생각 중입니다", "의도 파악 중", "운동 이력 확인 중", "맞춤 플랜 짜는 중", "거의 다 됐어요"];
+  const LOADING_STAGES_EN = ["Thinking", "Reading your intent", "Checking your history", "Building your plan", "Almost done"];
+  const [loadingStage, setLoadingStage] = useState(0);
+  useEffect(() => {
+    if (!busy) { setLoadingStage(0); return; }
+    const stages = locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO;
+    const timer = setInterval(() => {
+      setLoadingStage((s) => Math.min(s + 1, stages.length - 1));
+    }, 900);
+    return () => clearInterval(timer);
+  }, [busy, locale]);
+
+  const [routingStage, setRoutingStage] = useState(0);
+  useEffect(() => {
+    if (!routing) { setRoutingStage(0); return; }
+    const stages = locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO;
+    const timer = setInterval(() => {
+      setRoutingStage((s) => Math.min(s + 1, stages.length - 1));
+    }, 900);
+    return () => clearInterval(timer);
+  }, [routing, locale]);
 
   const displayName = userName || t("home.defaultName");
 
@@ -336,36 +367,13 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
           <span className={`text-[#1B4332] ${greetingMsg.length > 14 ? "text-base" : "text-xl"}`}> {locale === "en" ? "" : "님, "}{greetingMsg}</span>
         </h1>
-        <p className="text-[12px] font-medium text-gray-400 mt-1">{dateStr}</p>
-        {onOpenMyPlans && (
-          <button
-            onClick={onOpenMyPlans}
-            className="absolute right-5 top-[max(2.5rem,env(safe-area-inset-top))] p-2 text-gray-400 active:text-[#1B4332] transition-colors"
-            aria-label={locale === "en" ? "My Plans" : "내 플랜"}
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
-            {savedPlansCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#2D6A4F] text-white text-[9px] font-black flex items-center justify-center">
-                {savedPlansCount}
-              </span>
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* 채팅 섹션 — Kenko 스타일: 플랫 + 얇은 라인 구분 */}
-      <div className="mt-3 border-t border-gray-200 flex-1 flex flex-col min-h-0">
-        {/* 헤더 — Phase 1: 콤팩트 1줄 (운 로고 + 오운잘 AI + 상태 pill). 회의 60 대표 지시. */}
-        <div className="flex items-center gap-2 px-6 py-2 border-b border-gray-200">
-          <img src="/favicon_backup.png" alt="AI" className="w-6 h-6 rounded-full shrink-0" />
-          <p className="text-[13px] font-black text-[#1B4332]">{locale === "en" ? "Ohunjal AI" : "오운잘 AI"}</p>
+        <div className="flex items-center justify-between mt-1 pr-12">
+          <p className="text-[12px] font-medium text-gray-400">{dateStr}</p>
           {(() => {
             const trial = getTrialStatus(isLoggedIn ?? false, isPremium ?? false, getPlanCount());
             if (isPremium) {
               return (
-                <span className="ml-auto shrink-0 px-2 py-0.5 rounded-full bg-[#2D6A4F] text-white text-[10px] font-bold whitespace-nowrap">
+                <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#2D6A4F] text-white text-[10px] font-bold whitespace-nowrap">
                   {locale === "en" ? "Premium" : "프리미엄"}
                 </span>
               );
@@ -373,15 +381,11 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             if (trial.stage === "premium") return null;
             const isGuest = trial.stage === "guest";
             const label = locale === "ko"
-              ? (trial.stage === "exhausted"
-                  ? "무료 완료"
-                  : (isGuest ? "체험" : "무료") + ` ${trial.currentCompleted}/${trial.currentLimit}`)
-              : (trial.stage === "exhausted"
-                  ? "Trial done"
-                  : (isGuest ? "Trial" : "Free") + ` ${trial.currentCompleted}/${trial.currentLimit}`);
+              ? (trial.stage === "exhausted" ? "무료 완료" : (isGuest ? "체험" : "무료") + ` ${trial.currentCompleted}/${trial.currentLimit}`)
+              : (trial.stage === "exhausted" ? "Trial done" : (isGuest ? "Trial" : "Free") + ` ${trial.currentCompleted}/${trial.currentLimit}`);
             const warn = trial.remaining <= 1;
             return (
-              <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${
+              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${
                 warn ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-[#1B4332]"
               }`}>
                 {label}
@@ -389,19 +393,25 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             );
           })()}
         </div>
+      </div>
 
+      {/* 채팅 섹션 — 상단 고정 헤더 제거. 각 메시지에 미니 헤더 표시 (회의 60 Phase 2). */}
+      <div className="mt-3 border-t border-gray-200 flex-1 flex flex-col min-h-0">
         {/* 메시지 영역 */}
         <div className="px-6 py-4 flex-1 overflow-y-auto min-h-0">
           {/* 최초 안내 (항상 노출) — 운동 이력 기반 룰베이스 인사 */}
-          <p className="text-[13px] text-[#1B4332] leading-[1.55] whitespace-pre-wrap break-keep">
-            {renderMarkdownBold(buildInitialGreeting(getCachedWorkoutHistory(), locale, {
-              goal: userProfile?.goal,
-              weeklyFrequency: userProfile?.weeklyFrequency,
-              bench1RM: userProfile?.bench1RM,
-              squat1RM: userProfile?.squat1RM,
-              deadlift1RM: userProfile?.deadlift1RM,
-            }, userName))}
-          </p>
+          <div>
+            <AssistantMiniHeader locale={locale} />
+            <p className="text-[13px] text-[#1B4332] leading-[1.55] whitespace-pre-wrap break-keep">
+              {renderMarkdownBold(buildInitialGreeting(getCachedWorkoutHistory(), locale, {
+                goal: userProfile?.goal,
+                weeklyFrequency: userProfile?.weeklyFrequency,
+                bench1RM: userProfile?.bench1RM,
+                squat1RM: userProfile?.squat1RM,
+                deadlift1RM: userProfile?.deadlift1RM,
+              }, userName))}
+            </p>
+          </div>
 
           {/* 대화 히스토리 */}
           {messages.map((msg, i) => {
@@ -431,7 +441,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                 if (isGuest) onRequestLogin?.(); else onRequestPaywall?.();
               };
               return (
-                <div key={i} className="mt-2">
+                <div key={i} className="mt-3">
+                  <AssistantMiniHeader locale={locale} />
                   <div className="bg-gradient-to-br from-[#F0FDF4] to-white border border-[#2D6A4F]/30 rounded-2xl px-3.5 py-3">
                     <p className="text-[13px] font-black text-[#1B4332] mb-1">{title}</p>
                     <p className="text-[12px] text-gray-600 leading-[1.5] mb-2.5">{body}</p>
@@ -447,7 +458,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             }
             if ("kind" in msg && msg.kind === "advice") {
               return (
-                <div key={i} className="mt-2">
+                <div key={i} className="mt-3">
+                  <AssistantMiniHeader locale={locale} />
                   <div className="min-w-0">
                     <AdviceCard
                       advice={msg.advice}
@@ -480,20 +492,23 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             // 남은 variant: { role: "assistant"; content: string; tone?: ... }
             const textMsg = msg as { role: "assistant"; content: string; tone?: "info" | "error" };
             return (
-              <p
-                key={i}
-                className={`mt-2 text-[13px] leading-[1.55] whitespace-pre-wrap break-keep ${
-                  textMsg.tone === "error" ? "text-amber-700" : "text-[#1B4332]"
-                }`}
-              >
-                {renderMarkdownBold(textMsg.content)}
-              </p>
+              <div key={i} className="mt-3">
+                <AssistantMiniHeader locale={locale} />
+                <p
+                  className={`text-[13px] leading-[1.55] whitespace-pre-wrap break-keep ${
+                    textMsg.tone === "error" ? "text-amber-700" : "text-[#1B4332]"
+                  }`}
+                >
+                  {renderMarkdownBold(textMsg.content)}
+                </p>
+              </div>
             );
           })}
 
           {/* 플랜 확인 카드 — 자동 전환 대신 유저 탭 요구. busy 중이면 숨김 (새 분석 중) */}
           {pendingIntent && !routing && !busy && (
-            <div className="mt-2">
+            <div className="mt-3">
+              <AssistantMiniHeader locale={locale} />
               <div className="bg-white rounded-2xl px-3.5 py-3 border border-[#2D6A4F]/20">
                 <p className="text-[12px] text-gray-500 mb-2">
                   {locale === "en" ? "Ready to build this plan?" : "이 플랜으로 시작할까요?"}
@@ -537,32 +552,38 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             </div>
           )}
 
-          {/* 로딩 인라인 카드 — Phase 2: 마누스식 작업 카드 (회의 60) */}
+          {/* 로딩 인라인 카드 — 순차 메시지 cycling (회의 60 Phase 2) */}
           {busy && (
-            <div className="mt-2 inline-flex items-center gap-2.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-              <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
-              </svg>
-              <span className="text-[12px] font-medium text-[#1B4332]">
-                {locale === "en" ? "Reading your intent…" : "의도 파악 중…"}
-              </span>
-              <span className="flex gap-0.5 ml-0.5">
-                <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-              </span>
+            <div className="mt-3">
+              <AssistantMiniHeader locale={locale} />
+              <div className="inline-flex items-center gap-2.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
+                <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
+                </svg>
+                <span key={loadingStage} className="text-[12px] font-medium text-[#1B4332] animate-[fadeIn_220ms_ease-out]">
+                  {(locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO)[loadingStage]}…
+                </span>
+                <span className="flex gap-0.5 ml-0.5">
+                  <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
+              </div>
             </div>
           )}
 
           {/* 플랜 라우팅 인라인 카드 (확인 버튼 탭 후 master_plan_preview 이동 대기) */}
           {routing && (
-            <div className="mt-2 inline-flex items-center gap-2.5 bg-[#F0FDF4] border border-[#2D6A4F]/20 rounded-xl px-3 py-2">
-              <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
-              </svg>
-              <span className="text-[12px] font-medium text-[#1B4332]">
-                {locale === "en" ? "Building your plan…" : "맞춤 플랜 짜는 중…"}
-              </span>
+            <div className="mt-3">
+              <AssistantMiniHeader locale={locale} />
+              <div className="inline-flex items-center gap-2.5 bg-[#F0FDF4] border border-[#2D6A4F]/20 rounded-xl px-3 py-2">
+                <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
+                </svg>
+                <span key={routingStage} className="text-[12px] font-medium text-[#1B4332] animate-[fadeIn_220ms_ease-out]">
+                  {(locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO)[Math.max(routingStage, 3)]}…
+                </span>
+              </div>
             </div>
           )}
 
@@ -570,8 +591,9 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
         </div>
 
         {/* 입력 */}
-        <div className="px-6 py-1.5 border-t border-gray-200">
-          <div className="flex gap-2 items-center">
+        {/* 입력창 — 마누스식 2단 구조 (회의 60 대표 지시): 위=입력, 아래=도구+전송 */}
+        <div className="px-4 pt-2 pb-3">
+          <div className="bg-white border border-gray-200 rounded-3xl px-4 pt-3 pb-2 shadow-sm focus-within:border-[#2D6A4F]/50 transition-colors">
             <input
               ref={inputRef}
               type="text"
@@ -585,24 +607,56 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
               }}
               placeholder={t("chat_home.placeholder")}
               disabled={busy}
-              className="flex-1 text-sm bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 disabled:opacity-50"
+              className="w-full text-[14px] bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 disabled:opacity-50"
             />
-            <button
-              onClick={handleSubmit}
-              disabled={!text.trim() || busy}
-              className="w-7 h-7 bg-[#1B4332] text-white rounded-lg flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all shrink-0"
-              aria-label={t("chat_home.send")}
-            >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a1 1 0 00-1.39 1.2L4.5 11l7.5 1-7.5 1-2.49 6.2a1 1 0 001.39 1.2z" />
-              </svg>
-            </button>
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center gap-1.5">
+                {onOpenMyPlans && (
+                  <button
+                    onClick={onOpenMyPlans}
+                    className="relative w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#1B4332] hover:border-[#2D6A4F]/40 active:scale-95 transition-all"
+                    aria-label={locale === "en" ? "My Plans" : "내 플랜"}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    {savedPlansCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-1 rounded-full bg-[#2D6A4F] text-white text-[8px] font-black flex items-center justify-center">
+                        {savedPlansCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    const container = document.querySelector<HTMLElement>("[data-examples-container]");
+                    container?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  }}
+                  className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#1B4332] hover:border-[#2D6A4F]/40 active:scale-95 transition-all"
+                  aria-label={locale === "en" ? "Examples" : "예시"}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </button>
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={!text.trim() || busy}
+                className="w-9 h-9 bg-[#1B4332] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:bg-gray-300 active:scale-95 transition-all shrink-0"
+                aria-label={t("chat_home.send")}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 예시 프롬프트 — 가로 스와이프 (우측 fade로 추가 내용 힌트) */}
-      <div className="shrink-0 pt-3 pb-4 border-t border-gray-200 relative">
+      <div className="shrink-0 pt-3 pb-4 border-t border-gray-200 relative" data-examples-container>
         <p className="px-6 text-[11px] font-medium text-gray-400 tracking-wider uppercase mb-2">
           {t("chat_home.examples.title")}
         </p>
