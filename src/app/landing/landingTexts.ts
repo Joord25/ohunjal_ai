@@ -78,7 +78,7 @@ const ko: LandingTexts = {
   howItWorks: {
     title: "HOW IT WORKS",
     steps: [
-      { title: "컨디션 체크", desc: "터치 한 번, 오늘 내 상태 끝" },
+      { title: "AI와 대화 시작", desc: "\"3개월 다이어트 플랜\" 한마디면 끝" },
       { title: "오늘 루틴 완성", desc: "고민 0초, 바로 운동 시작" },
       { title: "AI 코치 피드백", desc: "PT 없이도 뭘 잘했는지 알게 됨" },
       { title: "영양까지 한 번에", desc: "뭘 먹어야 하는지도 끝", premium: true },
@@ -168,7 +168,7 @@ const en: LandingTexts = {
   howItWorks: {
     title: "HOW IT WORKS",
     steps: [
-      { title: "Condition Check", desc: "One tap, your status is set" },
+      { title: "Talk to AI", desc: "\"3-month diet plan\" — one line, done" },
       { title: "Today's Routine Ready", desc: "Zero thinking, start working out" },
       { title: "AI Coach Feedback", desc: "Know what you did right, no PT needed" },
       { title: "Nutrition Included", desc: "What to eat — done", premium: true },
