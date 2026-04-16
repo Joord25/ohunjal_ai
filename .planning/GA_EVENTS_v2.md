@@ -105,6 +105,30 @@ workout_report
 - ~~`onboarding_start / profile / goal / complete`~~ → `nutrition_onboarding_*`로 재명명 (메인 퍼널 오염 방지) + `login` 분리 → **완료**
 - ~~`subscription_complete`~~ → `purchase` (GA4 ecommerce 표준)로 교체 **예정**
 
+## v2.1 업데이트 (회의 60 — 2026-04-16)
+
+### 신규 파라미터 (기존 이벤트 확장)
+| 이벤트 | 새 파라미터 | 값 |
+|---|---|---|
+| `paywall_view` | `surface` | `"modal"` / `"chat_inline"` |
+| `paywall_tap_subscribe` | `source` | `"modal"` / `"chat_inline"` |
+| `paywall_tap_subscribe` | `trigger` | `"guest_exhausted"` / `"free_limit"` / `"high_value"` |
+
+### 측정 목적
+- 기존 페이월 모달 vs 신규 인라인 카드 **전환율 A/B 비교**
+- 모달은 닫으면 증발, 인라인 카드는 채팅 히스토리에 영구 남음 → 리마인드 효과 측정
+- 이중 노출 피로도 vs 전환 이득 balance 검증
+
+### Phase 구현 현황
+- [x] Phase 1: 헤더/타이포 콤팩트화 (`d37f4c9`)
+- [x] Phase 2: 로딩 인라인 카드 (`e679e6e`)
+- [x] Phase 3: 후속 질문 칩 (`e679e6e`)
+- [x] Phase 4: 인라인 업그레이드 카드 (`e679e6e`)
+- [ ] Phase 5 (추후): `high_value` 트리거 자동 감지 (parseIntent에서 4주 플랜/월간 프로그램 시그널 파싱)
+- [ ] Phase 6 (추후): `chat_submit { source: "chip" | "typed" | "followup" }` 파라미터로 입력 유형별 전환율
+
+---
+
 ## 이번 청소 작업 완료분
 
 - [x] `sitemap.ts`에서 `/ja`, `/zh` 제거
