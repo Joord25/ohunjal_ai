@@ -734,7 +734,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             className="absolute inset-0 z-40"
             onClick={() => setShowMoreExamples(false)}
           />
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-20 z-50 w-[220px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden py-1.5">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-14 z-50 w-[220px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden py-1.5">
             {EXAMPLE_CHIPS_MORE.map((chip) => (
               <button
                 key={chip.key}
