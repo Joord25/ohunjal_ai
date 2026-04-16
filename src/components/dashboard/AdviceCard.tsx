@@ -53,6 +53,9 @@ interface AdviceCardProps {
   advice: AdviceContent;
   onStartRecommended: () => void | Promise<void>;
   starting?: boolean;
+  /** monthProgram 있을 때 장기 프로그램 저장 CTA */
+  onGenerateProgram?: () => void | Promise<void>;
+  generatingProgram?: boolean;
 }
 
 /** 인라인 마크다운 파서 — **굵게**만 처리 (Gemini 응답 대응) */
@@ -205,7 +208,7 @@ function buildRecSummary(
   return `${part} · ${rec.condition.availableTime}${locale === "en" ? " min" : "분"}`;
 }
 
-export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommended, starting }) => {
+export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommended, starting, onGenerateProgram, generatingProgram }) => {
   const { t, locale } = useTranslation();
   const recLabel = buildRecSummary(advice.recommendedWorkout, locale as "ko" | "en");
 
@@ -270,26 +273,47 @@ export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommend
         )}
       </div>
 
-      {/* 하단 CTA — 오늘 운동 */}
+      {/* 하단 CTA — 오늘 운동 + 프로그램 저장 */}
       <div className="px-4 py-3 border-t border-gray-100 bg-[#FAFBF9]">
         {advice.recommendedWorkout.reasoning && (
           <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
             {advice.recommendedWorkout.reasoning}
           </p>
         )}
-        <button
-          onClick={onStartRecommended}
-          disabled={starting}
-          className={`w-full py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
-            starting
-              ? "bg-gray-200 text-gray-400"
-              : "bg-[#1B4332] text-white active:scale-[0.98] hover:bg-[#2D6A4F]"
-          }`}
-        >
-          <span>{t("advice.startCTA")}</span>
-          <span className="opacity-70">·</span>
-          <span className="font-normal">{recLabel}</span>
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={onStartRecommended}
+            disabled={starting || generatingProgram}
+            className={`w-full py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
+              starting || generatingProgram
+                ? "bg-gray-200 text-gray-400"
+                : "bg-[#1B4332] text-white active:scale-[0.98] hover:bg-[#2D6A4F]"
+            }`}
+          >
+            <span>{t("advice.startCTA")}</span>
+            <span className="opacity-70">·</span>
+            <span className="font-normal">{recLabel}</span>
+          </button>
+          {advice.monthProgram && onGenerateProgram && (
+            <button
+              onClick={onGenerateProgram}
+              disabled={generatingProgram || starting}
+              className={`w-full py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
+                generatingProgram
+                  ? "bg-[#F0FDF4] text-[#2D6A4F]/50 border border-[#2D6A4F]/20"
+                  : "bg-[#F0FDF4] text-[#2D6A4F] border border-[#2D6A4F]/30 active:scale-[0.98] hover:bg-emerald-100"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span>{generatingProgram
+                ? (locale === "en" ? "Generating sessions..." : "세션 생성 중...")
+                : (locale === "en" ? "Save as program" : "프로그램으로 저장")
+              }</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

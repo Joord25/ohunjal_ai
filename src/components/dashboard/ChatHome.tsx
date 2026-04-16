@@ -374,6 +374,85 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     }
   };
 
+  const handleGenerateProgramFromAdvice = async (advice: AdviceContent) => {
+    if (routing) return;
+    setRouting(true);
+    try {
+      const { auth } = await import("@/lib/firebase");
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) { setRouting(false); return; }
+
+      const { newPlanId, newProgramId, saveProgramSessions, remoteSaveProgram } = await import("@/utils/savedPlans");
+      const rec = advice.recommendedWorkout;
+      const programId = newProgramId();
+      const weeklyFreq = userProfile?.weeklyFrequency ?? 3;
+      const totalWeeks = 4; // monthProgram = 4주 기준
+      const totalSessions = totalWeeks * weeklyFreq;
+
+      // 부위 로테이션 (split이면 5부위 순환, 아니면 동일 모드 반복)
+      const muscleRotation: Array<"chest" | "back" | "shoulders" | "arms" | "legs"> = ["chest", "back", "legs", "shoulders", "arms"];
+      // 주차별 강도 프로그레션: 적응→증가→피크→디로드
+      const weekIntensity: Array<"moderate" | "moderate" | "high" | "low"> = ["moderate", "moderate", "high", "low"];
+
+      const programName = advice.headline || (locale === "en" ? "4-week program" : "4주 프로그램");
+      const savedSessions: import("@/utils/savedPlans").SavedPlan[] = [];
+
+      for (let idx = 0; idx < totalSessions; idx++) {
+        const weekIdx = Math.floor(idx / weeklyFreq);
+        const targetMuscle = rec.sessionMode === "split"
+          ? muscleRotation[idx % muscleRotation.length]
+          : rec.targetMuscle;
+        const intensity = weekIntensity[weekIdx] ?? "moderate";
+
+        const res = await fetch("/api/planSession", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            condition: { ...rec.condition, availableTime: rec.condition.availableTime },
+            goal: rec.goal,
+            sessionMode: rec.sessionMode,
+            targetMuscle,
+            intensityOverride: intensity,
+          }),
+        });
+        if (!res.ok) continue;
+        const sessionData = await res.json();
+        if (!sessionData?.exercises) continue;
+
+        savedSessions.push({
+          id: newPlanId(),
+          name: `${programName} ${idx + 1}/${totalSessions}`,
+          sessionData,
+          createdAt: Date.now(),
+          lastUsedAt: null,
+          useCount: 0,
+          programId,
+          sessionNumber: idx + 1,
+          totalSessions,
+          programName,
+          completedAt: null,
+        });
+      }
+
+      if (savedSessions.length > 0) {
+        saveProgramSessions(savedSessions);
+        await remoteSaveProgram(savedSessions);
+        trackEvent("chat_program_generated", { total_sessions: savedSessions.length, weeks: totalWeeks });
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: locale === "en"
+            ? `Done! ${savedSessions.length} sessions saved to My Plans.`
+            : `완료! ${savedSessions.length}세션 내 플랜에 저장했어요.` },
+        ]);
+      }
+    } catch (e) {
+      console.error("handleGenerateProgramFromAdvice error:", e);
+      setMessages((prev) => [...prev, { role: "assistant", content: t("chat_home.error.generic"), tone: "error" }]);
+    } finally {
+      setRouting(false);
+    }
+  };
+
   const cancelPlan = () => {
     setPendingIntent(null);
     setMessages((prev) => [
@@ -766,6 +845,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                         }
                       }}
                       starting={routing}
+                      onGenerateProgram={msg.advice.monthProgram ? () => handleGenerateProgramFromAdvice(msg.advice) : undefined}
+                      generatingProgram={routing}
                     />
                   </div>
                 </div>
