@@ -359,8 +359,26 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     // 초기 포커스는 주지 않음 (모바일 키보드 강제 팝업 방지)
   }, []);
 
+  // 내 스펙 맞춤 플랜 — 유저 프로필로 동적 생성, 없는 필드는 빈칸 플레이스홀더
+  const buildFullProfilePrompt = (): string => {
+    const age = userProfile?.birthYear ? new Date().getFullYear() - userProfile.birthYear : null;
+    const gender = userProfile?.gender === "female" ? "여" : userProfile?.gender === "male" ? "남" : null;
+    const parts: string[] = [];
+    parts.push(age ? `${age}살` : "00살");
+    parts.push(gender ?? "성별(남/여)");
+    parts.push(userProfile?.heightCm ? `${userProfile.heightCm}cm` : "000cm");
+    parts.push(userProfile?.bodyWeightKg ? `${userProfile.bodyWeightKg}kg` : "00kg");
+    if (userProfile?.bench1RM) parts.push(`벤치 ${userProfile.bench1RM}`);
+    if (userProfile?.squat1RM) parts.push(`스쿼트 ${userProfile.squat1RM}`);
+    if (userProfile?.deadlift1RM) parts.push(`데드 ${userProfile.deadlift1RM}`);
+    if (userProfile?.weeklyFrequency) parts.push(`주 ${userProfile.weeklyFrequency}회`);
+    const goalKo: Record<string, string> = { fat_loss: "체지방 감량", muscle_gain: "근비대", endurance: "지구력", health: "건강 유지" };
+    const goalStr = userProfile?.goal ? goalKo[userProfile.goal] : "";
+    return `${parts.join(" ")} 오늘 추천 운동${goalStr ? ` (${goalStr})` : ""}`;
+  };
+
   const fillExample = (key: string) => {
-    const example = t(key);
+    const example = key === "chat_home.example.long_full" ? buildFullProfilePrompt() : t(key);
     setText(example);
     requestAnimationFrame(() => {
       inputRef.current?.focus();
