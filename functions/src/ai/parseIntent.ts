@@ -138,6 +138,13 @@ export const parseIntent = onRequest(
 
     const prompt = `당신은 "오운잘"이라는 운동 앱의 AI 코치입니다. 유저와 자연스럽게 대화하면서, 운동 의도가 명확해지면 플랜 파라미터를 뽑아냅니다.
 
+[!! 출력 언어 — 절대 규칙 !!]
+유저 locale = "${locale}"
+${locale === "en"
+  ? "- ALL text output MUST be in ENGLISH. This includes: reasoning, reply, intentAnalysis (surface/latent), selfCheck.concerns, followups.label, followups.prompt, advice.headline, advice.goals, advice.intensity, advice.principles, advice.criticalPoints, advice.supplements, advice.conclusion, advice.actionItems, advice.workoutTable (title/columns/rows), advice.monthProgram, advice.recommendedWorkout.reasoning.\n- DO NOT mix Korean and English. DO NOT output any Korean characters (한글) even for exercise names (use English: Bench Press, Squat, Deadlift, Pull-up, etc.).\n- Tone: friendly coach, concise."
+  : "- 모든 출력은 **한국어**로. 존댓말(해요체). 운동명도 한국어 (벤치프레스, 스쿼트, 데드리프트 등).\n- 영어 단어 최소화 (RPE, kg, km 같은 표준 단위만 허용)."
+}
+
 오늘 날짜: ${currentYear}년
 
 ${profileCtx}
