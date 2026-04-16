@@ -132,7 +132,11 @@ let sessionCachedMessages: ChatMsg[] = [];
 function msgToHistoryContent(m: ChatMsg): string {
   if ("content" in m) return m.content;
   if ("kind" in m && m.kind === "upgrade") return "[upgrade card shown]";
-  if ("kind" in m && m.kind === "program") return "[program card shown]";
+  if ("kind" in m && m.kind === "program") {
+    const p = m.program;
+    const sessionList = p.sessions.map((s, i) => `${i + 1}. ${s.label || s.targetMuscle || s.sessionMode} (${s.availableTime}분, ${s.intensityOverride || "moderate"})`).join(", ");
+    return `[프로그램 생성됨: ${p.name} / ${p.totalWeeks}주 × 주${p.sessionsPerWeek}회 = ${p.sessions.length}세션 / ${p.summary} / 세션: ${sessionList}]`;
+  }
   return "[advice card shown]";
 }
 
@@ -230,15 +234,6 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   const [aiFollowups, setAiFollowups] = useState<Array<{ icon: ChipIconType; label: string; prompt: string }>>([]); // Phase 7C Gemini 개인화 후속 질문
 
   // 미니 헤더 옆 플랜 라벨 — 프리미엄/무료/체험 구분 (회의 60 대표 피드백)
-  // 활성 프로그램 존재 여부 (내 플랜 아이콘 dot 표시용)
-  const hasActiveProgram = (() => {
-    try {
-      const { getActivePrograms } = require("@/utils/savedPlans");
-      const programs = getActivePrograms();
-      return programs.some((p: { completed: number; total: number }) => p.completed < p.total);
-    } catch { return false; }
-  })();
-
   const miniPlanLabel = (() => {
     if (isPremium) return locale === "en" ? "Premium" : "프리미엄";
     const trial = getTrialStatus(isLoggedIn ?? false, isPremium ?? false, getPlanCount());
@@ -343,7 +338,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           }),
         });
         if (!res.ok) continue;
-        const { sessionData } = await res.json();
+        const sessionData = await res.json();
+        if (!sessionData?.exercises) continue;
         savedSessions.push({
           id: newPlanId(),
           name: `${prog.name} ${idx + 1}/${totalSessions}`,
@@ -638,7 +634,18 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     <div className="h-full flex flex-col bg-[#FAFBF9] relative overflow-hidden">
       {/* 상단 CTA — 인사 + 날짜 + 상태 pill */}
       <div className="pt-[max(2.5rem,env(safe-area-inset-top))] px-6 pb-2 shrink-0 relative">
-        <h1 className="font-black leading-snug">
+        {onOpenMyPlans && (
+          <button
+            onClick={onOpenMyPlans}
+            className="absolute right-5 top-[max(2.5rem,env(safe-area-inset-top))] p-2 text-gray-400 active:text-[#1B4332] transition-colors"
+            aria-label={locale === "en" ? "My Plans" : "내 플랜"}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          </button>
+        )}
+        <h1 className="font-black leading-snug pr-12">
           <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
           <span className={`text-[#1B4332] ${greetingMsg.length > 14 ? "text-base" : "text-xl"}`}> {locale === "en" ? "" : "님, "}{greetingMsg}</span>
         </h1>
@@ -899,7 +906,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                   ))}
                   <ProgressStep
                     state="active"
-                    label={locale === "en" ? "Analyzing your intent" : "운동 의도 분석 중"}
+                    label={locale === "en" ? "Analyzing your question" : "질문 의도 분석 중"}
                     last
                   />
                 </div>
@@ -970,31 +977,15 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
               rows={1}
               className="w-full text-[14px] bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 disabled:opacity-50 resize-none overflow-y-auto leading-[1.5]"
             />
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center gap-1">
-                {onOpenMyPlans && (
-                  <button
-                    onClick={onOpenMyPlans}
-                    className="relative w-8 h-8 rounded-full bg-[#F0FDF4] border border-[#2D6A4F]/20 flex items-center justify-center active:scale-95 transition-all hover:bg-emerald-100"
-                    aria-label={locale === "en" ? "My Plans" : "내 플랜"}
-                  >
-                    <svg className="w-4 h-4 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                    {hasActiveProgram && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#2D6A4F] border-[1.5px] border-white" />
-                    )}
-                  </button>
-                )}
-              </div>
+            <div className="flex items-center justify-end mt-1">
               {busy ? (
                 <button
                   onClick={abortSubmit}
                   className="w-9 h-9 bg-[#1B4332] text-white rounded-full flex items-center justify-center active:scale-95 transition-all shrink-0 hover:bg-[#2D6A4F]"
                   aria-label={locale === "en" ? "Stop" : "정지"}
                 >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    <rect x="6" y="6" width="12" height="12" rx="1.5" />
+                  <svg className="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
                   </svg>
                 </button>
               ) : (
