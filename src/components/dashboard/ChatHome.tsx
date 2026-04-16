@@ -22,6 +22,9 @@ import { buildHistoryDigest, buildInitialGreeting } from "@/utils/historyDigest"
 import { AdviceCard, type AdviceContent } from "./AdviceCard";
 import { trackEvent } from "@/utils/analytics";
 import { buildIntentEcho, detectCategory, isPivot } from "@/utils/intentEcho";
+import { ChipIcon, type ChipIconType } from "@/components/chat/ChipIcon";
+import { QuickFollowupList } from "@/components/chat/QuickFollowupList";
+import { AssistantMiniHeader } from "@/components/chat/AssistantMiniHeader";
 
 interface ChatHomeProps {
   userName?: string;
@@ -76,7 +79,6 @@ interface ParsedIntent {
 
 // 예시 프롬프트 (마누스식 칩). key = i18n 프롬프트, label = 짧은 칩 라벨, icon = SVG path
 type ExampleChip = { key: string; labelKo: string; labelEn: string; icon: ChipIconType };
-type ChipIconType = "chest" | "home" | "run" | "legs" | "diet" | "back" | "full" | "cycle" | "shoulder" | "posture" | "calendar" | "creatine" | "pump" | "sleep" | "food" | "plateau" | "split" | "protein" | "flame" | "swap" | "timer";
 // 기본 노출 (4개 — 가벼운 진입용)
 const EXAMPLE_CHIPS: ExampleChip[] = [
   { key: "chat_home.example.short_chest", labelKo: "가슴 30분", labelEn: "Chest 30m", icon: "chest" },
@@ -94,37 +96,6 @@ const EXAMPLE_CHIPS_MORE: ExampleChip[] = [
   { key: "chat_home.example.vacation_7day", labelKo: "휴가 전 7일 팔뚝", labelEn: "7-day arm plan", icon: "calendar" },
   { key: "chat_home.example.long_full", labelKo: "내 스펙 맞춤 플랜", labelEn: "Full profile plan", icon: "full" },
 ];
-const ChipIcon: React.FC<{ type: ChipIconType }> = ({ type }) => {
-  const paths: Record<ChipIconType, string> = {
-    chest: "M12 3l8 4v6c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z",
-    legs: "M6 3v8l2 10h3l-1-10h2l-1 10h3l2-10V3",
-    run: "M13 4a2 2 0 110 4 2 2 0 010-4zM8 21l3-7 2 3 4-1",
-    home: "M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1V10z",
-    diet: "M12 3v2M12 19v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M3 12h2M19 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M16 12a4 4 0 11-8 0 4 4 0 018 0z",
-    back: "M6 3v18M10 6h8M10 10h8M10 14h8M10 18h8",
-    full: "M12 2l2.4 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-1.6L12 2z",
-    cycle: "M12 4a8 8 0 11-8 8M4 4v5h5M20 4l-8 8",
-    shoulder: "M4 14c2-6 6-8 8-8s6 2 8 8M4 14v4h16v-4",
-    posture: "M8 3a2 2 0 104 0 2 2 0 00-4 0zM10 7c-2 2-4 3-4 6l2 0 1 8h3l-1-8h2l1 8h3l-1-8 2 0c0-3-2-4-4-6",
-    calendar: "M4 6h16v14H4V6zM8 3v4M16 3v4M4 10h16",
-    creatine: "M9 3h6v4l3 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2V9l3-2V3zM9 13h6",
-    pump: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
-    sleep: "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
-    food: "M3 8h18M6 8V6a2 2 0 012-2h8a2 2 0 012 2v2M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12",
-    plateau: "M3 17l6-6 4 4 8-8M14 7h7v7",
-    split: "M4 6h6v4H4zM14 6h6v4h-6zM4 14h6v6H4zM14 14h6v6h-6z",
-    protein: "M12 2a3 3 0 00-3 3v2H6a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3V5a3 3 0 00-3-3z",
-    flame: "M8.5 14.5A2.5 2.5 0 0011 17c1 0 1.8-.5 2.5-1.5C14 12 12 10 14 8c0-1.5-.5-3-2-4.5-.5 2-1 3-2 4s-2 2.5-2 4 .5 2 1 3zM12 2v3",
-    swap: "M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4",
-    timer: "M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z",
-  };
-  return (
-    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d={paths[type]} />
-    </svg>
-  );
-};
-
 type UpgradeTrigger = "guest_exhausted" | "free_limit" | "high_value";
 
 type ChatMsg =
@@ -142,40 +113,6 @@ function msgToHistoryContent(m: ChatMsg): string {
   if ("kind" in m && m.kind === "upgrade") return "[upgrade card shown]";
   return "[advice card shown]";
 }
-
-/** 후속 질문 리스트 — 마누스식 미니멀 (답변보다 눈에 덜 띄게) */
-const QuickFollowupList: React.FC<{
-  locale: "ko" | "en";
-  items: Array<{ icon: ChipIconType; label: string; prompt: string }>;
-  onTap: (prompt: string) => void;
-}> = ({ locale, items, onTap }) => (
-  <div className="mt-3">
-    <p className="text-[10px] font-medium text-gray-400 mb-1 px-0.5">
-      {locale === "en" ? "Recommended follow-ups" : "추천 후속 질문"}
-    </p>
-    <div className="flex flex-col">
-      {items.map((f, i) => (
-        <button
-          key={f.label}
-          onClick={() => onTap(f.prompt)}
-          className={`w-full flex items-center gap-2.5 py-2 px-0.5 text-left active:opacity-60 transition-opacity ${
-            i < items.length - 1 ? "border-b border-gray-100" : ""
-          }`}
-        >
-          <span className="text-gray-400 shrink-0">
-            <ChipIcon type={f.icon} />
-          </span>
-          <span className="text-[12px] text-gray-500 flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
-            {f.label}
-          </span>
-          <svg className="w-2.5 h-2.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      ))}
-    </div>
-  </div>
-);
 
 /** 진행 체크 스텝 — 실제 단계 시각화 (Phase 6A) */
 const ProgressStep: React.FC<{ state: "done" | "active" | "pending"; label: string; last?: boolean }> = ({ state, label, last }) => (
@@ -200,19 +137,6 @@ const ProgressStep: React.FC<{ state: "done" | "active" | "pending"; label: stri
     }`}>
       {label}
     </span>
-  </div>
-);
-
-/** 각 assistant 메시지 상단에 붙는 미니 헤더(회의 60) */
-const AssistantMiniHeader: React.FC<{ locale: "ko" | "en"; planLabel?: string }> = ({ locale, planLabel }) => (
-  <div className="flex items-center gap-1.5 mb-1">
-    <img src="/favicon_backup.png" alt="AI" className="w-5 h-5 rounded-full" />
-    <span className="text-[11.5px] font-black text-[#1B4332]">{locale === "en" ? "Ohunjal" : "오운잘"}</span>
-    {planLabel && (
-      <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[9px] font-bold">
-        {planLabel}
-      </span>
-    )}
   </div>
 );
 

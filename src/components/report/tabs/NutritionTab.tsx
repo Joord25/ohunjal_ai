@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getAuth } from "firebase/auth";
+import { AssistantMiniHeader } from "@/components/chat/AssistantMiniHeader";
 
 interface NutritionGuide {
   dailyCalorie: number;
@@ -143,6 +144,19 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Phase A CP4: 제출 취소용 AbortController
+  const chatAbortRef = useRef<AbortController | null>(null);
+  const abortChat = () => {
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = null;
+    setChatLoading(false);
+    // 마지막 user 메시지는 남기되, 정지 안내 추가
+    setChatMessages((prev) => [...prev, {
+      role: "assistant" as const,
+      content: isKo ? "멈췄어요. 다시 말씀해주시면 돼요." : "Stopped. Send again when ready.",
+    }]);
+  };
+
   // 채팅 보내기
   const sendChat = async () => {
     if (!chatInput.trim() || chatLoading || (!isPremium && chatCount >= MAX_FREE_CHATS)) return;
@@ -153,10 +167,12 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
     setChatCount((c) => c + 1);
 
     try {
+      chatAbortRef.current = new AbortController();
       const token = await getIdToken();
       const res = await fetch("/api/nutritionChat", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        signal: chatAbortRef.current.signal,
         body: JSON.stringify({
           question,
           locale,
@@ -176,7 +192,9 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
         onChatHistoryChange?.(updated);
         return updated;
       });
-    } catch {
+    } catch (e) {
+      // 유저가 Stop 눌러서 발생한 AbortError는 조용히 종료 (abortChat에서 이미 메시지 추가됨)
+      if (e instanceof DOMException && e.name === "AbortError") return;
       setChatMessages((prev) => {
         const updated = [...prev, { role: "assistant" as const, content: isKo ? "잠시 후 다시 시도해주세요" : "Please try again" }];
         onChatHistoryChange?.(updated);
@@ -184,6 +202,7 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
       });
     } finally {
       setChatLoading(false);
+      chatAbortRef.current = null;
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
   };
@@ -307,19 +326,13 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
         </div>
       </div>
 
-      {/* 채팅 영역 */}
-      <div className="border-t border-gray-200 flex-1 flex flex-col min-h-0">
-        {/* 채팅 헤더 */}
-        <div className="flex items-center gap-3 py-3 px-1 border-b border-gray-200">
-          <img src="/favicon_backup.png" alt="AI" className="w-7 h-7 rounded-full shrink-0" />
-          <div>
-            <p className="text-xs font-black text-[#1B4332]">{isKo ? "AI 코치" : "AI Coach"}</p>
-            <p className="text-[9px] text-[#2D6A4F] font-medium">{isKo ? "온라인" : "Online"}</p>
-          </div>
-          {chatCount > 0 && !isPremium && (
-            <span className="ml-auto text-[9px] text-gray-400 font-medium">{chatCount}/{MAX_FREE_CHATS}</span>
-          )}
-        </div>
+      {/* 채팅 영역 — Phase A: 상단 고정 헤더 제거. 무료 횟수 표시는 우측 상단 배지로 축약. */}
+      <div className="border-t border-gray-200 flex-1 flex flex-col min-h-0 relative">
+        {chatCount > 0 && !isPremium && (
+          <span className="absolute right-1 top-2 z-10 text-[9px] text-gray-400 font-medium">
+            {chatCount}/{MAX_FREE_CHATS}
+          </span>
+        )}
 
         {/* 채팅 메시지 */}
         <div className="py-4 px-1 flex-1 min-h-0 overflow-y-auto">
@@ -341,9 +354,12 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
             return (
               <div
                 key={i}
-                className={`${i > 0 ? "mt-3" : ""} text-[13px] text-[#1B4332] leading-relaxed break-keep`}
+                className={i > 0 ? "mt-3" : ""}
               >
-                {renderFormattedText(msg.content)}
+                <AssistantMiniHeader locale={isKo ? "ko" : "en"} />
+                <div className="text-[13px] text-[#1B4332] leading-relaxed break-keep">
+                  {renderFormattedText(msg.content)}
+                </div>
               </div>
             );
           })}
@@ -366,24 +382,46 @@ export const NutritionTab: React.FC<NutritionTabProps> = ({
               </p>
             )
           ) : (isPremium || chatCount < MAX_FREE_CHATS) ? (
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
+            <div className="flex gap-2 items-end">
+              <textarea
                 value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                placeholder={isKo ? "궁금한 거 물어보세요" : "Ask anything"}
-                className="flex-1 text-sm bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400"
+                onChange={(e) => {
+                  setChatInput(e.target.value);
+                  e.target.style.height = "auto";
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    sendChat();
+                  }
+                }}
+                placeholder={isKo ? "오늘 식단 뭐 궁금하세요?" : "What do you want to know about your diet?"}
+                rows={1}
+                className="flex-1 text-sm bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 resize-none overflow-y-auto leading-[1.5]"
               />
-              <button
-                onClick={sendChat}
-                disabled={!chatInput.trim() || chatLoading}
-                className="w-7 h-7 bg-[#1B4332] text-white rounded-lg flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all shrink-0"
-              >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a1 1 0 00-1.39 1.2L4.5 11l7.5 1-7.5 1-2.49 6.2a1 1 0 001.39 1.2z" />
-                </svg>
-              </button>
+              {chatLoading ? (
+                <button
+                  onClick={abortChat}
+                  className="w-8 h-8 bg-[#1B4332] text-white rounded-full flex items-center justify-center active:scale-95 transition-all shrink-0 hover:bg-[#2D6A4F]"
+                  aria-label={isKo ? "정지" : "Stop"}
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="1.5" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={sendChat}
+                  disabled={!chatInput.trim()}
+                  className="w-8 h-8 bg-[#1B4332] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:bg-gray-300 active:scale-95 transition-all shrink-0"
+                  aria-label={isKo ? "보내기" : "Send"}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </button>
+              )}
             </div>
           ) : (
             <p className="text-center text-xs text-gray-400 py-1">
