@@ -140,124 +140,7 @@ function msgToHistoryContent(m: ChatMsg): string {
   return "[advice card shown]";
 }
 
-/** 심화 후속 질문 카탈로그 — Phase 6B (마누스식 아이콘 + 세로 리스트) */
-type DeepFollowup = {
-  id: string;
-  icon: ChipIconType;
-  labelKo: string;
-  labelEn: string;
-  promptKo: string;
-  promptEn: string;
-  /** 컨텍스트 매칭 태그. "any" 항상 매칭 */
-  tags: string[];
-};
-
-const DEEP_FOLLOWUPS: DeepFollowup[] = [
-  {
-    id: "pump",
-    icon: "pump",
-    labelKo: "자극 제대로 느끼는 법",
-    labelEn: "Mind-muscle connection",
-    promptKo: "이 운동할 때 자극 제대로 느끼는 법 알려줘",
-    promptEn: "How do I feel the target muscle properly during this workout?",
-    tags: ["any"],
-  },
-  {
-    id: "creatine",
-    icon: "creatine",
-    labelKo: "크레아틴 언제 얼마나 먹어?",
-    labelEn: "How to take creatine",
-    promptKo: "크레아틴 언제 얼마나 어떻게 먹어야 효과적인지 알려줘",
-    promptEn: "When and how much creatine should I take for best results?",
-    tags: ["any", "bulk", "strength", "chest", "back", "legs", "arms"],
-  },
-  {
-    id: "protein",
-    icon: "protein",
-    labelKo: "단백질 얼마나 먹어야 해?",
-    labelEn: "How much protein do I need?",
-    promptKo: "내 몸무게 기준으로 단백질 하루에 얼마나 먹어야 해?",
-    promptEn: "How much protein per day should I eat for my body weight?",
-    tags: ["any", "bulk", "diet"],
-  },
-  {
-    id: "food",
-    icon: "food",
-    labelKo: "운동 끝나고 뭐 먹지?",
-    labelEn: "What to eat after workout",
-    promptKo: "운동 끝나고 회복에 좋은 음식 추천해줘",
-    promptEn: "What should I eat after this workout to recover?",
-    tags: ["any"],
-  },
-  {
-    id: "sleep",
-    icon: "sleep",
-    labelKo: "회복과 수면 관리",
-    labelEn: "Recovery & sleep tips",
-    promptKo: "근육 회복이랑 수면 어떻게 관리해야 해?",
-    promptEn: "How should I manage muscle recovery and sleep?",
-    tags: ["any"],
-  },
-  {
-    id: "plateau",
-    icon: "plateau",
-    labelKo: "정체기 돌파법",
-    labelEn: "Breaking plateaus",
-    promptKo: "벤치/스쿼트/데드리프트 정체된 거 어떻게 뚫어?",
-    promptEn: "How do I break through bench/squat/deadlift plateaus?",
-    tags: ["bulk", "strength", "chest", "back", "legs"],
-  },
-  {
-    id: "split",
-    icon: "split",
-    labelKo: "3분할 vs 5분할 뭐가 나아?",
-    labelEn: "3-day vs 5-day split",
-    promptKo: "3분할이랑 5분할 중 뭐가 더 나아?",
-    promptEn: "Which is better: 3-day split or 5-day split?",
-    tags: ["any"],
-  },
-  {
-    id: "posture",
-    icon: "posture",
-    labelKo: "자세 교정 운동",
-    labelEn: "Posture correction",
-    promptKo: "거북목이랑 굽은등 교정하는 10분 루틴 알려줘",
-    promptEn: "Give me a 10-min routine to fix text neck and hunched back",
-    tags: ["any", "rehab", "posture"],
-  },
-];
-
-/** 메시지 컨텍스트에서 태그 추출 */
-function extractTagsFromContent(content: string): string[] {
-  const tags: string[] = ["any"];
-  if (/다이어트|감량|체지방|살\s*빼/.test(content)) tags.push("diet");
-  if (/증량|벌크|근육.*키|늘리/.test(content)) tags.push("bulk");
-  if (/1rm|벤치|스쿼트|데드|프레스|맥스/i.test(content)) tags.push("strength");
-  if (/가슴|chest/i.test(content)) tags.push("chest");
-  if (/등|back/i.test(content)) tags.push("back");
-  if (/어깨|shoulder/i.test(content)) tags.push("shoulders");
-  if (/팔|이두|삼두|arm/i.test(content)) tags.push("arms");
-  if (/하체|다리|legs?/i.test(content)) tags.push("legs");
-  if (/부상|회피|통증|재활/.test(content)) tags.push("rehab");
-  if (/거북목|굽은등|자세/.test(content)) tags.push("posture");
-  return tags;
-}
-
-/** 컨텍스트 기반 추천 (최대 4개) */
-function selectDeepFollowups(contextTags: string[], limit = 4): DeepFollowup[] {
-  const scored = DEEP_FOLLOWUPS.map((f) => {
-    let score = 0;
-    for (const t of f.tags) {
-      if (t === "any") score += 1;
-      else if (contextTags.includes(t)) score += 3;
-    }
-    return { f, score };
-  });
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, limit).map((s) => s.f);
-}
-
-/** 빠른 재조정 후속 — 세로 아이콘 리스트 (마누스식, Phase 7 보완) */
+/** 후속 질문 리스트 — 세로 아이콘 리스트 (Phase 7 보완) */
 const QuickFollowupList: React.FC<{
   locale: "ko" | "en";
   items: Array<{ icon: ChipIconType; label: string; prompt: string }>;
@@ -287,41 +170,6 @@ const QuickFollowupList: React.FC<{
   </div>
 );
 
-/** 심화 후속 질문 리스트 — 마누스식 세로 아이콘 리스트 */
-const DeepFollowupList: React.FC<{
-  contextTags: string[];
-  locale: "ko" | "en";
-  onTap: (prompt: string) => void;
-}> = ({ contextTags, locale, onTap }) => {
-  const items = selectDeepFollowups(contextTags);
-  return (
-    <div className="mt-3 border-t border-gray-100 pt-3">
-      <p className="text-[10px] font-black text-gray-400 tracking-wider uppercase mb-2 px-0.5">
-        {locale === "en" ? "Recommended follow-ups" : "추천 후속 질문"}
-      </p>
-      <div className="flex flex-col gap-1">
-        {items.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => onTap(locale === "en" ? f.promptEn : f.promptKo)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-gray-100 hover:border-[#2D6A4F]/40 hover:bg-emerald-50/30 active:scale-[0.98] transition-all text-left"
-          >
-            <span className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-[#2D6A4F] shrink-0">
-              <ChipIcon type={f.icon} />
-            </span>
-            <span className="text-[12.5px] font-medium text-[#1B4332] flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
-              {locale === "en" ? f.labelEn : f.labelKo}
-            </span>
-            <svg className="w-3 h-3 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 /** 진행 체크 스텝 — 실제 단계 시각화 (Phase 6A) */
 const ProgressStep: React.FC<{ state: "done" | "active" | "pending"; label: string; last?: boolean }> = ({ state, label, last }) => (
   <div className={`flex items-center gap-2 ${last ? "" : "mb-1.5"}`}>
@@ -348,7 +196,7 @@ const ProgressStep: React.FC<{ state: "done" | "active" | "pending"; label: stri
   </div>
 );
 
-/** 각 assistant 메시지 상단에 붙는 미니 헤더 — 마누스 스타일 (회의 60) */
+/** 각 assistant 메시지 상단에 붙는 미니 헤더(회의 60) */
 const AssistantMiniHeader: React.FC<{ locale: "ko" | "en"; planLabel?: string }> = ({ locale, planLabel }) => (
   <div className="flex items-center gap-1.5 mb-1">
     <img src="/favicon_backup.png" alt="AI" className="w-5 h-5 rounded-full" />
@@ -821,49 +669,15 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             if (!last || last.role !== "assistant") return null;
             if ("kind" in last && last.kind === "upgrade") return null;
 
-            const content = "content" in last ? last.content : "";
-            const isAdvice = "kind" in last && last.kind === "advice";
-
-            // 컨텍스트 태그 추출 (심화 후속 질문 스코어링용)
-            const contextTags = extractTagsFromContent(content);
-
-            // 단축 칩 (빠른 재조정) — advice가 아닌 일반 텍스트일 때만
-            const mentionsBack = /등|back/i.test(content);
-            const mentionsLegs = /하체|다리|legs?/i.test(content);
-            const mentionsChest = /가슴|chest/i.test(content);
-            type QuickItem = { icon: ChipIconType; label: string; prompt: string };
-            const quickItems: QuickItem[] = isAdvice ? [] : (locale === "en"
-              ? (mentionsBack
-                  ? [{ icon: "back", label: "Back routine today", prompt: "back routine today" }, { icon: "swap", label: "Different body part", prompt: "different body part" }, { icon: "timer", label: "Make it shorter", prompt: "make it shorter" }]
-                  : mentionsLegs
-                  ? [{ icon: "legs", label: "Legs 40 min", prompt: "legs 40 min" }, { icon: "swap", label: "Different body part", prompt: "different body part" }, { icon: "run", label: "Add cardio", prompt: "add cardio" }]
-                  : mentionsChest
-                  ? [{ icon: "chest", label: "Chest 30 min", prompt: "chest 30 min" }, { icon: "swap", label: "Different body part", prompt: "different body part" }, { icon: "run", label: "Add cardio", prompt: "add cardio" }]
-                  : [{ icon: "full", label: "Today's workout", prompt: "today's workout" }, { icon: "timer", label: "I'm tired today", prompt: "I'm tired today" }, { icon: "swap", label: "Any body part", prompt: "any body part suggestion" }])
-              : (mentionsBack
-                  ? [{ icon: "back", label: "등 운동 오늘", prompt: "등 운동 오늘" }, { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" }, { icon: "timer", label: "시간 짧게", prompt: "시간 짧게" }]
-                  : mentionsLegs
-                  ? [{ icon: "legs", label: "하체 40분", prompt: "하체 40분" }, { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" }, { icon: "run", label: "유산소 추가", prompt: "유산소 추가" }]
-                  : mentionsChest
-                  ? [{ icon: "chest", label: "가슴 30분", prompt: "가슴 30분" }, { icon: "swap", label: "다른 부위로", prompt: "다른 부위로" }, { icon: "run", label: "유산소 추가", prompt: "유산소 추가" }]
-                  : [{ icon: "full", label: "오늘 운동 추천해줘", prompt: "오늘 운동 추천해줘" }, { icon: "timer", label: "오늘은 피곤해", prompt: "오늘은 피곤해" }, { icon: "swap", label: "아무 부위나 골라줘", prompt: "아무 부위나 골라줘" }]));
-
-            // Phase 7C + 10.1 통합: Gemini 개인화 우선, 없으면 카탈로그 폴백 — 섹션 1개로 단일화
-            const hasAi = aiFollowups.length > 0;
-            const finalItems: Array<{ icon: ChipIconType; label: string; prompt: string }> = hasAi
-              ? aiFollowups
-              : (quickItems.length > 0 ? quickItems : selectDeepFollowups(contextTags).map((f) => ({
-                  icon: f.icon, label: locale === "en" ? f.labelEn : f.labelKo, prompt: locale === "en" ? f.promptEn : f.promptKo,
-                })));
-
-            if (finalItems.length === 0) return null;
+            // Gemini 개인화만 노출. 없으면 렌더 생략 (카탈로그 폴백 제거 — 대표 지시)
+            if (aiFollowups.length === 0) return null;
             return (
               <div className="mt-2">
                 <QuickFollowupList
                   locale={locale}
-                  items={finalItems}
+                  items={aiFollowups}
                   onTap={(p: string) => {
-                    trackEvent("chat_submit", { source: hasAi ? "ai_followup" : "rule_followup", char_length: p.length });
+                    trackEvent("chat_submit", { source: "ai_followup", char_length: p.length });
                     handleSubmit(p, { intentDepth: "focused_followup" });
                   }}
                 />
