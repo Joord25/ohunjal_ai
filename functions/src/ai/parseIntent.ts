@@ -388,7 +388,7 @@ Step 4 UX 선제: 답변 받고 당장 궁금할 실행/변형/장애 질문 미
 각 followup 항목:
 {
   "icon": "chest" | "legs" | "back" | "shoulder" | "posture" | "run" | "home" | "diet" | "full" | "cycle" | "calendar" | "creatine" | "pump" | "sleep" | "food" | "plateau" | "split" | "protein" | "flame" | "swap" | "timer",
-  "label": "15자 이내 칩 라벨",
+  "label": "칩 라벨 (한국어 15자 이내 / 영어 28자 이내)",
   "prompt": "80자 이내 실제 후속 질문 (유저가 이 칩 탭하면 그대로 제출됨)"
 }
 
@@ -640,7 +640,7 @@ JSON만 반환. 설명 문장 금지.`;
             .slice(0, 4)
             .map((f: any) => ({
               icon: ALLOWED_ICONS.has(f.icon) ? f.icon : "full",
-              label: f.label.trim().slice(0, 15),
+              label: f.label.trim().slice(0, 28),
               prompt: f.prompt.trim().slice(0, 120),
             }))
         : [];
