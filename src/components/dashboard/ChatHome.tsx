@@ -349,6 +349,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   const [routing, setRouting] = useState(false);
   const [showMoreExamples, setShowMoreExamples] = useState(false);
   const [ackPending, setAckPending] = useState(false); // 타이핑 지연 중 (Phase 6A 보완)
+  const [reasoningLines, setReasoningLines] = useState<string[]>([]); // Phase 7 B-lite 사고 과정 스트림
 
   // 미니 헤더 옆 플랜 라벨 — 프리미엄/무료/체험 구분 (회의 60 대표 피드백)
   const miniPlanLabel = (() => {
@@ -426,28 +427,9 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     scrollEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy, routing, pendingIntent]);
 
-  // 로딩 메시지 순차 cycling — 마누스 스타일 (회의 60 Phase 2)
-  const LOADING_STAGES_KO = ["생각 중입니다", "의도 파악 중", "운동 이력 확인 중", "맞춤 플랜 짜는 중", "거의 다 됐어요"];
-  const LOADING_STAGES_EN = ["Thinking", "Reading your intent", "Checking your history", "Building your plan", "Almost done"];
-  const [loadingStage, setLoadingStage] = useState(0);
-  useEffect(() => {
-    if (!busy) { setLoadingStage(0); return; }
-    const stages = locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO;
-    const timer = setInterval(() => {
-      setLoadingStage((s) => Math.min(s + 1, stages.length - 1));
-    }, 900);
-    return () => clearInterval(timer);
-  }, [busy, locale]);
-
-  const [routingStage, setRoutingStage] = useState(0);
-  useEffect(() => {
-    if (!routing) { setRoutingStage(0); return; }
-    const stages = locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO;
-    const timer = setInterval(() => {
-      setRoutingStage((s) => Math.min(s + 1, stages.length - 1));
-    }, 900);
-    return () => clearInterval(timer);
-  }, [routing, locale]);
+  // routing 단계 메시지 (플랜 시작 후 master_plan_preview 이동 대기)
+  const ROUTING_LABEL_KO = "맞춤 플랜 짜는 중";
+  const ROUTING_LABEL_EN = "Building your plan";
 
   const displayName = userName || t("home.defaultName");
 
@@ -574,19 +556,28 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       }
 
       const data = (await res.json()) as
-        | { mode: "chat"; reply: string }
-        | { mode: "plan"; intent: ParsedIntent }
-        | { mode: "advice"; advice: AdviceContent };
+        | { mode: "chat"; reply: string; reasoning?: string[] }
+        | { mode: "plan"; intent: ParsedIntent; reasoning?: string[] }
+        | { mode: "advice"; advice: AdviceContent; reasoning?: string[] };
+
+      // Phase 7 B-lite: Gemini가 반환한 reasoning을 순차로 표시 (800ms 간격)
+      const reasoning = Array.isArray(data.reasoning) ? data.reasoning.filter(Boolean) : [];
+      for (const line of reasoning) {
+        setReasoningLines((prev) => [...prev, line]);
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
 
       if (data.mode === "chat") {
         setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
         setBusy(false);
+        setReasoningLines([]);
         return;
       }
 
       if (data.mode === "advice") {
         setMessages((prev) => [...prev, { role: "assistant", kind: "advice", advice: data.advice }]);
         setBusy(false);
+        setReasoningLines([]);
         return;
       }
 
@@ -606,6 +597,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           : `이해했어요! ${summary} — 준비됐어요.` },
       ]);
       setBusy(false);
+      setReasoningLines([]);
     } catch (e) {
       console.error("ChatHome submit error:", e);
       trackEvent("chat_plan_failed", { reason: "exception", latency_ms: Date.now() - submitStart });
@@ -876,23 +868,25 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             </div>
           )}
 
-          {/* 진짜 진행 체크 카드 — 실제 단계 매핑 (Phase 6A 회의 60) */}
+          {/* Phase 7 B-lite: 진짜 Gemini reasoning 스트림 + 이력 확인 1단계 (실제 단계만) */}
           {busy && (() => {
             const historyCount = getCachedWorkoutHistory().length;
             const historyHint = locale === "en"
               ? (historyCount > 0 ? `${historyCount} past sessions` : "first-time session")
               : (historyCount > 0 ? `지난 ${historyCount}회 반영` : "첫 운동");
-            // 단계 활성 계산: loadingStage 0-1 → intent active, 2+ → history done + selection active
-            const intentDone = loadingStage >= 1;
-            const selectionActive = loadingStage >= 2;
             return (
               <div className="mt-3">
                 <AssistantMiniHeader locale={locale} planLabel={miniPlanLabel} />
-                <div className="bg-white border border-gray-200 rounded-xl px-3.5 py-3 shadow-sm w-full max-w-[280px]">
-                  <ProgressStep state={intentDone ? "done" : "active"} label={locale === "en" ? "Reading your intent" : "운동 의도 분석"} />
-                  <ProgressStep state={intentDone ? "done" : "pending"} label={locale === "en" ? `Checking history · ${historyHint}` : `지난 이력 확인 · ${historyHint}`} />
-                  <ProgressStep state={selectionActive ? "active" : "pending"} label={locale === "en" ? "Selecting the right moves" : "맞춤 운동 조합 선택"} />
-                  <ProgressStep state="pending" label={locale === "en" ? "Calibrating intensity & sets" : "강도·세트 수 계산"} last />
+                <div className="bg-white border border-gray-200 rounded-xl px-3.5 py-3 shadow-sm w-full max-w-[320px]">
+                  <ProgressStep state="done" label={locale === "en" ? `History checked · ${historyHint}` : `지난 이력 확인 · ${historyHint}`} />
+                  {reasoningLines.map((line, i) => (
+                    <ProgressStep key={i} state="done" label={line} />
+                  ))}
+                  <ProgressStep
+                    state="active"
+                    label={locale === "en" ? "Analyzing your intent" : "운동 의도 분석 중"}
+                    last
+                  />
                 </div>
               </div>
             );
@@ -906,8 +900,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                 <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
                 </svg>
-                <span key={routingStage} className="text-[12px] font-medium text-[#1B4332] animate-[fadeIn_220ms_ease-out]">
-                  {(locale === "en" ? LOADING_STAGES_EN : LOADING_STAGES_KO)[Math.max(routingStage, 3)]}…
+                <span className="text-[12px] font-medium text-[#1B4332]">
+                  {locale === "en" ? ROUTING_LABEL_EN : ROUTING_LABEL_KO}…
                 </span>
               </div>
             </div>

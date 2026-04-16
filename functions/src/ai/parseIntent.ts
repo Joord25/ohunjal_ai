@@ -208,9 +208,18 @@ ${historyBlock}
 
 [출력 스키마 — JSON만, mode 필드로 분기]
 
+**모든 모드에 공통: "reasoning" 배열 필드 포함 (2~4개 원소).**
+각 원소는 **네가 이 요청을 어떻게 이해·분석·판단했는지** 1문장씩. 유저에게 네 사고 과정을 보여주는 용도.
+- 첫 줄: 요청 요약 (부위/목표/기간 등 핵심 파악)
+- 중간 줄(들): 프로필·이력 반영 고려사항
+- 마지막 줄: 최종 구성 방향 결론
+금지: "답변드리겠습니다" 같은 인사말, 3인칭, 영어 혼용. 한국어 자연체 (locale=ko 기준).
+예: ["3개월 다이어트 요청. 장기 체지방 감량 맥락.", "지난주 가슴 2회, 등 1회 — 하체 공백.", "오늘은 하체 40분 중강도가 균형상 적합."]
+
 모드 A (플랜 생성) 예시:
 {
   "mode": "plan",
+  "reasoning": ["...", "...", "..."],
   "intent": {
     "condition": { "bodyPart": "good", "energyLevel": 3, "availableTime": 30, "bodyWeightKg": 58, "gender": "female", "birthYear": 1991 },
     "goal": "fat_loss",
@@ -222,6 +231,7 @@ ${historyBlock}
 모드 B (조언 카드) 예시:
 {
   "mode": "advice",
+  "reasoning": ["...", "...", "..."],
   "advice": {
     "headline": "공백 후 복귀 — 근력 회복 4주 구조",
     "goals": [
@@ -269,6 +279,7 @@ ${historyBlock}
 모드 C (자연 대화) 예시:
 {
   "mode": "chat",
+  "reasoning": ["...", "..."],
   "reply": "정보 없어도 괜찮아요! 오늘 어느 부위 할지만 알려주시면 ㅎㅎ"
 }
 
@@ -303,19 +314,27 @@ JSON만 반환. 설명 문장 금지.`;
         return;
       }
 
+      // reasoning 추출 (Phase 7 B-lite — 마누스식 사고 과정 노출)
+      const reasoning: string[] = Array.isArray(parsedRaw?.reasoning)
+        ? parsedRaw.reasoning
+            .filter((r: unknown): r is string => typeof r === "string" && r.trim().length > 0)
+            .slice(0, 4)
+            .map((r: string) => r.trim().slice(0, 120))
+        : [];
+
       // 3-way 모드 분기: plan | advice | chat
       const mode = parsedRaw?.mode;
 
       if (mode === "plan" && parsedRaw?.intent) {
         const intent = sanitize(parsedRaw.intent);
-        res.status(200).json({ mode: "plan", intent, model: "gemini-2.5-flash" });
+        res.status(200).json({ mode: "plan", reasoning, intent, model: "gemini-2.5-flash" });
         return;
       }
 
       if (mode === "advice" && parsedRaw?.advice) {
         const advice = sanitizeAdvice(parsedRaw.advice);
         if (advice) {
-          res.status(200).json({ mode: "advice", advice, model: "gemini-2.5-flash" });
+          res.status(200).json({ mode: "advice", reasoning, advice, model: "gemini-2.5-flash" });
           return;
         }
         // advice 스키마 훼손 시 chat으로 폴백
@@ -327,7 +346,7 @@ JSON만 반환. 설명 문장 금지.`;
         : (locale === "en"
           ? "Tell me which area and how long — I'll build a plan for you."
           : "어느 부위로, 몇 분 할지만 말씀해주시면 바로 짜드려요.");
-      res.status(200).json({ mode: "chat", reply, model: "gemini-2.5-flash" });
+      res.status(200).json({ mode: "chat", reasoning, reply, model: "gemini-2.5-flash" });
     } catch (error) {
       console.error("parseIntent error:", error);
       res.status(200).json(buildFallbackReply(locale, "fallback-exception"));
