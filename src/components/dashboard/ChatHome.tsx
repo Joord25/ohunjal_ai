@@ -157,6 +157,50 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>(() => sessionCachedMessages);
   useEffect(() => { sessionCachedMessages = messages; }, [messages]);
+
+  // Phase B: 영양 가이드 백그라운드 프리로드 (프리미엄 + 프로필 완성 + 캐시 없음 → 5초 후)
+  useEffect(() => {
+    if (!isPremium) return;
+    if (typeof window === "undefined") return;
+    const hasProfile = !!(userProfile?.gender && userProfile?.bodyWeightKg && userProfile?.goal);
+    if (!hasProfile) return;
+    // 캐시 체크
+    try {
+      const cached = localStorage.getItem("ohunjal_nutrition_cache");
+      if (cached) {
+        const { date, locale: cachedLocale } = JSON.parse(cached);
+        if (date === new Date().toDateString() && cachedLocale === locale) return;
+      }
+    } catch { /* ignore */ }
+
+    const timer = setTimeout(async () => {
+      try {
+        const { auth } = await import("@/lib/firebase");
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
+        const res = await fetch("/api/getNutritionGuide", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            locale,
+            bodyWeightKg: userProfile!.bodyWeightKg,
+            heightCm: userProfile!.heightCm,
+            age: userProfile!.birthYear ? new Date().getFullYear() - userProfile!.birthYear : 30,
+            gender: userProfile!.gender,
+            goal: userProfile!.goal,
+            weeklyFrequency: userProfile!.weeklyFrequency ?? 3,
+            todaySession: { type: "general", durationMin: 0, estimatedCalories: 0 },
+          }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        localStorage.setItem("ohunjal_nutrition_cache", JSON.stringify({
+          data, date: new Date().toDateString(), locale,
+        }));
+      } catch { /* 백그라운드 실패는 무해 */ }
+    }, 5000); // 5초 ChatHome 머무름 = 관심 유저 신호
+    return () => clearTimeout(timer);
+  }, [isPremium, userProfile, locale]);
   const [pendingIntent, setPendingIntent] = useState<ParsedIntent | null>(null);
   const [routing, setRouting] = useState(false);
   const [showMoreExamples, setShowMoreExamples] = useState(false);

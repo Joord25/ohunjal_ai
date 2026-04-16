@@ -809,6 +809,51 @@ export default function Home() {
     // 회의 57 후속: 영양 탭 — 첫 진입 시 프로필 없으면 Onboarding 게이트.
     // 필수 3개(gender + bodyWeight + goal) 있으면 바로 NutritionTab.
     if (activeTab === "nutrition" && (view === "home" || view === "home_chat")) {
+      // 프리미엄 게이트 — 비프리미엄 유저는 업그레이드 CTA 노출
+      if (subStatus !== "active") {
+        return (
+          <div className="h-full overflow-y-auto px-6 pt-10" style={{ paddingBottom: "calc(80px + var(--safe-area-bottom, 0px))" }}>
+            <div className="bg-gradient-to-br from-[#F0FDF4] to-white border border-[#2D6A4F]/30 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-6 h-6 text-[#2D6A4F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 className="text-lg font-black text-[#1B4332]">
+                  {(typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en") ? "Nutrition Coach · Premium" : "영양 코치 · 프리미엄"}
+                </h2>
+              </div>
+              <p className="text-[13px] text-[#1B4332] leading-relaxed mb-4">
+                {(typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en")
+                  ? "Personalized daily calories, macros, meal plans, and unlimited nutrition chat. For premium members only."
+                  : "맞춤 칼로리·탄단지·식단 플랜 + 무제한 영양 코치 채팅. 프리미엄 전용 기능이에요."}
+              </p>
+              <ul className="space-y-2 mb-5">
+                {((typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en")
+                  ? ["Daily calorie + macro targets", "Auto-generated 4-meal plan", "Unlimited nutrition chat", "Real-time swap suggestions"]
+                  : ["일일 칼로리 · 단백질·탄수·지방 목표", "자동 4끼 식단 플랜", "무제한 영양 코치 채팅", "실시간 대체 메뉴 추천"]
+                ).map((b) => (
+                  <li key={b} className="flex items-start gap-2 text-[12.5px] text-[#1B4332]">
+                    <svg className="w-4 h-4 text-[#2D6A4F] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => {
+                  trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "nutrition_tab", surface: "modal" });
+                  setShowPaywall(true);
+                }}
+                className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-[13px] font-bold active:scale-[0.97] transition-all hover:bg-[#2D6A4F]"
+              >
+                {(typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en") ? "Unlock Premium · 6,900 KRW/mo" : "프리미엄 시작 · 월 6,900원"}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       const fp = (() => {
         try { return JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}"); }
         catch { return {}; }
@@ -1263,7 +1308,7 @@ export default function Home() {
             }`}
           >
             <BottomTabs active={activeTab} onChange={(id) => {
-              if (!isLoggedIn && (id === "proof" || id === "my")) {
+              if (!isLoggedIn && (id === "proof" || id === "my" || id === "nutrition")) {
                 setLoginModalReason("generic");
                 setShowLoginModal(true);
                 return;

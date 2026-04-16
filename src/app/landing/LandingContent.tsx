@@ -304,7 +304,14 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
                       {String(i + 1).padStart(2, "0")}
                     </div>
                     <div>
-                      <h3 className={`text-xl font-bold transition-colors duration-300 ${activeDemo === i ? "text-white" : "text-white/40"}`}>{step.title}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className={`text-xl font-bold transition-colors duration-300 ${activeDemo === i ? "text-white" : "text-white/40"}`}>{step.title}</h3>
+                        {step.premium && (
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full bg-[#059669]/20 border border-[#059669]/40 ${activeDemo === i ? "text-[#10d67f]" : "text-white/40"}`}>
+                            {locale === "en" ? "Premium" : "프리미엄만 가능"}
+                          </span>
+                        )}
+                      </div>
                       <p className={`text-sm mt-1 transition-colors duration-300 ${activeDemo === i ? "text-white/60" : "text-white/20"}`}>{step.desc}</p>
                     </div>
                   </button>
@@ -338,7 +345,14 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
                       {String(i + 1).padStart(2, "0")}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                        {step.premium && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#059669]/20 border border-[#059669]/40 text-[#10d67f]">
+                            {locale === "en" ? "Premium" : "프리미엄만 가능"}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm mt-1 text-white/60">{step.desc}</p>
                     </div>
                   </div>
