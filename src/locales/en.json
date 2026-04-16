@@ -26,6 +26,7 @@
   "advice.section.criticalPoints": "Critical Points",
   "advice.section.supplements": "Supplements",
   "advice.section.conclusion": "Bottom Line",
+  "advice.section.actionItems": "3 actions to do now",
   "advice.startCTA": "Start this workout",
   "chat_home.error.auth": "Sign-in required. Please refresh and try again.",
   "chat_home.error.generic": "Couldn't build the plan. Try rephrasing.",

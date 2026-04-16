@@ -19,10 +19,18 @@ export interface AdviceContent {
     week3?: string;
     week4?: string;
   };
+  // Phase 8A: 운동 루틴 표
+  workoutTable?: {
+    title: string;
+    columns: string[];
+    rows: string[][];
+  };
   principles: string[];
   criticalPoints?: string[];
   supplements?: string[];
   conclusion?: string[];
+  // Phase 8B: 실행 유도 (24시간 내 3가지)
+  actionItems?: string[];
   recommendedWorkout: {
     condition: {
       bodyPart: "upper_stiff" | "lower_heavy" | "full_fatigue" | "good";
@@ -69,6 +77,87 @@ const Section: React.FC<{ label: string; items: string[] }> = ({ label, items })
           <li key={i} className="text-[12.5px] text-[#1B4332] leading-relaxed flex gap-1.5">
             <span className="text-[#2D6A4F] shrink-0">·</span>
             <span className="flex-1">{renderInline(it)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+/** Phase 8A: 운동 루틴 표 — Table */
+const WorkoutTable: React.FC<{
+  title: string;
+  columns: string[];
+  rows: string[][];
+}> = ({ title, columns, rows }) => (
+  <div className="border-t border-gray-100 pt-3 mt-3">
+    <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase mb-2">{title}</p>
+    <div className="rounded-lg border border-gray-100 overflow-hidden">
+      <table className="w-full text-[11.5px] table-fixed">
+        <thead className="bg-gray-50">
+          <tr>
+            {columns.map((c, i) => (
+              <th key={i} className="px-2 py-1.5 text-left font-black text-[#1B4332] text-[10.5px] tracking-wide">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+              {row.map((cell, j) => (
+                <td key={j} className="px-2 py-1.5 text-[#1B4332] break-keep align-top">
+                  {j === 0 ? <span className="font-semibold">{renderInline(cell)}</span> : renderInline(cell)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+/** Phase 8D: 경고 섹션 — 중요 포인트 amber 강조 박스 */
+const WarningSection: React.FC<{ label: string; items: string[] }> = ({ label, items }) => {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <svg className="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <p className="text-[10px] font-black text-amber-800 tracking-[0.2em] uppercase">{label}</p>
+      </div>
+      <ul className="space-y-1">
+        {items.map((it, i) => (
+          <li key={i} className="text-[12.5px] text-amber-900 leading-relaxed flex gap-1.5">
+            <span className="text-amber-600 shrink-0">·</span>
+            <span className="flex-1">{renderInline(it)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+/** Phase 8B: 실행 유도 섹션 — 24시간 내 3가지 체크리스트 */
+const ActionItemsSection: React.FC<{ label: string; items: string[] }> = ({ label, items }) => {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3 bg-[#F0FDF4] border border-[#2D6A4F]/30 rounded-xl px-3.5 py-3">
+      <div className="flex items-center gap-1.5 mb-2">
+        <svg className="w-3.5 h-3.5 text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <p className="text-[10px] font-black text-[#1B4332] tracking-[0.2em] uppercase">{label}</p>
+      </div>
+      <ul className="space-y-1.5">
+        {items.slice(0, 3).map((it, i) => (
+          <li key={i} className="text-[13px] text-[#1B4332] leading-relaxed flex gap-2 items-start">
+            <span className="w-4 h-4 rounded border-[1.5px] border-[#2D6A4F] shrink-0 mt-0.5" />
+            <span className="flex-1 font-medium">{renderInline(it)}</span>
           </li>
         ))}
       </ul>
@@ -155,15 +244,29 @@ export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommend
           </div>
         )}
 
+        {/* Phase 8A: 운동 루틴 표 */}
+        {advice.workoutTable && advice.workoutTable.rows.length > 0 && (
+          <WorkoutTable
+            title={advice.workoutTable.title}
+            columns={advice.workoutTable.columns}
+            rows={advice.workoutTable.rows}
+          />
+        )}
+
         <Section label={t("advice.section.principles")} items={advice.principles} />
+        {/* Phase 8D: criticalPoints는 amber 경고 박스로 차별화 */}
         {advice.criticalPoints && advice.criticalPoints.length > 0 && (
-          <Section label={t("advice.section.criticalPoints")} items={advice.criticalPoints} />
+          <WarningSection label={t("advice.section.criticalPoints")} items={advice.criticalPoints} />
         )}
         {advice.supplements && advice.supplements.length > 0 && (
           <Section label={t("advice.section.supplements")} items={advice.supplements} />
         )}
         {advice.conclusion && advice.conclusion.length > 0 && (
           <Section label={t("advice.section.conclusion")} items={advice.conclusion} />
+        )}
+        {/* Phase 8B: 실행 유도 — 24시간 내 3가지 */}
+        {advice.actionItems && advice.actionItems.length > 0 && (
+          <ActionItemsSection label={t("advice.section.actionItems")} items={advice.actionItems} />
         )}
       </div>
 

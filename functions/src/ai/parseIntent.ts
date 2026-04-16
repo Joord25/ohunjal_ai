@@ -40,7 +40,7 @@ export interface ParsedIntent {
   clarifyQuestion?: string;
 }
 
-/** 회의 57 후속: advice 모드 응답 스키마 (마스터플랜 스타일 조언 카드용) */
+/** 회의 57 후속 + Phase 8: advice 모드 응답 스키마 (마스터플랜 스타일 조언 카드용) */
 export interface AdviceContent {
   headline: string;                 // 한 줄 요약 (예: "근력 회복 + 균형 복원 최적 구조")
   goals: string[];                  // 목표 설정 (현실적 범위) — 2~4개 bullet
@@ -51,10 +51,18 @@ export interface AdviceContent {
     week3?: string;
     week4?: string;
   };
+  // Phase 8A: 운동 루틴 표 (Tables)
+  workoutTable?: {
+    title: string;                  // 예: "이번 주 핵심 운동"
+    columns: string[];              // 예: ["운동", "세트", "렙", "RPE"]
+    rows: string[][];               // 각 행 = columns 길이만큼
+  };
   principles: string[];             // 핵심 원칙 — 2~4개
-  criticalPoints?: string[];        // 중요 포인트 / 실패 원인 — 2~3개
+  criticalPoints?: string[];        // 중요 포인트 / 실패 원인 — 2~3개 (클라에서 강조 박스)
   supplements?: string[];           // 보충 전략 — 2~3개
   conclusion?: string[];            // 현실적 결론 / 우선순위 — 2~4개
+  // Phase 8B: 실행 유도 — 24시간 내 즉시 실천할 3가지
+  actionItems?: string[];           // 예: ["오늘 닭가슴살 600g 구매", "내일 아침 7시 30분 운동"]
   recommendedWorkout: {             // 하단 "오늘 운동" 버튼용 권장
     condition: ParsedIntent["condition"];
     goal: ParsedIntent["goal"];
@@ -367,14 +375,37 @@ Step 4 UX 선제: 답변 받고 당장 궁금할 실행/변형/장애 질문 미
 
 금지: 모든 요청에 동일한 4개 고정 (반드시 맥락 기반 다양화), 영어 혼용, 너무 긴 라벨(15자 초과).
 
-[advice 모드 작성 규칙]
+[advice 모드 작성 규칙 — Phase 8 마누스 구성 원칙 적용]
 - headline: 한 줄 요약 (20자 이내)
 - goals, principles, criticalPoints, conclusion, intensity, supplements: bullet 2~4개, 각 1문장
 - 불필요한 섹션은 omit (예: 초보자엔 monthProgram·supplements 생략 가능)
-- 이모지 사용 허용 (채팅 맥락이라 자연스럽게 1~2개 정도 가능, 과도한 사용은 금지)
+- 이모지 금지 (메모리 원칙). 마크다운 굵게로만 강조.
 - 핵심 키워드(운동명/부위/강도/목표)는 **굵게** 마크다운으로 강조 (예: "**벤치프레스**를 **중강도**로"). 한 문장에 1~3개 정도만.
 - 유저 프로필(1RM·경력·나이·목표)과 운동 이력 요약을 반드시 반영
 - recommendedWorkout은 planSession 호출용이라 enum 정확히 — condition.availableTime은 30|50|90만, non-long-run은 30|50, split일 때만 targetMuscle
+
+[Phase 8A — workoutTable (운동 루틴 표, 강력 권장)]
+plan-like 요청(특정 부위/시간/주간 루틴)이면 workoutTable 반드시 포함.
+형식:
+{
+  "title": "이번 세션 핵심 운동" (15자 내),
+  "columns": ["운동", "세트", "렙", "RPE"] (3~5개 컬럼, 부위/세션 따라 다양화),
+  "rows": [["벤치프레스", "4", "8-10", "7-8"], ...] (3~6행)
+}
+- 표가 본문 bullet과 중복되면 bullet 쪽을 줄일 것.
+- 러닝 요청이면 컬럼: ["구간", "거리", "페이스", "심박"] 등으로 재정의.
+- 다이어트/조언 요청이면 식단표나 주간 진행표로 활용 가능.
+
+[Phase 8B — actionItems ("내일부터 당장 3가지", 강력 권장)]
+3개 고정. 24시간 이내 즉시 실천 가능한 구체 행동.
+좋은 예: "오늘 닭가슴살 600g 구매", "내일 아침 7시 30분 헬스장 등록", "오늘 저녁 단백질 30g 섭취"
+나쁜 예: "꾸준히 운동하기", "건강 관리하기" (구체성 부족)
+
+[Phase 8 — 5순위 스캔성 강화 (모든 bullet 공통)]
+각 bullet의 첫 4~6글자 안에 핵심 키워드 배치.
+예: "**탄수화물** 충분 — 근력 회복 핵심" ← 첫 단어가 핵심
+예: "근력 회복을 위해서는 탄수화물이 충분해야 합니다" ← 키워드가 뒤, 나쁨
+3초 만에 훑어봐도 핵심 키워드만 눈에 들어오게.
 
 JSON만 반환. 설명 문장 금지.`;
 
@@ -560,15 +591,38 @@ function sanitizeAdvice(a: any): AdviceContent | null {
     week4: typeof a.monthProgram.week4 === "string" ? a.monthProgram.week4.trim() : undefined,
   } : undefined;
 
+  // Phase 8A: workoutTable sanitize
+  const wt = a.workoutTable;
+  const workoutTable = (wt && typeof wt === "object"
+    && typeof wt.title === "string"
+    && Array.isArray(wt.columns) && wt.columns.length >= 2 && wt.columns.length <= 6
+    && Array.isArray(wt.rows) && wt.rows.length >= 1 && wt.rows.length <= 8)
+    ? {
+        title: wt.title.trim().slice(0, 30),
+        columns: wt.columns.filter((c: any) => typeof c === "string" && c.trim())
+          .map((c: string) => c.trim().slice(0, 15)),
+        rows: wt.rows
+          .filter((r: any): r is any[] => Array.isArray(r))
+          .map((r: any[]) => r.filter((cell) => typeof cell === "string")
+            .map((cell: string) => cell.trim().slice(0, 30)))
+          .filter((r: string[]) => r.length >= 2),
+      }
+    : undefined;
+
+  // Phase 8B: actionItems sanitize (3개 고정 권장, 최대 4개 허용)
+  const actionItems = strArr(a.actionItems).slice(0, 4);
+
   return {
     headline: typeof a.headline === "string" ? a.headline.trim().slice(0, 80) : "",
     goals,
     intensity: strArr(a.intensity),
     monthProgram: monthProgram && Object.values(monthProgram).some(Boolean) ? monthProgram : undefined,
+    workoutTable: workoutTable && workoutTable.rows.length > 0 ? workoutTable : undefined,
     principles,
     criticalPoints: strArr(a.criticalPoints),
     supplements: strArr(a.supplements),
     conclusion: strArr(a.conclusion),
+    actionItems: actionItems.length > 0 ? actionItems : undefined,
     recommendedWorkout: {
       condition: rec.condition,
       goal: rec.goal,
