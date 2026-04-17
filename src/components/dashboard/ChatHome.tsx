@@ -384,9 +384,13 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
         sessionMode: initialSuggestion.sessionMode,
         targetMuscle: initialSuggestion.targetMuscle,
       };
-      // 회의 62 후속 (2026-04-18 PM): 대표 지시 — 기존 채팅 플로우와 동일하게 PlanLoadingOverlay 표시.
-      // skipLoadingAnim 생략 → 로딩 오버레이 뜨면서 자연스럽게 전환 (이전엔 바로 넘어가서 버그처럼 보임).
-      await onSubmit(condition, goal, session);
+      // 회의 62 후속 (2026-04-18 PM): 대표 지시 — PlanLoadingOverlay는 띄우지 않되,
+      // 버튼의 "준비 중..." 상태가 체감되도록 최소 350ms 딜레이 보장.
+      // 딜레이와 onSubmit을 동시 시작해서 로직 지연은 최소화.
+      await Promise.all([
+        new Promise((resolve) => setTimeout(resolve, 350)),
+        onSubmit(condition, goal, session, { skipLoadingAnim: true }),
+      ]);
     } catch (e) {
       console.error("initial CTA error:", e);
       setRouting(false);
