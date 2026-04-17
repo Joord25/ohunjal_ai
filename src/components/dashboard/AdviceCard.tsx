@@ -31,6 +31,16 @@ export interface AdviceContent {
   conclusion?: string[];
   // Phase 8B: 실행 유도 (24시간 내 3가지)
   actionItems?: string[];
+  sessionParams?: Array<{
+    weekNumber: number;
+    dayInWeek: number;
+    sessionMode: "balanced" | "split" | "running" | "home_training";
+    targetMuscle?: "chest" | "back" | "shoulders" | "arms" | "legs";
+    goal: "fat_loss" | "muscle_gain" | "strength" | "general_fitness";
+    availableTime: 30 | 50 | 90;
+    intensityOverride?: "high" | "moderate" | "low";
+    label: string;
+  }>;
   recommendedWorkout: {
     condition: {
       bodyPart: "upper_stiff" | "lower_heavy" | "full_fatigue" | "good";

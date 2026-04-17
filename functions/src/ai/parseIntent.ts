@@ -63,6 +63,16 @@ export interface AdviceContent {
   conclusion?: string[];            // 현실적 결론 / 우선순위 — 2~4개
   // Phase 8B: 실행 유도 — 24시간 내 즉시 실천할 3가지
   actionItems?: string[];           // 예: ["오늘 닭가슴살 600g 구매", "내일 아침 7시 30분 운동"]
+  sessionParams?: Array<{           // 장기 프로그램 세션 파라미터 (룰엔진 입력)
+    weekNumber: number;
+    dayInWeek: number;
+    sessionMode: "balanced" | "split" | "running" | "home_training";
+    targetMuscle?: "chest" | "back" | "shoulders" | "arms" | "legs";
+    goal: "fat_loss" | "muscle_gain" | "strength" | "general_fitness";
+    availableTime: 30 | 50 | 90;
+    intensityOverride?: "high" | "moderate" | "low";
+    label: string;
+  }>;
   recommendedWorkout: {             // 하단 "오늘 운동" 버튼용 권장
     condition: ParsedIntent["condition"];
     goal: ParsedIntent["goal"];
@@ -435,6 +445,29 @@ Step 4 UX 선제: 답변 받고 당장 궁금할 실행/변형/장애 질문 미
 - 유저 프로필(1RM·경력·나이·목표)과 운동 이력 요약을 반드시 반영
 - recommendedWorkout은 planSession 호출용이라 enum 정확히 — condition.availableTime은 30|50|90만, non-long-run은 30|50, split일 때만 targetMuscle
 
+[장기 프로그램 advice — sessionParams 필드 (강력 권장)]
+다주차 프로그램 요청(3개월 다이어트, 8주 벌크업, 주간 루틴 등)일 때 반드시 포함.
+"sessionParams": 배열 — 주차별 세션 파라미터. 룰엔진이 이걸로 실제 운동 플랜을 생성함.
+각 항목:
+{
+  "weekNumber": 1,
+  "dayInWeek": 1,
+  "sessionMode": "split" | "balanced" | "running" | "home_training",
+  "targetMuscle": "chest" | "back" | "shoulders" | "arms" | "legs" (split일 때만),
+  "goal": "fat_loss" | "muscle_gain" | "strength" | "general_fitness",
+  "availableTime": 30 | 50,
+  "intensityOverride": "high" | "moderate" | "low",
+  "label": "하체" (유저 표시용, 10자 이내)
+}
+규칙:
+- workoutTable이나 monthProgram에서 묘사한 주간 구조와 **정확히 일치**해야 함
+- 휴식일은 포함하지 않음 (운동하는 날만)
+- 총 세션 수 = totalWeeks × sessionsPerWeek
+- 예: 주 5회 4주 → sessionParams 20개
+- targetMuscle enum 정확히 지킬 것 (chest|back|shoulders|arms|legs만, 복합 금지)
+- 러닝/유산소 날은 sessionMode="running"
+- 가벼운 스트레칭/회복 날은 sessionMode="balanced" + intensityOverride="low"
+
 [Phase 8A — workoutTable (운동 루틴 표, 강력 권장)]
 plan-like 요청(특정 부위/시간/주간 루틴)이면 workoutTable 반드시 포함.
 형식:
@@ -773,6 +806,7 @@ function sanitizeAdvice(a: any): AdviceContent | null {
     supplements: strArr(a.supplements),
     conclusion: strArr(a.conclusion),
     actionItems: actionItems.length > 0 ? actionItems : undefined,
+    sessionParams: sanitizeSessionParams(a.sessionParams),
     recommendedWorkout: {
       condition: rec.condition,
       goal: rec.goal,
@@ -785,6 +819,32 @@ function sanitizeAdvice(a: any): AdviceContent | null {
         : "",
     },
   };
+}
+
+/** sessionParams sanitize — advice 내 장기 프로그램 세션 파라미터 */
+function sanitizeSessionParams(raw: any): AdviceContent["sessionParams"] {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const modes = ["balanced", "split", "running", "home_training"] as const;
+  const muscles = ["chest", "back", "shoulders", "arms", "legs"] as const;
+  const goals = ["fat_loss", "muscle_gain", "strength", "general_fitness"] as const;
+  const times = [30, 50, 90] as const;
+  const intensities = ["high", "moderate", "low"] as const;
+
+  const result = raw
+    .filter((s: any) => s && typeof s === "object")
+    .slice(0, 100)
+    .map((s: any) => ({
+      weekNumber: typeof s.weekNumber === "number" ? s.weekNumber : 1,
+      dayInWeek: typeof s.dayInWeek === "number" ? s.dayInWeek : 1,
+      sessionMode: modes.includes(s.sessionMode) ? s.sessionMode : "balanced" as const,
+      targetMuscle: muscles.includes(s.targetMuscle) ? s.targetMuscle : undefined,
+      goal: goals.includes(s.goal) ? s.goal : "general_fitness" as const,
+      availableTime: (times as readonly number[]).includes(s.availableTime) ? s.availableTime as 30 | 50 | 90 : 50 as const,
+      intensityOverride: intensities.includes(s.intensityOverride) ? s.intensityOverride : undefined,
+      label: typeof s.label === "string" ? s.label.trim().slice(0, 20) : "",
+    }));
+
+  return result.length > 0 ? result : undefined;
 }
 
 /** 장기 프로그램 응답 sanitize */

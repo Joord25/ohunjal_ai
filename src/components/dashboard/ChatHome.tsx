@@ -395,36 +395,48 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
     setRouting(true);
     try {
       const rec = advice.recommendedWorkout;
-      const weeklyFreq = userProfile?.weeklyFrequency ?? 3;
-      const totalWeeks = 4;
-      const totalSessions = totalWeeks * weeklyFreq;
 
-      // 주간 부위 로테이션 — weeklyFreq에 맞춰 분할
-      const splitByFreq: Record<number, Array<{ mode: "split" | "running" | "balanced"; muscle?: "chest" | "back" | "shoulders" | "arms" | "legs" }>> = {
-        2: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }],
-        3: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }],
-        4: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }, { mode: "split", muscle: "shoulders" }],
-        5: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }, { mode: "split", muscle: "shoulders" }, { mode: "split", muscle: "arms" }],
-        6: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }, { mode: "split", muscle: "shoulders" }, { mode: "split", muscle: "arms" }, { mode: "running" }],
-      };
-      const weekPattern = splitByFreq[weeklyFreq] ?? splitByFreq[3];
-      // 주차별 강도 프로그레션: 적응→증가→피크→디로드
-      const weekIntensity: Array<"moderate" | "moderate" | "high" | "low"> = ["moderate", "moderate", "high", "low"];
-
-      const sessionParams = Array.from({ length: totalSessions }, (_, idx) => {
-        const weekIdx = Math.floor(idx / weeklyFreq);
-        const dayPattern = weekPattern[idx % weekPattern.length];
-        return {
-          condition: { ...rec.condition },
-          goal: rec.goal,
-          sessionMode: dayPattern.mode,
-          targetMuscle: dayPattern.muscle,
-          intensityOverride: weekIntensity[weekIdx] ?? "moderate",
+      // Gemini가 sessionParams를 줬으면 그대로 사용, 없으면 폴백 로테이션
+      if (advice.sessionParams && advice.sessionParams.length > 0) {
+        const sp = advice.sessionParams;
+        const totalWeeks = Math.max(...sp.map(s => s.weekNumber));
+        const sessionParams = sp.map(s => ({
+          condition: { ...rec.condition, availableTime: s.availableTime },
+          goal: s.goal,
+          sessionMode: s.sessionMode,
+          targetMuscle: s.targetMuscle,
+          intensityOverride: s.intensityOverride,
+        }));
+        const programName = advice.headline || (locale === "en" ? `${totalWeeks}-week program` : `${totalWeeks}주 프로그램`);
+        await generateAndSaveProgram(programName, sessionParams, totalWeeks);
+      } else {
+        // 폴백: 고정 로테이션
+        const weeklyFreq = userProfile?.weeklyFrequency ?? 3;
+        const totalWeeks = 4;
+        const totalSessions = totalWeeks * weeklyFreq;
+        const splitByFreq: Record<number, Array<{ mode: "split" | "running" | "balanced"; muscle?: "chest" | "back" | "shoulders" | "arms" | "legs" }>> = {
+          2: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }],
+          3: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }],
+          4: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }, { mode: "split", muscle: "shoulders" }],
+          5: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }, { mode: "split", muscle: "shoulders" }, { mode: "split", muscle: "arms" }],
+          6: [{ mode: "split", muscle: "legs" }, { mode: "split", muscle: "chest" }, { mode: "split", muscle: "back" }, { mode: "split", muscle: "shoulders" }, { mode: "split", muscle: "arms" }, { mode: "running" }],
         };
-      });
-
-      const programName = advice.headline || (locale === "en" ? "4-week program" : "4주 프로그램");
-      await generateAndSaveProgram(programName, sessionParams, totalWeeks);
+        const weekPattern = splitByFreq[weeklyFreq] ?? splitByFreq[3];
+        const weekIntensity: Array<"moderate" | "moderate" | "high" | "low"> = ["moderate", "moderate", "high", "low"];
+        const sessionParams = Array.from({ length: totalSessions }, (_, idx) => {
+          const weekIdx = Math.floor(idx / weeklyFreq);
+          const dayPattern = weekPattern[idx % weekPattern.length];
+          return {
+            condition: { ...rec.condition },
+            goal: rec.goal,
+            sessionMode: dayPattern.mode,
+            targetMuscle: dayPattern.muscle,
+            intensityOverride: weekIntensity[weekIdx] ?? "moderate",
+          };
+        });
+        const programName = advice.headline || (locale === "en" ? "4-week program" : "4주 프로그램");
+        await generateAndSaveProgram(programName, sessionParams, totalWeeks);
+      }
     } catch (e) {
       console.error("handleGenerateProgramFromAdvice error:", e);
       setMessages((prev) => [...prev, { role: "assistant", content: t("chat_home.error.generic"), tone: "error" }]);
