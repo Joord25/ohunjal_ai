@@ -281,27 +281,14 @@ export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommend
           </p>
         )}
         <div className="flex flex-col gap-2">
-          <button
-            onClick={onStartRecommended}
-            disabled={starting || generatingProgram}
-            className={`w-full py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
-              starting || generatingProgram
-                ? "bg-gray-200 text-gray-400"
-                : "bg-[#1B4332] text-white active:scale-[0.98] hover:bg-[#2D6A4F]"
-            }`}
-          >
-            <span>{t("advice.startCTA")}</span>
-            <span className="opacity-70">·</span>
-            <span className="font-normal">{recLabel}</span>
-          </button>
-          {advice.monthProgram && onGenerateProgram && (
+          {advice.monthProgram && onGenerateProgram ? (
             <button
               onClick={onGenerateProgram}
-              disabled={generatingProgram || starting}
+              disabled={generatingProgram}
               className={`w-full py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
                 generatingProgram
-                  ? "bg-[#F0FDF4] text-[#2D6A4F]/50 border border-[#2D6A4F]/20"
-                  : "bg-[#F0FDF4] text-[#2D6A4F] border border-[#2D6A4F]/30 active:scale-[0.98] hover:bg-emerald-100"
+                  ? "bg-gray-200 text-gray-400"
+                  : "bg-[#1B4332] text-white active:scale-[0.98] hover:bg-[#2D6A4F]"
               }`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -311,6 +298,20 @@ export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommend
                 ? (locale === "en" ? "Generating sessions..." : "세션 생성 중...")
                 : (locale === "en" ? "Save as program" : "프로그램으로 저장")
               }</span>
+            </button>
+          ) : (
+            <button
+              onClick={onStartRecommended}
+              disabled={starting}
+              className={`w-full py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
+                starting
+                  ? "bg-gray-200 text-gray-400"
+                  : "bg-[#1B4332] text-white active:scale-[0.98] hover:bg-[#2D6A4F]"
+              }`}
+            >
+              <span>{t("advice.startCTA")}</span>
+              <span className="opacity-70">·</span>
+              <span className="font-normal">{recLabel}</span>
             </button>
           )}
         </div>
