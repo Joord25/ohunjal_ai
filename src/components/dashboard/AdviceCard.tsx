@@ -281,7 +281,7 @@ export const AdviceCard: React.FC<AdviceCardProps> = ({ advice, onStartRecommend
           </p>
         )}
         <div className="flex flex-col gap-2">
-          {advice.monthProgram && onGenerateProgram ? (
+          {onGenerateProgram ? (
             <button
               onClick={onGenerateProgram}
               disabled={generatingProgram}

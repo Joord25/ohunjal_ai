@@ -811,7 +811,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
                         }
                       }}
                       starting={routing}
-                      onGenerateProgram={msg.advice.monthProgram ? () => handleGenerateProgramFromAdvice(msg.advice) : undefined}
+                      onGenerateProgram={msg.advice.goals?.length > 0 ? () => handleGenerateProgramFromAdvice(msg.advice) : undefined}
                       generatingProgram={routing}
                     />
                   </div>
