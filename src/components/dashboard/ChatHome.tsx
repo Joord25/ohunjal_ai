@@ -1007,20 +1007,7 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             );
           })()}
 
-          {/* 플랜 라우팅 인라인 카드 (확인 버튼 탭 후 master_plan_preview 이동 대기) */}
-          {routing && (
-            <div className="mt-12">
-              <AssistantMiniHeader locale={locale} planLabel={miniPlanLabel} />
-              <div className="inline-flex items-center gap-2.5 bg-[#F0FDF4] border border-[#2D6A4F]/20 rounded-xl px-3 py-2">
-                <svg className="w-4 h-4 animate-spin text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
-                </svg>
-                <span className="text-[12px] font-medium text-[#1B4332]">
-                  {locale === "en" ? ROUTING_LABEL_EN : ROUTING_LABEL_KO}…
-                </span>
-              </div>
-            </div>
-          )}
+          {/* 라우팅 카드 제거 — "또 짠다" UX 방지. 버튼 in-place spinner로 충분 (AdviceCard, pendingIntent 카드 모두). */}
 
           <div ref={scrollEndRef} />
         </div>

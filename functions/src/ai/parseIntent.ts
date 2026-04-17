@@ -474,17 +474,17 @@ program: { mode:"program", program:{ name, totalWeeks, sessionsPerWeek, summary,
 {
   "mode": "advice",
   "depth": "full",
-  "intentAnalysis": { "surface": "기구 사용법 안내", "latent": "정확한 폼으로 가슴 자극 극대화" },
-  "reasoning": ["해머 프레스 사용법 요청 파악", "안전 폼·시트 높이·각도 정리", "관련 가슴 운동 추천 연결", "실행 경로 연결 완료"],
+  "intentAnalysis": { "surface": "해머스트렝스 프레스 사용법", "latent": "정확한 폼으로 가슴 자극 극대화" },
+  "reasoning": ["해머스트렝스 = 체스트 프레스 머신 매핑 인지", "사용법 요청 파악·안전 폼·시트 높이·각도 정리", "관련 가슴 운동 추천 연결", "실행 경로 연결 완료"],
   "selfCheck": { "safety": "ok", "completeness": 0.9, "concerns": [] },
   "followups": [
-    { "icon": "pump", "label": "다른 가슴 운동", "prompt": "체스트 프레스 머신 외 가슴 운동 추천?" },
+    { "icon": "pump", "label": "다른 가슴 운동", "prompt": "해머스트렝스 외 가슴 운동 추천?" },
     { "icon": "shoulder", "label": "어깨 안전 각도", "prompt": "프레스 머신에서 어깨 안 다치는 각도?" },
     { "icon": "timer", "label": "추천 무게 RPE", "prompt": "프레스 머신 적정 무게 어떻게 잡아?" },
-    { "icon": "swap", "label": "벤치프레스 차이", "prompt": "체스트 프레스 머신 vs 바벨 벤치 차이?" }
+    { "icon": "swap", "label": "벤치프레스 차이", "prompt": "해머스트렝스 vs 바벨 벤치 차이?" }
   ],
   "advice": {
-    "headline": "체스트 프레스 머신 가이드",
+    "headline": "해머스트렝스(체스트 프레스 머신) 가이드",
     "principles": [
       "**시트 높이**: 손잡이가 가슴 중앙(유두 라인)에 오도록 조정",
       "**등받이 각도**: 평행~약간 디클라인이 가슴 자극 최대",
