@@ -384,7 +384,9 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
         sessionMode: initialSuggestion.sessionMode,
         targetMuscle: initialSuggestion.targetMuscle,
       };
-      await onSubmit(condition, goal, session, { skipLoadingAnim: true });
+      // 회의 62 후속 (2026-04-18 PM): 대표 지시 — 기존 채팅 플로우와 동일하게 PlanLoadingOverlay 표시.
+      // skipLoadingAnim 생략 → 로딩 오버레이 뜨면서 자연스럽게 전환 (이전엔 바로 넘어가서 버그처럼 보임).
+      await onSubmit(condition, goal, session);
     } catch (e) {
       console.error("initial CTA error:", e);
       setRouting(false);
