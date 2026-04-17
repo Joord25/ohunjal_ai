@@ -562,8 +562,8 @@ JSON만 반환. 설명 문장 금지.`;
       const TREND_PATTERN = /(2026|2025|최신|트렌드|요즘|신기능|화제|유행|new\s|latest|trend)/i;
       const useGrounding = TREND_PATTERN.test(text);
       const baseConfig = useGrounding
-        ? { temperature: 0.3, tools: [{ googleSearch: {} }] as any }
-        : { responseMimeType: "application/json" as const, temperature: 0.2 };
+        ? { temperature: 0.3, maxOutputTokens: 16384, tools: [{ googleSearch: {} }] as any }
+        : { responseMimeType: "application/json" as const, temperature: 0.2, maxOutputTokens: 16384 };
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: useGrounding
