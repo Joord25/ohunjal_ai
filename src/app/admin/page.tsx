@@ -168,6 +168,7 @@ interface AnalyticsFunnelData {
     planToComplete: number | null;
   };
   paywallTriggers?: Array<{ trigger: string; count: number }>;
+  paywallError?: string | null;
 }
 
 interface RefundRequest {
@@ -1126,8 +1127,18 @@ export default function AdminPage() {
 
                       <div className="h-px bg-gray-100" />
 
-                      {/* ③ 페이월 트리거 분포 */}
-                      {analyticsFunnel.paywallTriggers && analyticsFunnel.paywallTriggers.length > 0 && (
+                      {/* ③ 페이월 트리거 분포 — 맞춤 측정기준 미등록 시 안내 표시 */}
+                      {analyticsFunnel.paywallError ? (
+                        <div>
+                          <div className="flex items-baseline justify-between mb-2">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">페이월 트리거 분포</p>
+                            <p className="text-[9px] text-gray-400">paywall_view.trigger</p>
+                          </div>
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <p className="text-[11px] text-amber-700 leading-relaxed">{analyticsFunnel.paywallError}</p>
+                          </div>
+                        </div>
+                      ) : analyticsFunnel.paywallTriggers && analyticsFunnel.paywallTriggers.length > 0 && (
                         <div>
                           <div className="flex items-baseline justify-between mb-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">페이월 트리거 분포</p>

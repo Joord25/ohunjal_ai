@@ -116,7 +116,9 @@ export const adminAnalyticsFunnel = onRequest(
     const endDaysAgo = 0;             // 오늘까지
 
     try {
-      const [hooking, differentiation, paywall] = await Promise.all([
+      // 회의 63 후속: 각 쿼리 독립 실행 (Promise.allSettled) — paywall trigger 커스텀 측정기준
+      // 미등록 시 INVALID_ARGUMENT 로 전체 실패하던 문제 수정. 하나 실패해도 나머지는 표시.
+      const [hookingRes, differentiationRes, paywallRes] = await Promise.allSettled([
         runEventCountReport(propertyId, startDaysAgo, endDaysAgo, [
           "chat_home_initial_greeting_shown",
           "chat_home_initial_cta_click",
@@ -132,6 +134,15 @@ export const adminAnalyticsFunnel = onRequest(
         ]),
         runPaywallTriggerBreakdown(propertyId, startDaysAgo, endDaysAgo),
       ]);
+      const unwrap = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
+        r.status === "fulfilled" ? r.value : fallback;
+      const hooking = unwrap(hookingRes, [] as EventRow[]);
+      const differentiation = unwrap(differentiationRes, [] as EventRow[]);
+      const paywall = unwrap(paywallRes, [] as Array<{ trigger: string; count: number }>);
+      const paywallError = paywallRes.status === "rejected"
+        ? (paywallRes.reason instanceof Error ? paywallRes.reason.message : String(paywallRes.reason))
+        : null;
+      if (paywallError) console.warn("adminAnalyticsFunnel paywall query failed:", paywallError);
 
       // funnel 파생 지표
       const pickCount = (rows: EventRow[], name: string) => rows.find(r => r.eventName === name)?.count || 0;
@@ -166,6 +177,12 @@ export const adminAnalyticsFunnel = onRequest(
           planToComplete: pct(workoutComplete, planGenerated),
         },
         paywallTriggers: paywall,
+        // 페이월 트리거 쿼리 실패 사유 (INVALID_ARGUMENT 등) — UI 에서 설정 안내 표시
+        paywallError: paywallError
+          ? (paywallError.includes("INVALID_ARGUMENT") || paywallError.includes("does not have")
+            ? "customEvent:trigger 맞춤 측정기준 미등록 — GA4 관리 > 맞춤 정의 > 맞춤 측정기준 만들기 (범위: 이벤트, 매개변수: trigger)"
+            : paywallError)
+          : null,
       });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "unknown";
