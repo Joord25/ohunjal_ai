@@ -73,6 +73,13 @@ export interface WorkoutHistory {
   };
   exerciseTimings?: ExerciseTiming[];
   analysis?: WorkoutAnalysis;
+  // 회의 64-C: 러닝 프로그램 룰엔진 — 주간 거리 집계 + 게이트 판정용.
+  // 클라이언트 측 RunningStats와 필드명 일치 (src/constants/workout.ts).
+  runningStats?: {
+    distance: number;           // meters (실내/권한거부 시 0)
+    duration: number;           // seconds
+    avgPace?: number | null;    // sec/km
+  };
 }
 
 // User Condition Interface (Updated)
@@ -86,6 +93,9 @@ export interface UserCondition {
   // 회의 57: 채팅형 온보딩 프록시 필드. Gemini가 자연어에서 추출하여 전달.
   recentGymFrequency?: "none" | "1_2_times" | "regular";
   pushupLevel?: "zero" | "1_to_5" | "10_plus";
+  // 회의 64: 러닝 프로그램 룰엔진 — 2-way limiter 판정 + Full sub-3 게이트용.
+  runningExp6moPlus?: boolean;
+  recentInjury?: boolean;
 }
 
 // Workout Goal Interface

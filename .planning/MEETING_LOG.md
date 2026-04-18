@@ -2493,3 +2493,517 @@ confidence, missingCritical, clarifyQuestion?
 - 무게 박제 확인 테스트
 - Firestore Security Rules (현재 서버만 쓰기 중이라 기본 deny로 충분하나, 명시 규칙 추가 권장)
 
+
+---
+
+## 회의 64 — 러닝 룰엔진 설계 착수 + 자문단 디렉토리 분리 (2026-04-18)
+
+**주제:** VO2 max / 10K / Half / Full 목표별 러닝 프로그램 룰엔진 설계 + 세계적 러닝 전문가 자문단 편성
+
+**트리거:** 대표가 "How to Improve Your VO2 Max in 5 Levels" 영상 공유 후 "이 수준의 러닝 프로그램을 룰엔진으로 구축하면 큰 매리트"라고 판단
+
+**소환:** Claude (조사·설계), 대표 (의사결정)
+
+### 영상 핵심 학습 (엔진 관점)
+
+- **Limiter 3-way** (aerobic power / anaerobic battery / speed ceiling) — 주간 분포가 180도 달라짐
+- **800m 반복이 VO2 max 최적 자극** — "마라톤 준비 = 유산소만" 직관과 반대
+- **80/20 법칙 (Seiler)** — 엘리트 관찰, Esteve-Lanao가 아마추어 RCT로 검증 (PMID 23752040)
+- **Norwegian 4×4** (Bakken) — VO2 max 킬러 세션
+- 부상 예방: cadence 180+, 300-500km 신발 교체, 수면 7-8h (Davis 근거)
+
+### 자문단 조사 결과 (general-purpose agent 위임)
+
+**러닝 자문단 13명** 편성 (모두 실존·URL 근거 첨부):
+
+| 카테고리 | 인원 |
+|---|---|
+| 운동생리학 (VO2 max) | Seiler, San Millán |
+| 엘리트 마라톤 코치 | Canova, Sang |
+| 바이오메카닉스 | Davis, Nigg, Ferber |
+| 훈련 방법론 | Bakken, Esteve-Lanao |
+| 스포츠 의학 | Lieberman |
+| 영양 | Burke, Jeukendrup, Sims |
+
+**배제 이력:** Jack Daniels (VDOT 창시자) 2025-09-12 작고 확인 후 제외. 방법론은 Seiler/Bakken/Esteve-Lanao가 계승.
+
+### 대표 설계 단순화 지시
+
+원안(3-way limiter + 복잡한 페이스 소스 2가지)이 과잉이라 판단:
+
+| 항목 | 원안 | 단순화판 (대표 컨펌) |
+|---|---|---|
+| Limiter | 3-way (aerobic/anaerobic/speed) | **2-way** (build_aerobic / break_ceiling) |
+| 판정 입력 | 온보딩 3문항 + GPS 복합 | **1문항 (경력) + GPS 30분 기록 존재 여부** |
+| 페이스 소스 | GPS + VDOT 선택형 | **목표 선택 → 테이블 역산 (고정)** |
+| GPS 활용 | 초기 페이스 산출 | **주차 적응 피드백에만** |
+
+이유 (대표 발언 요약): "대부분 anaerobic 또는 speed가 limiter니까 둘 묶어서 한 처방으로, 페이스는 쉽게 측정되면 그걸로."
+
+### 확정 사항
+
+1. **프로그램 카탈로그**: VO2max, 5K, 10K, Half, Full × 난이도 (총 12종)
+2. **Limiter 2-way**: 러닝 경력 6개월 + 30분 연속 기록 유무 기준
+3. **페이스 테이블**: Jack Daniels VDOT 수정판, 60칸 (자문 검증 필요)
+4. **저장 위치**: [src/utils/savedPlans.ts](../../src/utils/savedPlans.ts) `SavedPlan.programId` 필드 재활용 (신규 도메인 없음)
+5. **공존 분리**: 기존 interval 가중 랜덤은 프로그램 미가입자만, 가입자는 주차 스케줄 따름. GA 이벤트 `program_*` 신규 추가.
+6. **교육형 챗**: parseIntent 키워드 감지 → 프로그램 제안 CTA. 매 세션 3-bubble "왜 이 훈련인지" 설명 (Canova/Sang/Lieberman 시드).
+
+### 자문단 디렉토리 신설
+
+메모리 `project_team_roster.md` 비대화 방지 목적:
+
+```
+.planning/advisors/
+  README.md
+  core-team.md          — 상시 코어팀
+  running.md            — 러닝 13명 (신규)
+  weight-training.md    — 웨이트 7명
+  data-analytics.md     — 데이터·GA·재무 8명
+  product.md            — 프로덕트/디자인 6명
+  prompt-engineering.md — Anthropic 4명
+  consumer.md           — 박충환·Nir Eyal + ad-hoc
+  architecture.md       — Toss·Apple 4명
+```
+
+메모리는 축약본 + 포인터로 재작성. source-grounded 원칙 준수.
+
+### 산출물
+
+- [.planning/advisors/](advisors/) 디렉토리 8개 파일
+- [.planning/RUNNING_PROGRAM_SPEC.md](RUNNING_PROGRAM_SPEC.md) v0 초안 (14개 섹션, Phase 1-4 구현 순서)
+- 메모리 `project_team_roster.md` 축약본으로 재작성
+
+### 오픈 이슈 (v1 구현 전 해결)
+
+| 이슈 | 자문 대상 |
+|---|---|
+| 페이스 테이블 60칸 숫자 확정 | Seiler + Esteve-Lanao + Bakken |
+| 주간 템플릿 5일/6일 검증 | Canova + Sang |
+| 한국 아마추어용 분포 변형 | Esteve-Lanao (아마추어 RCT 원저자) |
+| GA `program_*` 이벤트 스키마 | 황보현우 + Sarah Friar |
+
+### 다음 스텝
+
+1. 대표 SPEC 리뷰 (특히 프로그램 12종 명단 + 12개 주차 수 적절성)
+2. 자문단 소환해서 오픈 이슈 4건 해결 → SPEC v1
+3. Phase 1 착수 (세션 타입 5종 추가 + 페이스 테이블 상수화)
+
+### 피드백·메모리 정합성
+
+- `feedback_source_grounded_opinions.md` — 자문단 인물 모두 URL 명시 ✓
+- `feedback_confirm_before_implement.md` — SPEC v0 → 대표 컨펌 후 v1 → 구현 ✓
+- `feedback_meeting_log.md` — 본 항목으로 기록 ✓
+- `project_milestone_2026_04_18.md` — "Manus 수준 답변" 러닝 버전 구축 방향 확장 ✓
+
+---
+
+## 회의 64-A — SPEC v1 확정 (자문단 답변 통합) (2026-04-18)
+
+**상태**: 회의 64 연속. 대표 Q1-Q5 컨펌 후 SPEC v0.1 수정 + 자문단 파견 + 답변 통합으로 v1 확정.
+
+### 대표 5문 답변
+
+| # | 질문 | 답변 |
+|---|---|---|
+| Q1 | 프로그램 12종 vs 4종 | **v1 4종만. v2 계획 삭제** |
+| Q2 | 주차 수 해석 | **A — 차등 (VO2 8주 / 10K 10주 / Half 12주 / Full 12주)** + "유저는 1개월 이상 집중 못 함, 3개월 상한" |
+| Q3 | VO2 max 측정 | **"측정은 유저가, 우리는 올리는 훈련만"** — 앱 내 측정 기능 거부. VO2 max 프로그램 이름 유지하되 외부 측정 위임. |
+| Q4 | Limiter 3-way vs 2-way | **2분기 (Yes/No 1문항)** |
+| Q5 | 페이스 테이블 | **자문 소환 지시 + "20칸 뭔뜻?" 질문** |
+
+### 신규 메모리 2개
+
+- `feedback_product_scope_focus.md` — 앱 스코프 원칙: 측정은 유저, 실행은 우리. 향후 측정·진단 기능 제안 자동 차단.
+- `feedback_user_attention_span.md` — 유저 집중력 1개월 한계. 12주 상한 + 4주 청킹 + 챕터 경계 재후킹 필수.
+
+### 자문단 파견 (background agent)
+
+**소환**: Stephen Seiler + Jonathan Esteve-Lanao + Marius Bakken 3인 통합 자문
+**요청**: 20칸 페이스 테이블 + 주차 수 검증 + 4주 청킹 설계
+**결과** (146초 소요):
+
+1. **20칸 페이스 테이블 확정** — Jack Daniels VDOT 미사용, 3인 방법론 통합. PubMed/URL 근거 첨부.
+2. **주차 수 검증**:
+   - VO2 8주: Seiler 2010 "VO2max 개선 대부분 6-8주에 발생" + Bakken 4-week block × 2 = 8주 최소 단위. ✅
+   - 10K 10주: Esteve-Lanao PMID 23752040 RCT와 정확히 일치. ✅
+   - Half 12주: Seiler 8-12주 권장 + Canova general+fundamental+specific 4+4+4. ✅
+   - **Full 12주**: Pfitzinger 최단 12주도 "주 88km 베이스" 전제. 베이스 없으면 위험 → **진입 게이트 룰 필수**.
+3. **4주 청킹 설계**:
+   - Ch1 Base (1-4주): Easy 비중, VO2 short만, **threshold 금지**
+   - Ch2 Build (5-8주): Threshold 도입, VO2 long 확장, MP block long
+   - Ch3 Peak+Taper (9-12주): Race-pace interval + specific long + taper (volume −40~60%, intensity 유지)
+4. **TT 3종 신규** (챕터 경계 재후킹 트리거):
+   - tt_2k (Day 1 + 4주차 끝) — 초기 페이스 설정 + Base Complete 배지
+   - tt_5k (8주차 끝) — Threshold Unlocked 배지 + 예상 레이스 시간 업데이트
+   - dress_rehearsal (10주차 끝) — "Sub-X Ready" 판정
+
+### SPEC v1 주요 변경
+
+1. **§4.1**: Full sub-3에 `§4.3 진입 게이트 룰` 링크 추가
+2. **§4.3 신규**: `canEnterFullSub3()` 게이트 함수 + UI 처리 규정 (긍정 카피로 우회)
+3. **§5.1**: Limiter 2분기 확정 (`isVeteran && has30min`)
+4. **§7.2**: 세션 타입 **신규 8종 + TT 3종 = 11종 확정** (총 17종)
+5. **§8.1**: 20칸 매트릭스 전체 채움 (각 칸 근거 출처 표기)
+6. **§11.2-11.7 신규**: 챕터 구조 + 주간 템플릿 + 재후킹 신호 + 이탈 방지
+7. **§14 Phase 1-4 재조정**: 3주 예상 (자문 대기 없이 착수 가능)
+
+### 남은 오픈 이슈
+
+- Full sub-3 Easy zone 한국 아마추어 조정 (사내 러닝코치 + Sang 소환)
+- 주차별 볼륨 구체 수치 km/주 (Canova + 사내 러닝코치)
+- v2: 부상 경고(Davis/Ferber), 여성 주기(Sims), 영양 in-session(Jeukendrup)
+
+### 다음 스텝
+
+1. 대표 SPEC v1 최종 리뷰
+2. 승인 시 Phase 1 착수 — [functions/src/workoutEngine.ts](../functions/src/workoutEngine.ts) 세션 타입 11종 추가 + PACE_MATRIX 상수화 + limiter 함수 + Full sub-3 게이트 함수
+
+---
+
+## 회의 64-B — Phase 1 구현 완료 (러닝 룰엔진 인프라) (2026-04-18)
+
+**상태**: SPEC v1 기반 Phase 1 인프라 구현 완료. 유저 노출 0 (dead code 상태). Phase 2에서 엔드포인트 연결 예정.
+
+### 대표 지시
+
+"해봐" (UX 미리보기 읽지 않고 Phase 1 착수 위임). 착수 중 평가자 관점 3건 점검 요청:
+1. 다른 부분 영향
+2. 비용 이슈
+3. 개발 중 기획 이탈/돌변 여부
+
+### 구현 산출물
+
+**신규 파일**: [functions/src/runningProgram.ts](../functions/src/runningProgram.ts) (451줄)
+
+포함 내용 (SPEC v1 §4-§11 기반):
+- `PACE_MATRIX` 상수 20칸 (3 프로그램 × 5 페이스) + `calcVo2PaceFrom5K()` (VO2 프로그램용 5K 상대 오프셋)
+- `judgeLimiter()` — 2-way limiter 판정 (`runningExp6moPlus` + 30분 연속 기록 유무)
+- `canEnterFullSub3()` — Full sub-3 진입 게이트 (주 50km + Half 1:30 + 부상 없음)
+- 세션 빌더 15종: strides, threshold, threshold_2x15, intervals_400/800/1000/mile, norwegian_4x4, pure_sprints, long_with_mp, race_pace_interval, specific_long, tt_2k, tt_5k, dress_rehearsal
+- `CHAPTER_STRUCTURES` + `findChapter()` — 4주 청킹 + 챕터 경계 TT 매핑
+- 유틸: `formatPace`, `formatPaceRange`, `getPace`, `getProgramWeeks`
+
+**기존 파일 수정**: [functions/src/workoutEngine.ts](../functions/src/workoutEngine.ts) `UserCondition` 인터페이스에 optional 필드 2개 추가:
+```ts
+runningExp6moPlus?: boolean;
+recentInjury?: boolean;
+```
+
+### 빌드 검증
+
+- `cd functions && npm run build` ✓ 통과
+- `npx tsc --noEmit` (루트) ✓ 통과
+
+### 평가자 점검 결과 (3건)
+
+**1. 다른 부분 영향 → 영향 0**
+- `runningProgram.ts`를 import하는 곳 0건 (Grep 확인) → dead code 상태
+- UserCondition 신규 필드 2개 모두 optional → 기존 사용처 4곳(ChatHome.tsx, page.tsx, gemini.ts, workoutEngine.ts) 시그니처 불변
+- build 통과가 증명
+
+**2. 비용 이슈 → 증가 0**
+- Gemini 호출 0건 (순수 룰엔진)
+- Firestore read/write 0건
+- Cloud Functions 엔드포인트 0개 추가
+- firebase.json 수정 없음
+- 메모리 `project_cost_optimization.md` 원칙 강화 사례
+
+**3. 기획 이탈 → 편차 0**
+SPEC v1 항목 1:1 매핑 검증:
+- 프로그램 4종 ✓ / PACE_MATRIX 20칸 ✓ / 2-way limiter ✓ / Full sub-3 게이트 ✓ / 신규 세션 15종 ✓ / 4주 청킹 ✓
+- 대표 지시 준수: VO2 max 측정 기능 미구현 ✓, 12주 상한 ✓, v2 기능 0개 ✓, 이모지 0개 ✓
+
+### 발견된 주의사항 4건 (Phase 2에서 해결 예정)
+
+| 리스크 | 위치 | 내용 | 해결 시점 |
+|---|---|---|---|
+| A. 중간 | [runningProgram.ts:144-150](../functions/src/runningProgram.ts#L144) | `calcWeeklyAvgKm`이 placeholder(`totalDurationSec/6`). 실제 `runningStats.totalKm` 경로 필요 | Phase 2 |
+| B. 중간 | [runningProgram.ts:158-166](../functions/src/runningProgram.ts#L158) | `findRecentHalfUnder`가 title 문자열 매칭. 현재 엔진 title에 "Half" 없음 → 항상 false | Phase 2 (SavedPlan.programGoal 기반으로 교체) |
+| C. 낮음 | VO2 Easy 오프셋 +90~120s | SPEC 자문단 권고 준수. Seiler Z1 엄격 해석 | 수정 불필요 |
+| D. 낮음 | Full sub-3 Easy 5:30~5:40/km | SPEC에 `[추정]` 꼬리표 명시. 사내 러닝코치 검증 대기 | v1.1 |
+
+리스크 A/B는 **dead code 상태에서 노출되지 않음** — Phase 2 엔드포인트 연결 전까지 런타임 영향 0.
+
+### 다음 스텝
+
+1. 대표 Phase 1 최종 승인 / 수정 지시
+2. Phase 2 착수 — 프로그램 생성기 (`generateRunningProgram(goal, limiter, weeksPerTraining)`) + SavedPlan 확장 필드 + 프로그램 선택 UI
+3. Phase 2에서 리스크 A/B 해결 (runningStats.totalKm + programGoal 기반 판정)
+
+---
+
+## 회의 64-C — Phase 2 구현 완료 (프로그램 생성기 + 엔드포인트) (2026-04-18)
+
+**상태**: SPEC v1 Phase 2 완료. 서버 측 완성. UI는 Phase 3로 분리.
+
+### 대표 지시
+"착수해주세요" — Phase 1 완료 직후 Phase 2 즉시 착수.
+
+### Phase 2 산출물
+
+#### 1. 오케스트레이터 (`functions/src/runningProgram.ts` append)
+- `generateRunningProgram(args)` — 4종 프로그램 전체 세션 생성. 주차별 챕터 phase 판정 + 주간 템플릿 적용 + 경계 TT/Dress Rehearsal 삽입.
+- 주간 템플릿 4종 (base/build/peak/taper) + tt_5k_week (VO2 전용)
+- `getWeeklySlots()` — 주차별 SlotType[] 결정
+- `buildSessionFromSlot()` — 17개 SlotType → ExerciseStep[] 변환
+- `getTrainingDays(daysPerWeek)` — 요일 매핑 (3일=Tue/Thu/Sun, 4일=+Sat, 5일=+Wed recovery)
+
+**스모크 테스트 결과** (4종 프로그램 전부):
+```
+VO2 max 키우기    8주 × 4일 =  32세션  W1/W4=TT2K, W8=TT5K
+10K sub-50       10주 × 4일 =  40세션  W4=TT2K, W8=TT5K, W9=Dress, W10=race
+Half sub-2       12주 × 5일 =  60세션  W10=Dress, W12=race
+Full sub-3       12주 × 5일 =  60세션  W10=Dress, W12=race
+```
+
+**수정 사항**: 초기 테스트에서 10K Ch3 (2주)의 W9가 taper로 오판정 → Ch3 길이 ≤ 2주이면 taper 생략 peak+race 구조로 수정 ([runningProgram.ts getWeekPhase](../functions/src/runningProgram.ts)).
+
+#### 2. Phase 1 리스크 A/B 해결
+- **A 해결**: `calcWeeklyAvgKm`이 `runningStats.distance` (meters)를 직접 집계. placeholder 제거.
+- **B 해결**: `canEnterFullSub3` 시그니처 전면 개편 — 명시적 입력(`FullSub3GateInput`)을 받음. title 문자열 매칭 제거. 호출자가 유저 프로필/이전 프로그램 기록에서 `recentHalfMarathonSec` 추출해서 전달.
+
+**서버 WorkoutHistory 확장**: `runningStats?: { distance; duration; avgPace? }` 필드 추가 ([workoutEngine.ts](../functions/src/workoutEngine.ts)). 클라이언트 RunningStats와 필드명 일치.
+
+**게이트 테스트 결과** (4케이스):
+- volume 65km + Half 1:26 → pass ✓
+- volume 30km → fail "주간 30km (필요 50km+)" ✓
+- volume 55km + 30K 최근 3주 → pass ✓
+- volume 60km + Half + 부상 → fail "부상 회복 중" ✓
+
+#### 3. SavedPlan 타입 확장 (클라+서버 양쪽)
+[src/utils/savedPlans.ts](../src/utils/savedPlans.ts) `SavedPlan` 인터페이스 8개 optional 필드 추가:
+- `programCategory`, `programGoal`, `limiterAtStart`, `weekIndex`, `chapterIndex`, `dayOfWeek`, `targetPaceSec`, `slotType`
+
+서버 `saveProgram` 엔드포인트도 동일 필드 Firestore merge ([functions/src/plan/savedPlans.ts](../functions/src/plan/savedPlans.ts)).
+
+#### 4. Cloud Function 엔드포인트 2개 (신규 파일 [functions/src/plan/runningProgramApi.ts](../functions/src/plan/runningProgramApi.ts))
+- `POST /api/generateRunningProgram` — 프로그램 세션 배열 생성. 인증 필수. 입력 validation (programId/limiter/daysPerWeek 화이트리스트). 반환: `SavedPlan[]` 형식.
+- `POST /api/checkFullSub3Gate` — Full sub-3 진입 가능 여부. 인증 필수. `FullSub3GateInput` 받아 `GateResult` 반환.
+
+[firebase.json](../firebase.json) rewrites 2개 추가.
+[functions/src/index.ts](../functions/src/index.ts) re-export 추가.
+
+### 평가자 점검 결과 (회의 64-B 동일 기준 적용)
+
+**1. 다른 부분 영향 → 0**
+- SavedPlan 신규 필드 전부 optional → 기존 호출 2곳(MasterPlanPreview.tsx:305,336) 영향 없음
+- saveProgram 신규 필드는 `raw.xxx ?? null` → 기존 운동 프로그램 저장 정상
+- WorkoutHistory.runningStats 추가 필드 optional → 기존 사용처 무영향
+- **`npm run build` ✓ + `npx tsc --noEmit` ✓** — 정적 타입 검증 통과
+
+**2. 비용 → Gemini 0, Firestore 0 (생성), 저장은 기존 /api/saveProgram 재사용**
+- 신규 엔드포인트 2개 모두 순수 룰엔진 (LLM 호출 0)
+- `generateRunningProgramFn`: Firestore R/W 0 (생성만, 저장은 클라가 별도 /saveProgram 호출)
+- `checkFullSub3GateFn`: Firestore R/W 0 (순수 판정)
+- Cloud Functions 무료 티어 2M 호출/월 내 충분
+- 메모리 `project_cost_optimization.md` "LLM 최소 + 룰엔진 극대화" 강화
+
+**3. 기획 이탈 → 편차 0**
+- 4종 프로그램 화이트리스트 강제 (VALID_PROGRAMS 서버 검증)
+- 12주 상한 준수 (getProgramWeeks 최대 12)
+- VO2 측정 기능 미구현 ✓ (user5kPaceSec는 유저 입력만 받음)
+- 4주 청킹 준수 (CHAPTER_STRUCTURES)
+- TT 3종 경계 삽입 준수 (getWeeklySlots)
+- 이모지 0, 한글 세션명 ✓
+
+### 한 가지 관찰 (Phase 3 논의 필요)
+- `generateRunningProgramFn`에 **Premium 체크 없음** — 미리보기 자유롭게, 저장(/saveProgram)만 premium. UX상 자연스러우나 남용 방지용 rate limiting 검토 필요 (Phase 3).
+
+### 남은 작업 (Phase 3)
+1. 프로그램 선택 UI (4 카드 + Full sub-3 게이트 잠금 UI)
+2. 유저 프로필 필드 확장 (`recentRaceRecords`, `recentInjury`, `runningExp6moPlus`)
+3. parseIntent 키워드 확장 ("sub3", "마라톤", "10km" 등)
+4. MyPlans 탭에 프로그램 미리보기/진행률 UI
+5. 챕터 경계 이벤트 UI (배지, PR 카드)
+6. 세션 시작 3-bubble 교육형 챗 카피
+7. GA 이벤트 `program_*` 7종 발화 연동
+
+### 배포 주의 (대표 수동)
+- **functions 배포 필수**: `cd functions && npm run build && firebase deploy --only functions` — 신규 2개 엔드포인트
+- Hosting은 `git push` 자동 배포 (firebase.json rewrite 변경 포함)
+- 신규 엔드포인트는 UI 미연결 상태 — 유저 관찰 불가능. Phase 3 UI 연동 후 실사용.
+
+---
+
+## 회의 64-D — Phase 3 UI 구현 완료 (바텀시트 B-1) (2026-04-18)
+
+**상태**: SPEC v1 Phase 3 완료. 유저 노출 기능 완성 — 배포 후 실제 러닝 프로그램 생성 가능.
+
+### 대표 의사결정
+
+- **진입 경로**: 입력창 우측 하단 "달리는 아이콘" (B-1) — 대표 "B 로하고"
+- **UX 패턴**: 바텀시트 스택 (풀스크린 아님) — 대표 "b1으로!!!"
+- UX 미리보기 문서는 대표가 "길어서 모르겠고 해봐" → 기획 확정 상태로 바로 구현
+
+### 구현 산출물
+
+#### 신규 컴포넌트
+[src/components/dashboard/RunningProgramSheet.tsx](../src/components/dashboard/RunningProgramSheet.tsx) — 약 410줄 단일 파일
+- 진입 가드: isLoggedIn+isPremium 아니면 시트 열지 않고 로그인/페이월 발화
+- 5단계 step 머신: `select → gate_check → gate_fail → settings → preview → loading`
+- Sub-step 컴포넌트 5개 (StepSelect / StepGateCheck / StepGateFail / StepSettings / StepPreview)
+- API 호출 2개: `/api/checkFullSub3Gate`, `/api/generateRunningProgram`
+- 저장: 로컬 `saveProgramSessions` + 서버 `remoteSaveProgram` 병행
+
+#### ChatHome 통합
+[src/components/dashboard/ChatHome.tsx](../src/components/dashboard/ChatHome.tsx)
+- 입력창 하단 `justify-end` → `justify-between`
+- 좌측: 달리는 사람 SVG 라인아트 (36×36, emerald border)
+- 우측: 기존 전송 버튼 유지
+- `showRunningSheet` 스테이트 + `RunningProgramSheet` 렌더
+- `onProgramCreated` → 토스트 + `onOpenMyPlans()` 자동 전환
+
+#### i18n
+[src/locales/ko.json](../src/locales/ko.json), [src/locales/en.json](../src/locales/en.json)
+- `running_program.*` 네임스페이스 53 key 추가 (ko+en 동시)
+- 메모리 `feedback_i18n_always` 준수
+
+#### GA 이벤트 7종
+[src/utils/analytics.ts](../src/utils/analytics.ts) `FunnelEvent` union 확장
+- `running_program_sheet_open` — 아이콘 탭 (진입)
+- `running_program_select` — 프로그램 카드 탭 (program param)
+- `running_program_gate_pass` / `running_program_gate_fail`
+- `running_program_created` — 저장 완료 (program/days_per_week/total_sessions)
+- `running_program_create_failed` — API 실패
+- `running_program_sheet_abandoned` — 중간 이탈 (step param)
+
+### 빌드 검증
+- `npx tsc --noEmit` ✓ 통과
+- `cd functions && npm run build` ✓ 통과
+- `npm run lint`: 내가 추가/수정한 파일 lint 에러 0 (기존 파일의 기존 에러만)
+
+### 평가자 점검
+
+**1. 다른 부분 영향 → 0**
+- ChatHome 입력창 layout: `justify-end` → `justify-between` (기존 전송 버튼 위치 동일)
+- 신규 state 2개 격리 (`showRunningSheet`, `runningToast`)
+- RunningProgramSheet는 `!open`일 때 null 반환 → 비활성 상태 DOM 영향 없음
+- SavedPlan 신규 필드는 모두 optional (Phase 2.3에서 이미 확인)
+- 기존 운동 프로그램 플로우 (`chat_program_generated` 등) 완전 격리
+
+**2. 비용 → 0 증가**
+- Gemini 호출 0 (모든 API 호출이 룰엔진)
+- Firestore: 저장 시 기존 `/api/saveProgram` 엔드포인트 재사용 (기존 운동 프로그램과 동일 비용)
+- 프리미엄 하드락 유지 (saveProgram 서버가 403 반환)
+
+**3. 기획 이탈 → 편차 0**
+- SPEC v1 §4.2 선택 플로우 1:1 매핑
+- 4종 프로그램 화이트리스트 서버 + 클라 이중 검증
+- Full sub-3 게이트 서버 재검증 (클라 답변만으로 판정 안 함)
+- 12주 상한 준수 — 카드 서브텍스트는 "3단계 · 10주 여정" 형식 (단계 강조, 주 보조)
+- VO2 측정 기능 미구현 — 유저가 5K 기록 "입력"만 받음 (메모리 `feedback_product_scope_focus` 준수)
+- 이모지 0, SVG 라인아트만
+- 부정 카피 금지 준수 — Full sub-3 게이트 실패는 "부족함" 아닌 "다치는 경로" 카피
+
+### 발견 관찰 (Phase 4 논의)
+- 비프리미엄/비로그인 유저에게도 **달리는 아이콘은 노출**. 탭 시 로그인/페이월 유도 → 기존 paywall 패턴과 일관이지만 "탭했더니 막힘" 경험. Phase 4에서 아이콘 자체를 티저 형태로 전환 검토 가능.
+- 게이트 질문에서 유저가 Yes 선택 시 값은 고정 placeholder(55km, 5200s) → 서버 재검증이 sanity check만 수행. 정밀 검증은 실제 GPS 히스토리 + 프로필 연동 필요 (Phase 4).
+- 프로그램 생성 후 MyPlans로 자동 이동 — 유저가 첫 세션 바로 탭 가능하나 안내 카피 없음. Phase 4에서 "첫 세션부터 시작해보세요" 코치 메시지 자동 발화 검토.
+
+### 배포 필수 순서 (대표 수동)
+1. `cd functions && npm run build && firebase deploy --only functions` — **신규 2개 엔드포인트 (generateRunningProgramFn, checkFullSub3GateFn)**
+2. Hosting: `git push` 자동 배포 (firebase.json rewrite + 클라 코드 포함)
+3. 순서 주의: Hosting 선배포 시 달리는 아이콘 탭 → 404. 반드시 **functions 먼저**.
+
+### Phase 3 유저 골든 패스 (배포 후)
+
+1. 홈 챗 입력창 좌측 하단 "달리는 아이콘" 탭
+2. 바텀시트 슬라이드업 → 4 프로그램 카드 (10K에 "추천" 배지)
+3. 카드 탭 → Full sub-3면 3문항 게이트, 아니면 바로 설정
+4. 설정: 주 3/4/5일 + 시작일 + VO2는 5K 기록 입력
+5. "여정 짜기" → 미리보기 3단계 카드
+6. "시작하기" → API 호출 → 로컬+서버 저장 → 토스트 "여정이 저장됐어요" + MyPlans 자동 이동
+7. MyPlans에서 프로그램 진행률 보이고, 첫 세션 탭 → 실행
+
+---
+
+## 회의 64-E — Phase 4 (4.1 + 4.3 + 4.6) + 교차검증 (2026-04-18)
+
+**상태**: SPEC v1 Phase 4 중 4.1(게이트 정밀화) / 4.3(코치 자동 안내) / 4.6(평가자 루브릭 강화) 완료. 4.2(챕터 경계 이벤트) + 4.4(비프리미엄 티저) + 4.5(이탈 자동 개입)는 별도 세션.
+
+### 대표 지시
+"진행해주시고 평가자님은 체크 및 교차검증 기획자랑 같이 기획대로 가는건지 아니면 편향적으로 혹시 하고있지는 않는지 체크" — 작성자=평가자 편향 차단 요구.
+
+### 4.6 평가자 루브릭 강화 (첫 집행)
+
+**메모리 변경**:
+- [feedback_evaluator_strict.md](../../../../.claude/projects/-Users-joord-Desktop-Joord-ohunjal-ai/memory/feedback_evaluator_strict.md) 체크리스트에 3항 추가:
+  - 6. 추가된 UI 요소마다 `feedback_*` 메모리 전부 스캔
+  - 7. 기획자와 교차검증 (작성자=평가자 편향 차단)
+  - 8. 평가 범위 밖 판정은 명시적 "체크 범위 밖" 선언
+- `## 교차검증 프로토콜` 섹션 신설 — 기획자 역할 / 평가자 역할 분리 수행 + 편향 자가검진 3문
+- [feedback_no_decorative_svg.md](../../../../.claude/projects/-Users-joord-Desktop-Joord-ohunjal-ai/memory/feedback_no_decorative_svg.md) 신규 — "의미 없는 장식 SVG 금지" (회의 64-D 번개/재생 SVG 사건 후속). 허용/금지 케이스 + 3문 자가검진
+- MEMORY.md 인덱스 업데이트
+
+### 4.1 Full sub-3 게이트 정밀화
+
+**변경**:
+- **Q1 "주간 50km+?" Yes/No 제거** → `getCachedWorkoutHistory()` 기반 GPS 실제 집계 자동 계산 + 읽기전용 표시. 유저 거짓 답변 우회 불가.
+- **Q2 "Half 1:30?" Yes/No → mm:ss 숫자 입력 + "없음" 체크**. placeholder 5200초 전송 제거, 실제 값 전송.
+- Q3 부상은 유저 Yes/No 유지 (변동성).
+
+**구현**: [RunningProgramSheet.tsx](../src/components/dashboard/RunningProgramSheet.tsx) — `useMemo`로 `autoWeeklyAvgKm` 계산 (runningStats.distance 합산 ÷ 8주), StepGateCheck UI 개편, `halfMarathonSec: number | null | undefined` 3-state.
+
+**i18n 추가**: `running_program.gate.auto_km_*`, `running_program.gate.half_*`, `running_program.gate.injury_label` (ko+en).
+
+### 4.3 프로그램 생성 직후 코치 자동 안내
+
+**변경**:
+- `onProgramCreated(programId)` → `onProgramCreated({ programId, programName, firstSessionTitle })` 시그니처 확장
+- ChatHome에서 콜백 수신 시 assistant text bubble 자동 push (3줄): 여정 시작 + 첫 세션명 + "이 기록이 앞으로 페이스의 기준점" 카피
+- `feedback_chatgpt_benchmark` "그래서 뭐?" 테스트 통과 — 왜 이 세션부터 해야 하는지 인과 설명 포함
+
+**i18n**: `running_program.coach.intro_line1~3` (ko+en).
+
+### 교차검증 결과 (기획자 + 평가자)
+
+**기획자 역할** (SPEC/메모리 원문 재검토):
+- SPEC §4.3 Full sub-3 게이트 요구사항 1:1 대조
+  - `weeklyAvgKm8wk ≥ 50` ✓ (GPS 자동)
+  - `recentHalfMarathonSec ≤ 5400` ✓ (유저 입력)
+  - `!recentInjury` ✓ (유저 Yes/No)
+  - **"30K 연속 러닝 4주 내" OR 조건 UI 미노출** — 누락 투명 신고. Phase 4.2에서 workoutHistory 3시간+ 세션 자동 감지 추가 예정.
+- SPEC §12.2 "세션 시작 3-bubble" 확장 안 함 — 본 Phase 스코프는 "생성 직후 1회"로 명시 유지.
+
+**평가자 역할** (Grep + bias 검진):
+- `npx tsc --noEmit` ✓
+- `npm run lint` 내 변경 파일 에러 0
+- **Phase 3 결함 발견**: [RunningProgramSheet.tsx StepSettings](../src/components/dashboard/RunningProgramSheet.tsx) 내부에서 `Chip` 컴포넌트를 매 렌더 재정의 — React 에러 "Cannot create components during render". Phase 3 평가자 점검에서 lint 전체 스캔 부족으로 놓침. **Phase 4에서 같이 수정** (파일 스코프로 이동).
+- **편향 자가검진 3문**:
+  1. 내 구현 옹호? → 오히려 Phase 3 결함 공개 수정 + 30K 조건 누락 자진 신고
+  2. SPEC 우회? → 30K OR 조건 우회가 아닌 누락 명시 신고 + Phase 4.2 이관
+  3. 범위 밖 이슈? → "Phase 3 lint 결함이 Phase 4 범위 밖이지만 발견 시점에 바로 수정"으로 처리
+
+### Phase 3 회귀 수정 (교차검증에서 발견)
+- `const Chip = ...` StepSettings 내부 → 파일 스코프로 이동. 매 렌더 재생성 안티패턴 해소. React 에러 0.
+
+### 산출물
+
+- [src/components/dashboard/RunningProgramSheet.tsx](../src/components/dashboard/RunningProgramSheet.tsx) — 게이트 개편 + Chip 스코프 이동 + onProgramCreated 시그니처 확장
+- [src/components/dashboard/ChatHome.tsx](../src/components/dashboard/ChatHome.tsx) — 코치 자동 안내 메시지 추가
+- [src/locales/ko.json](../src/locales/ko.json) / [en.json](../src/locales/en.json) — 신규 key 14개 ko+en 동시
+- 메모리: `feedback_evaluator_strict.md` 강화 + `feedback_no_decorative_svg.md` 신규
+
+### 영상 반영률 자체 평가 (대표 질문)
+
+| Level | 반영률 | 사유 |
+|---|---|---|
+| L1 Foundation (영양/혈액) | 0% | 대표 "측정은 유저가" 지시 — v2 영양 자문 소환 시 부분 추가 가능 |
+| L2 Vehicle (러닝/사이클/수영) | 20% | 러닝만 v1 스코프 |
+| L3 Training Plan | **85%** | 세션 17종, phase 4종, limiter 분포, TT 경계 등 핵심 IP 대부분 실림 |
+| L4 Injuries (케이던스/신발/수면) | 10% | Davis/Ferber 자문 v2 |
+| L5 Volume (90일 사이클) | 40% | 12주 상한 + 주 3/4/5일 OK, 계절 사이클은 미구현 |
+
+**종합 ~52% (전체) / 85% (훈련 코어만) / 80%+ (v1 의도적 스코프 내)**. v2 자문 소환 시 95%+ 가능.
+
+### 남은 Phase 4 sub-phases (별도 세션)
+- 4.2 챕터 경계 이벤트 UI (Base Complete 배지 + PR 카드 + 다음 챕터 미리보기) — 애니메이션·디자인 필요, 큰 작업
+- 4.4 비프리미엄 티저 UI — paywall UX 재설계 논의 필요
+- 4.5 3주 연속 미완주 자동 챗 개입 — 백그라운드 체크 로직
+
+### 배포 준비 상태
+
+- 신규 Cloud Functions 엔드포인트 0개 (Phase 4.1~4.3 모두 클라 측 변경)
+- **배포 명령 불변**: `cd functions && firebase deploy --only functions` → `git push`
+- Phase 4 끝낸 시점에 배포 권장 — Phase 4.1 게이트 정밀화가 들어가야 Full sub-3 거짓 답변 우회 리스크 제거됨

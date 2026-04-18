@@ -181,6 +181,15 @@ export const saveProgram = onRequest(
           lastUsedAt: null,
           useCount: 0,
           updatedAt: FieldValue.serverTimestamp(),
+          // 회의 64-C: 러닝 프로그램 룰엔진 필드 (strength 프로그램이면 모두 null)
+          programCategory: raw.programCategory ?? null,
+          programGoal: raw.programGoal ?? null,
+          limiterAtStart: raw.limiterAtStart ?? null,
+          weekIndex: raw.weekIndex ?? null,
+          chapterIndex: raw.chapterIndex ?? null,
+          dayOfWeek: raw.dayOfWeek ?? null,
+          targetPaceSec: raw.targetPaceSec ?? null,
+          slotType: raw.slotType ?? null,
         }, { merge: true });
       }
       await batch.commit();

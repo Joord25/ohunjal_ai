@@ -58,7 +58,9 @@
       { "source": "/api/markSavedPlanUsed", "function": { "functionId": "markSavedPlanUsed", "region": "us-central1" } },
       { "source": "/api/generateProgramSessions", "function": { "functionId": "generateProgramSessions", "region": "us-central1" } },
       { "source": "/api/saveProgram", "function": { "functionId": "saveProgram", "region": "us-central1" } },
-      { "source": "/api/deleteProgram", "function": { "functionId": "deleteProgram", "region": "us-central1" } }
+      { "source": "/api/deleteProgram", "function": { "functionId": "deleteProgram", "region": "us-central1" } },
+      { "source": "/api/generateRunningProgram", "function": { "functionId": "generateRunningProgramFn", "region": "us-central1" } },
+      { "source": "/api/checkFullSub3Gate", "function": { "functionId": "checkFullSub3GateFn", "region": "us-central1" } }
     ]
   },
   "functions": {

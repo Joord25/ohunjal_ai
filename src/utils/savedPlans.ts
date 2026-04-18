@@ -13,6 +13,15 @@ export interface SavedPlan {
   totalSessions?: number;
   programName?: string;
   completedAt?: number | null;
+  /** 회의 64-C: 러닝 프로그램 룰엔진 전용 필드 */
+  programCategory?: "running" | "strength";
+  programGoal?: string;                    // RunningProgramId e.g. "10k_sub_50"
+  limiterAtStart?: "build_aerobic" | "break_ceiling";
+  weekIndex?: number;                       // 1-based
+  chapterIndex?: 1 | 2 | 3;
+  dayOfWeek?: number;                       // 1-7 (ISO: 월=1)
+  targetPaceSec?: number | null;            // 세션 목표 페이스 (초/km)
+  slotType?: string;                        // "easy", "threshold_2x15", "tt_2k", "dress_rehearsal" 등
 }
 
 const STORAGE_KEY = "ohunjal_saved_plans";

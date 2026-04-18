@@ -24,6 +24,7 @@ import { trackEvent } from "@/utils/analytics";
 import { buildIntentEcho, detectCategory, isPivot } from "@/utils/intentEcho";
 import { ChipIcon, type ChipIconType } from "@/components/chat/ChipIcon";
 import { QuickFollowupList } from "@/components/chat/QuickFollowupList";
+import { RunningProgramSheet } from "./RunningProgramSheet";
 import { AssistantMiniHeader } from "@/components/chat/AssistantMiniHeader";
 
 interface ChatHomeProps {
@@ -231,6 +232,9 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
   const [planIconPulse, setPlanIconPulse] = useState(false);
   const [routing, setRouting] = useState(false);
   const [showMoreExamples, setShowMoreExamples] = useState(false);
+  // 회의 64-D: 러닝 프로그램 바텀시트 + 성공 토스트
+  const [showRunningSheet, setShowRunningSheet] = useState(false);
+  const [runningToast, setRunningToast] = useState<string | null>(null);
   const [reasoningLines, setReasoningLines] = useState<string[]>([]); // Phase 7 B-lite 사고 과정 스트림
   const [aiFollowups, setAiFollowups] = useState<Array<{ icon: ChipIconType; label: string; prompt: string }>>([]); // Phase 7C Gemini 개인화 후속 질문
 
@@ -1223,7 +1227,26 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
               rows={1}
               className="w-full text-[14px] bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 disabled:opacity-50 resize-none overflow-y-auto leading-[1.5]"
             />
-            <div className="flex items-center justify-end mt-1">
+            <div className="flex items-center justify-between mt-1">
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) { onRequestLogin?.(); return; }
+                  if (!isPremium)  { onRequestPaywall?.(); return; }
+                  setShowRunningSheet(true);
+                }}
+                disabled={busy}
+                className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 active:text-[#1B4332] transition-colors shrink-0 disabled:opacity-40"
+                aria-label={t("running_program.entry.aria")}
+              >
+                {/* 달리는 사람 픽토그램 — OpenMoji 1F3C3 black (CC BY-SA 4.0) */}
+                <svg className="w-[22px] h-[22px]" viewBox="0 0 72 72" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="26.97" cy="13.09" r="3" />
+                  <path d="M42,36l5.8535,8.3613a11.0249,11.0249,0,0,0,2.8692,2.6553l6.7216,3.9668A2.3633,2.3633,0,0,1,58.667,53.5a1.69,1.69,0,0,1-2.35.74L47.85,50.76a14.1043,14.1043,0,0,1-3.3447-2.0889L37,42" />
+                  <path d="M30.8477,31.3594s.26.5937.5761,1.32a3.7314,3.7314,0,0,1-.498,3.0078l-4.8516,7.625A8.3233,8.3233,0,0,0,24.9727,47l-.1954,14a1.8486,1.8486,0,0,0,1.6846,2,2.1751,2.1751,0,0,0,1.9541-1.9854l1.3418-11.0292a6.789,6.789,0,0,1,1.6563-3.3995l3.1718-3.1718c.7774-.7774,2.1055-1.99,2.95-2.6944L40.4639,38.28A4.8637,4.8637,0,0,0,42,35h0a9.3085,9.3085,0,0,0-.958-3.7559L36,22" />
+                  <path d="M36,22c-2-4-4.3594-4.2329-6.0312-3.583A3.859,3.859,0,0,0,27.6,22.251" />
+                  <path d="M30.9375,22l-1.4189,5.0771A2.7758,2.7758,0,0,1,27,29H20" />
+                </svg>
+              </button>
               {busy ? (
                 <button
                   onClick={abortSubmit}
@@ -1307,6 +1330,35 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             ))}
           </div>
         </>
+      )}
+
+      {/* 회의 64-D: 러닝 프로그램 바텀시트 */}
+      <RunningProgramSheet
+        open={showRunningSheet}
+        onClose={() => setShowRunningSheet(false)}
+        onProgramCreated={(info) => {
+          setRunningToast(t("running_program.success.toast"));
+          window.setTimeout(() => setRunningToast(null), 3200);
+          // 회의 64-E Phase 4.3: 교육형 코치 자동 안내 (3줄 assistant 메시지)
+          const coachContent = [
+            t("running_program.coach.intro_line1").replace("{programName}", info.programName),
+            t("running_program.coach.intro_line2").replace("{sessionTitle}", info.firstSessionTitle),
+            t("running_program.coach.intro_line3"),
+          ].join("\n\n");
+          setMessages(prev => [...prev, { role: "assistant", kind: "text", content: coachContent, tone: "info" }]);
+          onOpenMyPlans?.();
+        }}
+        isLoggedIn={isLoggedIn ?? false}
+        isPremium={isPremium ?? false}
+        onRequestLogin={() => onRequestLogin?.()}
+        onRequestPaywall={() => onRequestPaywall?.()}
+      />
+
+      {/* 여정 저장 완료 토스트 */}
+      {runningToast && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-full bg-[#1B4332] text-white text-[12px] font-bold shadow-lg animate-fade-in">
+          {runningToast}
+        </div>
       )}
     </div>
   );

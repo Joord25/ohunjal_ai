@@ -1,6 +1,6 @@
 # CURRENT_STATE.md — 앱 UI/기능 인벤토리 SSOT
 
-**최종 갱신:** 2026-04-18 PM (회의 63: Admin 대시보드 메트릭 정합성 감사)
+**최종 갱신:** 2026-04-18 PM (회의 64-E: Phase 4.1+4.3+4.6 완료 — 게이트 정밀화 + 코치 자동 안내 + 평가자 루브릭 강화)
 
 이 문서는 "오운잘 앱의 각 화면에 어떤 UI와 기능이 실제로 구현되어 있는지"의 단일 진실 공급원입니다.
 모든 항목은 코드 검증 기반 (`file:line` 인용). 추측 금지. 미검증은 **⚠ 미검증** 마킹.
@@ -574,6 +574,21 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 # ⚠ 미검증 영역
 
 없음 (2026-04-17 기준, 모든 주요 화면·플로우 검증 완료).
+
+---
+
+# 🔧 내부 인프라 (유저 미노출)
+
+**러닝 룰엔진 Phase 1+2+3** (2026-04-18, 회의 64-B/64-C/64-D):
+- **서버**: [functions/src/runningProgram.ts](../functions/src/runningProgram.ts) — 엔진 + 오케스트레이터 (`generateRunningProgram()`, 17 SlotType, 4 chapter phase, TT/Dress Rehearsal 경계). [functions/src/plan/runningProgramApi.ts](../functions/src/plan/runningProgramApi.ts) — 2개 엔드포인트 `/api/generateRunningProgram`, `/api/checkFullSub3Gate`
+- **타입**: `SavedPlan` 확장 필드 8개. `WorkoutHistory.runningStats` 서버 필드 추가
+- **UI**: [src/components/dashboard/RunningProgramSheet.tsx](../src/components/dashboard/RunningProgramSheet.tsx) — 바텀시트 B-1 (select/gate_check/settings/preview 4 sub-step)
+- **진입**: [ChatHome.tsx](../src/components/dashboard/ChatHome.tsx) 입력창 좌측 하단 "달리는 아이콘". 로그인+프리미엄 아니면 모달 유도.
+- **i18n**: `running_program.*` 네임스페이스 53 key ko+en 동시
+- **GA**: 7개 이벤트 (`running_program_sheet_open`/`select`/`gate_pass`/`gate_fail`/`created`/`create_failed`/`sheet_abandoned`)
+- **배포 주문 필수**: functions 먼저 (`firebase deploy --only functions`) → Hosting (`git push` 자동). 순서 바뀌면 404.
+- **Phase 4** (회의 64-E): 게이트 GPS 자동 계산 + Half 실제 입력 (placeholder 제거) / 생성 직후 코치 자동 안내 3줄 / 평가자 루브릭 강화 + `feedback_no_decorative_svg.md` 신규
+- 상세 SPEC: [.planning/RUNNING_PROGRAM_SPEC.md](./RUNNING_PROGRAM_SPEC.md)
 
 ---
 

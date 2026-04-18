@@ -39,7 +39,15 @@ type FunnelEvent =
   | "login_modal_view"
   | "chat_home_initial_greeting_shown"
   | "chat_home_initial_cta_click"
-  | "chat_home_initial_followup_tap";
+  | "chat_home_initial_followup_tap"
+  // 회의 64-D: 러닝 프로그램 룰엔진 — 바텀시트 진입/생성 퍼널
+  | "running_program_sheet_open"
+  | "running_program_select"
+  | "running_program_gate_pass"
+  | "running_program_gate_fail"
+  | "running_program_created"
+  | "running_program_create_failed"
+  | "running_program_sheet_abandoned";
 
 export function trackEvent(event: FunnelEvent, params?: Record<string, string | number | boolean>) {
   try {
