@@ -14,7 +14,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { UserCondition, WorkoutGoal, SessionSelection } from "@/constants/workout";
+import type { UserCondition, WorkoutGoal, SessionSelection, SessionMode, TargetMuscle } from "@/constants/workout";
 import { getTrialStatus } from "@/utils/trialStatus";
 import { getPlanCount } from "@/utils/userProfile";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
@@ -87,6 +87,17 @@ const EXAMPLE_CHIPS: ExampleChip[] = [
   { key: "chat_home.example.medium_back", labelKo: "등 50분", labelEn: "Back 50m", icon: "back" },
   { key: "chat_home.example.short_home", labelKo: "홈트 30분", labelEn: "Home 30m", icon: "home" },
 ];
+
+/**
+ * 회의 64-M (2026-04-19): 기본 4칩은 채팅·parseIntent 경로 스킵하고 바로 Master Plan 생성.
+ * 심화 칩(EXAMPLE_CHIPS_MORE)은 자연어 이해 필요하므로 기존 채팅 경로 유지.
+ */
+const DIRECT_PLAN_CHIP_MAP: Record<string, { sessionMode: SessionMode; targetMuscle?: TargetMuscle; availableTime: 30 | 50 | 90 }> = {
+  "chat_home.example.short_chest": { sessionMode: "split", targetMuscle: "chest", availableTime: 30 },
+  "chat_home.example.medium_legs": { sessionMode: "split", targetMuscle: "legs", availableTime: 50 },
+  "chat_home.example.medium_back": { sessionMode: "split", targetMuscle: "back", availableTime: 50 },
+  "chat_home.example.short_home": { sessionMode: "home_training", availableTime: 30 },
+};
 // 더보기 팝오버 — 심화/특수 요청
 const EXAMPLE_CHIPS_MORE: ExampleChip[] = [
   { key: "chat_home.example.summer_diet", labelKo: "여름 다이어트 3개월", labelEn: "3-mo summer diet", icon: "diet" },
@@ -615,6 +626,34 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       inputRef.current?.focus();
       inputRef.current?.setSelectionRange(example.length, example.length);
     });
+  };
+
+  /**
+   * 회의 64-M (2026-04-19): 기본 4칩 바로 플랜 생성 — 채팅·parseIntent 스킵.
+   * 컨디션은 default (bodyPart: good, energy: 3) 로 설정. 유저 프로필 있으면 일부 반영.
+   */
+  const handleDirectPlan = async (chipKey: string): Promise<void> => {
+    const map = DIRECT_PLAN_CHIP_MAP[chipKey];
+    if (!map) { fillExample(chipKey); return; }
+    if (canSubmit && !canSubmit()) { handleSubmit(t(chipKey)); return; } // 체험 소진 시 기존 경로로 폴백
+
+    const goal: WorkoutGoal = (userProfile?.goal as WorkoutGoal | undefined) ?? "general_fitness";
+    const condition: UserCondition = {
+      bodyPart: "good",
+      energyLevel: 3,
+      availableTime: map.availableTime,
+      gender: userProfile?.gender,
+      birthYear: userProfile?.birthYear,
+      bodyWeightKg: userProfile?.bodyWeightKg,
+    };
+    const session: SessionSelection = {
+      goal,
+      sessionMode: map.sessionMode,
+      targetMuscle: map.targetMuscle,
+    };
+    trackEvent("chat_home_initial_cta_click", { which: chipKey, char_length: 0 });
+    setShowMoreExamples(false);
+    await onSubmit(condition, goal, session, { skipLoadingAnim: true });
   };
 
   const handleSubmit = async (override?: string, opts?: { intentDepth?: "focused_followup" }) => {
@@ -1323,7 +1362,24 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             onClick={() => setShowMoreExamples(false)}
           />
           <div className="absolute left-4 right-4 bottom-[72px] z-50 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-h-[60vh] overflow-y-auto py-1.5">
-            {[...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS_MORE].map((chip) => (
+            {/* 기본 4칩: 회의 64-M — 채팅 경유 없이 바로 Master Plan 생성 */}
+            {EXAMPLE_CHIPS.map((chip) => (
+              <button
+                key={chip.key}
+                onClick={() => handleDirectPlan(chip.key)}
+                disabled={busy}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 active:bg-emerald-50/40 transition-colors disabled:opacity-50"
+              >
+                <span className="text-[#1B4332] shrink-0">
+                  <ChipIcon type={chip.icon} />
+                </span>
+                <span className="text-[12.5px] text-[#1B4332] whitespace-nowrap overflow-hidden text-ellipsis flex-1">
+                  {locale === "en" ? chip.labelEn : chip.labelKo}
+                </span>
+              </button>
+            ))}
+            {/* 심화 7칩: 자연어 이해 필요 — 채팅 경로 유지 (입력창 자동 채움 후 유저가 수정·전송) */}
+            {EXAMPLE_CHIPS_MORE.map((chip) => (
               <button
                 key={chip.key}
                 onClick={() => {
