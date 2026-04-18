@@ -92,27 +92,17 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
     }
   }, [open]);
 
-  // 진입 조건 체크 — 로그인/프리미엄 없으면 즉시 닫고 페이월/로그인 유도
+  // 회의 64-F (2026-04-18): 진입 가드 해제 — 누구나 탐색 가능. 저장 시점 서버에서 프리미엄 여부 처리.
+  // isLoggedIn / isPremium / onRequestLogin / onRequestPaywall 는 handleGenerate 에서만 참조.
   useEffect(() => {
     if (!open) return;
-    if (!isLoggedIn) {
-      onClose();
-      onRequestLogin();
-      return;
-    }
-    if (!isPremium) {
-      onClose();
-      onRequestPaywall();
-      return;
-    }
-    // 오픈 시 초기화 + GA
     setStep("select");
     setSelectedProgram(null);
     setGateAnswers({});
     setGateReasons([]);
     setError(null);
     trackEvent("running_program_sheet_open");
-  }, [open, isLoggedIn, isPremium, onClose, onRequestLogin, onRequestPaywall]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -128,11 +118,8 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
   const handleSelectProgram = (programId: RunningProgramId) => {
     trackEvent("running_program_select", { program: programId });
     setSelectedProgram(programId);
-    if (programId === "full_sub_3") {
-      setStep("gate_check");
-    } else {
-      setStep("settings");
-    }
+    // 회의 64-F: 게이트 잠금 해제 — 모든 프로그램 바로 설정으로. 권장 조건은 UI 안내로만 표시.
+    setStep("settings");
   };
 
   const handleGateSubmit = async () => {
@@ -321,7 +308,14 @@ const StepSelect: React.FC<{ t: TFn; onSelect: (id: RunningProgramId) => void; o
       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">{t("running_program.step1.title")}</p>
       <button onClick={onClose} className="text-sm text-gray-400 font-bold">{t("running_program.close")}</button>
     </div>
-    <p className="text-[12px] text-gray-500 mb-4">{t("running_program.step1.subtitle")}</p>
+    <p className="text-[12px] text-gray-500 mb-3">{t("running_program.step1.subtitle")}</p>
+    {/* 회의 64-F: 권장 베이스 안내 배너 — 차단 대신 정보 노출 */}
+    <div className="mb-4 px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2">
+      <svg className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p className="text-[11px] text-amber-800 leading-snug">{t("running_program.step1.notice")}</p>
+    </div>
     <div className="flex flex-col gap-2.5">
       {PROGRAM_META.map(p => (
         <button
@@ -330,11 +324,16 @@ const StepSelect: React.FC<{ t: TFn; onSelect: (id: RunningProgramId) => void; o
           className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl border border-gray-200 bg-white hover:border-[#2D6A4F]/40 hover:bg-emerald-50/30 active:scale-[0.98] transition-all text-left"
         >
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-[14px] font-black text-[#1B4332] truncate">{t(p.titleKey)}</p>
               {p.recommended && (
                 <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-[#2D6A4F] text-white text-[9px] font-black uppercase tracking-wide">
                   {t("running_program.recommended_badge")}
+                </span>
+              )}
+              {p.id === "full_sub_3" && (
+                <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[9px] font-black tracking-wide border border-amber-200">
+                  {t("running_program.program.full.recommend_tag")}
                 </span>
               )}
             </div>

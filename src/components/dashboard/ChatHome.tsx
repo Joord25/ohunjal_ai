@@ -1229,13 +1229,9 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             />
             <div className="flex items-center justify-between mt-1">
               <button
-                onClick={() => {
-                  if (!isLoggedIn) { onRequestLogin?.(); return; }
-                  if (!isPremium)  { onRequestPaywall?.(); return; }
-                  setShowRunningSheet(true);
-                }}
+                onClick={() => setShowRunningSheet(true)}
                 disabled={busy}
-                className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 active:text-[#1B4332] transition-colors shrink-0 disabled:opacity-40"
+                className="w-9 h-9 rounded-full border border-[#2D6A4F]/30 text-[#2D6A4F] bg-emerald-50/40 flex items-center justify-center active:scale-95 hover:bg-emerald-50 transition-all shrink-0 disabled:opacity-40"
                 aria-label={t("running_program.entry.aria")}
               >
                 {/* 달리는 사람 픽토그램 — OpenMoji 1F3C3 black (CC BY-SA 4.0) */}
