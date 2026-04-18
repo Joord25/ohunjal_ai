@@ -16,8 +16,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/utils/analytics";
 import { newProgramId, saveProgramSessions, remoteSaveProgram, deleteProgram, type SavedPlan } from "@/utils/savedPlans";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
+import type { RunningProgramId } from "@/constants/workout";
 
-type RunningProgramId = "vo2_boost" | "10k_sub_50" | "half_sub_2" | "full_sub_3";
 type DaysPerWeek = 3 | 4 | 5;
 type StartChoice = "today" | "tomorrow" | "next_monday";
 type Step = "select" | "gate_check" | "gate_fail" | "settings" | "preview" | "loading";

@@ -230,16 +230,18 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
             );
           })}
 
-          {/* ADD SET */}
-          <button
-            onClick={() => onAddSet(globalIdx)}
-            className="w-full py-2.5 mt-2 mb-1 text-[#2D6A4F] font-bold text-xs tracking-wider flex items-center justify-center gap-1 active:scale-[0.98] transition-all border border-dashed border-gray-300 rounded-lg hover:bg-emerald-50/30"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" d="M12 5v14M5 12h14" />
-            </svg>
-            {t("plan.add_set")}
-          </button>
+          {/* ADD SET — 회의 64-I (박서진 자문): 러닝 continuous 세션에서는 세트 추가 의미 없음 → 숨김 */}
+          {exercise.runKind !== "continuous" && (
+            <button
+              onClick={() => onAddSet(globalIdx)}
+              className="w-full py-2.5 mt-2 mb-1 text-[#2D6A4F] font-bold text-xs tracking-wider flex items-center justify-center gap-1 active:scale-[0.98] transition-all border border-dashed border-gray-300 rounded-lg hover:bg-emerald-50/30"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+              </svg>
+              {t("plan.add_set")}
+            </button>
+          )}
         </div>
       )}
 

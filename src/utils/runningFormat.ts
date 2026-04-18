@@ -35,14 +35,17 @@ export function formatRunDuration(totalSec: number): string {
  * - long: LSD/장거리 러닝 (연속)
  */
 export function detectRunningType(exercises: ExerciseStep[]): RunningType | null {
+  // 회의 64-I (박서진 자문): tag-at-source 1순위 — 엔진이 직접 runType 세팅했으면 그걸 사용
+  for (const ex of exercises) {
+    if (ex.runType) return ex.runType;
+  }
+  // 2순위: 과거 Firestore 레코드 regex fallback
   for (const ex of exercises) {
     const c = ex.count || "";
     const n = ex.name || "";
-    // 인터벌 우선 (패턴 매칭)
     if (/걷기\s*\/?\s*\d+초\s*달리기/.test(c)) return "walkrun";
     if (/전력\s*\/?\s*\d+초\s*보통/.test(c)) return "fartlek";
     if (/전력\s*\/?\s*\d+초\s*회복/.test(c)) return "sprint";
-    // 연속 러닝 (이름 키워드)
     if (/템포/.test(n) || /템포/.test(c) || /tempo/i.test(n)) return "tempo";
     if (/LSD|장거리|long.*slow|long.*distance/i.test(n)) return "long";
     if (/이지\s*런|회복\s*러닝|easy.*run|recovery.*run|zone\s*2/i.test(n)) return "easy";
@@ -53,18 +56,27 @@ export function detectRunningType(exercises: ExerciseStep[]): RunningType | null
 /**
  * 개별 운동이 러닝 실행 화면(GPS + 3분할 스탯)을 써야 하는지 판정.
  * FitScreen이 per-exercise 렌더하므로 세션 감지와 분리됨.
- * 회의 43: 인터벌/연속 러닝 모두 포함.
+ * 회의 64-I (박서진 자문, 2026-04-18): tag-at-source 우선, regex는 legacy fallback.
  */
 export type RunExerciseMode = "interval" | "continuous" | null;
 
 export function detectRunExerciseMode(exercise: ExerciseStep): RunExerciseMode {
+  // 1순위: exercise.runKind (엔진이 직접 태깅)
+  if (exercise.runKind === "continuous") return "continuous";
+  if (exercise.runKind === "interval") {
+    // FitScreen intervalConfig regex로 파싱 가능한 것만 interval UI. 파싱 불가(Pure Sprints "20-30초…")는 continuous fallback.
+    const c = exercise.count || "";
+    if (/\d+초\s*(걷기|전력)\s*\/?\s*\d+초\s*(달리기|보통|회복)\s*[×x]\s*\d+/i.test(c)) {
+      return "interval";
+    }
+    return "continuous";
+  }
+  // 2순위: 과거 Firestore 레코드용 regex fallback (v1 pre-태깅)
   const c = exercise.count || "";
   const n = exercise.name || "";
-  // 인터벌 패턴 (FitScreen intervalConfig와 동일 규칙)
   if (/\d+초\s*(걷기|전력)\s*\/?\s*\d+초\s*(달리기|보통|회복)\s*[×x]\s*\d+/i.test(c)) {
     return "interval";
   }
-  // 연속 러닝 (이름 키워드)
   if (/템포|tempo/i.test(n) && /분/i.test(c)) return "continuous";
   if (/LSD|장거리|long.*slow|long.*distance/i.test(n)) return "continuous";
   if (/이지\s*런|회복\s*러닝|easy.*run|recovery.*run|zone\s*2/i.test(n)) return "continuous";
@@ -73,6 +85,9 @@ export function detectRunExerciseMode(exercise: ExerciseStep): RunExerciseMode {
 
 /** 개별 운동의 러닝 타입 (RunningType). FitScreen completion 시 runningStats.runningType 결정용. */
 export function detectExerciseRunningType(exercise: ExerciseStep): RunningType | null {
+  // 1순위: tag-at-source
+  if (exercise.runType) return exercise.runType;
+  // 2순위: regex fallback
   const c = exercise.count || "";
   const n = exercise.name || "";
   if (/걷기\s*\/?\s*\d+초\s*달리기/.test(c)) return "walkrun";

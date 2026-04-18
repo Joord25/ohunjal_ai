@@ -21,6 +21,14 @@ export interface ExerciseStep {
   setDetails?: SetDetail[];
   logs?: ExerciseLog[];
   tempoGuide?: string;
+  /**
+   * 회의 64-I (박서진 자문, 2026-04-18): 러닝 세션 tag-at-source.
+   * 생성부에서 직접 태깅. 소비부(FitScreen/runningFormat)가 regex 역추론 대신 이 필드 1순위.
+   * undefined = 헬스 운동 or 과거 레코드 (regex fallback으로 후퇴).
+   */
+  runKind?: "interval" | "continuous";
+  /** 러닝 타입 세부 분류 (런닝 리포트/공유카드용). runKind와 같이 세팅. */
+  runType?: RunningType;
 }
 
 /** ExerciseStep에서 세트별 상세를 도출 (setDetails 우선, 없으면 sets/reps/weight로 균일 생성) */
@@ -76,6 +84,12 @@ export interface WorkoutAnalysis {
 // ====================================================================
 
 export type RunningType = "walkrun" | "tempo" | "fartlek" | "sprint" | "easy" | "long";
+
+/**
+ * 회의 64-I (박서진 자문, 2026-04-18): 러닝 프로그램 ID — 서버·클라 단일 소스.
+ * 서버 functions/src/runningProgram.ts 의 RunningProgramId와 동일 유지 (구조적 제약: 서버-클라 import 불가).
+ */
+export type RunningProgramId = "vo2_boost" | "10k_sub_50" | "half_sub_2" | "full_sub_3";
 
 export interface IntervalRoundRecord {
   round: number;

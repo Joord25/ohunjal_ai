@@ -219,62 +219,65 @@ export type SessionTypeId =
   | "tt_5k"
   | "dress_rehearsal";
 
-/** 6-8 × 20초 전력 / 30초 걷기 (세션 꼬리 부착용) */
+/** 6-8 × 20초 전력 / 30초 걷기 (세션 꼬리 부착용) — tag-at-source: interval/sprint */
 export function buildStrides(count: number = 8): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "스트라이드 (Strides)", count: `20초 전력 / 30초 걷기 × ${count}`, sets: 1, reps: 1 },
+    { type: "cardio", phase: "main", name: "스트라이드 (Strides)", count: `20초 전력 / 30초 걷기 × ${count}`, sets: 1, reps: 1, runKind: "interval", runType: "sprint" },
   ];
 }
 
-/** 20-40분 threshold run */
+/** 20-40분 threshold run — continuous/tempo */
 export function buildThreshold(paceRange: PaceRange, durationMin: number): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "Threshold Run", count: `${durationMin}분 @ ${formatPaceRange(paceRange)}`, sets: 1, reps: 1 },
+    { type: "cardio", phase: "main", name: "Threshold Run (Tempo)", count: `${durationMin}분`, sets: 1, reps: durationMin, tempoGuide: formatPaceRange(paceRange), runKind: "continuous", runType: "tempo" },
   ];
 }
 
 /** 챕터 2 핵심: 15분 sub-T / 3분 회복 / 15분 sub-T (Bakken) */
 export function buildThreshold2x15(paceRange: PaceRange): ExerciseStep[] {
+  const pace = formatPaceRange(paceRange);
   return [
-    { type: "cardio", phase: "main", name: "Threshold 1 (Sub-T)", count: `15분 @ ${formatPaceRange(paceRange)}`, sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "회복 조깅", count: "3분", sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "Threshold 2 (Sub-T)", count: `15분 @ ${formatPaceRange(paceRange)}`, sets: 1, reps: 1 },
+    { type: "cardio", phase: "main", name: "Threshold 1 (Sub-Threshold)", count: `15분`, sets: 1, reps: 15, tempoGuide: pace, runKind: "continuous", runType: "tempo" },
+    { type: "cardio", phase: "main", name: "회복 조깅 (Recovery Jog)", count: "3분", sets: 1, reps: 3, runKind: "continuous", runType: "easy" },
+    { type: "cardio", phase: "main", name: "Threshold 2 (Sub-Threshold)", count: `15분`, sets: 1, reps: 15, tempoGuide: pace, runKind: "continuous", runType: "tempo" },
   ];
 }
 
+/** 거리 기반 인터벌은 GPS + 3분할 UI (continuous) 가 적합 — 박서진 자문 */
 export function buildIntervals400(paceRange: PaceRange, reps: number = 5): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "400m 인터벌", count: `400m × ${reps} @ ${formatPaceRange(paceRange)} / 2분 조깅 회복`, sets: reps, reps: 1 },
+    { type: "cardio", phase: "main", name: "400m 인터벌 (400m Intervals)", count: `400m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 2분 조깅 회복`, runKind: "continuous", runType: "sprint" },
   ];
 }
 
 export function buildIntervals800(paceRange: PaceRange, reps: number = 3): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "800m 인터벌", count: `800m × ${reps} @ ${formatPaceRange(paceRange)} / 3분 조깅 회복`, sets: reps, reps: 1 },
+    { type: "cardio", phase: "main", name: "800m 인터벌 (800m Intervals)", count: `800m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 3분 조깅 회복`, runKind: "continuous", runType: "sprint" },
   ];
 }
 
 export function buildIntervals1000(paceRange: PaceRange, reps: number = 5): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "1000m 인터벌", count: `1000m × ${reps} @ ${formatPaceRange(paceRange)} / 3분 조깅 회복`, sets: reps, reps: 1 },
+    { type: "cardio", phase: "main", name: "1000m 인터벌 (1000m Intervals)", count: `1000m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 3분 조깅 회복`, runKind: "continuous", runType: "sprint" },
   ];
 }
 
 export function buildIntervalsMile(paceRange: PaceRange, reps: number = 2): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "1마일 인터벌", count: `1600m × ${reps} @ ${formatPaceRange(paceRange)} / 4분 조깅 회복`, sets: reps, reps: 1 },
+    { type: "cardio", phase: "main", name: "1마일 인터벌 (Mile Intervals)", count: `1600m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 4분 조깅 회복`, runKind: "continuous", runType: "sprint" },
   ];
 }
 
+/** Norwegian 4×4: 4분 시간 기반 × 4라운드 — interval UI (fartlek 유사) */
 export function buildNorwegian4x4(paceRange: PaceRange): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "Norwegian 4×4", count: `4분 @ ${formatPaceRange(paceRange)} / 4분 회복 × 4`, sets: 4, reps: 1 },
+    { type: "cardio", phase: "main", name: "Norwegian 4×4 (Norwegian 4×4)", count: `4분 @ ${formatPaceRange(paceRange)} / 4분 회복 × 4`, sets: 4, reps: 1, runKind: "interval", runType: "fartlek" },
   ];
 }
 
 export function buildPureSprints(reps: number = 6): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "전력 스프린트 (Pure Sprints)", count: `20-30초 100% / 2분 완전 회복 × ${reps}`, sets: reps, reps: 1 },
+    { type: "cardio", phase: "main", name: "전력 스프린트 (Pure Sprints)", count: `20-30초 100% / 2분 완전 회복 × ${reps}`, sets: reps, reps: 1, runKind: "interval", runType: "sprint" },
   ];
 }
 
@@ -289,8 +292,8 @@ export function buildLongWithMP(
 ): ExerciseStep[] {
   const easyMin = totalMin - mpDurationMin;
   return [
-    { type: "cardio", phase: "main", name: "장거리 Z1 구간", count: `${easyMin}분 @ ${formatPaceRange(easyPaceRange)}`, sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "Marathon Pace 블록", count: `${mpDurationMin}분 @ ${formatPaceRange(marathonPaceRange)}`, sets: 1, reps: 1 },
+    { type: "cardio", phase: "main", name: "장거리 Z1 구간 (Long Z1 Segment)", count: `${easyMin}분`, sets: 1, reps: easyMin, tempoGuide: formatPaceRange(easyPaceRange), runKind: "continuous", runType: "long" },
+    { type: "cardio", phase: "main", name: "Marathon Pace 블록 (MP Block)", count: `${mpDurationMin}분`, sets: 1, reps: mpDurationMin, tempoGuide: formatPaceRange(marathonPaceRange), runKind: "continuous", runType: "tempo" },
   ];
 }
 
@@ -317,7 +320,7 @@ export function buildRacePaceInterval(
   }
 
   return [
-    { type: "cardio", phase: "main", name: "레이스 페이스 인터벌", count: `${repDistance} × ${reps} @ ${formatPaceRange(paceRange)} / ${recovery} 회복`, sets: reps, reps: 1 },
+    { type: "cardio", phase: "main", name: "레이스 페이스 인터벌 (Race-Pace Interval)", count: `${repDistance} × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / ${recovery} 회복`, runKind: "continuous", runType: "tempo" },
   ];
 }
 
@@ -331,23 +334,23 @@ export function buildSpecificLong(
 ): ExerciseStep[] {
   if (programId === "full_sub_3") {
     return [
-      { type: "cardio", phase: "main", name: "장거리 Z1 구간 (24K)", count: `24km @ ${formatPaceRange(easyPaceRange)}`, sets: 1, reps: 1 },
-      { type: "cardio", phase: "main", name: "Marathon Pace 마무리 (8K)", count: `8km @ ${formatPaceRange(marathonPaceRange)}`, sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "장거리 Z1 구간 (Long Z1 24K)", count: `24km`, sets: 1, reps: 1, tempoGuide: formatPaceRange(easyPaceRange), runKind: "continuous", runType: "long" },
+      { type: "cardio", phase: "main", name: "Marathon Pace 마무리 (MP 8K)", count: `8km`, sets: 1, reps: 1, tempoGuide: formatPaceRange(marathonPaceRange), runKind: "continuous", runType: "tempo" },
     ];
   }
   if (programId === "half_sub_2") {
     return [
-      { type: "cardio", phase: "main", name: "Half 시뮬레이션 (20K)", count: `20km @ ${formatPaceRange(marathonPaceRange)} 근처`, sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "Half 시뮬레이션 (Half Simulation 20K)", count: `20km`, sets: 1, reps: 1, tempoGuide: `${formatPaceRange(marathonPaceRange)} 근처`, runKind: "continuous", runType: "tempo" },
     ];
   }
   if (programId === "10k_sub_50") {
     return [
-      { type: "cardio", phase: "main", name: "장거리 Z1 (15K)", count: `15km @ ${formatPaceRange(easyPaceRange)}`, sets: 1, reps: 1 },
+      { type: "cardio", phase: "main", name: "장거리 Z1 (Long Z1 15K)", count: `15km`, sets: 1, reps: 1, tempoGuide: formatPaceRange(easyPaceRange), runKind: "continuous", runType: "long" },
     ];
   }
   // vo2_boost: 표준 LSD
   return [
-    { type: "cardio", phase: "main", name: "장거리 Z1 러닝", count: `75분 @ ${formatPaceRange(easyPaceRange)}`, sets: 1, reps: 1 },
+    { type: "cardio", phase: "main", name: "장거리 Z1 러닝 (Long Z1 Run)", count: `75분`, sets: 1, reps: 75, tempoGuide: formatPaceRange(easyPaceRange), runKind: "continuous", runType: "long" },
   ];
 }
 
@@ -356,9 +359,9 @@ export function buildSpecificLong(
  */
 export function buildTT2K(): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "워밍업 조깅", count: "10분", sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "2km 전력 (TT)", count: "2km 전력 질주 — 기록 측정", sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "쿨다운 조깅", count: "10분", sets: 1, reps: 1 },
+    { type: "warmup", phase: "warmup", name: "워밍업 조깅 (Warm-up Jog)", count: "10분", sets: 1, reps: 10 },
+    { type: "cardio", phase: "main", name: "2km 전력 (2K All-out)", count: "2km", sets: 1, reps: 1, tempoGuide: "전력 질주 — 기록 측정", runKind: "continuous", runType: "sprint" },
+    { type: "cardio", phase: "cardio", name: "쿨다운 조깅 (Cool-down Jog)", count: "10분", sets: 1, reps: 10 },
   ];
 }
 
@@ -367,9 +370,9 @@ export function buildTT2K(): ExerciseStep[] {
  */
 export function buildTT5K(): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "워밍업 조깅", count: "15분", sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "5km 전력 (TT)", count: "5km 전력 질주 — 기록 측정", sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "쿨다운 조깅", count: "10분", sets: 1, reps: 1 },
+    { type: "warmup", phase: "warmup", name: "워밍업 조깅 (Warm-up Jog)", count: "15분", sets: 1, reps: 15 },
+    { type: "cardio", phase: "main", name: "5km 전력 (5K All-out)", count: "5km", sets: 1, reps: 1, tempoGuide: "전력 질주 — 기록 측정", runKind: "continuous", runType: "sprint" },
+    { type: "cardio", phase: "cardio", name: "쿨다운 조깅 (Cool-down Jog)", count: "10분", sets: 1, reps: 10 },
   ];
 }
 
@@ -387,9 +390,9 @@ export function buildDressRehearsal(
   else distanceKm = 5; // vo2_boost
 
   return [
-    { type: "cardio", phase: "main", name: "워밍업 조깅", count: "15분", sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "드레스 리허설 (Dress Rehearsal)", count: `${distanceKm}km @ ${formatPaceRange(goalPaceRange)} — 목표 페이스 검증`, sets: 1, reps: 1 },
-    { type: "cardio", phase: "main", name: "쿨다운 조깅", count: "10분", sets: 1, reps: 1 },
+    { type: "warmup", phase: "warmup", name: "워밍업 조깅 (Warm-up Jog)", count: "15분", sets: 1, reps: 15 },
+    { type: "cardio", phase: "main", name: "드레스 리허설 (Dress Rehearsal)", count: `${distanceKm}km`, sets: 1, reps: 1, tempoGuide: `${formatPaceRange(goalPaceRange)} — 목표 페이스 검증`, runKind: "continuous", runType: "tempo" },
+    { type: "cardio", phase: "cardio", name: "쿨다운 조깅 (Cool-down Jog)", count: "10분", sets: 1, reps: 10 },
   ];
 }
 
@@ -585,11 +588,11 @@ export function getWeeklySlots(
 // ====== SlotType → ExerciseStep[] 변환 ======
 
 function simpleWarmup(minutes: number): ExerciseStep[] {
-  return [{ type: "warmup", phase: "warmup", name: "준비 조깅 (Warm-up Jog)", count: `${minutes}분`, sets: 1, reps: 1 }];
+  return [{ type: "warmup", phase: "warmup", name: "준비 조깅 (Warm-up Jog)", count: `${minutes}분`, sets: 1, reps: minutes }];
 }
 
 function simpleCooldown(minutes: number = 5): ExerciseStep[] {
-  return [{ type: "cardio", phase: "cardio", name: "마무리 조깅 (Cool-down Jog)", count: `${minutes}분`, sets: 1, reps: 1 }];
+  return [{ type: "cardio", phase: "cardio", name: "마무리 조깅 (Cool-down Jog)", count: `${minutes}분`, sets: 1, reps: minutes }];
 }
 
 export interface ProgramSessionSpec {
@@ -631,10 +634,10 @@ function buildSessionFromSlot(
     case "easy":
       return {
         title: "이지 런",
-        description: "대화 가능한 페이스로 유산소 기반 쌓기",
+        description: "대화 가능한 유산소 러닝",
         exercises: [
           ...simpleWarmup(5),
-          { type: "cardio", phase: "main", name: "이지 런 (Easy Run)", count: `40분 @ ${easyP ? formatPaceRange(easyP) : "대화 가능 속도"}`, sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "이지 런 (Easy Run)", count: `40분`, sets: 1, reps: 40, tempoGuide: easyP ? formatPaceRange(easyP) : "대화 가능 속도", runKind: "continuous", runType: "easy" },
           ...simpleCooldown(5),
         ],
         targetPaceSec: avgPace(easyP),
@@ -643,9 +646,9 @@ function buildSessionFromSlot(
     case "easy_recovery":
       return {
         title: "회복 런",
-        description: "가볍게 혈류 회복",
+        description: "가벼운 유산소 회복 러닝",
         exercises: [
-          { type: "cardio", phase: "main", name: "회복 조깅 (Recovery Jog)", count: "30분 @ 매우 편한 속도", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "회복 조깅 (Recovery Jog)", count: "30분", sets: 1, reps: 30, tempoGuide: "매우 편한 속도", runKind: "continuous", runType: "easy" },
         ],
         targetPaceSec: null,
         intendedIntensity: "low",
@@ -654,10 +657,10 @@ function buildSessionFromSlot(
       const minutes = programId === "full_sub_3" || programId === "half_sub_2" ? 80 : 70;
       return {
         title: "장거리 이지 런",
-        description: `${minutes}분 Z1 기반 유산소`,
+        description: `${minutes}분 Z1 기반 유산소 러닝`,
         exercises: [
           ...simpleWarmup(5),
-          { type: "cardio", phase: "main", name: "장거리 Z1 러닝 (Long Easy)", count: `${minutes}분 @ ${easyP ? formatPaceRange(easyP) : "대화 가능 속도"}`, sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "장거리 Z1 러닝 (Long Easy Run)", count: `${minutes}분`, sets: 1, reps: minutes, tempoGuide: easyP ? formatPaceRange(easyP) : "대화 가능 속도", runKind: "continuous", runType: "long" },
           ...simpleCooldown(5),
         ],
         targetPaceSec: avgPace(easyP),
@@ -667,7 +670,7 @@ function buildSessionFromSlot(
     case "vo2_short_400":
       return {
         title: "VO2 짧은 인터벌",
-        description: "400m × 6~8 반복, VO2 max 자극",
+        description: "400m × 6~8 인터벌 러닝, VO2 max 자극",
         exercises: [
           ...simpleWarmup(10),
           ...buildIntervals400(vo2P ?? { minSec: 240, maxSec: 260 }, 7),
@@ -679,7 +682,7 @@ function buildSessionFromSlot(
     case "vo2_long_1000":
       return {
         title: "VO2 긴 인터벌",
-        description: "1000m × 5 반복, VO2 max 극대 자극",
+        description: "1000m × 5 인터벌 러닝, VO2 max 극대 자극",
         exercises: [
           ...simpleWarmup(12),
           ...buildIntervals1000(vo2P ?? { minSec: 240, maxSec: 260 }, 5),
@@ -691,7 +694,7 @@ function buildSessionFromSlot(
     case "threshold_2x15":
       return {
         title: "Threshold 2×15",
-        description: "sub-threshold 15분씩 두 번 (Bakken 핵심)",
+        description: "sub-threshold 러닝 15분씩 두 번 (Bakken 핵심)",
         exercises: [
           ...simpleWarmup(10),
           ...buildThreshold2x15(thP ?? { minSec: 270, maxSec: 290 }),
@@ -700,26 +703,28 @@ function buildSessionFromSlot(
         targetPaceSec: avgPace(thP),
         intendedIntensity: "high",
       };
-    case "threshold_2x12":
+    case "threshold_2x12": {
+      const thPace = thP ? formatPaceRange(thP) : "아슬아슬 속도";
       return {
         title: "Threshold 2×12",
-        description: "강도 유지 · 양 감소 (챕터 3 peak)",
+        description: "강도 유지 · 양 감소 Threshold 러닝 (챕터 3 peak)",
         exercises: [
           ...simpleWarmup(10),
-          { type: "cardio", phase: "main", name: "Threshold 1", count: `12분 @ ${thP ? formatPaceRange(thP) : "아슬아슬 속도"}`, sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "회복 조깅", count: "3분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "Threshold 2", count: `12분 @ ${thP ? formatPaceRange(thP) : "아슬아슬 속도"}`, sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "Threshold 1 (Sub-T)", count: `12분`, sets: 1, reps: 12, tempoGuide: thPace, runKind: "continuous", runType: "tempo" },
+          { type: "cardio", phase: "main", name: "회복 조깅 (Recovery Jog)", count: "3분", sets: 1, reps: 3, runKind: "continuous", runType: "easy" },
+          { type: "cardio", phase: "main", name: "Threshold 2 (Sub-T)", count: `12분`, sets: 1, reps: 12, tempoGuide: thPace, runKind: "continuous", runType: "tempo" },
           ...simpleCooldown(8),
         ],
         targetPaceSec: avgPace(thP),
         intendedIntensity: "high",
       };
+    }
     case "long_with_mp": {
       const totalMin = programId === "full_sub_3" ? 110 : 100;
       const mpMin = programId === "full_sub_3" ? 30 : 25;
       return {
         title: "Long Run + MP Block",
-        description: `${totalMin}분 장거리, 마지막 ${mpMin}분 Marathon Pace`,
+        description: `${totalMin}분 장거리 러닝, 마지막 ${mpMin}분 Marathon Pace 유산소`,
         exercises: [
           ...simpleWarmup(5),
           ...buildLongWithMP(totalMin, mpMin, easyP ?? { minSec: 360, maxSec: 400 }, mP ?? { minSec: 320, maxSec: 340 }),
@@ -732,7 +737,7 @@ function buildSessionFromSlot(
     case "specific_long":
       return {
         title: "Specific Long Run",
-        description: "레이스 distance-specific 장거리",
+        description: "레이스 distance-specific 장거리 러닝",
         exercises: [
           ...simpleWarmup(5),
           ...buildSpecificLong(programId, easyP ?? { minSec: 360, maxSec: 400 }, mP ?? { minSec: 320, maxSec: 340 }),
@@ -745,7 +750,7 @@ function buildSessionFromSlot(
       const goalPaceForInterval = programId === "vo2_boost" ? (vo2P ?? { minSec: 240, maxSec: 260 }) : (mP ?? { minSec: 300, maxSec: 300 });
       return {
         title: "레이스 페이스 인터벌",
-        description: "목표 페이스 감각 박기",
+        description: "목표 페이스 러닝 감각 박기",
         exercises: [
           ...simpleWarmup(10),
           ...buildRacePaceInterval(programId, goalPaceForInterval),
@@ -758,7 +763,7 @@ function buildSessionFromSlot(
     case "taper_race_pace_short":
       return {
         title: "Taper 레이스 감각",
-        description: "1000m × 3, 짧게 감각만 유지",
+        description: "1000m × 3 인터벌 러닝, 짧게 감각만 유지",
         exercises: [
           ...simpleWarmup(10),
           ...buildIntervals1000(mP ?? { minSec: 300, maxSec: 300 }, 3),
@@ -770,9 +775,9 @@ function buildSessionFromSlot(
     case "taper_easy_strides":
       return {
         title: "이지 런 + 스트라이드",
-        description: "30분 이지 런 + 스트라이드 6회",
+        description: "30분 이지 런 + 스트라이드 러닝 6회",
         exercises: [
-          { type: "cardio", phase: "main", name: "이지 런 (Easy Run)", count: `30분 @ ${easyP ? formatPaceRange(easyP) : "편한 속도"}`, sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "이지 런 (Easy Run)", count: `30분`, sets: 1, reps: 30, tempoGuide: easyP ? formatPaceRange(easyP) : "편한 속도", runKind: "continuous", runType: "easy" },
           ...buildStrides(6),
         ],
         targetPaceSec: avgPace(easyP),
@@ -781,10 +786,10 @@ function buildSessionFromSlot(
     case "taper_short_strides":
       return {
         title: "짧은 러닝 + 스트라이드",
-        description: "20분 + 100m × 4 스트라이드",
+        description: "20분 유산소 + 100m × 4 스트라이드 러닝",
         exercises: [
-          { type: "cardio", phase: "main", name: "짧은 이지 러닝", count: "20분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "스트라이드 (100m × 4)", count: "100m × 4 전력, 2분 회복", sets: 4, reps: 1 },
+          { type: "cardio", phase: "main", name: "짧은 이지 러닝 (Short Easy Run)", count: "20분", sets: 1, reps: 20, runKind: "continuous", runType: "easy" },
+          { type: "cardio", phase: "main", name: "스트라이드 100m × 4 (Strides 100m × 4)", count: "100m × 4", sets: 4, reps: 1, tempoGuide: "전력, 2분 회복", runKind: "interval", runType: "sprint" },
         ],
         targetPaceSec: null,
         intendedIntensity: "low",
@@ -792,9 +797,9 @@ function buildSessionFromSlot(
     case "rest_or_race":
       return {
         title: "레이스 당일 또는 휴식",
-        description: "레이스 / 컨디션별 rest",
+        description: "레이스 당일 러닝 또는 컨디션별 완전 휴식",
         exercises: [
-          { type: "mobility", phase: "warmup", name: "레이스 당일 또는 완전 휴식", count: "컨디션별 자율", sets: 1, reps: 1 },
+          { type: "mobility", phase: "warmup", name: "레이스 당일 또는 완전 휴식 (Race Day or Rest)", count: "컨디션별 자율", sets: 1, reps: 1 },
         ],
         targetPaceSec: mP ? avgPace(mP) : null,
         intendedIntensity: "low",
@@ -802,7 +807,7 @@ function buildSessionFromSlot(
     case "tt_2k":
       return {
         title: "2K Time Trial — 기준점 측정",
-        description: "2km 전력 질주 + 워밍업/쿨다운",
+        description: "2km 전력 러닝 + 워밍업/쿨다운 유산소",
         exercises: buildTT2K(),
         targetPaceSec: null,
         intendedIntensity: "high",
@@ -810,7 +815,7 @@ function buildSessionFromSlot(
     case "tt_5k":
       return {
         title: "5K Time Trial — Threshold 해방",
-        description: "5km 전력 질주 + 워밍업/쿨다운",
+        description: "5km 전력 러닝 + 워밍업/쿨다운 유산소",
         exercises: buildTT5K(),
         targetPaceSec: null,
         intendedIntensity: "high",
@@ -818,7 +823,7 @@ function buildSessionFromSlot(
     case "dress_rehearsal":
       return {
         title: "Dress Rehearsal — 목표 페이스 검증",
-        description: "레이스 시뮬레이션 (최종 점검)",
+        description: "레이스 페이스 러닝 시뮬레이션 (최종 점검)",
         exercises: buildDressRehearsal(programId, mP ?? { minSec: 300, maxSec: 300 }),
         targetPaceSec: avgPace(mP),
         intendedIntensity: "high",

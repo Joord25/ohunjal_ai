@@ -4,6 +4,12 @@ export type WorkoutType = "push" | "pull" | "leg_core" | "mobility" | "run_easy"
 
 export type ExercisePhase = "warmup" | "main" | "core" | "cardio";
 
+/**
+ * 러닝 세부 분류 (클라 RunningType과 미러). 서버에서 태깅 시 사용.
+ * 회의 64-I (박서진 자문): tag-at-source 원칙.
+ */
+export type RunningType = "walkrun" | "tempo" | "fartlek" | "sprint" | "easy" | "long";
+
 export interface ExerciseStep {
   type: ExerciseType;
   phase?: ExercisePhase;
@@ -14,6 +20,12 @@ export interface ExerciseStep {
   reps: number;
   logs?: ExerciseLog[];
   tempoGuide?: string;
+  /**
+   * 회의 64-I (박서진 자문, 2026-04-18): 러닝 세션 tag-at-source.
+   * 생성부에서 직접 태깅. 소비부가 regex 역추론 대신 이 필드 1순위.
+   */
+  runKind?: "interval" | "continuous";
+  runType?: RunningType;
 }
 
 export interface ExerciseLog {
@@ -1122,31 +1134,31 @@ function generateRunningWorkout(
         // 워크-런: 초보자 친화, 워밍업/쿨다운도 걷기
         // 형식: "N초 걷기 / M초 달리기 × R" (FitScreen walkrun regex 매칭)
         exercises.push(
-          { type: "cardio", phase: "main", name: "준비 걷기 (Warm-up Walk)", count: "3분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 걷기 / 60초 달리기 × 8", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "마무리 걷기 (Cool-down Walk)", count: "3분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "준비 걷기 (Warm-up Walk)", count: "3분", sets: 1, reps: 3 },
+          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 걷기 / 60초 달리기 × 8", sets: 1, reps: 1, runKind: "interval", runType: "walkrun" },
+          { type: "cardio", phase: "main", name: "마무리 걷기 (Cool-down Walk)", count: "3분", sets: 1, reps: 3 },
         );
       } else if (intervalType === "tempo") {
         // 템포런: 단순 타이머, 20분 고정
         exercises.push(
-          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "템포런 (Tempo Run)", count: "20분 템포", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 5 },
+          { type: "cardio", phase: "main", name: "템포런 (Tempo Run)", count: "20분 템포", sets: 1, reps: 20, runKind: "continuous", runType: "tempo" },
+          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
       } else if (intervalType === "fartlek") {
         // 변속주: 시간 기반 변속 "N초 전력 / M초 보통 × R"
         exercises.push(
-          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 5 },
+          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1, runKind: "interval", runType: "fartlek" },
+          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
       } else {
         // 스프린트: 8분 워밍업 (재활의 권장) + A스킵 드릴 + 1:4 비율
         exercises.push(
-          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "8분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "8분", sets: 1, reps: 8 },
           { type: "cardio", phase: "main", name: pick(["A스킵 (A-Skip)", "B스킵 (B-Skip)", "하이니즈 (High Knees)"]), count: "2 × 30m", sets: 2, reps: 1 },
-          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1 },
-          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 1 },
+          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1, runKind: "interval", runType: "sprint" },
+          { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
       }
       break;
@@ -1156,7 +1168,7 @@ function generateRunningWorkout(
         { type: "cardio", phase: "main", name: pick([
           "이지 런: 대화 가능 속도 (Conversational Pace Run)",
           "회복 러닝: 존 2 유지 (Recovery Run: Zone 2)",
-        ]), count: "30-40분", sets: 1, reps: 1 },
+        ]), count: "30-40분", sets: 1, reps: 35, runKind: "continuous", runType: "easy" },
       );
       break;
     case "long":
@@ -1165,7 +1177,7 @@ function generateRunningWorkout(
         { type: "cardio", phase: "main", name: pick([
           "장거리 러닝 (Long Slow Distance Run)",
           "LSD 러닝: 페이스 유지 (LSD Run: Pace Maintenance)",
-        ]), count: "60-90분", sets: 1, reps: 1 },
+        ]), count: "60-90분", sets: 1, reps: 75, runKind: "continuous", runType: "long" },
       );
       break;
   }
