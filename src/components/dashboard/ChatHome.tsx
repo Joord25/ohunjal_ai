@@ -1228,21 +1228,38 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
               className="w-full text-[14px] bg-transparent px-0 py-1 border-0 focus:outline-none text-[#1B4332] placeholder-gray-400 disabled:opacity-50 resize-none overflow-y-auto leading-[1.5]"
             />
             <div className="flex items-center justify-between mt-1">
-              <button
-                onClick={() => setShowRunningSheet(true)}
-                disabled={busy}
-                className="w-9 h-9 rounded-full border border-[#2D6A4F]/30 text-[#2D6A4F] bg-emerald-50/40 flex items-center justify-center active:scale-95 hover:bg-emerald-50 transition-all shrink-0 disabled:opacity-40"
-                aria-label={t("running_program.entry.aria")}
-              >
-                {/* 달리는 사람 픽토그램 — OpenMoji 1F3C3 black (CC BY-SA 4.0) */}
-                <svg className="w-[22px] h-[22px]" viewBox="0 0 72 72" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="26.97" cy="13.09" r="3" />
-                  <path d="M42,36l5.8535,8.3613a11.0249,11.0249,0,0,0,2.8692,2.6553l6.7216,3.9668A2.3633,2.3633,0,0,1,58.667,53.5a1.69,1.69,0,0,1-2.35.74L47.85,50.76a14.1043,14.1043,0,0,1-3.3447-2.0889L37,42" />
-                  <path d="M30.8477,31.3594s.26.5937.5761,1.32a3.7314,3.7314,0,0,1-.498,3.0078l-4.8516,7.625A8.3233,8.3233,0,0,0,24.9727,47l-.1954,14a1.8486,1.8486,0,0,0,1.6846,2,2.1751,2.1751,0,0,0,1.9541-1.9854l1.3418-11.0292a6.789,6.789,0,0,1,1.6563-3.3995l3.1718-3.1718c.7774-.7774,2.1055-1.99,2.95-2.6944L40.4639,38.28A4.8637,4.8637,0,0,0,42,35h0a9.3085,9.3085,0,0,0-.958-3.7559L36,22" />
-                  <path d="M36,22c-2-4-4.3594-4.2329-6.0312-3.583A3.859,3.859,0,0,0,27.6,22.251" />
-                  <path d="M30.9375,22l-1.4189,5.0771A2.7758,2.7758,0,0,1,27,29H20" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowRunningSheet(true)}
+                  disabled={busy}
+                  className="w-9 h-9 rounded-full border border-[#2D6A4F]/30 text-[#2D6A4F] bg-emerald-50/40 flex items-center justify-center active:scale-95 hover:bg-emerald-50 transition-all shrink-0 disabled:opacity-40"
+                  aria-label={t("running_program.entry.aria")}
+                >
+                  {/* 달리는 사람 픽토그램 — OpenMoji 1F3C3 black (CC BY-SA 4.0) */}
+                  <svg className="w-[22px] h-[22px]" viewBox="0 0 72 72" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="26.97" cy="13.09" r="3" />
+                    <path d="M42,36l5.8535,8.3613a11.0249,11.0249,0,0,0,2.8692,2.6553l6.7216,3.9668A2.3633,2.3633,0,0,1,58.667,53.5a1.69,1.69,0,0,1-2.35.74L47.85,50.76a14.1043,14.1043,0,0,1-3.3447-2.0889L37,42" />
+                    <path d="M30.8477,31.3594s.26.5937.5761,1.32a3.7314,3.7314,0,0,1-.498,3.0078l-4.8516,7.625A8.3233,8.3233,0,0,0,24.9727,47l-.1954,14a1.8486,1.8486,0,0,0,1.6846,2,2.1751,2.1751,0,0,0,1.9541-1.9854l1.3418-11.0292a6.789,6.789,0,0,1,1.6563-3.3995l3.1718-3.1718c.7774-.7774,2.1055-1.99,2.95-2.6944L40.4639,38.28A4.8637,4.8637,0,0,0,42,35h0a9.3085,9.3085,0,0,0-.958-3.7559L36,22" />
+                    <path d="M36,22c-2-4-4.3594-4.2329-6.0312-3.583A3.859,3.859,0,0,0,27.6,22.251" />
+                    <path d="M30.9375,22l-1.4189,5.0771A2.7758,2.7758,0,0,1,27,29H20" />
+                  </svg>
+                </button>
+                {/* 회의 64-J: 추천 운동 모음 아이콘 — 기존 EXAMPLE_CHIPS 팝오버 진입점 */}
+                <button
+                  onClick={() => setShowMoreExamples(v => !v)}
+                  disabled={busy}
+                  className="w-9 h-9 rounded-full border border-[#2D6A4F]/30 text-[#2D6A4F] bg-emerald-50/40 flex items-center justify-center active:scale-95 hover:bg-emerald-50 transition-all shrink-0 disabled:opacity-40"
+                  aria-label={locale === "en" ? "Workout suggestions" : "추천 운동 모음"}
+                >
+                  {/* Squares 2×2 (Heroicons, MIT) — "메뉴·선택지 모음" 직관 */}
+                  <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+                    <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+                    <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+                    <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+                  </svg>
+                </button>
+              </div>
               {busy ? (
                 <button
                   onClick={abortSubmit}
@@ -1298,14 +1315,38 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
       </div>
       )}
 
-      {/* 더보기 팝오버 — 심화 예시 (세로 리스트) */}
+      {/* 추천 운동 모음 팝오버 — 회의 64-J: 기본 4칩 + 심화 7칩 = 11개 전체 노출 */}
       {showMoreExamples && (
         <>
           <div
             className="absolute inset-0 z-40"
             onClick={() => setShowMoreExamples(false)}
           />
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-14 z-50 w-[220px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden py-1.5">
+          <div className="absolute left-4 right-4 bottom-[72px] z-50 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-h-[60vh] overflow-y-auto">
+            <div className="px-3 pt-2 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">
+              {locale === "en" ? "Quick picks" : "바로 시작"}
+            </div>
+            {EXAMPLE_CHIPS.map((chip) => (
+              <button
+                key={chip.key}
+                onClick={() => {
+                  fillExample(chip.key);
+                  setShowMoreExamples(false);
+                }}
+                disabled={busy}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 active:bg-emerald-50/40 transition-colors disabled:opacity-50"
+              >
+                <span className="text-[#1B4332] shrink-0">
+                  <ChipIcon type={chip.icon} />
+                </span>
+                <span className="text-[12.5px] text-[#1B4332] whitespace-nowrap overflow-hidden text-ellipsis flex-1">
+                  {locale === "en" ? chip.labelEn : chip.labelKo}
+                </span>
+              </button>
+            ))}
+            <div className="px-3 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] border-t border-gray-100">
+              {locale === "en" ? "Longer goals" : "더 큰 목표"}
+            </div>
             {EXAMPLE_CHIPS_MORE.map((chip) => (
               <button
                 key={chip.key}
