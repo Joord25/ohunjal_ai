@@ -27,6 +27,7 @@ import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from
 import { syncExpFromFirestore, processWorkoutCompletion, getOrRebuildSeasonExp, type ExpLogEntry } from "@/utils/questSystem";
 import { useSafeArea } from "@/hooks/useSafeArea";
 import { trackEvent, setAnalyticsUserId } from "@/utils/analytics";
+import { FREE_PLAN_LIMIT as TRIAL_FREE_PLAN_LIMIT, GUEST_TRIAL_LIMIT as TRIAL_GUEST_LIMIT } from "@/utils/trialStatus";
 import { I18nProvider, useTranslation } from "@/hooks/useTranslation";
 import { UnitsProvider } from "@/hooks/useUnits";
 
@@ -373,8 +374,11 @@ export default function Home() {
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled" | "expired">("loading");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
-  const FREE_PLAN_LIMIT = 4;
-  const GUEST_TRIAL_LIMIT = 3; // 비로그인 체험 횟수 (전문가 합의: 3회면 앱 가치 체감)
+  // 회의 64-N (2026-04-19): SSOT 정리 — 기존 page.tsx 로컬 FREE_PLAN_LIMIT=4 / GUEST_TRIAL_LIMIT=3이
+  // utils/trialStatus.ts(2,1)·functions/session.ts(2,1)와 불일치. "페이월 안 뜸" 버그의 근본 원인.
+  // 대표 지시: 무료 체험 2번 유지 + 페이월 확실 노출. utils 값으로 통일.
+  const FREE_PLAN_LIMIT = TRIAL_FREE_PLAN_LIMIT;
+  const GUEST_TRIAL_LIMIT = TRIAL_GUEST_LIMIT;
   const [showLoginModal, setShowLoginModal] = useState(false);
   // 회의 53: 모달을 띄운 이유 — trial_exhausted = 무료 체험 3회 완료, generic = 그 외
   const [loginModalReason, setLoginModalReason] = useState<"trial_exhausted" | "generic">("generic");
@@ -937,6 +941,23 @@ export default function Home() {
             sessionData={currentWorkoutSession}
             source={currentPlanSource}
             onStart={(modifiedData) => {
+              // 회의 64-N (2026-04-19): 운동 시작 시점 체험 소진 체크 — 대표 지시 "제발 페이월 잘 뜨게".
+              // 기존: Master Plan 체류 중 체험이 소진돼도 "운동 시작" 누르면 그냥 통과하던 버그.
+              // 게스트 소진 → 로그인 모달, 로그인 무료 소진 → 페이월. 프리미엄은 항상 통과.
+              if (subStatus !== "active") {
+                if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
+                  trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT, trigger: "workout_start" });
+                  trackEvent("login_modal_view", { trigger: "workout_start_exhausted" });
+                  setLoginModalReason("trial_exhausted");
+                  setShowLoginModal(true);
+                  return;
+                }
+                if (isLoggedIn && getPlanCount() >= FREE_PLAN_LIMIT) {
+                  trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "workout_start_exhausted", surface: "modal" });
+                  setShowPaywall(true);
+                  return;
+                }
+              }
               trackEvent("plan_preview_start", { source: currentPlanSource }); // 회의 63-A
               incrementPlanCount();
               // 저장 플랜 실행도 게스트 트라이얼 소진시킴 (평가자 P0 지적)
