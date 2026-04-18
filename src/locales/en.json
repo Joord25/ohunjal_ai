@@ -9,6 +9,7 @@
   "chat_home.example.short_chest": "Recommend a 30-min chest routine for today",
   "chat_home.example.short_home": "Recommend a 30-min full-body home workout",
   "chat_home.example.short_run": "Plan to get me running 10km",
+  "chat_home.example.medium_back": "Recommend a 50-minute back routine",
   "chat_home.example.medium_legs": "Shoulders are tight — 40 min legs, energy is normal.",
   "chat_home.example.summer_diet": "Build me a 3-month diet plan for summer",
   "chat_home.example.advanced_back": "Show me an advanced back routine",
