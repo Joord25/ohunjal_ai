@@ -331,9 +331,9 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                   <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", marginBottom: 4, lineHeight: 1 }}>
                     {t("share.running.distance")}
                   </p>
-                  <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em" }}>
+                  <p style={{ color: "white", fontSize: 52, fontWeight: 400, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-questrial), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                     {formatRunDistanceKm(runningStats?.distance)}
-                    <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 600, letterSpacing: "-0.01em" }}>{t("share.running.unitKm")}</span>
+                    <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 400, letterSpacing: "-0.01em", fontFamily: "var(--font-questrial), -apple-system, BlinkMacSystemFont, sans-serif" }}>{t("share.running.unitKm")}</span>
                   </p>
                 </div>
 
@@ -342,9 +342,9 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                   <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", marginBottom: 4, lineHeight: 1 }}>
                     {t("share.running.pace")}
                   </p>
-                  <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em" }}>
+                  <p style={{ color: "white", fontSize: 52, fontWeight: 400, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-questrial), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                     {formatPace(runningStats?.sprintAvgPace ?? runningStats?.avgPace)}
-                    <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 600, letterSpacing: "-0.01em" }}>{t("share.running.unitPerKm")}</span>
+                    <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 400, letterSpacing: "-0.01em", fontFamily: "var(--font-questrial), -apple-system, BlinkMacSystemFont, sans-serif" }}>{t("share.running.unitPerKm")}</span>
                   </p>
                 </div>
 
@@ -353,7 +353,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                   <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", marginBottom: 4, lineHeight: 1 }}>
                     {t("share.running.time")}
                   </p>
-                  <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em" }}>
+                  <p style={{ color: "white", fontSize: 52, fontWeight: 400, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-questrial), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                     {formatRunDuration(runningStats?.duration ?? totalDurationSec)}
                   </p>
                 </div>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond } from "next/font/google";
+import { Cormorant_Garamond, Questrial } from "next/font/google";
 // Pretendard loaded via CDN in <head> for cross-platform reliability
 import "./globals.css";
 
@@ -7,6 +7,14 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+});
+
+// 회의 64-α 후속: 공유 카드 숫자용 (대표 지시 2026-04-19)
+const questrial = Questrial({
+  variable: "--font-questrial",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -220,7 +228,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${cormorant.variable} antialiased`}
+        className={`${cormorant.variable} ${questrial.variable} antialiased`}
       >
         {children}
         <noscript>
