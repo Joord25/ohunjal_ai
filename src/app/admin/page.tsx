@@ -263,6 +263,22 @@ export default function AdminPage() {
   const [bulkRunning, setBulkRunning] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
 
+  // 회의 64-Y (2026-04-19): runType 마이그레이션 — 과거 러닝 레코드 소급 재태깅
+  interface MigrationReport {
+    scannedUsers: number;
+    scannedDocs: number;
+    updatedDocs: number;
+    fartlekToVo2: number;
+    sprintToTimeTrial: number;
+    sprintToVo2: number;
+    sprintToSprintInterval: number;
+    errors: string[];
+  }
+  const [migrating, setMigrating] = useState(false);
+  const [migrationReport, setMigrationReport] = useState<MigrationReport | null>(null);
+  const [migrationMode, setMigrationMode] = useState<"idle" | "dryrun_done" | "executed">("idle");
+  const [migrationError, setMigrationError] = useState<string>("");
+
   // 회의 57 Tier 3: 다중 필드 검색 (email / displayName / uid substring)
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -425,6 +441,30 @@ export default function AdminPage() {
       if (res.ok) setAnalyticsFunnel(await res.json());
     } catch { /* ignore */ }
     setLoadingFunnel(false);
+  };
+
+  // 회의 64-Y (2026-04-19): 과거 러닝 레코드 runType 재태깅 (fartlek→vo2_interval, sprint→3-way)
+  const runMigration = async (dryRun: boolean) => {
+    setMigrating(true);
+    setMigrationError("");
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/adminMigrateRunTypeV2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ dryRun }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMigrationError(data?.error || `HTTP ${res.status}`);
+      } else if (data?.report) {
+        setMigrationReport(data.report as MigrationReport);
+        setMigrationMode(dryRun ? "dryrun_done" : "executed");
+      }
+    } catch (e) {
+      setMigrationError((e as Error).message);
+    }
+    setMigrating(false);
   };
 
   // 결제 내역 로드 — Firestore payments 서브컬렉션 collectionGroup 기반
@@ -1421,6 +1461,111 @@ export default function AdminPage() {
                     <span>해지됨: {dashboard.cancelled}</span>
                     <span>만료됨: {dashboard.expired}</span>
                   </div>
+                </div>
+
+                {/* 회의 64-Y (2026-04-19): 데이터 유지보수 — 과거 러닝 runType 소급 재태깅 */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 mt-4">
+                  <h3 className="text-sm font-black text-[#1B4332] mb-1">데이터 유지보수</h3>
+                  <p className="text-xs text-gray-500 mb-3">
+                    과거 러닝 기록의 운동 종류 태그를 새 분류 체계(8종)로 업데이트합니다.
+                    <br />기존 &ldquo;SPRINT&rdquo; 태그 → TIME TRIAL / VO2 INTERVAL / SPRINT INTERVAL 세분화,
+                    &ldquo;FARTLEK&rdquo; → VO2 INTERVAL 개명. 1회만 실행하면 됩니다.
+                  </p>
+
+                  {migrationMode === "idle" && !migrationReport && (
+                    <button
+                      onClick={() => runMigration(true)}
+                      disabled={migrating}
+                      className="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-[#1B4332] disabled:opacity-50 transition-colors"
+                    >
+                      {migrating ? "검사 중..." : "① 변경 사항 미리보기 (안전)"}
+                    </button>
+                  )}
+
+                  {migrationReport && (
+                    <div className="bg-gray-50 rounded-xl p-3 mb-3 text-xs space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">스캔한 유저</span>
+                        <span className="font-black text-[#1B4332]">{migrationReport.scannedUsers}명</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">스캔한 러닝 기록</span>
+                        <span className="font-black text-[#1B4332]">{migrationReport.scannedDocs}건</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">
+                          {migrationMode === "dryrun_done" ? "변경 예정" : "변경됨"}
+                        </span>
+                        <span className="font-black text-emerald-600">{migrationReport.updatedDocs}건</span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-1 mt-1 space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">fartlek → vo2_interval</span>
+                          <span className="font-bold text-gray-700">{migrationReport.fartlekToVo2}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">sprint → time_trial</span>
+                          <span className="font-bold text-gray-700">{migrationReport.sprintToTimeTrial}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">sprint → vo2_interval</span>
+                          <span className="font-bold text-gray-700">{migrationReport.sprintToVo2}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">sprint → sprint_interval</span>
+                          <span className="font-bold text-gray-700">{migrationReport.sprintToSprintInterval}</span>
+                        </div>
+                      </div>
+                      {migrationReport.errors.length > 0 && (
+                        <div className="border-t border-gray-200 pt-1 mt-1">
+                          <p className="font-bold text-red-500">에러 {migrationReport.errors.length}건:</p>
+                          {migrationReport.errors.slice(0, 5).map((err, i) => (
+                            <p key={i} className="text-[10px] text-red-400 truncate">{err}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {migrationMode === "dryrun_done" && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setMigrationReport(null); setMigrationMode("idle"); }}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-gray-600 transition-colors"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => runMigration(false)}
+                        disabled={migrating}
+                        className="flex-1 bg-[#1B4332] hover:bg-[#2D6A4F] active:bg-[#0D2818] rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 transition-colors"
+                      >
+                        {migrating ? "실행 중..." : "② 실제 업데이트 실행"}
+                      </button>
+                    </div>
+                  )}
+
+                  {migrationMode === "executed" && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                      <p className="text-sm font-black text-emerald-700">업데이트 완료</p>
+                      <p className="text-xs text-emerald-600 mt-1">
+                        총 {migrationReport?.updatedDocs ?? 0}건 재태깅됨. 앱에서 히스토리 새로고침 시 새 라벨로 표시됩니다.
+                      </p>
+                      <button
+                        onClick={() => { setMigrationReport(null); setMigrationMode("idle"); }}
+                        className="mt-2 text-xs font-bold text-emerald-700 underline"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                  )}
+
+                  {migrationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-2">
+                      <p className="text-sm font-bold text-red-700">오류</p>
+                      <p className="text-xs text-red-600 mt-1">{migrationError}</p>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
