@@ -68,7 +68,7 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
           )}
         </div>
 
-        {/* 상단 블록: 대표 스탯 (거리 또는 라운드) */}
+        {/* 상단 블록: 대표 스탯 (숫자 옆 인라인 단위) */}
         {hasGpsData ? (
           <div className="flex flex-col items-start">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
@@ -76,8 +76,8 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
             </p>
             <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
               {formatRunDistanceKm(runningStats.distance)}
+              <span className="text-xl text-gray-400 ml-2 font-black uppercase tracking-[0.15em]">km</span>
             </p>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">km</p>
           </div>
         ) : (
           <div className="flex flex-col items-start">
@@ -86,15 +86,15 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
             </p>
             <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
               {(runningStats.intervalRounds || []).length || "—"}
+              <span className="text-xl text-gray-400 ml-2 font-black uppercase tracking-[0.15em]">rounds</span>
             </p>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">rounds</p>
           </div>
         )}
 
         {/* 구분선 */}
         <div className="border-t border-gray-100 mt-6 pt-6" />
 
-        {/* 하단 블록: Pace + Time 2분할 */}
+        {/* 하단 블록: Pace + Time 2분할 (숫자 옆 인라인 단위, 시간은 제목을 '총 시간'으로 통일) */}
         <div className="grid grid-cols-2 gap-6">
           {/* Pace (전력 평균 우선 노출 — 러닝 코치 권고) */}
           <div className="flex flex-col items-start">
@@ -103,19 +103,18 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
             </p>
             <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatPace(runningStats.sprintAvgPace ?? runningStats.avgPace)}
+              <span className="text-base text-gray-400 ml-1.5 font-black">/km</span>
             </p>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">/km</p>
           </div>
 
-          {/* Time */}
+          {/* Time — 제목을 '총 시간'으로 통일 (숫자 아래 중복 라벨 제거) */}
           <div className="flex flex-col items-start">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
-              {t("running.stats.time")}
+              {t("running.stats.timeUnit")}
             </p>
             <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatRunDuration(runningStats.duration)}
             </p>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">{t("running.stats.timeUnit")}</p>
           </div>
         </div>
       </div>
