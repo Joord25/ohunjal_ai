@@ -2,6 +2,64 @@
 
 ---
 
+### 회의 64-α: 러닝 리포트 Kenko 재디자인 스프린트 (2026-04-19 저녁)
+
+**참석:** 대표(임주용), 기획자 Agent, 평가자 Agent
+
+**레퍼런스:** Vitaly Rubtsov — Kenko Workout tracker (Dribbble/Behance)
+
+**배경 (대표 요청):**
+회의 64-XYZ 버그 수정 완료 후 러닝 리포트 UI가 여전히 "정보 나열"에 그쳐 감성적 임팩트가 약함. Kenko 디자인 언어로 3탭(오늘 폼/요약/다음) 전체 재디자인 요청.
+
+**핵심 결정 (대표 지시):**
+1. Variant A Activity Ring — 이번 주 카드의 주간 목표(20km) 대비 진행률
+2. 오늘 폼 탭 하이브리드 — 육각형 레이더 유지 + Top 3 강점 Activity Ring 3개 추가 (설계만, 구현 보류)
+3. colored container 최소화 — 타이포·구분선·여백으로 위계 전달 (배경 박스·뱃지 pill 제거)
+4. Phase 2 (오늘 폼 탭) 스킵 — 대표 만족, 현 상태 유지
+
+**기획자 SPEC:**
+`.planning/DESIGN-RUNNING-REPORT-KENKO.md` (1107줄)
+- 디자인 토큰 (typography scale, spacing, color, shape)
+- ActivityRing 컴포넌트 + weeklyRunning 유틸 신설
+- 3탭 11 카드 before/after ASCII mockup
+- 각 카드 acceptance criteria + grep 검증 명령어
+
+**구현 커밋 이력:**
+- `a1c261c` Phase 0: ActivityRing + weeklyRunning + SPEC
+- `d261a21` Phase 1.1: Hero 카드
+- `1c71726` Phase 1.2: Interval Breakdown 미니 바
+- `befb608`/`4a43e4d`/`6939181`/`b1b1b87`/`4d3a06e`/`0c3e38a`/`9e2e285`/`46ede35`/`13b2683`/`43856c4`/`906eee8`/`98d9ca5`/`f580aaf`/`449ae4d` Phase 1.3: TT 카드 (많은 iteration — 3-분할 vs 중앙정렬 vs 좌측정렬 ping-pong, 최종 grid-cols-3 + border-r)
+- `ecf08be` Phase 1.4: KM 스플릿 (amber 제거)
+- `4722d1d` Phase 1.5: 이번주 Activity Ring (Variant A)
+- `fc37954` Phase 3: 다음 탭 (퀘스트 카드 emerald 톤 통일)
+
+**대표 승인 결정:**
+- ✅ 요약 탭 5카드 Phase 1 승인 ("이제 됐어! 딱 맘에드네")
+- ⏭ Phase 2 (오늘 폼 탭) 스킵 결정
+- ✅ 다음 탭 Phase 3 승인 ("오케이 좋아")
+
+**확정된 Kenko 디자인 원칙 (향후 다른 탭 리디자인 시 재사용):**
+1. 카드: `rounded-3xl border border-gray-100 shadow-sm px-6 py-7`
+2. 라벨: `text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]`
+3. 숫자: `text-3xl font-black text-[#1B4332] leading-none tabular-nums`
+4. 3분할: `grid grid-cols-3` + `border-r border-gray-100` (last 제외) — 완벽 중앙 정렬 + 오버플로우 방지
+5. 구분선: `border-t border-gray-100` (h-px bg- 관행 폐기)
+6. 컬러 규칙: emerald 단일 톤 + opacity 변화 (100/60/35), amber는 경고 전용, red/blue 사용 금지
+7. colored container 금지 — 타이포 위계 + 구분선만으로 표현
+
+**미해결·이월 과제:**
+- 오늘 폼 탭 (피트니스 나이 + 육각형 + Top 3 강점 Ring 하이브리드) — Phase 2 보류
+- Weekly Quest Ring (다음 탭 상단에 ActivityRing 추가) — SPEC만, 미구현
+- TT 카드 v2 추이 차트 (회의 64-Y Q4 이후 이월)
+
+**Lessons learned:**
+- Kenko = 대형 hero 숫자가 전부 아님. 아이콘 anchor + 밀도 있는 그리드 + 타이포 위계.
+- `flex + gap + flex-1`은 좁은 폰 프레임에서 `tabular-nums` 와이드 숫자 + 큰 폰트 조합 시 오버플로우. `grid grid-cols-3 + border-r`이 안전.
+- colored container는 Kenko 철학 반대. 배경 박스·pill 뱃지 사용 시 항상 재점검.
+- 디자인 반복은 대표 피드백 1~2번으로 정리. 3번 이상 ping-pong 시 디자인 원칙을 먼저 재합의해야 함.
+
+---
+
 ### 회의 64-XYZ: 러닝 리포트 3대 버그 수정 스프린트 (2026-04-19)
 
 **참석:** 대표(임주용), 기획자 Agent, 평가자 Agent, 러닝 자문단(Seiler/San Millán/Ferber/Esteve-Lanao/Canova/Sang/사내코치), 사내 러닝코치(서브3)
