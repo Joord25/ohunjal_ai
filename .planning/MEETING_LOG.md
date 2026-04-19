@@ -3007,3 +3007,22 @@ Full sub-3       12주 × 5일 =  60세션  W10=Dress, W12=race
 - 신규 Cloud Functions 엔드포인트 0개 (Phase 4.1~4.3 모두 클라 측 변경)
 - **배포 명령 불변**: `cd functions && firebase deploy --only functions` → `git push`
 - Phase 4 끝낸 시점에 배포 권장 — Phase 4.1 게이트 정밀화가 들어가야 Full sub-3 거짓 답변 우회 리스크 제거됨
+
+---
+
+## 회의 64-P — 종아리(calf) 근육 아이콘 활성화 (2026-04-19)
+
+**맥락**: 회의 62 후속에서 남아있던 calf 전용 아이콘 SVG가 Figma (node 51:16531, kenko-ui-kit-update-1)에서 도착. 대표가 SVG 직접 붙여넣기로 전달.
+
+**변경**:
+- [public/icons/body/calf.svg](../public/icons/body/calf.svg) — 신규 (2-tone 하이라이트, 양쪽 종아리 #059669, stroke #353E82)
+- [src/components/plan/bodyIcon.ts](../src/components/plan/bodyIcon.ts) — `CALF_SVG_READY` true 전환
+
+**적용 대상 (3종)**:
+- 스탠딩 카프 레이즈 (Standing Calf Raises)
+- 시티드 카프 레이즈 (Seated Calf Raises)
+- 동키 카프 레이즈 (Donkey Calf Raises)
+
+**남은 fallback**: `WIDE_SQUAT_SVG_READY` 여전히 false — wide-squat SVG 미도착 (딥 스쿼트 홀드, 와이드 스쿼트 3종 leg-press.svg fallback 유지).
+
+**배포**: 클라 전용 변경, Hosting 자동 배포만 필요. Functions 변경 없음.

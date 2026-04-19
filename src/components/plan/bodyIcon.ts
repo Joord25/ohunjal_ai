@@ -7,11 +7,12 @@ import { getExerciseMuscleGroups } from "@/constants/workout";
  * Figma: node 24:19184 (glutes), node 26:15589 (Adductor) — kenko-ui-kit-update-1
  */
 // 2026-04-19: glutes(3-tone 신버전), adductor(2-tone) SVG 도착 → 플래그 활성화 (회의 64-L).
-// wide-squat, calf SVG는 미도착 → fallback 유지.
+// 2026-04-19: calf SVG 도착 (Figma node 51:16531) → 플래그 활성화 (회의 64-P).
+// wide-squat SVG는 미도착 → fallback 유지.
 const GLUTES_SVG_READY = true;       // public/icons/body/glutes.svg
 const ADDUCTOR_SVG_READY = true;     // public/icons/body/adductor.svg
 const WIDE_SQUAT_SVG_READY = false;  // fallback: leg-press.svg
-const CALF_SVG_READY = false;        // fallback: leg-press.svg
+const CALF_SVG_READY = true;         // public/icons/body/calf.svg
 
 const GLUTE: Set<string> = new Set([
   "글루트 브릿지 (Glute Bridge)",
