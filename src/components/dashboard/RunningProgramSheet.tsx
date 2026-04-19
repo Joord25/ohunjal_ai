@@ -528,7 +528,7 @@ const StepSettings: React.FC<{
   onNext: () => void;
 }> = ({ t, programId, daysPerWeek, setDaysPerWeek, startChoice, setStartChoice, vo5kMin, setVo5kMin, vo5kSec, setVo5kSec, onBack, onNext }) => {
   const isVo2 = programId === "vo2_boost";
-  const vo5kValid = !isVo2 || (vo5kMin > 0 && vo5kMin < 60);
+  const vo5kValid = !isVo2 || (vo5kMin >= 10 && vo5kMin <= 59 && vo5kSec >= 0 && vo5kSec <= 59);
 
   return (
     <>
@@ -563,20 +563,35 @@ const StepSettings: React.FC<{
           <div className="flex gap-2 items-center">
             <input
               type="number"
+              inputMode="numeric"
               min={10}
               max={59}
               value={vo5kMin}
-              onChange={(e) => setVo5kMin(Math.max(10, Math.min(59, parseInt(e.target.value) || 25)))}
-              className="flex-1 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] outline-none focus:border-[#2D6A4F]"
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") { setVo5kMin(0); return; }
+                const v = parseInt(raw);
+                if (isNaN(v)) return;
+                setVo5kMin(Math.min(59, Math.max(0, v)));
+              }}
+              onBlur={() => { if (vo5kMin < 10) setVo5kMin(10); }}
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] outline-none focus:border-[#2D6A4F]"
             />
             <span className="text-[12px] text-gray-500">{t("running_program.step2.vo2_5k_minutes")}</span>
             <input
               type="number"
+              inputMode="numeric"
               min={0}
               max={59}
               value={vo5kSec}
-              onChange={(e) => setVo5kSec(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
-              className="flex-1 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] outline-none focus:border-[#2D6A4F]"
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") { setVo5kSec(0); return; }
+                const v = parseInt(raw);
+                if (isNaN(v)) return;
+                setVo5kSec(Math.min(59, Math.max(0, v)));
+              }}
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[14px] font-bold text-[#1B4332] outline-none focus:border-[#2D6A4F]"
             />
             <span className="text-[12px] text-gray-500">{t("running_program.step2.vo2_5k_seconds")}</span>
           </div>
