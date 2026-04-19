@@ -5,6 +5,7 @@ import { ExerciseStep, getExerciseMuscleGroups } from "@/constants/workout";
 import { getExerciseName } from "@/utils/exerciseName";
 import { getMuscleColor, translateMuscleGroup } from "./muscleColor";
 import { getBodyIcon } from "./bodyIcon";
+import { deriveIntervalSpec, formatIntervalDuration, formatIntervalDistance } from "@/utils/intervalSpec";
 
 interface PhaseBlock {
   key: string;
@@ -113,6 +114,26 @@ export const PlanLibraryPane: React.FC<PlanLibraryPaneProps> = ({
                               ))}
                             </div>
                           )}
+                          {/* 회의 64-V (2026-04-19): 인터벌 운동은 구성 요약 2줄 노출 (대표 지시) */}
+                          {(() => {
+                            const spec = deriveIntervalSpec(ex);
+                            if (!spec) return null;
+                            const sprintText = spec.sprintDist != null
+                              ? formatIntervalDistance(spec.sprintDist)
+                              : spec.sprintSec != null ? formatIntervalDuration(spec.sprintSec) : null;
+                            const recoveryText = spec.recoveryDist != null
+                              ? formatIntervalDistance(spec.recoveryDist)
+                              : spec.recoverySec != null ? formatIntervalDuration(spec.recoverySec) : null;
+                            if (!sprintText || !recoveryText) return null;
+                            const sprintLabel = spec.sprintLabel || "전력";
+                            const recoveryLabel = (spec.recoveryLabel || "회복").replace(/^조깅\s*/, "");
+                            return (
+                              <div className="mt-1.5 flex flex-col gap-0.5 text-xs text-gray-500">
+                                <span>· <span className="font-plan-num font-bold text-gray-700">{sprintText}</span> {sprintLabel}</span>
+                                <span>· <span className="font-plan-num font-bold text-gray-700">{recoveryText}</span> {recoveryLabel}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                         {(ex.type === "warmup" || ex.type === "cardio") && (
                           <span className="text-xs font-bold text-[#1B4332] shrink-0 ml-2">
