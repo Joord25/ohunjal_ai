@@ -3,7 +3,7 @@
 import React from "react";
 import type { RunningStats, WorkoutHistory } from "@/constants/workout";
 import { useTranslation } from "@/hooks/useTranslation";
-import { formatPace, formatRunDistanceKm, formatRunDuration } from "@/utils/runningFormat";
+import { formatPace } from "@/utils/runningFormat";
 
 interface TTCardProps {
   runningStats: RunningStats;
@@ -11,22 +11,30 @@ interface TTCardProps {
 }
 
 /**
- * 회의 64-Y (2026-04-19) TT 카드 v1 + 회의 64-α Kenko 재디자인:
- * - PR 뱃지 (동일 거리(±5%) 최근 TT 대비 개인 최고 페이스면 표시)
- * - 첫 기록(BASELINE SET): 축하 뱃지 + "NEXT TARGET" 박스 (현재 페이스 -5초 도전 투사)
- * - 2회차+: PR 뱃지 + 방향 아이콘(↓빨라짐 emerald / ↑느려짐 amber / =동일) + 초 차이 문구
+ * 회의 64-Y (2026-04-19) + 회의 64-α Kenko + Hero 중복 제거 패치:
+ * - Hero 카드가 이미 거리/페이스/시간 표시 → TT 카드는 **TT 전용 정보만** 노출
+ * - 첫 기록: BASELINE 뱃지 + NEXT TARGET 박스
+ * - 2회차+: PR 뱃지 + 방향 아이콘 + 초 차이 한 줄
+ * - 자기 자신 비교 버그 수정: runningStats 동일한 히스토리 레코드 제외 (히스토리 탭 대응)
  */
 export const TTCard: React.FC<TTCardProps> = ({ runningStats, recentHistory }) => {
   const { t } = useTranslation();
 
   const currentPace = runningStats.avgPace;
   const currentDistKm = runningStats.distance / 1000;
+  const currentDuration = runningStats.duration;
 
-  // 같은 거리(±5%) TT 중 현재 세션 제외한 최고 페이스
+  // 자기 자신 제외 + 같은 거리(±5%) TT 중 최고 페이스
   const similarTTs = recentHistory.filter(h => {
     if (!h.runningStats) return false;
     const rt = h.runningStats.runningType;
     if (rt !== "time_trial" && rt !== "sprint") return false;
+    // 자기 자신 제외 (distance + duration + avgPace 전부 일치 시 same record)
+    const isSelf =
+      h.runningStats.distance === runningStats.distance &&
+      h.runningStats.duration === currentDuration &&
+      h.runningStats.avgPace === currentPace;
+    if (isSelf) return false;
     const dKm = h.runningStats.distance / 1000;
     if (currentDistKm === 0) return false;
     if (Math.abs(dKm - currentDistKm) / currentDistKm > 0.05) return false;
@@ -68,39 +76,6 @@ export const TTCard: React.FC<TTCardProps> = ({ runningStats, recentHistory }) =
         )}
       </div>
 
-      {/* 거리 단독 상단 (hero 느낌) */}
-      <div className="flex flex-col items-start mb-6">
-        <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
-          {formatRunDistanceKm(runningStats.distance)}
-        </p>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">km</p>
-      </div>
-
-      {/* 구분선 */}
-      <div className="border-t border-gray-100 pt-5 mb-5" />
-
-      {/* Time + Avg Pace 2분할 */}
-      <div className="grid grid-cols-2 gap-6 mb-5">
-        <div className="flex flex-col items-start">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
-            {t("running.stats.time")}
-          </p>
-          <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
-            {formatRunDuration(runningStats.duration)}
-          </p>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">total</p>
-        </div>
-        <div className="flex flex-col items-start">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
-            {t("running.stats.pace")}
-          </p>
-          <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
-            {formatPace(currentPace)}
-          </p>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">/km</p>
-        </div>
-      </div>
-
       {/* 첫 기록: NEXT TARGET 박스 */}
       {isFirstRecord && nextTargetPace != null && (
         <div className="rounded-2xl bg-[#FAFFF7] border border-emerald-100 px-4 py-3">
@@ -117,21 +92,21 @@ export const TTCard: React.FC<TTCardProps> = ({ runningStats, recentHistory }) =
       {!isFirstRecord && diffSec != null && (
         <div className="flex items-center gap-2">
           {diffSec < 0 && (
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-label="faster">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-label="faster">
               <path d="M8 2v10m-4-4l4 4 4-4" stroke="#2D6A4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
           {diffSec > 0 && (
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-label="slower">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-label="slower">
               <path d="M8 14V4m-4 4l4-4 4 4" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
           {diffSec === 0 && (
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-label="same">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-label="same">
               <path d="M3 6h10M3 10h10" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" />
             </svg>
           )}
-          <p className={`text-xs font-black ${diffSec < 0 ? "text-[#2D6A4F]" : diffSec > 0 ? "text-amber-600" : "text-gray-500"}`}>
+          <p className={`text-sm font-black ${diffSec < 0 ? "text-[#2D6A4F]" : diffSec > 0 ? "text-amber-600" : "text-gray-500"}`}>
             {diffSec < 0
               ? t("running.tt.fasterShort", { sec: String(Math.abs(diffSec)) })
               : diffSec === 0
