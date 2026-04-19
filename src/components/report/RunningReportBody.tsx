@@ -78,69 +78,69 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
   const cardLayout = pickCardLayout(runningStats.runningType);
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* ── Hero Stats Card (3분할) ── */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-5 py-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-          <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
+    <div className="flex flex-col gap-5">
+      {/* ── Hero Stats Card (회의 64-α: Kenko 2블록 레이아웃) ── */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-7">
+        {/* 타이틀 라벨 */}
+        <div className="flex items-center gap-2 mb-6">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">
             {typeLabel}
           </span>
           {runningStats.isIndoor && (
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">
               · {t("running.indoor.label")}
             </span>
           )}
         </div>
 
-        <div className="flex items-start justify-around gap-2">
-          {/* Distance — GPS 없으면 Rounds로 대체 */}
-          {hasGpsData ? (
-            <div className="flex flex-col items-center flex-1">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
-                {t("running.stats.distance")}
-              </p>
-              <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
-                {formatRunDistanceKm(runningStats.distance)}
-              </p>
-              <p className="text-[10px] font-bold text-gray-400 mt-1">km</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center flex-1">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
-                {t("running.stats.rounds")}
-              </p>
-              <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
-                {(runningStats.intervalRounds || []).length || "—"}
-              </p>
-              <p className="text-[10px] font-bold text-gray-400 mt-1">rounds</p>
-            </div>
-          )}
+        {/* 상단 블록: 대표 스탯 (거리 또는 라운드) */}
+        {hasGpsData ? (
+          <div className="flex flex-col items-start">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
+              {t("running.stats.distance")}
+            </p>
+            <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
+              {formatRunDistanceKm(runningStats.distance)}
+            </p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">km</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-start">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
+              {t("running.stats.rounds")}
+            </p>
+            <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
+              {(runningStats.intervalRounds || []).length || "—"}
+            </p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">rounds</p>
+          </div>
+        )}
 
-          <div className="w-px h-14 bg-gray-100 mt-3" />
+        {/* 구분선 */}
+        <div className="border-t border-gray-100 mt-6 pt-6" />
 
+        {/* 하단 블록: Pace + Time 2분할 */}
+        <div className="grid grid-cols-2 gap-6">
           {/* Pace (전력 평균 우선 노출 — 러닝 코치 권고) */}
-          <div className="flex flex-col items-center flex-1">
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
+          <div className="flex flex-col items-start">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
               {runningStats.sprintAvgPace != null ? t("running.stats.sprintPace") : t("running.stats.pace")}
             </p>
-            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
+            <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatPace(runningStats.sprintAvgPace ?? runningStats.avgPace)}
             </p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">/km</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">/km</p>
           </div>
 
-          <div className="w-px h-14 bg-gray-100 mt-3" />
-
           {/* Time */}
-          <div className="flex flex-col items-center flex-1">
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">
+          <div className="flex flex-col items-start">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
               {t("running.stats.time")}
             </p>
-            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
+            <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatRunDuration(runningStats.duration)}
             </p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">{t("running.stats.timeUnit")}</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">{t("running.stats.timeUnit")}</p>
           </div>
         </div>
       </div>
