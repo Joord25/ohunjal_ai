@@ -41,10 +41,12 @@ export function computeWeeklyRunningStats(
   sessionDate?: string,
 ): WeeklyRunningStats {
   const now = new Date();
-  const monday = weekMondayMs(now);
 
-  // 현재 뷰가 히스토리 모드면 해당 세션 날짜, 아니면 today
+  // 히스토리 모드에서 과거 세션을 열람 중이면 해당 세션이 속한 주 기준,
+  // 라이브(지금 막 완료)면 오늘 기준 (회의 64-α 후속 수정)
   const currentDate = sessionDate ? new Date(sessionDate) : now;
+  const validDate = !isNaN(currentDate.getTime()) ? currentDate : now;
+  const monday = weekMondayMs(validDate);
 
   let runs = 0;
   let totalDistance = 0;
