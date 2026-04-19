@@ -354,7 +354,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                     {t("share.running.time")}
                   </p>
                   <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
-                    {formatRunDuration(runningStats?.duration ?? totalDurationSec)}
+                    {formatRunDuration(runningStats?.duration ?? totalDurationSec).replace(/:/g, " : ")}
                   </p>
                 </div>
               </div>
