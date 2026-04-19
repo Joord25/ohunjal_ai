@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Questrial } from "next/font/google";
+import { Cormorant_Garamond, Questrial, Manrope } from "next/font/google";
 // Pretendard loaded via CDN in <head> for cross-platform reliability
 import "./globals.css";
 
@@ -14,6 +14,15 @@ const questrial = Questrial({
   variable: "--font-questrial",
   subsets: ["latin"],
   weight: ["400"],
+  display: "swap",
+});
+
+// 회의 64-α 후속 2 (대표 지시 2026-04-19): Strava 유사 geometric sans (Maison Neue 무료 대체)
+// 공유 카드 숫자에 적용. 500/600/700/800 weight 로 스펙트럼 확보.
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -228,7 +237,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${cormorant.variable} ${questrial.variable} antialiased`}
+        className={`${cormorant.variable} ${questrial.variable} ${manrope.variable} antialiased`}
       >
         {children}
         <noscript>
