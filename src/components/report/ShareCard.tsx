@@ -324,36 +324,36 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                 </p>
               </div>
 
-              {/* Strava 스타일 세로 3스탯 — 숫자 크고 굵고, 줄간격 매우 타이트 */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
+              {/* Strava 스타일 세로 3스탯 — 굵기 완화, 크기 적정, 줄간격은 타이트 유지 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
                 {/* Distance */}
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "white", fontSize: 16, fontWeight: 800, letterSpacing: "0em", marginBottom: 2, lineHeight: 1 }}>
+                  <p style={{ color: "white", fontSize: 15, fontWeight: 700, letterSpacing: "0em", marginBottom: 4, lineHeight: 1 }}>
                     {t("share.running.distance")}
                   </p>
-                  <p style={{ color: "white", fontSize: 72, fontWeight: 900, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.04em" }}>
+                  <p style={{ color: "white", fontSize: 52, fontWeight: 800, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em" }}>
                     {formatRunDistanceKm(runningStats?.distance)}
-                    <span style={{ fontSize: 26, color: "white", marginLeft: 6, fontWeight: 800, letterSpacing: "-0.02em" }}>{t("share.running.unitKm")}</span>
+                    <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 700, letterSpacing: "-0.01em" }}>{t("share.running.unitKm")}</span>
                   </p>
                 </div>
 
                 {/* Pace */}
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "white", fontSize: 16, fontWeight: 800, letterSpacing: "0em", marginBottom: 2, lineHeight: 1 }}>
+                  <p style={{ color: "white", fontSize: 15, fontWeight: 700, letterSpacing: "0em", marginBottom: 4, lineHeight: 1 }}>
                     {t("share.running.pace")}
                   </p>
-                  <p style={{ color: "white", fontSize: 72, fontWeight: 900, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.04em" }}>
+                  <p style={{ color: "white", fontSize: 52, fontWeight: 800, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em" }}>
                     {formatPace(runningStats?.sprintAvgPace ?? runningStats?.avgPace)}
-                    <span style={{ fontSize: 26, color: "white", marginLeft: 6, fontWeight: 800, letterSpacing: "-0.02em" }}>{t("share.running.unitPerKm")}</span>
+                    <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 700, letterSpacing: "-0.01em" }}>{t("share.running.unitPerKm")}</span>
                   </p>
                 </div>
 
                 {/* Time */}
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "white", fontSize: 16, fontWeight: 800, letterSpacing: "0em", marginBottom: 2, lineHeight: 1 }}>
+                  <p style={{ color: "white", fontSize: 15, fontWeight: 700, letterSpacing: "0em", marginBottom: 4, lineHeight: 1 }}>
                     {t("share.running.time")}
                   </p>
-                  <p style={{ color: "white", fontSize: 72, fontWeight: 900, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.04em" }}>
+                  <p style={{ color: "white", fontSize: 52, fontWeight: 800, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em" }}>
                     {formatRunDuration(runningStats?.duration ?? totalDurationSec)}
                   </p>
                 </div>
