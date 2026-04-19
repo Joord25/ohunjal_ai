@@ -135,25 +135,26 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
           </span>
         </div>
 
-        {/* 전력 평균 / 회복 평균 요약 */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-gray-50 rounded-2xl p-4">
+        {/* 전력 평균 / 회복 평균 요약 — 타이포 그리드만 (배경 박스 제거) */}
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="flex flex-col items-start">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
               {t("running.report.sprintAvg")}
             </p>
-            <p className="text-2xl font-black text-[#1B4332] leading-none tabular-nums">
+            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatPace(runningStats.sprintAvgPace)}
             </p>
           </div>
-          <div className="bg-gray-50 rounded-2xl p-4">
+          <div className="flex flex-col items-start">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
               {t("running.report.recoveryAvg")}
             </p>
-            <p className="text-2xl font-black text-[#1B4332] leading-none tabular-nums">
+            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatPace(runningStats.recoveryAvgPace)}
             </p>
           </div>
         </div>
+        <div className="border-t border-gray-100 pt-5" />
 
         {/* 라운드별 상세 — Kenko 수평 미니 바 2개 (전력/회복 정규화) */}
         {(runningStats.intervalRounds || []).length > 0 ? (() => {
