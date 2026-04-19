@@ -79,3 +79,20 @@ export function formatIntervalDistance(meters: number): string {
   }
   return `${meters}m`;
 }
+
+/**
+ * 전력 구간 예상 소요 시간 (초).
+ * sprintSec 있으면 그대로, 없으면 paceGuide + sprintDist로 계산.
+ * paceGuide 형식: "4:35-4:45/km" 또는 "4:15/km" (평균 사용).
+ * 반환 null = 계산 불가 (페이스 또는 거리 누락).
+ */
+export function estimateSprintSec(spec: { sprintSec?: number; sprintDist?: number; paceGuide?: string }): number | null {
+  if (spec.sprintSec != null) return spec.sprintSec;
+  if (spec.sprintDist == null || !spec.paceGuide) return null;
+  const m = spec.paceGuide.match(/(\d+):(\d{2})(?:[~\-](\d+):(\d{2}))?/);
+  if (!m) return null;
+  const minSec = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const maxSec = m[3] ? parseInt(m[3], 10) * 60 + parseInt(m[4], 10) : minSec;
+  const avgSec = (minSec + maxSec) / 2;
+  return Math.round((avgSec * spec.sprintDist) / 1000);
+}

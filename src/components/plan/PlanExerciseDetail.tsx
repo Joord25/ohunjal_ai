@@ -9,7 +9,7 @@ import { getBodyIcon } from "./bodyIcon";
 import { useUnits } from "@/hooks/useUnits";
 import { kgToLb, lbToKg } from "@/utils/units";
 import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
-import { deriveIntervalSpec, formatIntervalDuration, formatIntervalDistance } from "@/utils/intervalSpec";
+import { deriveIntervalSpec, formatIntervalDuration, formatIntervalDistance, estimateSprintSec } from "@/utils/intervalSpec";
 
 interface PlanExerciseDetailProps {
   exercise: ExerciseStep;
@@ -176,33 +176,46 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
 
       <div className="h-px bg-gray-100 mx-4" />
 
-      {/* 회의 64-T/V (2026-04-19): 인터벌 SET 행.
-          대표 지시: 전력=거리만, 회복=시간만(m 없음), 라벨 간소화(회복), 페이스는 바닥 박스 고정. */}
+      {/* 회의 64-T/V (2026-04-19): 인터벌 SET — 전력(거리+예상시간) / 회복(시간) 스택 레이아웃.
+          대표 지시 (64-V 후속): SET당 상단 "거리 | 예상시간" + "전력" 라벨, 하단 "회복 | 시간". 페이스는 바닥 박스. */}
       {isInterval && intervalSpec && (() => {
-        const sprintText = intervalSpec.sprintDist != null
+        const sprintDistText = intervalSpec.sprintDist != null
           ? formatIntervalDistance(intervalSpec.sprintDist)
-          : intervalSpec.sprintSec != null ? formatIntervalDuration(intervalSpec.sprintSec) : "—";
+          : null;
+        const estSprintSec = estimateSprintSec(intervalSpec);
+        const sprintTimeText = estSprintSec != null ? formatIntervalDuration(estSprintSec) : null;
+        // 시간기반(sprintSec 직접) 또는 거리기반(예상시간 계산) 둘 중 하나는 존재해야 함
+        const sprintTopLeft = sprintDistText ?? (sprintTimeText ?? "—");
+        const sprintTopRight = sprintDistText != null ? sprintTimeText : null; // 거리기반일 때만 예상시간 우측 표시
         const recoveryText = intervalSpec.recoveryDist != null
           ? formatIntervalDistance(intervalSpec.recoveryDist)
           : intervalSpec.recoverySec != null ? formatIntervalDuration(intervalSpec.recoverySec) : "—";
         const sprintLabelText = intervalSpec.sprintLabel || t("interval.sprint_label");
-        // "조깅 회복" → "회복"으로 단축 (대표 지시)
         const recoveryLabelRaw = intervalSpec.recoveryLabel || t("interval.recovery_label");
         const recoveryLabelText = recoveryLabelRaw.replace(/^조깅\s*/, "");
         return (
           <div className="flex flex-col px-4 py-2">
             {Array.from({ length: intervalSpec.rounds }).map((_, i) => (
-              <div key={`${globalIdx}-int-${i}`} className="flex items-center py-3 gap-2 border-b border-gray-100 last:border-b-0">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] w-10 shrink-0">
-                  SET <span className="font-plan-num">{i + 1}</span>
-                </span>
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <span className="font-plan-num text-lg font-black text-[#2D6A4F] leading-none">{sprintText}</span>
-                  <span className="text-[9px] font-bold text-gray-400 mt-0.5 tracking-wider uppercase">{sprintLabelText}</span>
+              <div key={`${globalIdx}-int-${i}`} className="py-3 border-b border-gray-100 last:border-b-0">
+                {/* 상단: 전력 구간 (SET · 거리 · 예상시간) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] w-10 shrink-0">
+                    SET <span className="font-plan-num">{i + 1}</span>
+                  </span>
+                  <span className="flex-1 font-plan-num text-lg font-black text-[#2D6A4F] leading-none">{sprintTopLeft}</span>
+                  {sprintTopRight && (
+                    <span className="font-plan-num text-lg font-black text-[#2D6A4F] leading-none">{sprintTopRight}</span>
+                  )}
                 </div>
-                <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="w-10 shrink-0" />
+                  <span className="flex-1 text-[9px] font-bold text-gray-400 tracking-wider uppercase">{sprintLabelText}</span>
+                </div>
+                {/* 하단: 회복 구간 (라벨 · 시간) */}
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed border-gray-100">
+                  <span className="w-10 shrink-0" />
+                  <span className="flex-1 text-[10px] font-bold text-gray-500 tracking-wider uppercase">{recoveryLabelText}</span>
                   <span className="font-plan-num text-lg font-black text-[#1B4332] leading-none">{recoveryText}</span>
-                  <span className="text-[9px] font-bold text-gray-400 mt-0.5 tracking-wider uppercase">{recoveryLabelText}</span>
                 </div>
               </div>
             ))}
