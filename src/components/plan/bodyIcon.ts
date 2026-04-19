@@ -1,17 +1,13 @@
 import { getExerciseMuscleGroups } from "@/constants/workout";
 
 /**
- * 회의 62 후속 (2026-04-18, 대표 지시): 엉덩이(glutes)·내전근(adductor) 전용 아이콘 도입.
- * SVG 파일(glutes.svg / adductor.svg)이 `public/icons/body/`에 준비되면 각 플래그를 true로 전환.
- * false 동안엔 기존 deadlift.svg로 fallback — 런타임 404 방지.
- * Figma: node 24:19184 (glutes), node 26:15589 (Adductor) — kenko-ui-kit-update-1
+ * 하체 아이콘은 Figma Kenko UI Kit 기반 4종으로 운용 (회의 64-R, 대표 지시 2026-04-19):
+ * - glutes.svg: 엉덩이 (힙 쓰러스트·런지·와이드 스쿼트 등)
+ * - adductor.svg: 내전근·사이드 플랭크
+ * - calf.svg: 종아리
+ * - deadlift.svg: 후면 체인 (데드리프트·레그컬 등)
+ * 전면 다리는 leg-press.svg, 상체·코어는 GROUP_TO_ICON 유지.
  */
-// 2026-04-19: glutes(3-tone 신버전), adductor(2-tone) SVG 도착 → 플래그 활성화 (회의 64-L).
-// 2026-04-19: calf SVG 도착 (Figma node 51:16531) → 플래그 활성화 (회의 64-P).
-// 2026-04-19: 와이드/딥 스쿼트 4종 → GLUTE 흡수 (회의 64-Q, 대표 지시) — 전용 wide-squat.svg 폐기.
-const GLUTES_SVG_READY = true;       // public/icons/body/glutes.svg
-const ADDUCTOR_SVG_READY = true;     // public/icons/body/adductor.svg
-const CALF_SVG_READY = true;         // public/icons/body/calf.svg
 
 const GLUTE: Set<string> = new Set([
   "글루트 브릿지 (Glute Bridge)",
@@ -39,10 +35,6 @@ const ADDUCTOR: Set<string> = new Set([
   "힙 어덕션 머신 (Hip Adduction Machine)",
 ]);
 
-/**
- * 회의 62 후속 (2026-04-18, 대표 지시): 종아리(calf) 전용 아이콘.
- * Figma node 28:15962 → calf.svg 로 export 예정. fallback: leg-press.svg (다리 계열 일관).
- */
 const CALF: Set<string> = new Set([
   "스탠딩 카프 레이즈 (Standing Calf Raises)",
   "시티드 카프 레이즈 (Seated Calf Raises)",
@@ -73,10 +65,7 @@ const POSTERIOR_LEG: Set<string> = new Set([
   "케틀벨 데드리프트 (Kettlebell Deadlift)",
   "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)",
   "레그 컬 (Leg Curl)",
-  // 회의 62 후속 (2026-04-18, 대표 지시): 원 레그 RDL → 데드리프트 아이콘
   "원 레그 루마니안 데드리프트 (Single Leg RDL)",
-  // 아래 7개는 GLUTE Set으로 이동 (2026-04-18 회의 62 후속, 대표 지시)
-  // - 글루트 브릿지, 불가리안 스플릿 스쿼트, 리버스 런지, 워킹 런지, 스텝업, 케틀벨 워킹 런지, 케이블 풀 스루
 ]);
 
 const GROUP_TO_ICON: Record<string, string> = {
@@ -91,17 +80,16 @@ const GROUP_TO_ICON: Record<string, string> = {
 
 /**
  * 사이드 플랭크 류 판정 — 내전근 자극 (대표 지시 2026-04-18).
- * 현재 풀: "사이드 플랭크 (Side Plank)" 1종. 향후 변형 (사이드 플랭크 힙 립·Side Plank Dips 등) 자동 커버.
+ * 현재 풀: "사이드 플랭크 (Side Plank)" 1종. 향후 변형(사이드 플랭크 힙 립·Side Plank Dips 등) 자동 커버.
  */
 function isSidePlank(name: string): boolean {
   return /사이드 플랭크|Side\s*Plank/i.test(name);
 }
 
 export function getBodyIcon(name: string): string | null {
-  // SVG 미도착 동안은 기존 아이콘으로 fallback. 도착하면 *_SVG_READY 플래그를 true로 전환.
-  if (CALF.has(name)) return CALF_SVG_READY ? "/icons/body/calf.svg" : "/icons/body/leg-press.svg";
-  if (GLUTE.has(name)) return GLUTES_SVG_READY ? "/icons/body/glutes.svg" : "/icons/body/deadlift.svg";
-  if (isSidePlank(name) || ADDUCTOR.has(name)) return ADDUCTOR_SVG_READY ? "/icons/body/adductor.svg" : "/icons/body/deadlift.svg";
+  if (CALF.has(name)) return "/icons/body/calf.svg";
+  if (GLUTE.has(name)) return "/icons/body/glutes.svg";
+  if (isSidePlank(name) || ADDUCTOR.has(name)) return "/icons/body/adductor.svg";
   if (ANTERIOR_LEG.has(name)) return "/icons/body/leg-press.svg";
   if (POSTERIOR_LEG.has(name)) return "/icons/body/deadlift.svg";
   const groups = getExerciseMuscleGroups(name);

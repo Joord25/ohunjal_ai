@@ -3042,3 +3042,23 @@ Full sub-3       12주 × 5일 =  60세션  W10=Dress, W12=race
 - 적용 대상: 딥 스쿼트 홀드, 케틀벨 와이드 스쿼트, 덤벨 와이드 스쿼트, 와이드 스쿼트
 
 **배포**: 클라 전용 변경, Hosting 자동 배포. tsc 통과 확인.
+
+---
+
+## 회의 64-R — Kenko UI Kit 하체 아이콘 4종 최종본 적용 (2026-04-19)
+
+**맥락**: 대표가 Figma Kenko UI Kit에서 glutes·adductor·calf 3개 SVG를 직접 export해 `public/icons/body/`에 배치. 기존 파일(이전 세션 SVG 붙여넣기 버전) 교체.
+
+**사용 파일 (4종 확정)**:
+- [public/icons/body/glutes.svg](../public/icons/body/glutes.svg) — 엉덩이 (교체, 19,914B, 대표 직접 export)
+- [public/icons/body/adductor.svg](../public/icons/body/adductor.svg) — 내전근·사이드 플랭크 (교체, 19,229B, 대표 직접 export)
+- [public/icons/body/calf.svg](../public/icons/body/calf.svg) — 종아리 (교체, 14,546B 최적화 버전, 대표 직접 export)
+- [public/icons/body/deadlift.svg](../public/icons/body/deadlift.svg) — 후면 체인 (기존 유지)
+
+**변경**:
+- [src/components/plan/bodyIcon.ts](../src/components/plan/bodyIcon.ts)
+  - `*_SVG_READY` 플래그 3종 전부 제거 (파일 존재 보장)
+  - 주석 정리 — "하체 아이콘 4종 운용" 명시
+  - 나머지 라우팅 로직·Set 구성 유지 (GLUTE/ADDUCTOR/CALF/ANTERIOR_LEG/POSTERIOR_LEG + isSidePlank)
+
+**배포**: 클라 전용, `git push`만 필요. Functions 변경 없음. tsc 통과.
