@@ -44,6 +44,13 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
   // 회의 64-T (2026-04-19): 인터벌 SET 행 렌더. intervalSpec 우선, 없으면 count regex fallback.
   const intervalSpec = deriveIntervalSpec(exercise);
   const isInterval = intervalSpec !== null;
+  // 회의 64-T Wave 2 (2026-04-19): 연속 유산소 (easy/tempo/long) 분기 — Zone 뱃지 + tempoGuide 노출
+  const isContinuousRun = !isInterval && exercise.runKind === "continuous";
+  const continuousZoneKey = isContinuousRun && exercise.runType
+    ? exercise.runType === "easy" ? "run.zone.easy"
+      : exercise.runType === "tempo" ? "run.zone.tempo"
+      : exercise.runType === "long" ? "run.zone.long" : null
+    : null;
   // 단순 시간 패턴 ("N초"/"N분"/"N-M초") + 인터벌 마커 없음 → 세트별 시간 편집 모드
   const timeMatch = exercise.count.match(/(\d+)(?:-(\d+))?\s*(초|분|sec|min)/);
   const timeUnit = timeMatch ? timeMatch[3] : null;
@@ -150,6 +157,12 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
             {isInterval && intervalSpec && (
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                 {t("interval.rounds_count", { n: String(intervalSpec.rounds) })}
+              </span>
+            )}
+            {/* 회의 64-T Wave 2: 연속 유산소 Zone 뱃지 (easy=Z2, tempo=역치, long=Z1) */}
+            {continuousZoneKey && (
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                {t(continuousZoneKey)}
               </span>
             )}
             {muscleGroups.map((g) => (
@@ -301,6 +314,20 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
           </div>
         );
       })()}
+
+      {/* 회의 64-T Wave 2 (2026-04-19): 연속 유산소 목표 페이스 가이드 박스 */}
+      {isContinuousRun && exercise.tempoGuide && (
+        <div className="px-4 pb-3">
+          <div className="flex items-center justify-between px-3 py-2 bg-emerald-50/60 border border-emerald-100 rounded-lg">
+            <span className="text-[10px] font-black text-gray-500 tracking-wider uppercase">
+              {t("run.pace_guide_label")}
+            </span>
+            <span className="font-plan-num text-sm font-black text-[#2D6A4F]">
+              {exercise.tempoGuide}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="h-px bg-gray-100" />
 

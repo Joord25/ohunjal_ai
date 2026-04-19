@@ -3124,3 +3124,39 @@ ExerciseStep.intervalSpec?: {
 1e. 평가자 회귀 스위트
 
 **배포**: Functions(빌더 변경) + Hosting 둘 다 필요. Wave 1 완료 후 일괄.
+
+---
+
+## 회의 64-U — 러닝 UI 리디자인 Wave 2 (연속 유산소 C) (2026-04-19)
+
+**맥락**: Wave 1(인터벌) 완료 후 대표 "착수" 지시. 아키타입 C(이지런·LSD·Z1·Threshold·Tempo·대화가능) 플랜 프리뷰에서 `tempoGuide` 필드가 완전히 숨겨져 있던 갭 해결.
+
+### 자문 의견 (압축)
+
+- **Seiler · Esteve-Lanao** (폴라라이즈드·아마추어 RCT) — Zone 구분이 시각적으로 명확해야 유저의 강도 순응도 ↑. easy/tempo/long 3종은 구분해서 표시.
+- **Bakken** — Threshold 구간은 "역치" 인지가 핵심. 페이스 가이드 노출 필수.
+- **사내 러닝코치** — 한국 러너 용어: "Zone 2 · 대화 가능", "역치 · Threshold", "Zone 1 · LSD"가 익숙.
+
+### Zone 라벨 합의
+
+| runType | 한국어 | 영어 |
+|---|---|---|
+| easy | Zone 2 · 대화 가능 | Zone 2 · Conversational |
+| tempo | 역치 · Threshold | Threshold |
+| long | Zone 1 · LSD | Zone 1 · LSD |
+
+### 변경
+
+- [PlanExerciseDetail.tsx](../src/components/plan/PlanExerciseDetail.tsx)
+  - `isContinuousRun` 감지 (runKind="continuous" && !isInterval)
+  - 헤더에 Zone 뱃지 에메랄드 (인터벌 "N회 반복" 뱃지와 동일 스타일)
+  - SET 행/정적 표시 하단에 **페이스 가이드 박스** (tempoGuide 값 노출)
+- [ko.json](../src/locales/ko.json) / [en.json](../src/locales/en.json) — 5개 키 (run.zone.easy/tempo/long, run.pace_guide_label, run.duration_label)
+
+### 회귀 격리
+
+- 웨이트·코어·인터벌 SET 카드 전부 불변
+- 레거시 히스토리 (runType 없음) — Zone 뱃지만 누락, 기존 렌더 동일
+- FitScreen 불변 (Wave 1과 동일)
+
+**배포**: 서버 스키마 변경 없음(Wave 1에 포함됨). 클라만 `git push`.
