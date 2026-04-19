@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { WorkoutSessionData, ExerciseLog, WorkoutAnalysis, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { RunningReportBody } from "@/components/report/RunningReportBody";
+import { MonthlyRunningScience } from "@/components/report/MonthlyRunningScience";
 import { detectRunningType } from "@/utils/runningFormat";
 import { buildWorkoutMetrics, estimateTrainingLevel, getOptimalLoadBand, getBig4FromHistory, classifySessionIntensity, getIntensityRecommendation, getWeeklyIntensityTarget } from "@/utils/workoutMetrics";
 import { ShareCard } from "./ShareCard";
@@ -305,6 +306,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
     });
   }, [totalVolume, bestE1RM, sessionCategory]);
   const isStrengthSession = sessionCategory === "strength" || sessionCategory === "mixed";
+  // 회의 64-β (2026-04-19): 러닝 세션 판별 — runningStats 또는 exercises에서 러닝 타입 감지
+  const isRunningSession = runningStats != null || detectRunningType(sessionData.exercises) != null;
 
   // Merge today's big-4 e1RMs with history (today takes priority)
   const big4Combined = (() => {
@@ -874,8 +877,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
           );
         })()}
 
-        {/* === 운동 과학 데이터 (펼쳐보기, 웨이트만) — 오늘 탭 or 히스토리에서만 === */}
-        {(activeReportTab === "today" || (!!sessionDate && !savedReportTabs)) && isStrengthSession && (
+        {/* === 운동 과학 데이터 (펼쳐보기) — 오늘 탭 or 히스토리에서만 (회의 64-β: 러닝 세션 포함) === */}
+        {(activeReportTab === "today" || (!!sessionDate && !savedReportTabs)) && (isStrengthSession || isRunningSession) && (
         <div className="mb-5">
           <button
             onClick={() => setShowDetail(!showDetail)}
@@ -887,6 +890,13 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
             </svg>
           </button>
         </div>
+        )}
+
+        {/* === 러닝 과학 데이터 (회의 64-β: 이번 달 자문단 7지표) === */}
+        {showDetail && isRunningSession && !isStrengthSession && (
+          <div className="mb-5 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden pt-7">
+            <MonthlyRunningScience history={recentHistory} sessionDate={sessionDate} />
+          </div>
         )}
 
         {showDetail && isStrengthSession && <>
