@@ -3062,3 +3062,65 @@ Full sub-3       12주 × 5일 =  60세션  W10=Dress, W12=race
   - 나머지 라우팅 로직·Set 구성 유지 (GLUTE/ADDUCTOR/CALF/ANTERIOR_LEG/POSTERIOR_LEG + isSidePlank)
 
 **배포**: 클라 전용, `git push`만 필요. Functions 변경 없음. tsc 통과.
+
+---
+
+## 회의 64-T — 러닝 UI 아키타입별 리디자인 Wave 1 (인터벌 A+B) (2026-04-19)
+
+**맥락**: 대표가 "400m 인터벌 / 7세트/1회"만 찍히는 휑한 플랜 프리뷰 지적. Phase A 실태조사 결과 인터벌 구성이 `count` 통문자열에 꾸겨져 있고, 플랜 프리뷰는 이를 분해하지 않음. FitScreen은 시간기반만 3분할 UI 지원.
+
+### 아키타입 분류 (20+ 러닝 세션 → 5 아키타입)
+
+| 아키타입 | 예시 | 상태 |
+|---|---|---|
+| A 시간기반 인터벌 | 워크런, fartlek, strides, Norwegian 4×4 | FitScreen 3분할 존재, 플랜 휑 |
+| B 거리기반 인터벌 | **400m/800m/1000m/mile 인터벌**, pure sprints | FitScreen GPS 폴백, 플랜 휑 |
+| C 연속 유산소 | 이지런, LSD, 70분 Z1런, Threshold Run | Wave 2 예정 |
+| D 하이브리드 | Threshold 2×15, long_with_mp | Wave 3 예정 |
+| E 특수 | TT 2k/5k, dress_rehearsal | Wave 3 예정 |
+
+**Wave 1 결정**: 아키타입 A+B 일괄 진행 (대표 확인).
+
+### 자문단 (7인)
+
+- Seiler, Esteve-Lanao, Bakken (러닝 학계) — 강도 구조·아마추어 순응도
+- 사내 러닝코치 — 한국 실전 라벨
+- UX 디자이너 + 콘텐츠 MD (core-team) — 컴포넌트 분리·카피
+- 평가자 (core-team) — 회귀 가드레일
+
+### 합의 UI-SPEC
+
+**데이터 스키마 (옵션 3 하이브리드, tag-at-source 준수)**:
+```ts
+ExerciseStep.intervalSpec?: {
+  rounds: number;
+  sprintSec?: number; recoverySec?: number;       // 시간기반
+  sprintDist?: number; recoveryDist?: number;     // 거리기반
+  sprintLabel?: string; recoveryLabel?: string;
+  paceGuide?: string;
+}
+```
+`count` 문자열 유지 (back-compat). `deriveIntervalSpec(ex)` 유틸: intervalSpec 우선, 없으면 regex fallback.
+
+**플랜 프리뷰 UI**: 웨이트 SET 카드와 동일 행 레이아웃, 콘텐츠만 분기 — `SET 1: [400m 전력] × [2분 회복]`. 헤더에 "N회 반복" 뱃지.
+
+**FitScreen**: 시간기반 3분할 UI 불변 (회귀 위험 0), 거리기반은 동일 UI로 확장.
+
+**카피 통일**: 전력/회복 (Burst/Recover). walkrun 맥락만 "걷기/달리기" 유지.
+
+### 회귀 격리 (평가자 가드레일)
+
+- 웨이트 SET 카드 불변
+- 코어 SET 카드 불변
+- 연속 러닝 UI 불변 (Wave 2까지)
+- 레거시 히스토리 (intervalSpec 없음) regex fallback 동일
+
+### 구현 단계 (C 단계)
+
+1a. 스키마 + 서버 빌더 10+종 수정
+1b. IntervalSetRow 컴포넌트 + 플랜 프리뷰 렌더
+1c. FitScreen 거리기반 3분할 확장
+1d. i18n (ko+en 동시)
+1e. 평가자 회귀 스위트
+
+**배포**: Functions(빌더 변경) + Hosting 둘 다 필요. Wave 1 완료 후 일괄.

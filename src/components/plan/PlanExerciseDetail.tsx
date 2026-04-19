@@ -9,6 +9,7 @@ import { getBodyIcon } from "./bodyIcon";
 import { useUnits } from "@/hooks/useUnits";
 import { kgToLb, lbToKg } from "@/utils/units";
 import { getVideoEmbedUrl, getYoutubeSearchUrl } from "@/constants/exerciseVideos";
+import { deriveIntervalSpec, formatIntervalDuration, formatIntervalDistance } from "@/utils/intervalSpec";
 
 interface PlanExerciseDetailProps {
   exercise: ExerciseStep;
@@ -40,6 +41,9 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
   const color = getMuscleColor(exercise.name);
   const hasWeight = exercise.type === "strength" || (exercise.weight && exercise.weight !== "Bodyweight" && exercise.weight !== "맨몸");
   const isTimeBased = exercise.type === "warmup" || exercise.type === "cardio" || /분|초|min|sec/i.test(exercise.count);
+  // 회의 64-T (2026-04-19): 인터벌 SET 행 렌더. intervalSpec 우선, 없으면 count regex fallback.
+  const intervalSpec = deriveIntervalSpec(exercise);
+  const isInterval = intervalSpec !== null;
   // 단순 시간 패턴 ("N초"/"N분"/"N-M초") + 인터벌 마커 없음 → 세트별 시간 편집 모드
   const timeMatch = exercise.count.match(/(\d+)(?:-(\d+))?\s*(초|분|sec|min)/);
   const timeUnit = timeMatch ? timeMatch[3] : null;
@@ -141,22 +145,64 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
           <h2 className="text-base font-black text-[#1B4332] leading-tight">
             {getExerciseName(exercise.name, locale)}
           </h2>
-          {muscleGroups.length > 0 && (
-            <div className="flex gap-1 mt-1 flex-wrap">
-              {muscleGroups.map((g) => (
-                <span key={g} className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                  {translateMuscleGroup(g, locale)}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {/* 회의 64-T: 인터벌 세션은 "N회 반복" 뱃지 우선 노출 */}
+            {isInterval && intervalSpec && (
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                {t("interval.rounds_count", { n: String(intervalSpec.rounds) })}
+              </span>
+            )}
+            {muscleGroups.map((g) => (
+              <span key={g} className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                {translateMuscleGroup(g, locale)}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="h-px bg-gray-100 mx-4" />
 
-      {/* 세트 리스트 — strength(reps) / time(초·분) 공통 */}
-      {!isStaticTime && (
+      {/* 회의 64-T (2026-04-19): 인터벌 SET 행 — 웨이트 SET 카드와 동일 레이아웃, 콘텐츠만 분기 */}
+      {isInterval && intervalSpec && (() => {
+        const sprintText = intervalSpec.sprintDist != null
+          ? formatIntervalDistance(intervalSpec.sprintDist)
+          : intervalSpec.sprintSec != null ? formatIntervalDuration(intervalSpec.sprintSec) : "—";
+        const recoveryText = intervalSpec.recoveryDist != null
+          ? formatIntervalDistance(intervalSpec.recoveryDist)
+          : intervalSpec.recoverySec != null ? formatIntervalDuration(intervalSpec.recoverySec) : "—";
+        const sprintLabelText = intervalSpec.sprintLabel || t("interval.sprint_label");
+        const recoveryLabelText = intervalSpec.recoveryLabel || t("interval.recovery_label");
+        return (
+          <div className="flex flex-col px-4 py-2">
+            {Array.from({ length: intervalSpec.rounds }).map((_, i) => (
+              <div key={`${globalIdx}-int-${i}`} className="flex items-center py-3 gap-2 border-b border-gray-100 last:border-b-0">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] w-10 shrink-0">
+                  SET <span className="font-plan-num">{i + 1}</span>
+                </span>
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <span className="font-plan-num text-lg font-black text-[#2D6A4F] leading-none">{sprintText}</span>
+                  <span className="text-[9px] font-bold text-gray-400 mt-0.5 tracking-wider uppercase">{sprintLabelText}</span>
+                </div>
+                <span className="text-gray-300 text-xs shrink-0">×</span>
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <span className="font-plan-num text-lg font-black text-[#1B4332] leading-none">{recoveryText}</span>
+                  <span className="text-[9px] font-bold text-gray-400 mt-0.5 tracking-wider uppercase">{recoveryLabelText}</span>
+                </div>
+              </div>
+            ))}
+            {intervalSpec.paceGuide && (
+              <div className="mt-2 px-2 py-2 bg-gray-50 rounded-lg">
+                <span className="text-[10px] font-bold text-gray-500 tracking-wider uppercase mr-1">{t("interval.pace_guide")}</span>
+                <span className="text-[11px] font-black text-[#2D6A4F]">{intervalSpec.paceGuide}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* 세트 리스트 — strength(reps) / time(초·분) 공통 — 인터벌 아닐 때만 */}
+      {!isInterval && !isStaticTime && (
         <div className="flex flex-col px-4 py-2">
           {setDetails.map((set, i) => {
             const weightKg = parseWeight(set.weight);
@@ -245,8 +291,8 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
         </div>
       )}
 
-      {/* 복잡한 인터벌 패턴 (×·sprint 등): 정적 표시 */}
-      {isStaticTime && (() => {
+      {/* 복잡한 인터벌 패턴 (×·sprint 등): 정적 표시 — 인터벌 아닐 때만 fallback */}
+      {!isInterval && isStaticTime && (() => {
         return (
           <div className="py-6 text-center">
             <span className="font-plan-num text-2xl font-bold text-[#1B4332]">

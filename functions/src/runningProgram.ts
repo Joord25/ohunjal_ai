@@ -222,7 +222,8 @@ export type SessionTypeId =
 /** 6-8 × 20초 전력 / 30초 걷기 (세션 꼬리 부착용) — tag-at-source: interval/sprint */
 export function buildStrides(count: number = 8): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "스트라이드 (Strides)", count: `20초 전력 / 30초 걷기 × ${count}`, sets: 1, reps: 1, runKind: "interval", runType: "sprint" },
+    { type: "cardio", phase: "main", name: "스트라이드 (Strides)", count: `20초 전력 / 30초 걷기 × ${count}`, sets: 1, reps: 1, runKind: "interval", runType: "sprint",
+      intervalSpec: { rounds: count, sprintSec: 20, recoverySec: 30, sprintLabel: "전력", recoveryLabel: "걷기" } },
   ];
 }
 
@@ -243,41 +244,50 @@ export function buildThreshold2x15(paceRange: PaceRange): ExerciseStep[] {
   ];
 }
 
-/** 거리 기반 인터벌은 GPS + 3분할 UI (continuous) 가 적합 — 박서진 자문 */
+/**
+ * 거리 기반 인터벌: FitScreen은 GPS 3분할 UI (continuous) 사용 (박서진 자문, 회의 64-I).
+ * 회의 64-T (2026-04-19): 플랜 프리뷰에서 SET 행 렌더하려면 intervalSpec 필요 — runKind는 continuous 유지.
+ */
 export function buildIntervals400(paceRange: PaceRange, reps: number = 5): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "400m 인터벌 (400m Intervals)", count: `400m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 2분 조깅 회복`, runKind: "continuous", runType: "sprint" },
+    { type: "cardio", phase: "main", name: "400m 인터벌 (400m Intervals)", count: `400m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 2분 조깅 회복`, runKind: "continuous", runType: "sprint",
+      intervalSpec: { rounds: reps, sprintDist: 400, recoverySec: 120, sprintLabel: "전력", recoveryLabel: "조깅 회복", paceGuide: formatPaceRange(paceRange) } },
   ];
 }
 
 export function buildIntervals800(paceRange: PaceRange, reps: number = 3): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "800m 인터벌 (800m Intervals)", count: `800m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 3분 조깅 회복`, runKind: "continuous", runType: "sprint" },
+    { type: "cardio", phase: "main", name: "800m 인터벌 (800m Intervals)", count: `800m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 3분 조깅 회복`, runKind: "continuous", runType: "sprint",
+      intervalSpec: { rounds: reps, sprintDist: 800, recoverySec: 180, sprintLabel: "전력", recoveryLabel: "조깅 회복", paceGuide: formatPaceRange(paceRange) } },
   ];
 }
 
 export function buildIntervals1000(paceRange: PaceRange, reps: number = 5): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "1000m 인터벌 (1000m Intervals)", count: `1000m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 3분 조깅 회복`, runKind: "continuous", runType: "sprint" },
+    { type: "cardio", phase: "main", name: "1000m 인터벌 (1000m Intervals)", count: `1000m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 3분 조깅 회복`, runKind: "continuous", runType: "sprint",
+      intervalSpec: { rounds: reps, sprintDist: 1000, recoverySec: 180, sprintLabel: "전력", recoveryLabel: "조깅 회복", paceGuide: formatPaceRange(paceRange) } },
   ];
 }
 
 export function buildIntervalsMile(paceRange: PaceRange, reps: number = 2): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "1마일 인터벌 (Mile Intervals)", count: `1600m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 4분 조깅 회복`, runKind: "continuous", runType: "sprint" },
+    { type: "cardio", phase: "main", name: "1마일 인터벌 (Mile Intervals)", count: `1600m × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / 4분 조깅 회복`, runKind: "continuous", runType: "sprint",
+      intervalSpec: { rounds: reps, sprintDist: 1600, recoverySec: 240, sprintLabel: "전력", recoveryLabel: "조깅 회복", paceGuide: formatPaceRange(paceRange) } },
   ];
 }
 
 /** Norwegian 4×4: 4분 시간 기반 × 4라운드 — interval UI (fartlek 유사) */
 export function buildNorwegian4x4(paceRange: PaceRange): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "Norwegian 4×4 (Norwegian 4×4)", count: `4분 @ ${formatPaceRange(paceRange)} / 4분 회복 × 4`, sets: 4, reps: 1, runKind: "interval", runType: "fartlek" },
+    { type: "cardio", phase: "main", name: "Norwegian 4×4 (Norwegian 4×4)", count: `4분 @ ${formatPaceRange(paceRange)} / 4분 회복 × 4`, sets: 4, reps: 1, runKind: "interval", runType: "fartlek",
+      intervalSpec: { rounds: 4, sprintSec: 240, recoverySec: 240, sprintLabel: "전력", recoveryLabel: "회복", paceGuide: formatPaceRange(paceRange) } },
   ];
 }
 
 export function buildPureSprints(reps: number = 6): ExerciseStep[] {
   return [
-    { type: "cardio", phase: "main", name: "전력 스프린트 (Pure Sprints)", count: `20-30초 100% / 2분 완전 회복 × ${reps}`, sets: reps, reps: 1, runKind: "interval", runType: "sprint" },
+    { type: "cardio", phase: "main", name: "전력 스프린트 (Pure Sprints)", count: `20-30초 100% / 2분 완전 회복 × ${reps}`, sets: reps, reps: 1, runKind: "interval", runType: "sprint",
+      intervalSpec: { rounds: reps, sprintSec: 25, recoverySec: 120, sprintLabel: "전력", recoveryLabel: "회복" } },
   ];
 }
 
@@ -305,22 +315,25 @@ export function buildRacePaceInterval(
   paceRange: PaceRange,
 ): ExerciseStep[] {
   let repDistance: string;
+  let repMeters: number;
   let reps: number;
   let recovery: string;
+  let recoverySec: number;
 
   if (programId === "10k_sub_50") {
-    repDistance = "2000m"; reps = 4; recovery = "3분 조깅";
+    repDistance = "2000m"; repMeters = 2000; reps = 4; recovery = "3분 조깅"; recoverySec = 180;
   } else if (programId === "half_sub_2") {
-    repDistance = "3000m"; reps = 3; recovery = "4분 조깅";
+    repDistance = "3000m"; repMeters = 3000; reps = 3; recovery = "4분 조깅"; recoverySec = 240;
   } else if (programId === "full_sub_3") {
-    repDistance = "5000m"; reps = 4; recovery = "5분 조깅";
+    repDistance = "5000m"; repMeters = 5000; reps = 4; recovery = "5분 조깅"; recoverySec = 300;
   } else {
     // vo2_boost: 1000m × 5
-    repDistance = "1000m"; reps = 5; recovery = "3분 조깅";
+    repDistance = "1000m"; repMeters = 1000; reps = 5; recovery = "3분 조깅"; recoverySec = 180;
   }
 
   return [
-    { type: "cardio", phase: "main", name: "레이스 페이스 인터벌 (Race-Pace Interval)", count: `${repDistance} × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / ${recovery} 회복`, runKind: "continuous", runType: "tempo" },
+    { type: "cardio", phase: "main", name: "레이스 페이스 인터벌 (Race-Pace Interval)", count: `${repDistance} × ${reps}`, sets: reps, reps: 1, tempoGuide: `${formatPaceRange(paceRange)} / ${recovery} 회복`, runKind: "continuous", runType: "tempo",
+      intervalSpec: { rounds: reps, sprintDist: repMeters, recoverySec, sprintLabel: "레이스 페이스", recoveryLabel: "조깅 회복", paceGuide: formatPaceRange(paceRange) } },
   ];
 }
 

@@ -10,6 +10,21 @@ export type ExercisePhase = "warmup" | "main" | "core" | "cardio";
  */
 export type RunningType = "walkrun" | "tempo" | "fartlek" | "sprint" | "easy" | "long";
 
+/**
+ * 회의 64-T (2026-04-19): 러닝 인터벌 구성의 구조화 필드. tag-at-source 원칙 (박서진 64-I) 연장.
+ * 플랜 프리뷰·FitScreen이 regex 역추론 대신 이 필드 1순위. `count` 문자열은 back-compat 유지.
+ */
+export interface IntervalSpec {
+  rounds: number;
+  sprintSec?: number;
+  recoverySec?: number;
+  sprintDist?: number;    // meters (400, 800, 1000, 1600...)
+  recoveryDist?: number;  // meters
+  sprintLabel?: string;   // "전력" | "걷기" | "빠르게"
+  recoveryLabel?: string; // "회복" | "달리기" | "보통"
+  paceGuide?: string;     // "4:15-4:25/km" 등
+}
+
 export interface ExerciseStep {
   type: ExerciseType;
   phase?: ExercisePhase;
@@ -26,6 +41,8 @@ export interface ExerciseStep {
    */
   runKind?: "interval" | "continuous";
   runType?: RunningType;
+  /** 회의 64-T (2026-04-19): 인터벌 구성 구조화. runKind="interval"일 때 채움. */
+  intervalSpec?: IntervalSpec;
 }
 
 export interface ExerciseLog {
@@ -1135,7 +1152,8 @@ function generateRunningWorkout(
         // 형식: "N초 걷기 / M초 달리기 × R" (FitScreen walkrun regex 매칭)
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 걷기 (Warm-up Walk)", count: "3분", sets: 1, reps: 3 },
-          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 걷기 / 60초 달리기 × 8", sets: 1, reps: 1, runKind: "interval", runType: "walkrun" },
+          { type: "cardio", phase: "main", name: "워크-런 인터벌 (Walk-Run Intervals)", count: "120초 걷기 / 60초 달리기 × 8", sets: 1, reps: 1, runKind: "interval", runType: "walkrun",
+            intervalSpec: { rounds: 8, sprintSec: 60, recoverySec: 120, sprintLabel: "달리기", recoveryLabel: "걷기" } },
           { type: "cardio", phase: "main", name: "마무리 걷기 (Cool-down Walk)", count: "3분", sets: 1, reps: 3 },
         );
       } else if (intervalType === "tempo") {
@@ -1149,7 +1167,8 @@ function generateRunningWorkout(
         // 변속주: 시간 기반 변속 "N초 전력 / M초 보통 × R"
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 5 },
-          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1, runKind: "interval", runType: "fartlek" },
+          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1, runKind: "interval", runType: "fartlek",
+            intervalSpec: { rounds: 5, sprintSec: 120, recoverySec: 180, sprintLabel: "전력", recoveryLabel: "보통" } },
           { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
       } else {
@@ -1157,7 +1176,8 @@ function generateRunningWorkout(
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "8분", sets: 1, reps: 8 },
           { type: "cardio", phase: "main", name: pick(["A스킵 (A-Skip)", "B스킵 (B-Skip)", "하이니즈 (High Knees)"]), count: "2 × 30m", sets: 2, reps: 1 },
-          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1, runKind: "interval", runType: "sprint" },
+          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1, runKind: "interval", runType: "sprint",
+            intervalSpec: { rounds: 6, sprintSec: 30, recoverySec: 120, sprintLabel: "전력", recoveryLabel: "회복" } },
           { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
       }

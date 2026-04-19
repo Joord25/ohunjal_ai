@@ -9,6 +9,21 @@ export interface SetDetail {
   weight?: string; // "60kg" 또는 undefined (맨몸/시간 기반)
 }
 
+/**
+ * 회의 64-T (2026-04-19): 러닝 인터벌 구성의 구조화 필드. tag-at-source 원칙 (박서진 64-I) 연장.
+ * 플랜 프리뷰·FitScreen이 regex 역추론 대신 이 필드 1순위. `count` 문자열은 back-compat 유지.
+ */
+export interface IntervalSpec {
+  rounds: number;
+  sprintSec?: number;
+  recoverySec?: number;
+  sprintDist?: number;    // meters (400, 800, 1000, 1600...)
+  recoveryDist?: number;  // meters
+  sprintLabel?: string;   // "전력" | "걷기" | "빠르게"
+  recoveryLabel?: string; // "회복" | "달리기" | "보통"
+  paceGuide?: string;     // "4:15-4:25/km" 등
+}
+
 export interface ExerciseStep {
   type: ExerciseType;
   phase?: ExercisePhase;
@@ -29,6 +44,8 @@ export interface ExerciseStep {
   runKind?: "interval" | "continuous";
   /** 러닝 타입 세부 분류 (런닝 리포트/공유카드용). runKind와 같이 세팅. */
   runType?: RunningType;
+  /** 회의 64-T (2026-04-19): 인터벌 구성 구조화. runKind="interval"일 때 채움. */
+  intervalSpec?: IntervalSpec;
 }
 
 /** ExerciseStep에서 세트별 상세를 도출 (setDetails 우선, 없으면 sets/reps/weight로 균일 생성) */
