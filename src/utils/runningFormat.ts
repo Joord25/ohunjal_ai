@@ -90,9 +90,14 @@ export function detectExerciseRunningType(exercise: ExerciseStep): RunningType |
   // 2순위: regex fallback
   const c = exercise.count || "";
   const n = exercise.name || "";
+  // 회의 64-Y (2026-04-19): 8종 regex fallback (tag 없는 legacy 레코드용)
+  if (/Time\s*Trial|All-out|전력\s*질주|기록\s*측정|2km\s*전력|5km\s*전력/i.test(n + " " + c)) return "time_trial";
+  if (/Threshold|Sub-?T(?:hreshold)?|Bakken/i.test(n)) return "threshold";
+  if (/Norwegian|4x4|4\s*×\s*4|변속주|Fartlek/i.test(n)) return "vo2_interval";
   if (/걷기\s*\/?\s*\d+초\s*달리기/.test(c)) return "walkrun";
-  if (/전력\s*\/?\s*\d+초\s*보통/.test(c)) return "fartlek";
-  if (/전력\s*\/?\s*\d+초\s*회복/.test(c)) return "sprint";
+  if (/전력\s*\/?\s*\d+초\s*보통/.test(c)) return "vo2_interval";
+  if (/전력\s*\/?\s*\d+초\s*회복/.test(c)) return "sprint_interval";
+  if (/스트라이드|Strides|Pure\s*Sprints/i.test(n) || /\d+m\s*[×x]\s*\d+/i.test(n + " " + c)) return "sprint_interval";
   if (/템포|tempo/i.test(n)) return "tempo";
   if (/LSD|장거리|long.*slow|long.*distance/i.test(n)) return "long";
   if (/이지\s*런|회복\s*러닝|easy.*run|recovery.*run|zone\s*2/i.test(n)) return "easy";
@@ -110,10 +115,15 @@ export function getRunningTypeShareLabel(type: RunningType, locale: string): str
   void locale;
   switch (type) {
     case "walkrun": return "WALK-RUN";
-    case "tempo": return "TEMPO RUN";
-    case "fartlek": return "FARTLEK";
-    case "sprint": return "SPRINT INTERVAL";
     case "easy": return "EASY RUN";
     case "long": return "LONG DISTANCE";
+    case "tempo": return "TEMPO RUN";
+    case "threshold": return "THRESHOLD";
+    case "vo2_interval": return "VO2 INTERVAL";
+    case "sprint_interval": return "SPRINT INTERVAL";
+    case "time_trial": return "TIME TRIAL";
+    // legacy (Firestore 과거 레코드 호환, Batch C 마이그 전)
+    case "fartlek": return "VO2 INTERVAL";
+    case "sprint": return "SPRINT INTERVAL";
   }
 }

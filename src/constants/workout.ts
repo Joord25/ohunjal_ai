@@ -100,7 +100,26 @@ export interface WorkoutAnalysis {
 // Running Session Stats (회의 41: GPS 기반 러닝, 지도 없이 숫자만 저장)
 // ====================================================================
 
-export type RunningType = "walkrun" | "tempo" | "fartlek" | "sprint" | "easy" | "long";
+/**
+ * 회의 64-Y (2026-04-19): 6종 → 8종 재분류
+ * - fartlek → vo2_interval rename (Canova 근거, Norwegian 4×4는 fartlek 아님)
+ * - sprint → 3-way 분할: time_trial (TT/dress rehearsal), sprint_interval (400m/800m/strides), vo2_interval (1000m/mile/Norwegian)
+ * - threshold 신규 (Bakken 2x15 Sub-T 블록)
+ * - 과거 Firestore 레코드의 "fartlek"/"sprint"은 Batch C 마이그레이션으로 소급 갱신
+ * - legacy alias ("fartlek"/"sprint")는 과거 레코드 호환용으로 타입 유지 (마이그 완료 후 차기 PR에서 제거 검토)
+ */
+export type RunningType =
+  | "walkrun"
+  | "easy"
+  | "long"
+  | "tempo"
+  | "threshold"
+  | "vo2_interval"
+  | "sprint_interval"
+  | "time_trial"
+  // legacy (Firestore 과거 레코드 호환)
+  | "fartlek"
+  | "sprint";
 
 /**
  * 회의 64-I (박서진 자문, 2026-04-18): 러닝 프로그램 ID — 서버·클라 단일 소스.

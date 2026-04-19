@@ -7,8 +7,23 @@ export type ExercisePhase = "warmup" | "main" | "core" | "cardio";
 /**
  * 러닝 세부 분류 (클라 RunningType과 미러). 서버에서 태깅 시 사용.
  * 회의 64-I (박서진 자문): tag-at-source 원칙.
+ * 회의 64-Y (2026-04-19): 6종 → 8종 재분류 — src/constants/workout.ts와 동기 유지.
+ * - fartlek → vo2_interval rename, sprint → time_trial/vo2_interval/sprint_interval 3-way 분할
+ * - threshold 신규 (Bakken 2x15 Sub-T)
+ * - legacy "fartlek"/"sprint"은 Firestore 과거 레코드 호환용 (Batch C 마이그 후 제거 검토)
  */
-export type RunningType = "walkrun" | "tempo" | "fartlek" | "sprint" | "easy" | "long";
+export type RunningType =
+  | "walkrun"
+  | "easy"
+  | "long"
+  | "tempo"
+  | "threshold"
+  | "vo2_interval"
+  | "sprint_interval"
+  | "time_trial"
+  // legacy
+  | "fartlek"
+  | "sprint";
 
 /**
  * 회의 64-T (2026-04-19): 러닝 인터벌 구성의 구조화 필드. tag-at-source 원칙 (박서진 64-I) 연장.
@@ -1167,7 +1182,7 @@ function generateRunningWorkout(
         // 변속주: 시간 기반 변속 "N초 전력 / M초 보통 × R"
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "5분", sets: 1, reps: 5 },
-          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1, runKind: "interval", runType: "fartlek",
+          { type: "cardio", phase: "main", name: "변속주 (Fartlek Run)", count: "120초 전력 / 180초 보통 × 5", sets: 1, reps: 1, runKind: "interval", runType: "vo2_interval",
             intervalSpec: { rounds: 5, sprintSec: 120, recoverySec: 180, sprintLabel: "전력", recoveryLabel: "보통" } },
           { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
@@ -1176,7 +1191,7 @@ function generateRunningWorkout(
         exercises.push(
           { type: "cardio", phase: "main", name: "준비 조깅 (Warm-up Jog)", count: "8분", sets: 1, reps: 8 },
           { type: "cardio", phase: "main", name: pick(["A스킵 (A-Skip)", "B스킵 (B-Skip)", "하이니즈 (High Knees)"]), count: "2 × 30m", sets: 2, reps: 1 },
-          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1, runKind: "interval", runType: "sprint",
+          { type: "cardio", phase: "main", name: "인터벌 스프린트 (Interval Sprints)", count: "30초 전력 / 120초 회복 × 6", sets: 1, reps: 1, runKind: "interval", runType: "sprint_interval",
             intervalSpec: { rounds: 6, sprintSec: 30, recoverySec: 120, sprintLabel: "전력", recoveryLabel: "회복" } },
           { type: "cardio", phase: "main", name: "마무리 조깅 (Cool-down Jog)", count: "5분", sets: 1, reps: 5 },
         );
