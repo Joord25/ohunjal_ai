@@ -226,6 +226,8 @@
   "my_plans.empty": "아직 저장한 플랜이 없어요",
   "my_plans.empty_desc": "마스터 플랜 화면에서 저장할 수 있어요",
   "my_plans.delete": "삭제",
+  "my_plans.edit": "편집",
+  "my_plans.done": "완료",
   "my_plans.use_count": "{n}회 실행",
   "my_plans.never_used": "아직 실행 안 함",
   "plan.regenerate": "다른 구성으로 다시 생성",

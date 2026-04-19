@@ -226,6 +226,8 @@
   "my_plans.empty": "No saved plans yet",
   "my_plans.empty_desc": "Save plans from the Master Plan screen",
   "my_plans.delete": "Delete",
+  "my_plans.edit": "Edit",
+  "my_plans.done": "Done",
   "my_plans.use_count": "{n} runs",
   "my_plans.never_used": "Not used yet",
   "plan.regenerate": "Regenerate Plan",
