@@ -3026,3 +3026,19 @@ Full sub-3       12주 × 5일 =  60세션  W10=Dress, W12=race
 **남은 fallback**: `WIDE_SQUAT_SVG_READY` 여전히 false — wide-squat SVG 미도착 (딥 스쿼트 홀드, 와이드 스쿼트 3종 leg-press.svg fallback 유지).
 
 **배포**: 클라 전용 변경, Hosting 자동 배포만 필요. Functions 변경 없음.
+
+---
+
+## 회의 64-Q — 와이드/딥 스쿼트 4종 → Glutes 아이콘 통일 (2026-04-19)
+
+**맥락**: 회의 62 후속에서 WIDE_SQUAT 전용 아이콘(wide-squat.svg, Figma node 28:15782)을 기획했으나, 대표 판단으로 전용 아이콘 폐기 후 기존 glutes.svg로 통일.
+
+**근거**: 와이드/딥 스쿼트 4종의 주동근은 엉덩이(glutes)·내전근 복합이고, 유저가 시각적으로 "스쿼트 계열 ≈ 엉덩이 운동"으로 인식하는 편이 덜 혼란스러움. 아이콘 1개 줄여 번들·관리 부담 감소.
+
+**변경**:
+- [src/components/plan/bodyIcon.ts](../src/components/plan/bodyIcon.ts)
+  - WIDE_SQUAT Set·WIDE_SQUAT_SVG_READY 플래그·WIDE_SQUAT 라우팅 라인 전체 제거
+  - GLUTE Set에 와이드/딥 스쿼트 4종 병합
+- 적용 대상: 딥 스쿼트 홀드, 케틀벨 와이드 스쿼트, 덤벨 와이드 스쿼트, 와이드 스쿼트
+
+**배포**: 클라 전용 변경, Hosting 자동 배포. tsc 통과 확인.

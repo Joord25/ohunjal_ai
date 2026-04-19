@@ -8,10 +8,9 @@ import { getExerciseMuscleGroups } from "@/constants/workout";
  */
 // 2026-04-19: glutes(3-tone 신버전), adductor(2-tone) SVG 도착 → 플래그 활성화 (회의 64-L).
 // 2026-04-19: calf SVG 도착 (Figma node 51:16531) → 플래그 활성화 (회의 64-P).
-// wide-squat SVG는 미도착 → fallback 유지.
+// 2026-04-19: 와이드/딥 스쿼트 4종 → GLUTE 흡수 (회의 64-Q, 대표 지시) — 전용 wide-squat.svg 폐기.
 const GLUTES_SVG_READY = true;       // public/icons/body/glutes.svg
 const ADDUCTOR_SVG_READY = true;     // public/icons/body/adductor.svg
-const WIDE_SQUAT_SVG_READY = false;  // fallback: leg-press.svg
 const CALF_SVG_READY = true;         // public/icons/body/calf.svg
 
 const GLUTE: Set<string> = new Set([
@@ -28,23 +27,16 @@ const GLUTE: Set<string> = new Set([
   "덤벨 힙 쓰러스트 (Dumbbell Hip Thrust)",
   "힙 쓰러스트 (Hip Thrust)",
   "바벨 힙 쓰러스트 (Barbell Hip Thrust)",
+  // 와이드/딥 스쿼트 4종 — 엉덩이·내전근 복합 자극, glutes 아이콘으로 통일 (회의 64-Q, 대표 지시 2026-04-19)
+  "딥 스쿼트 홀드 (Deep Squat Hold)",
+  "케틀벨 와이드 스쿼트 (Kettlebell Wide Squat)",
+  "덤벨 와이드 스쿼트 (Dumbbell Wide Squat)",
+  "와이드 스쿼트 (Wide Squat)",
 ]);
 
 const ADDUCTOR: Set<string> = new Set([
   // 힙 어덕션 머신 — 대퇴 내전근 주도
   "힙 어덕션 머신 (Hip Adduction Machine)",
-]);
-
-/**
- * 회의 62 후속 (2026-04-18, 대표 지시): 딥 스쿼트 홀드 + 와이드 스쿼트 3종 공통 아이콘.
- * 해부학적으로 내전근·엉덩이·대퇴 복합 자극 — Adductor 단독과 구분되는 풀 다리 포즈 아이콘.
- * Figma node 28:15782 (kenko-ui-kit-update-1) → wide-squat.svg 로 export 예정.
- */
-const WIDE_SQUAT: Set<string> = new Set([
-  "딥 스쿼트 홀드 (Deep Squat Hold)",
-  "케틀벨 와이드 스쿼트 (Kettlebell Wide Squat)",
-  "덤벨 와이드 스쿼트 (Dumbbell Wide Squat)",
-  "와이드 스쿼트 (Wide Squat)",
 ]);
 
 /**
@@ -107,7 +99,6 @@ function isSidePlank(name: string): boolean {
 
 export function getBodyIcon(name: string): string | null {
   // SVG 미도착 동안은 기존 아이콘으로 fallback. 도착하면 *_SVG_READY 플래그를 true로 전환.
-  if (WIDE_SQUAT.has(name)) return WIDE_SQUAT_SVG_READY ? "/icons/body/wide-squat.svg" : "/icons/body/leg-press.svg";
   if (CALF.has(name)) return CALF_SVG_READY ? "/icons/body/calf.svg" : "/icons/body/leg-press.svg";
   if (GLUTE.has(name)) return GLUTES_SVG_READY ? "/icons/body/glutes.svg" : "/icons/body/deadlift.svg";
   if (isSidePlank(name) || ADDUCTOR.has(name)) return ADDUCTOR_SVG_READY ? "/icons/body/adductor.svg" : "/icons/body/deadlift.svg";
