@@ -286,6 +286,7 @@ export default function AdminPage() {
     alreadyCompleted: number;
     matched: number;
     unmatched: number;
+    reset: number;
     errors: string[];
   }
   const [backfilling, setBackfilling] = useState(false);
@@ -482,7 +483,9 @@ export default function AdminPage() {
   };
 
   // 회의 64 후속 (2026-04-19): 과거 완료 기록 ↔ 플랜 세션 매칭 후 completedAt 소급 채움
-  const runBackfill = async (dryRun: boolean) => {
+  // reset=true 시 기존 completedAt 제거 후 재매칭 (동일 운동 구성 세션이 여러 번 있는 경우 교정용)
+  const [backfillReset, setBackfillReset] = useState(false);
+  const runBackfill = async (dryRun: boolean, reset: boolean = backfillReset) => {
     setBackfilling(true);
     setBackfillError("");
     try {
@@ -490,7 +493,7 @@ export default function AdminPage() {
       const res = await fetch("/api/adminBackfillSessionCompletion", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ dryRun }),
+        body: JSON.stringify({ dryRun, reset }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -1616,13 +1619,24 @@ export default function AdminPage() {
                   </p>
 
                   {backfillMode === "idle" && !backfillReport && (
-                    <button
-                      onClick={() => runBackfill(true)}
-                      disabled={backfilling}
-                      className="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-[#1B4332] disabled:opacity-50 transition-colors"
-                    >
-                      {backfilling ? "스캔 중..." : "① 매칭 미리보기 (안전)"}
-                    </button>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={backfillReset}
+                          onChange={(e) => setBackfillReset(e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <span>초기화 후 재매칭 (이전 잘못 매칭된 체크마크 교정)</span>
+                      </label>
+                      <button
+                        onClick={() => runBackfill(true)}
+                        disabled={backfilling}
+                        className="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-[#1B4332] disabled:opacity-50 transition-colors"
+                      >
+                        {backfilling ? "스캔 중..." : "① 매칭 미리보기 (안전)"}
+                      </button>
+                    </div>
                   )}
 
                   {backfillReport && (
@@ -1639,6 +1653,12 @@ export default function AdminPage() {
                         <span className="text-gray-500">이미 완료 마킹됨</span>
                         <span className="font-bold text-gray-700">{backfillReport.alreadyCompleted}건</span>
                       </div>
+                      {backfillReport.reset > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">기존 체크마크 초기화</span>
+                          <span className="font-bold text-amber-600">{backfillReport.reset}건</span>
+                        </div>
+                      )}
                       <div className="border-t border-gray-200 pt-1 mt-1 space-y-1">
                         <div className="flex justify-between">
                           <span className="text-gray-500">
