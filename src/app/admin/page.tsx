@@ -279,6 +279,20 @@ export default function AdminPage() {
   const [migrationMode, setMigrationMode] = useState<"idle" | "dryrun_done" | "executed">("idle");
   const [migrationError, setMigrationError] = useState<string>("");
 
+  // 회의 64 후속 (2026-04-19): 플랜 세션 완료 상태 소급 반영 (체크마크 복원)
+  interface BackfillReport {
+    scannedUsers: number;
+    scannedPlans: number;
+    alreadyCompleted: number;
+    matched: number;
+    unmatched: number;
+    errors: string[];
+  }
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillReport, setBackfillReport] = useState<BackfillReport | null>(null);
+  const [backfillMode, setBackfillMode] = useState<"idle" | "dryrun_done" | "executed">("idle");
+  const [backfillError, setBackfillError] = useState<string>("");
+
   // 회의 57 Tier 3: 다중 필드 검색 (email / displayName / uid substring)
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -465,6 +479,30 @@ export default function AdminPage() {
       setMigrationError((e as Error).message);
     }
     setMigrating(false);
+  };
+
+  // 회의 64 후속 (2026-04-19): 과거 완료 기록 ↔ 플랜 세션 매칭 후 completedAt 소급 채움
+  const runBackfill = async (dryRun: boolean) => {
+    setBackfilling(true);
+    setBackfillError("");
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/adminBackfillSessionCompletion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ dryRun }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBackfillError(data?.error || `HTTP ${res.status}`);
+      } else if (data?.report) {
+        setBackfillReport(data.report as BackfillReport);
+        setBackfillMode(dryRun ? "dryrun_done" : "executed");
+      }
+    } catch (e) {
+      setBackfillError((e as Error).message);
+    }
+    setBackfilling(false);
   };
 
   // 결제 내역 로드 — Firestore payments 서브컬렉션 collectionGroup 기반
@@ -1564,6 +1602,103 @@ export default function AdminPage() {
                     <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-2">
                       <p className="text-sm font-bold text-red-700">오류</p>
                       <p className="text-xs text-red-600 mt-1">{migrationError}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 회의 64 후속 (2026-04-19): 플랜 세션 완료 상태 소급 반영 */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 mt-4">
+                  <h3 className="text-sm font-black text-[#1B4332] mb-1">플랜 완료 상태 소급 반영</h3>
+                  <p className="text-xs text-gray-500 mb-3">
+                    과거 장기 프로그램 세션을 완료했지만 &ldquo;내 플랜&rdquo;에 체크 마크가 안 뜨는 경우,
+                    운동 기록(workout_history)을 플랜 세션과 자동 매칭해서 완료 상태를 채웁니다.
+                    매칭 기준: 운동명 조합 일치 + 플랜 저장 이후 날짜.
+                  </p>
+
+                  {backfillMode === "idle" && !backfillReport && (
+                    <button
+                      onClick={() => runBackfill(true)}
+                      disabled={backfilling}
+                      className="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-[#1B4332] disabled:opacity-50 transition-colors"
+                    >
+                      {backfilling ? "스캔 중..." : "① 매칭 미리보기 (안전)"}
+                    </button>
+                  )}
+
+                  {backfillReport && (
+                    <div className="bg-gray-50 rounded-xl p-3 mb-3 text-xs space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">스캔한 유저</span>
+                        <span className="font-black text-[#1B4332]">{backfillReport.scannedUsers}명</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">미완료 프로그램 세션</span>
+                        <span className="font-black text-[#1B4332]">{backfillReport.scannedPlans}건</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">이미 완료 마킹됨</span>
+                        <span className="font-bold text-gray-700">{backfillReport.alreadyCompleted}건</span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-1 mt-1 space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">
+                            {backfillMode === "dryrun_done" ? "매칭 예정" : "매칭됨"}
+                          </span>
+                          <span className="font-black text-emerald-600">{backfillReport.matched}건</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">매칭 실패 (기록 없음)</span>
+                          <span className="font-bold text-gray-500">{backfillReport.unmatched}건</span>
+                        </div>
+                      </div>
+                      {backfillReport.errors.length > 0 && (
+                        <div className="border-t border-gray-200 pt-1 mt-1">
+                          <p className="font-bold text-red-500">에러 {backfillReport.errors.length}건:</p>
+                          {backfillReport.errors.slice(0, 5).map((err, i) => (
+                            <p key={i} className="text-[10px] text-red-400 truncate">{err}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {backfillMode === "dryrun_done" && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setBackfillReport(null); setBackfillMode("idle"); }}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-gray-600 transition-colors"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => runBackfill(false)}
+                        disabled={backfilling}
+                        className="flex-1 bg-[#1B4332] hover:bg-[#2D6A4F] active:bg-[#0D2818] rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 transition-colors"
+                      >
+                        {backfilling ? "실행 중..." : "② 실제 채우기 실행"}
+                      </button>
+                    </div>
+                  )}
+
+                  {backfillMode === "executed" && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                      <p className="text-sm font-black text-emerald-700">업데이트 완료</p>
+                      <p className="text-xs text-emerald-600 mt-1">
+                        총 {backfillReport?.matched ?? 0}건 체크마크 복원됨. 앱에서 &ldquo;내 플랜&rdquo; 화면 새로고침 시 반영됩니다.
+                      </p>
+                      <button
+                        onClick={() => { setBackfillReport(null); setBackfillMode("idle"); }}
+                        className="mt-2 text-xs font-bold text-emerald-700 underline"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                  )}
+
+                  {backfillError && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-2">
+                      <p className="text-sm font-bold text-red-700">오류</p>
+                      <p className="text-xs text-red-600 mt-1">{backfillError}</p>
                     </div>
                   )}
                 </div>
