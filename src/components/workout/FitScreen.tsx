@@ -12,6 +12,7 @@ import { getExerciseName, translateWeightGuide } from "@/utils/exerciseName";
 import { useGpsTracker } from "@/hooks/useGpsTracker";
 import { useAlarmSynthesizer } from "@/hooks/useAlarmSynthesizer";
 import { formatPace, formatRunDistanceKm, detectRunExerciseMode, detectExerciseRunningType, getRunningTypeShareLabel } from "@/utils/runningFormat";
+import { deriveIntervalSpec, estimateSprintSec } from "@/utils/intervalSpec";
 import { GpsPermissionDialog } from "./GpsPermissionDialog";
 import { computeRunningStats } from "@/utils/runningStats";
 
@@ -263,53 +264,47 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // - sprint: "N초 전력 / M초 회복 × R" (빨강/초록, sprint부터)
   // - walkrun: "N초 걷기 / M초 달리기 × R" (파랑/주황, walk부터)
   // - fartlek: "N초 전력 / M초 보통 × R" (빨강/초록, sprint부터)
+  // 회의 64-V (2026-04-19): 거리기반 인터벌(400m/800m 등) 지원 — intervalSpec 기반.
   type IntervalType = "sprint" | "walkrun" | "fartlek";
   interface IntervalConfig {
-    phase1Sec: number; // 첫 페이즈 시간
-    phase2Sec: number; // 둘째 페이즈 시간
+    phase1Sec: number; // 첫 페이즈 시간 (sprint 예상 시간)
+    phase2Sec: number; // 둘째 페이즈 시간 (recovery)
     rounds: number;
     type: IntervalType;
     phase1Key: string; // i18n key
     phase2Key: string;
+    /** 거리기반 인터벌: sprint 목표 거리(m). GPS distance가 이 값 이상 도달 시 조기 완료. */
+    sprintDist?: number;
   }
   // 회의 36 v3: useMemo로 intervalConfig 안정화 — exercise.count 변경 시에만 재계산
-  // (이전: 매 렌더마다 새 객체 생성 → useEffect 의존성 변화 → timer teardown/rebuild 반복 → 타이머 느려짐)
+  // 회의 64-V 후속: intervalSpec 1순위 (tag-at-source), regex는 legacy fallback
   const intervalConfig: IntervalConfig | null = useMemo(() => {
-    const walkRun = exercise.count.match(/(\d+)초\s*걷기\s*\/?\s*(\d+)초\s*달리기\s*[×x]\s*(\d+)/i);
-    if (walkRun) {
+    const spec = deriveIntervalSpec(exercise);
+    if (spec) {
+      const sprintSec = spec.sprintSec ?? estimateSprintSec(spec);
+      if (sprintSec == null) return null;
+      const recoverySec = spec.recoverySec ?? 120;
+      // 라벨로 타입 결정 (시각 색상 매핑용)
+      const label = (spec.sprintLabel || "") + (spec.recoveryLabel || "");
+      const type: IntervalType = /걷기|달리기/.test(label) ? "walkrun"
+        : /보통/.test(label) ? "fartlek"
+        : "sprint";
       return {
-        phase1Sec: parseInt(walkRun[1]),
-        phase2Sec: parseInt(walkRun[2]),
-        rounds: parseInt(walkRun[3]),
-        type: "walkrun" as IntervalType,
-        phase1Key: "fit.interval.walk",
-        phase2Key: "fit.interval.run",
-      };
-    }
-    const fartlek = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*보통\s*[×x]\s*(\d+)/i);
-    if (fartlek) {
-      return {
-        phase1Sec: parseInt(fartlek[1]),
-        phase2Sec: parseInt(fartlek[2]),
-        rounds: parseInt(fartlek[3]),
-        type: "fartlek" as IntervalType,
-        phase1Key: "fit.interval.burst",
-        phase2Key: "fit.interval.base",
-      };
-    }
-    const sprint = exercise.count.match(/(\d+)초\s*전력\s*\/?\s*(\d+)초\s*회복\s*[×x]\s*(\d+)/i);
-    if (sprint) {
-      return {
-        phase1Sec: parseInt(sprint[1]),
-        phase2Sec: parseInt(sprint[2]),
-        rounds: parseInt(sprint[3]),
-        type: "sprint" as IntervalType,
-        phase1Key: "fit.interval.sprint",
-        phase2Key: "fit.interval.recovery",
+        phase1Sec: sprintSec,
+        phase2Sec: recoverySec,
+        rounds: spec.rounds,
+        type,
+        sprintDist: spec.sprintDist,
+        phase1Key: type === "walkrun" ? "fit.interval.run"
+          : type === "fartlek" ? "fit.interval.burst"
+          : "fit.interval.sprint",
+        phase2Key: type === "walkrun" ? "fit.interval.walk"
+          : type === "fartlek" ? "fit.interval.base"
+          : "fit.interval.recovery",
       };
     }
     return null;
-  }, [exercise.count]);
+  }, [exercise]);
   const isIntervalMode = intervalConfig !== null;
 
   // 회의 43: 연속 러닝(템포/이지/LSD) 감지 — 인터벌은 아니지만 GPS + 3분할 UI 필요
@@ -410,6 +405,15 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // 회의 41: 인터벌 세션 전체 경과시간 (3분할 스탯 Time 표시용)
   const sessionStartMsRef = useRef<number>(0);
   const [intervalElapsedSec, setIntervalElapsedSec] = useState(0);
+  // 회의 64-V (2026-04-19): 거리기반 인터벌 라운드 시작 시점의 GPS 누적 거리 baseline
+  const phaseStartDistRef = useRef<number>(0);
+  // tick 내부에서 최신 gpsDistance 참조 (stale closure 회피)
+  const gpsDistanceRef = useRef<number>(0);
+
+  // 회의 64-V: gpsDistance → gpsDistanceRef 동기화 (stale closure 방지)
+  useEffect(() => {
+    gpsDistanceRef.current = gpsDistance;
+  }, [gpsDistance]);
 
   // exercise 변경 / config 변경 시 전체 리셋
   useEffect(() => {
@@ -420,6 +424,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     midpointFiredRef.current = false;
     lastTickSecondRef.current = -1;
     sessionStartMsRef.current = 0;
+    phaseStartDistRef.current = 0;
     setIntervalPhase("sprint");
     setIntervalRound(1);
     setIntervalTime(intervalConfig?.phase1Sec ?? 0);
@@ -435,6 +440,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     if (phaseStartMsRef.current === 0) {
       phaseStartMsRef.current = now;
       sessionStartMsRef.current = now;
+      phaseStartDistRef.current = gpsDistanceRef.current;
     } else if (pausedAtMsRef.current > 0) {
       // 일시정지 지속 시간만큼 phaseStart + sessionStart 앞으로 shift (경과시간 유지)
       const pauseDelta = now - pausedAtMsRef.current;
@@ -457,14 +463,22 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         setIntervalElapsedSec(Math.max(0, Math.floor((nowTick - sessionStartMsRef.current) / 1000)));
       }
 
+      // 회의 64-V (2026-04-19): 거리기반 인터벌 — GPS 거리 도달 시 조기 완료 (타이머 무시)
+      const distanceReached = phaseRef.current === "sprint"
+        && cfg.sprintDist != null
+        && gpsIsAvailable
+        && !isIndoor
+        && (gpsDistanceRef.current - phaseStartDistRef.current) >= cfg.sprintDist;
+
       // 페이즈 전환
-      if (remainingFloat <= 0) {
+      if (remainingFloat <= 0 || distanceReached) {
         midpointFiredRef.current = false;
         lastTickSecondRef.current = -1;
 
         if (phaseRef.current === "sprint") {
           phaseRef.current = "recovery";
           phaseStartMsRef.current = nowTick;
+          phaseStartDistRef.current = gpsDistanceRef.current;
           playAlarmSound("rest_end");
           if (navigator.vibrate && localStorage.getItem("ohunjal_settings_vibration") !== "false") navigator.vibrate([200, 100, 200]);
           setIntervalPhase("recovery");
@@ -502,6 +516,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           roundRef.current += 1;
           phaseRef.current = "sprint";
           phaseStartMsRef.current = nowTick;
+          phaseStartDistRef.current = gpsDistanceRef.current;
           playAlarmSound("start");
           if (navigator.vibrate && localStorage.getItem("ohunjal_settings_vibration") !== "false") navigator.vibrate(100);
           setIntervalRound(roundRef.current);
@@ -538,8 +553,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   }, [isPlaying, isIntervalMode, intervalConfig, gpsMarkPhase, gpsGetSnapshot, gpsIsAvailable, isIndoor, onRunningStatsComputed]);
 
   // 회의 43: 연속 러닝(템포/이지/LSD) wall-clock 경과시간 — 카운트업 + GPS 동기화
+  // 회의 64-V: 거리기반 인터벌(400m×N)은 isContinuousRun도 true지만 intervalMode 타이머가 우선 → skip
   useEffect(() => {
-    if (!isPlaying || !isContinuousRun) return;
+    if (!isPlaying || !isContinuousRun || isIntervalMode) return;
     const now = Date.now();
     if (sessionStartMsRef.current === 0) {
       sessionStartMsRef.current = now;
@@ -560,7 +576,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         pausedAtMsRef.current = Date.now();
       }
     };
-  }, [isPlaying, isContinuousRun]);
+  }, [isPlaying, isContinuousRun, isIntervalMode]);
 
   // Normal Timer Logic — 회의 43: 연속 러닝은 별도 wall-clock 사용하므로 제외
   useEffect(() => {
@@ -1236,6 +1252,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                   </div>
                 ) : isIntervalMode && intervalConfig && intervalColors ? (
                   <div className="flex flex-col items-center w-full">
+                    {/* 회의 64-V (2026-04-19): 실내·GPS 거부 시 안내 배너 — 거리기반 인터벌에만 */}
+                    {intervalConfig.sprintDist != null && (isIndoor || gpsStatus === "denied" || !gpsIsAvailable) && (
+                      <div className="w-full mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-[11px] font-bold text-amber-700 text-center">
+                          {isIndoor ? "실내 모드: GPS 거리 측정 불가. 타이머 기준으로 진행" : "GPS 신호 대기 중 — 타이머 기준으로 진행"}
+                        </p>
+                      </div>
+                    )}
                     {/* 회의 41: 라운드 도트 프로그레스 */}
                     <div className="flex items-center gap-1.5 mb-3">
                       {Array.from({ length: intervalConfig.rounds }).map((_, i) => {
@@ -1266,12 +1290,25 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     }`}>
                       {intervalPhase === "sprint" ? t(intervalConfig.phase1Key) : t(intervalConfig.phase2Key)}
                     </div>
-                    {/* 카운트다운 */}
-                    <p className={`text-6xl font-black tracking-tighter tabular-nums ${
-                      intervalPhase === "sprint" ? intervalColors.phase1Timer : intervalColors.phase2Timer
-                    }`}>
-                      {formatTime(intervalTime)}
-                    </p>
+                    {/* 회의 64-V: 거리기반 인터벌 sprint 페이즈 — 거리 진행률 우선 표시 */}
+                    {intervalConfig.sprintDist != null && intervalPhase === "sprint" && gpsIsAvailable && !isIndoor ? (
+                      <>
+                        <p className={`text-5xl font-black tracking-tighter tabular-nums ${intervalColors.phase1Timer}`}>
+                          {Math.max(0, Math.round(gpsDistance - phaseStartDistRef.current))}
+                          <span className="text-2xl text-gray-400"> / {intervalConfig.sprintDist}m</span>
+                        </p>
+                        <p className="text-[11px] font-bold text-gray-400 tracking-wider mt-1">
+                          ~{formatTime(intervalTime)}
+                        </p>
+                      </>
+                    ) : (
+                      /* 카운트다운 */
+                      <p className={`text-6xl font-black tracking-tighter tabular-nums ${
+                        intervalPhase === "sprint" ? intervalColors.phase1Timer : intervalColors.phase2Timer
+                      }`}>
+                        {formatTime(intervalTime)}
+                      </p>
+                    )}
                     {/* 페이즈 가이드 한 줄 (회의 36: RPE 기반 주관 강도 힌트) */}
                     <p className="text-[11px] font-medium text-gray-500 mt-2 text-center px-4">
                       {intervalPhase === "sprint"
