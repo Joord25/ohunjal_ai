@@ -5,6 +5,8 @@ import type { RunningStats, RunningType, WorkoutHistory } from "@/constants/work
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatPace, formatRunDistanceKm, formatRunDuration, getRunningTypeShareLabel } from "@/utils/runningFormat";
 import { TTCard } from "./TTCard";
+import { ActivityRing } from "./ActivityRing";
+import { computeWeeklyRunningStats } from "@/utils/weeklyRunning";
 
 /**
  * 회의 64-Y (2026-04-19): 8종 runType → 3가지 카드 레이아웃 분기
@@ -41,35 +43,8 @@ interface RunningReportBodyProps {
 export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningStats, recentHistory }) => {
   const { t, locale } = useTranslation();
 
-  // ── 이번 주(월~일) 러닝 누적 ──
-  const weekly = (() => {
-    const now = new Date();
-    const dow = (now.getDay() + 6) % 7;
-    const monday = new Date(now);
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(now.getDate() - dow);
-    let runs = 0;
-    let totalDistance = 0;
-    let totalDuration = 0;
-    for (const h of recentHistory) {
-      if (!h.runningStats) continue;
-      const d = new Date(h.date);
-      if (d >= monday) {
-        runs += 1;
-        totalDistance += h.runningStats.distance;
-        totalDuration += h.runningStats.duration;
-      }
-    }
-    // 오늘 세션 포함 (히스토리에 아직 없을 때만)
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const alreadyInHistory = recentHistory.some(h => h.runningStats && h.date?.startsWith(todayStr));
-    if (!alreadyInHistory) {
-      runs += 1;
-      totalDistance += runningStats.distance;
-      totalDuration += runningStats.duration;
-    }
-    return { runs, totalDistance, totalDuration };
-  })();
+  // ── 이번 주(월~일) 러닝 누적 (회의 64-α: 유틸로 분리) ──
+  const weekly = computeWeeklyRunningStats(recentHistory, runningStats);
 
   const typeLabel = getRunningTypeShareLabel(runningStats.runningType, locale);
   // 회의 41 후속: GPS 없거나 실내일 때 Distance 자리를 Rounds 또는 Duration으로 대체
@@ -285,59 +260,122 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
         );
       })()}
 
-      {/* ── This Week Card ── */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-5 py-5">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-          <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
-            {t("running.report.thisWeek")}
-          </span>
-        </div>
+      {/* ── This Week Card (회의 64-α Phase 1.5: Variant A Activity Ring) ── */}
+      {(() => {
+        const totalDistanceKm = weekly.totalDistance / 1000;
+        const hasDistance = weekly.totalDistance > 0;
+        const ringPercent = hasDistance
+          ? Math.min(100, (totalDistanceKm / weekly.weeklyGoalKm) * 100)
+          : Math.min(100, (weekly.runs / 5) * 100);
+        const todayDow = (new Date().getDay() + 6) % 7;
+        const weekdayKeys = [
+          "running.weekly.mon",
+          "running.weekly.tue",
+          "running.weekly.wed",
+          "running.weekly.thu",
+          "running.weekly.fri",
+          "running.weekly.sat",
+          "running.weekly.sun",
+        ];
+        return (
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-7">
+            <div className="mb-6">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">
+                {t("running.report.thisWeek")}
+              </span>
+            </div>
 
-        {/* 주간 도트 (최대 5개) */}
-        <div className="flex items-center gap-1.5 mb-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span
-              key={i}
-              className={`rounded-full ${
-                i < weekly.runs
-                  ? "w-2.5 h-2.5 bg-[#2D6A4F]"
-                  : "w-1.5 h-1.5 bg-gray-200"
-              }`}
-            />
-          ))}
-        </div>
-
-        <div className="flex items-baseline gap-4">
-          <div>
-            <p className="text-2xl font-black text-[#1B4332] leading-none tabular-nums">
-              {weekly.runs}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">
-              {t("running.report.runs")}
-            </p>
-          </div>
-          <div className="w-px h-10 bg-gray-100" />
-          <div>
-            <p className="text-lg font-black text-[#1B4332] leading-none tabular-nums">
-              {formatRunDuration(weekly.totalDuration)}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">total time</p>
-          </div>
-          {weekly.totalDistance > 0 && (
-            <>
-              <div className="w-px h-10 bg-gray-100" />
-              <div>
-                <p className="text-lg font-black text-[#1B4332] leading-none tabular-nums">
-                  {formatRunDistanceKm(weekly.totalDistance)}
-                  <span className="text-xs text-gray-400 ml-1">km</span>
-                </p>
-                <p className="text-[10px] font-bold text-gray-400 mt-1">distance</p>
+            {/* 상단: ActivityRing + 대표 숫자 */}
+            <div className="flex items-center gap-6 mb-6">
+              <ActivityRing
+                size={128}
+                strokeWidth={12}
+                value={ringPercent}
+                color="#2D6A4F"
+                trackColor="#F3F4F6"
+                ariaLabel={t("running.weekly.goalLabel")}
+              >
+                <span className="text-lg font-black text-[#1B4332] tabular-nums">
+                  {Math.round(ringPercent)}%
+                </span>
+              </ActivityRing>
+              <div className="flex-1 min-w-0">
+                {hasDistance ? (
+                  <>
+                    <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
+                      {formatRunDistanceKm(weekly.totalDistance)}
+                    </p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">km</p>
+                    <div className="border-t border-gray-100 mt-4 pt-3">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.18em]">
+                        {t("running.weekly.goalLabel")} · {weekly.weeklyGoalKm} km
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
+                      {weekly.runs}
+                    </p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">
+                      {t("running.weekly.runsLabel")}
+                    </p>
+                  </>
+                )}
               </div>
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+
+            {/* 중단: 3분할 스탯 */}
+            <div className="border-t border-gray-100 pt-5 mb-5 grid grid-cols-3 gap-4">
+              <div className="flex flex-col items-start">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
+                  {t("running.report.runs")}
+                </p>
+                <p className="text-2xl font-black text-[#1B4332] leading-none tabular-nums">
+                  {weekly.runs}
+                </p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">
+                  {t("running.weekly.runsLabel")}
+                </p>
+              </div>
+              <div className="flex flex-col items-start">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
+                  {t("running.weekly.totalTime")}
+                </p>
+                <p className="text-2xl font-black text-[#1B4332] leading-none tabular-nums">
+                  {formatRunDuration(weekly.totalDuration)}
+                </p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">total</p>
+              </div>
+              <div className="flex flex-col items-start">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
+                  {t("running.weekly.avgPace")}
+                </p>
+                <p className="text-2xl font-black text-[#1B4332] leading-none tabular-nums">
+                  {weekly.avgPace != null ? formatPace(weekly.avgPace) : "—"}
+                </p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">/km</p>
+              </div>
+            </div>
+
+            {/* 하단: 요일 도트 7개 */}
+            <div className="border-t border-gray-100 pt-5 flex items-center justify-between">
+              {weekly.daysRun.map((ran, i) => (
+                <div key={i} className={`flex flex-col items-center gap-1.5 ${i === todayDow ? "relative" : ""}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${i === todayDow ? "text-[#2D6A4F]" : "text-gray-400"}`}>
+                    {t(weekdayKeys[i])}
+                  </span>
+                  {ran ? (
+                    <span className={`w-2 h-2 rounded-full bg-[#2D6A4F] ${i === todayDow ? "ring-2 ring-[#2D6A4F]/20" : ""}`} />
+                  ) : (
+                    <span className="w-1 h-1 rounded-full bg-gray-200" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
