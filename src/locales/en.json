@@ -764,7 +764,7 @@
   "running.tt.slower": "{sec}s slower than your best",
   "running.tt.same": "Tied with your best",
   "running.tt.firstRecord": "First record — baseline for next TT",
-  "running.tt.baselineBadge": "BASELINE",
+  "running.tt.baselineBadge": "FIRST RECORD",
   "running.tt.nextTargetLabel": "NEXT TARGET",
   "running.tt.nextTargetBody": "Try {pace}/km next time",
   "running.tt.nextTargetHint": "5 seconds faster is a realistic goal",

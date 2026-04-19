@@ -764,7 +764,7 @@
   "running.tt.slower": "이전 기록보다 {sec}초 느려요",
   "running.tt.same": "이전 기록과 동일",
   "running.tt.firstRecord": "첫 기록 — 다음 TT의 기준선이에요",
-  "running.tt.baselineBadge": "기준선",
+  "running.tt.baselineBadge": "첫 기록",
   "running.tt.nextTargetLabel": "다음 목표",
   "running.tt.nextTargetBody": "다음엔 {pace}/km 도전해봐요",
   "running.tt.nextTargetHint": "5초 단축이 현실적 목표",

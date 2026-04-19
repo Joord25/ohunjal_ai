@@ -52,22 +52,27 @@ export const TTCard: React.FC<TTCardProps> = ({ runningStats, recentHistory }) =
 
   return (
     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-7">
-      {/* 타이틀 + 상태 라벨 (뱃지 제거, 인라인 라벨로 단순화) */}
-      <div className="flex items-baseline justify-between mb-5">
+      {/* 타이틀 한 줄 (기록 측정 · 첫 기록 / 기록 측정 · PR) — 같은 단위로 묶어 위계 명확화 */}
+      <div className="mb-5">
         <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">
           {t("running.tt.label")}
+          {isFirstRecord && (
+            <>
+              <span className="mx-2 text-gray-300">·</span>
+              <span className="text-[#2D6A4F]">{t("running.tt.baselineBadge")}</span>
+            </>
+          )}
+          {!isFirstRecord && isPR && prevBest != null && (
+            <>
+              <span className="mx-2 text-gray-300">·</span>
+              <span className="text-[#2D6A4F]">{t("running.tt.pr")}</span>
+            </>
+          )}
         </span>
-        {isFirstRecord && (
-          <span className="text-[10px] font-black text-[#2D6A4F] uppercase tracking-[0.18em]">
-            {t("running.tt.baselineBadge")}
-          </span>
-        )}
-        {!isFirstRecord && isPR && prevBest != null && (
-          <span className="text-[10px] font-black text-[#2D6A4F] uppercase tracking-[0.18em]">
-            {t("running.tt.pr")}
-          </span>
-        )}
       </div>
+
+      {/* 구분선 — 타이틀과 콘텐츠 분리 */}
+      <div className="border-t border-gray-100 mb-5" />
 
       {/* 첫 기록: NEXT TARGET — 타이포 위계만, 배경 없음 */}
       {isFirstRecord && nextTargetPace != null && (
