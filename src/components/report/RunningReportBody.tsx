@@ -68,52 +68,45 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
           )}
         </div>
 
-        {/* 3분할: 거리 / 페이스 / 총 시간 — 명시적 divider + gap-6 */}
-        <div className="flex items-stretch gap-6">
-          {/* 거리 or Rounds */}
+        {/* 3분할: 거리 / 페이스 / 총 시간 — grid 3등분 + border-r 구분선 (오버플로우 방지) */}
+        <div className="grid grid-cols-3">
           {hasGpsData ? (
-            <div className="flex-1 flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center border-r border-gray-100 px-2">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
                 {t("running.stats.distance")}
               </p>
-              <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
+              <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
                 {formatRunDistanceKm(runningStats.distance)}
               </p>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">km</p>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center border-r border-gray-100 px-2">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
                 {t("running.stats.rounds")}
               </p>
-              <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
+              <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
                 {(runningStats.intervalRounds || []).length || "—"}
               </p>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">rounds</p>
             </div>
           )}
 
-          <div className="w-px bg-gray-100" />
-
-          {/* Pace */}
-          <div className="flex-1 flex flex-col items-center text-center">
+          <div className="flex flex-col items-center text-center border-r border-gray-100 px-2">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
               {runningStats.sprintAvgPace != null ? t("running.stats.sprintPace") : t("running.stats.pace")}
             </p>
-            <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
+            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatPace(runningStats.sprintAvgPace ?? runningStats.avgPace)}
             </p>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">/km</p>
           </div>
 
-          <div className="w-px bg-gray-100" />
-
-          {/* Time — 상단 '총 시간', 하단 '시간' */}
-          <div className="flex-1 flex flex-col items-center text-center">
+          <div className="flex flex-col items-center text-center px-2">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em] mb-2">
               {t("running.stats.timeUnit")}
             </p>
-            <p className="text-4xl font-black text-[#1B4332] leading-none tabular-nums">
+            <p className="text-3xl font-black text-[#1B4332] leading-none tabular-nums">
               {formatRunDuration(runningStats.duration)}
             </p>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">
