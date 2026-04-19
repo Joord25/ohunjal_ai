@@ -242,7 +242,7 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
       </div>
       )}
 
-      {/* ── Km Splits ── */}
+      {/* ── Km Splits (회의 64-α: Kenko 미니멀 단일 톤) ── */}
       {/* 회의 64-Y: splits 또는 time_trial 레이아웃에서 렌더 */}
       {(cardLayout === "splits" || cardLayout === "time_trial") && runningStats.splits && runningStats.splits.length > 0 && (() => {
         const splits = runningStats.splits;
@@ -250,14 +250,13 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
         const fastest = Math.min(...paces);
         const slowest = Math.max(...paces);
         return (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-5 py-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1 h-5 bg-[#2D6A4F] rounded-full" />
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-7">
+            <div className="mb-5">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">
                 {t("running.report.kmSplits")}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {splits.map((s) => {
                 const isFastest = s.paceSec === fastest && splits.length > 1;
                 const isSlowest = s.paceSec === slowest && splits.length > 1;
@@ -266,14 +265,16 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
                   : 80;
                 return (
                   <div key={s.km} className="flex items-center gap-3">
-                    <span className="text-[11px] font-bold text-gray-400 w-8 text-right">{s.km}km</span>
-                    <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden relative">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] w-10 text-right">
+                      {s.km}km
+                    </span>
+                    <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${isFastest ? "bg-[#2D6A4F]" : isSlowest ? "bg-amber-400" : "bg-[#2D6A4F]/40"}`}
+                        className={`h-full rounded-full transition-[width] duration-500 ease-out ${isFastest ? "bg-[#2D6A4F]" : isSlowest ? "bg-gray-300" : "bg-[#2D6A4F]/35"}`}
                         style={{ width: `${barPct}%` }}
                       />
                     </div>
-                    <span className={`text-[12px] font-black tabular-nums w-12 text-right ${isFastest ? "text-[#2D6A4F]" : isSlowest ? "text-amber-500" : "text-gray-600"}`}>
+                    <span className={`text-xs font-black tabular-nums w-12 text-right ${isFastest ? "text-[#2D6A4F]" : "text-gray-500"}`}>
                       {formatPace(s.paceSec)}
                     </span>
                   </div>
