@@ -38,13 +38,15 @@ function pickCardLayout(runningType: RunningType): CardLayout {
 interface RunningReportBodyProps {
   runningStats: RunningStats;
   recentHistory: WorkoutHistory[];
+  /** 히스토리 모드에서 열린 세션의 날짜 (ISO). 라이브 리포트에서는 생략. */
+  sessionDate?: string;
 }
 
-export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningStats, recentHistory }) => {
+export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningStats, recentHistory, sessionDate }) => {
   const { t, locale } = useTranslation();
 
-  // ── 이번 주(월~일) 러닝 누적 (회의 64-α: 유틸로 분리) ──
-  const weekly = computeWeeklyRunningStats(recentHistory, runningStats);
+  // ── 이번 주(월~일) 러닝 누적 (회의 64-α: 유틸로 분리 + 히스토리 모드 sessionDate 지원) ──
+  const weekly = computeWeeklyRunningStats(recentHistory, runningStats, sessionDate);
 
   const typeLabel = getRunningTypeShareLabel(runningStats.runningType, locale);
   // 회의 41 후속: GPS 없거나 실내일 때 Distance 자리를 Rounds 또는 Duration으로 대체

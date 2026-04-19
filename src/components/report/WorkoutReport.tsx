@@ -689,7 +689,7 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 distance: 0, duration: totalDurationSec, avgPace: null, sprintAvgPace: null,
                 recoveryAvgPace: null, bestPace: null, intervalRounds: [], completionRate: 0,
               };
-              return <RunningReportBody runningStats={effectiveRS} recentHistory={recentHistory} />;
+              return <RunningReportBody runningStats={effectiveRS} recentHistory={recentHistory} sessionDate={sessionDate} />;
             }
             // 운동 당시 목표 우선, 없으면 현재 목표 폴백
             const userGoal: string | undefined = savedReportTabs.goal || (() => { try { return JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}").goal; } catch { return undefined; } })();

@@ -38,35 +38,59 @@ function dowIndex(d: Date): number {
 export function computeWeeklyRunningStats(
   recentHistory: WorkoutHistory[],
   currentRunningStats: RunningStats | null | undefined,
+  sessionDate?: string,
 ): WeeklyRunningStats {
   const now = new Date();
   const monday = weekMondayMs(now);
+
+  // 현재 뷰가 히스토리 모드면 해당 세션 날짜, 아니면 today
+  const currentDate = sessionDate ? new Date(sessionDate) : now;
 
   let runs = 0;
   let totalDistance = 0;
   let totalDuration = 0;
   const daysRun: boolean[] = [false, false, false, false, false, false, false];
 
+  // 중복 추가 방지용 matched set (히스토리에서 처리된 record id들)
+  const processedIds = new Set<string>();
+
   for (const h of recentHistory) {
     if (!h.runningStats) continue;
     const d = new Date(h.date);
-    if (d.getTime() < monday) continue;
+    if (isNaN(d.getTime()) || d.getTime() < monday) continue;
+    if (h.id) processedIds.add(h.id);
     runs += 1;
     totalDistance += h.runningStats.distance ?? 0;
     totalDuration += h.runningStats.duration ?? 0;
     daysRun[dowIndex(d)] = true;
   }
 
-  // 오늘 세션이 히스토리에 아직 없으면 추가 (라이브 리포트 대응)
-  const todayStr = now.toISOString().slice(0, 10);
-  const alreadyInHistory = recentHistory.some(
-    (h) => h.runningStats && typeof h.date === "string" && h.date.startsWith(todayStr),
-  );
-  if (!alreadyInHistory && currentRunningStats) {
-    runs += 1;
-    totalDistance += currentRunningStats.distance ?? 0;
-    totalDuration += currentRunningStats.duration ?? 0;
-    daysRun[dowIndex(now)] = true;
+  // 현재 세션이 이번 주에 속하고 recentHistory에 유실되었으면 추가 (stats 매칭 기반)
+  const hasMeaningfulData =
+    !!currentRunningStats && ((currentRunningStats.distance ?? 0) > 0 || (currentRunningStats.duration ?? 0) > 0);
+  if (
+    hasMeaningfulData &&
+    currentRunningStats &&
+    currentDate.getTime() >= monday &&
+    !isNaN(currentDate.getTime())
+  ) {
+    const existingMatch = recentHistory.some((h) => {
+      if (!h.runningStats) return false;
+      return (
+        h.runningStats.distance === currentRunningStats.distance &&
+        h.runningStats.duration === currentRunningStats.duration &&
+        h.runningStats.avgPace === currentRunningStats.avgPace
+      );
+    });
+    if (!existingMatch) {
+      runs += 1;
+      totalDistance += currentRunningStats.distance ?? 0;
+      totalDuration += currentRunningStats.duration ?? 0;
+      daysRun[dowIndex(currentDate)] = true;
+    } else {
+      // 이미 히스토리에 존재하면 요일 도트만 확실히 찍어줌 (날짜 파싱 실패 대비)
+      daysRun[dowIndex(currentDate)] = true;
+    }
   }
 
   const avgPace =
