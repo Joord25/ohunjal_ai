@@ -8,6 +8,8 @@ export interface HexagonAxis {
   value: number;
   /** "28등" 등 표시 텍스트 */
   rankText: string;
+  /** 회의 64-X (2026-04-19): 잠정 상태 — 회색 틴트로 표시 */
+  tentative?: boolean;
 }
 
 interface HexagonChartProps {
@@ -92,7 +94,9 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes }) => {
       {/* 데이터 포인트 제거 — 선만 표시 */}
 
       {/* 라벨 + 등수 */}
-      {labelPositions.map((pos, i) => (
+      {labelPositions.map((pos, i) => {
+        const tentative = axes[i]?.tentative;
+        return (
         <g key={i}>
           <text
             x={pos.x}
@@ -101,7 +105,7 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes }) => {
             dominantBaseline="auto"
             fontSize={15}
             fontWeight={700}
-            fill="#6B7280"
+            fill={tentative ? "#9CA3AF" : "#6B7280"}
           >
             {pos.label}
           </text>
@@ -112,12 +116,13 @@ export const HexagonChart: React.FC<HexagonChartProps> = ({ axes }) => {
             dominantBaseline="auto"
             fontSize={18}
             fontWeight={900}
-            fill="#1B4332"
+            fill={tentative ? "#9CA3AF" : "#1B4332"}
           >
             {pos.rankText}
           </text>
         </g>
-      ))}
+        );
+      })}
     </svg>
   );
 };

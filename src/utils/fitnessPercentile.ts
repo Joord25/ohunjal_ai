@@ -506,7 +506,9 @@ export function getCardioPacePercentile(
 
 /**
  * 최근 4주 러닝 히스토리에서 cardio 최고 페이스 추출
- * 대상: easy/tempo/long만 (인터벌 제외), 2km 이상
+ * 회의 64-X (2026-04-19):
+ * - 대상 확장: easy/tempo/long + threshold/time_trial (인터벌 walkrun/vo2_interval/sprint_interval 제외)
+ * - 최소 거리 완화: 2km → 1km (1회차 유저 cardio 축 반영 위해)
  */
 export function getBestRunningPace(
   history: { date?: string; runningStats?: { runningType: string; distance: number; avgPace: number | null } }[],
@@ -519,10 +521,10 @@ export function getBestRunningPace(
     if (h.date && new Date(h.date).getTime() < cutoff) continue;
     const rs = h.runningStats;
     if (!rs || !rs.avgPace || rs.avgPace <= 0) continue;
-    // 이지런/템포/장거리만 (인터벌 제외)
-    if (!["easy", "tempo", "long"].includes(rs.runningType)) continue;
-    // 최소 2km
-    if (rs.distance < 2000) continue;
+    // 회의 64-X Q4: 인터벌(walkrun/vo2_interval/sprint_interval) 배제. threshold/time_trial은 포함.
+    if (!["easy", "tempo", "long", "threshold", "time_trial"].includes(rs.runningType)) continue;
+    // 회의 64-X Q3: 최소 1km 완화
+    if (rs.distance < 1000) continue;
 
     if (bestPace === null || rs.avgPace < bestPace) {
       bestPace = rs.avgPace;
@@ -530,6 +532,45 @@ export function getBestRunningPace(
   }
 
   return bestPace;
+}
+
+/**
+ * 회의 64-X (2026-04-19): cardio 퍼센타일 확정/잠정 판정
+ * - 1회부터 잠정 표시 (isConfirmed=false, UI 회색 틴트)
+ * - 3회 OR 첫 러닝 이후 14일 경과 시 확정 (isConfirmed=true, UI 진녹색)
+ * - Q4: 인터벌 배제, Q3: 최소 1km
+ */
+export interface CardioStatus {
+  eligibleRunCount: number;
+  daysSinceFirstRun: number;
+  isConfirmed: boolean;
+}
+
+export function getCardioConfidenceStatus(
+  history: { date?: string; runningStats?: { runningType: string; distance: number; avgPace: number | null } }[],
+  cutoffDays = 28,
+): CardioStatus {
+  const cutoff = Date.now() - cutoffDays * 24 * 60 * 60 * 1000;
+  const eligible = history.filter(h => {
+    if (h.date && new Date(h.date).getTime() < cutoff) return false;
+    const rs = h.runningStats;
+    if (!rs) return false;
+    if (!["easy", "tempo", "long", "threshold", "time_trial"].includes(rs.runningType)) return false;
+    if (rs.distance < 1000) return false;
+    if (!rs.avgPace || rs.avgPace <= 0) return false;
+    return true;
+  });
+  if (eligible.length === 0) {
+    return { eligibleRunCount: 0, daysSinceFirstRun: 0, isConfirmed: false };
+  }
+  const now = Date.now();
+  const firstRun = eligible.reduce((earliest, h) => {
+    const t = h.date ? new Date(h.date).getTime() : now;
+    return t < earliest ? t : earliest;
+  }, now);
+  const daysSinceFirstRun = Math.floor((now - firstRun) / (24 * 60 * 60 * 1000));
+  const isConfirmed = eligible.length >= 3 || daysSinceFirstRun >= 14;
+  return { eligibleRunCount: eligible.length, daysSinceFirstRun, isConfirmed };
 }
 
 /** BW ratio → 퍼센타일 (보간) */

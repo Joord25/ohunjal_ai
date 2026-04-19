@@ -12,15 +12,21 @@ import {
   computeFitnessAge,
   percentileToRank,
   getAgeGroupLabel,
+  getBestRunningPace,
+  getCardioPacePercentile,
+  getCardioConfidenceStatus,
 } from "@/utils/fitnessPercentile";
 
 // 회의 56: recentHistory 의존성 제거 — 이번 세션 데이터만 사용 (sessionOnly 모드)
+// 회의 64-X (2026-04-19): cardio 축 러닝 연결을 위해 recentHistory + currentRunningStats 부활
 export interface StatusTabProps {
   exercises: { name: string }[];
   logs: Record<number, { weightUsed?: string; repsCompleted: number }[]>;
   bodyWeightKg: number;
   gender: "male" | "female";
   age: number;
+  recentHistory?: { date?: string; runningStats?: { runningType: string; distance: number; avgPace: number | null } }[];
+  currentRunningStats?: { runningType: string; distance: number; avgPace: number | null } | null;
   onHelpPress?: () => void;
   onRankHelpPress?: () => void;
 }
@@ -43,6 +49,8 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   bodyWeightKg,
   gender,
   age,
+  recentHistory,
+  currentRunningStats,
   onHelpPress,
   onRankHelpPress,
 }) => {
@@ -59,12 +67,30 @@ export const StatusTab: React.FC<StatusTabProps> = ({
     { sessionOnly: true },
   );
 
-  // 카테고리별 퍼센타일 계산 (sessionOnly: cardio는 데이터 없음 처리)
+  // 회의 64-X (2026-04-19): cardio 축 러닝 연결
+  // - 현재 세션 runningStats + recentHistory 합쳐서 반영
+  // - 1회부터 잠정 (isConfirmed=false), 3회 OR 2주 경과 시 확정
+  const mergedRunningHistory = [
+    ...(recentHistory ?? []),
+    ...(currentRunningStats ? [{ date: new Date().toISOString(), runningStats: currentRunningStats }] : []),
+  ];
+  const cardioStatus = getCardioConfidenceStatus(mergedRunningHistory);
+  const cardioBestPace = getBestRunningPace(mergedRunningHistory);
+
+  // 카테고리별 퍼센타일 계산
   const categoryPercentiles: CategoryPercentile[] = CATEGORIES.map((cat) => {
-    // 회의 56: sessionOnly 모드에선 cardio는 이번 세션 데이터가 없는 한 표시 안 함
-    // (러닝 pace는 runningStats에 있지만 StatusTab props엔 없으므로 일단 false)
     if (cat === "cardio") {
-      return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };
+      if (cardioStatus.eligibleRunCount === 0 || cardioBestPace == null) {
+        return { category: cat, rank: 50, percentile: 50, bwRatio: 0, hasData: false };
+      }
+      const percentile = getCardioPacePercentile(cardioBestPace, gender, age);
+      return {
+        category: cat,
+        rank: percentileToRank(percentile),
+        percentile,
+        bwRatio: 0,
+        hasData: true,
+      };
     }
 
     const bwRatio = bestByCategory.get(cat);
@@ -93,13 +119,20 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   const hasAnyData = categoryPercentiles.some((c) => c.hasData);
 
   // 육각형 축 데이터 (6개 카테고리)
+  // 회의 64-X: cardio 축 잠정 상태는 tentative=true로 회색 틴트
   const hexAxes: HexagonAxis[] = categoryPercentiles.map((cp) => ({
     label: isKo ? CATEGORY_LABELS[cp.category].ko : CATEGORY_LABELS[cp.category].en,
     value: cp.hasData ? cp.percentile : 0,
     rankText: cp.hasData
       ? `${cp.rank}${isKo ? "등" : "th"}`
-      : (isKo ? "-" : "-"),
+      : "-",
+    tentative: cp.category === "cardio" && cp.hasData && !cardioStatus.isConfirmed,
   }));
+
+  // 회의 64-X Q5: 러닝 단독(체력 축만 데이터 있음) 판정
+  const cardioOnlyMode = hasAnyData
+    && categoryPercentiles.filter(c => c.hasData).length === 1
+    && categoryPercentiles.find(c => c.hasData)?.category === "cardio";
 
   const ageGroupLabel = getAgeGroupLabel(age, locale);
   const genderLabel = isKo ? (gender === "male" ? "남성" : "여성") : (gender === "male" ? "men" : "women");
@@ -128,6 +161,12 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                 : (isKo ? "지금부터 시작하면 빠르게 달라져요" : "Start now and you'll improve fast")
             }
           </p>
+          {/* 회의 64-X Q5: 러닝 단독 — 체력 축만 계산된 상태임을 경고 */}
+          {cardioOnlyMode && (
+            <p className="text-[10px] font-bold text-amber-600 mt-1">
+              {t("status.fitnessAge.cardioOnly")}
+            </p>
+          )}
         </div>
       )}
 
@@ -150,6 +189,15 @@ export const StatusTab: React.FC<StatusTabProps> = ({
               {isKo ? `종합 ${overallRank}등` : `Overall rank: ${overallRank}`}
             </p>
           </div>
+        )}
+        {/* 회의 64-X Q1·Q2: cardio 잠정 상태 마이크로카피 (3회 OR 2주 전까지) */}
+        {cardioStatus.eligibleRunCount > 0 && !cardioStatus.isConfirmed && (
+          <p className="text-[10px] font-bold text-gray-400 text-center mt-2">
+            {t("status.cardio.tentative", {
+              count: String(cardioStatus.eligibleRunCount),
+              needed: String(Math.max(0, 3 - cardioStatus.eligibleRunCount)),
+            })}
+          </p>
         )}
         {!hasAnyData && (
           <p className="text-center text-xs text-gray-400 mt-2">

@@ -753,6 +753,8 @@
   "running.tt.slower": "{sec}s slower than your best",
   "running.tt.same": "Tied with your best",
   "running.tt.firstRecord": "First record — baseline for next TT",
+  "status.cardio.tentative": "Cardio axis: {count} run(s) logged — {needed} more run(s) or 2 weeks to confirm",
+  "status.fitnessAge.cardioOnly": "Cardio-only estimate — add strength training for accuracy",
   "running.permission.title": "Location Access Needed",
   "running.permission.desc": "Used to measure distance and pace",
   "running.permission.allow": "Allow",

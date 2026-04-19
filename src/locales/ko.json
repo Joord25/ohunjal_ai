@@ -753,6 +753,8 @@
   "running.tt.slower": "이전 기록보다 {sec}초 느려요",
   "running.tt.same": "이전 기록과 동일",
   "running.tt.firstRecord": "첫 기록 — 다음 TT의 기준선이에요",
+  "status.cardio.tentative": "러닝 {count}회 기록 중 — {needed}회 더 또는 2주 경과 시 체력 축 확정",
+  "status.fitnessAge.cardioOnly": "체력 축만 계산됨 — 다른 부위 운동 시 정확도 상승",
   "running.permission.title": "위치 권한이 필요해요",
   "running.permission.desc": "거리와 페이스 측정에 사용돼요",
   "running.permission.allow": "허용",

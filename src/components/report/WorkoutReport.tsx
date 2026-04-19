@@ -505,6 +505,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               bodyWeightKg={bodyWeightKg ?? 70}
               gender={gender ?? "male"}
               age={userAge}
+              recentHistory={recentHistory}
+              currentRunningStats={runningStats ?? null}
               onHelpPress={() => setHelpCard("fitnessAge")}
               onRankHelpPress={() => setHelpCard("fitnessRank")}
             />
@@ -672,6 +674,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               bodyWeightKg={bodyWeightKg ?? 70}
               gender={gender ?? "male"}
               age={birthYear ? new Date().getFullYear() - birthYear : 30}
+              recentHistory={recentHistory}
+              currentRunningStats={runningStats ?? null}
               onHelpPress={() => setHelpCard("fitnessAge")}
               onRankHelpPress={() => setHelpCard("fitnessRank")}
             />
