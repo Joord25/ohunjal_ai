@@ -314,6 +314,29 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // 연속 러닝의 세부 타입 (runningStats.runningType 결정용)
   const continuousRunType = useMemo(() => detectExerciseRunningType(exercise), [exercise]);
 
+  // 회의 64-Z (2026-04-19): 연속 주행 목표 거리(m) 파싱 — "2km" / "5km" / "1600m" / "1.5km" 등
+  const continuousRunTargetMeters = useMemo((): number | null => {
+    if (!isContinuousRun || isIntervalMode) return null;
+    const c = exercise.count || "";
+    const kmMatch = c.match(/(\d+(?:\.\d+)?)\s*km/i);
+    if (kmMatch) {
+      const km = parseFloat(kmMatch[1]);
+      if (isFinite(km) && km > 0) return Math.round(km * 1000);
+    }
+    const mMatch = c.match(/(\d{3,5})\s*m(?!in)(?![a-z])/i);
+    if (mMatch) {
+      const m = parseInt(mMatch[1]);
+      if (isFinite(m) && m > 0 && m < 100000) return m;
+    }
+    return null;
+  }, [exercise, isContinuousRun, isIntervalMode]);
+
+  // 회의 64-Z: exercise 변경 시 거리 목표 플래그 리셋
+  useEffect(() => {
+    distanceGoalReachedRef.current = false;
+    setDistanceGoalReached(false);
+  }, [exercise.name]);
+
   // 회의 41: GPS 권한 팝업 & 실내 모드 (M-G에서 외부 토글 도입 예정, 현재 기본 실외)
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [gpsPermissionAsked, setGpsPermissionAsked] = useState(false);
@@ -418,6 +441,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const gpsDistanceRef = useRef<number>(0);
   // 회의 64-V: 수동 "완료" 요청 플래그 — 다음 tick에서 현재 페이즈 강제 종료
   const manualCompleteRef = useRef(false);
+  // 회의 64-Z (2026-04-19): 연속 주행 거리 도달 자동 신호 — 중복 발동 방지 플래그
+  const distanceGoalReachedRef = useRef<boolean>(false);
+  // UI 상태: 뱃지 + 완료 버튼 펄스 트리거용
+  const [distanceGoalReached, setDistanceGoalReached] = useState(false);
 
   // 회의 64-V: gpsDistance → gpsDistanceRef 동기화 (stale closure 방지)
   useEffect(() => {
@@ -582,6 +609,21 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       if (sessionStartMsRef.current > 0) {
         setIntervalElapsedSec(Math.max(0, Math.floor((nowTick - sessionStartMsRef.current) / 1000)));
       }
+      // 회의 64-Z: 거리 목표 도달 신호 (1회 한정)
+      if (
+        continuousRunTargetMeters != null
+        && gpsIsAvailable
+        && !isIndoor
+        && !distanceGoalReachedRef.current
+        && gpsDistanceRef.current >= continuousRunTargetMeters
+      ) {
+        distanceGoalReachedRef.current = true;
+        setDistanceGoalReached(true);
+        playAlarmSound("end");
+        if (navigator.vibrate && localStorage.getItem("ohunjal_settings_vibration") !== "false") {
+          navigator.vibrate([300, 100, 300, 100, 300]);
+        }
+      }
     }, 250);
     return () => {
       clearInterval(iv);
@@ -589,7 +631,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         pausedAtMsRef.current = Date.now();
       }
     };
-  }, [isPlaying, isContinuousRun, isIntervalMode]);
+  }, [isPlaying, isContinuousRun, isIntervalMode, continuousRunTargetMeters, gpsIsAvailable, isIndoor, playAlarmSound]);
 
   // Normal Timer Logic — 회의 43: 연속 러닝은 별도 wall-clock 사용하므로 제외
   useEffect(() => {
@@ -1416,10 +1458,24 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                           <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">
                             {t("running.stats.distance")}
                           </p>
-                          <p className="text-xl font-black text-[#1B4332] leading-none tabular-nums">
+                          <p className={`text-xl font-black leading-none tabular-nums ${distanceGoalReached ? "text-emerald-600" : "text-[#1B4332]"}`}>
                             {formatRunDistanceKm(gpsDistance)}
                           </p>
-                          <p className="text-[9px] font-bold text-gray-400 mt-0.5">km</p>
+                          <p className="text-[9px] font-bold text-gray-400 mt-0.5">
+                            {continuousRunTargetMeters != null
+                              ? `/ ${(continuousRunTargetMeters / 1000).toFixed(2)} km`
+                              : "km"}
+                          </p>
+                          {distanceGoalReached && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.15em]">
+                                {t("running.goalReached")}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="w-px h-10 bg-gray-200 mt-2" />
                         <div className="flex flex-col items-center min-w-[60px]">
@@ -1566,7 +1622,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     </button>
                     <button
                       onClick={handleRunningCompleteClick}
-                      className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all"
+                      className={`w-20 h-20 rounded-full flex items-center justify-center bg-[#1B4332] text-white shadow-xl active:scale-95 transition-all ${distanceGoalReached ? "animate-pulse ring-4 ring-emerald-300" : ""}`}
                     >
                       <span className="font-black text-base tracking-wider">{t("fit.complete")}</span>
                     </button>

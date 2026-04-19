@@ -746,6 +746,7 @@
   "running.gps.searching": "Connecting GPS",
   "running.gps.weak": "Weak signal",
   "running.gps.denied": "Running without location",
+  "running.goalReached": "Goal reached!",
   "running.permission.title": "Location Access Needed",
   "running.permission.desc": "Used to measure distance and pace",
   "running.permission.allow": "Allow",
