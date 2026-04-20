@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>오운잘 릴스 #1 스토리보드 — 챗GPT vs 오운잘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFBF9;
+    --ink: #1B4332;
+    --emerald: #2D6A4F;
+    --emerald-soft: #F0FDF4;
+    --gray-100: #F3F4F6;
+    --gray-300: #D1D5DB;
+    --gray-500: #6B7280;
+    --amber: #D97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', 'Rubik', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+  .header {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--gray-300);
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+  .grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 32px;
+  }
+  .scene {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .scene-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+  }
+  .scene-meta .time {
+    color: var(--emerald);
+    font-family: 'Rubik', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .frame {
+    aspect-ratio: 9 / 16;
+    border-radius: 24px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(27, 67, 50, 0.08);
+    background: #0a0a0a;
+  }
+  .frame-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 24px;
+  }
+  .tag-top {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: auto;
+  }
+  .headline {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: white;
+  }
+  .caption {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+    margin-top: auto;
+  }
+  .caption-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+  }
+  .caption-bullets p {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    line-height: 1.4;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+  .frame-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 4px 0;
+  }
+  .note {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--gray-500);
+  }
+  .note strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* SCENE STYLES */
+  .sc-hook { background: linear-gradient(135deg, #0a1a14 0%, #1B4332 50%, #2D6A4F 100%); }
+  .sc-gpt {
+    background: #0a0a0a;
+    background-image:
+      linear-gradient(180deg, rgba(10,10,10,0.2) 0%, rgba(10,10,10,0.9) 100%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 24px, transparent 24px, transparent 48px);
+  }
+  .sc-bridge { background: radial-gradient(ellipse at top, #2D6A4F 0%, #1B4332 70%, #0a1a14 100%); }
+  .sc-app { background: linear-gradient(180deg, #1B4332 0%, #0a1a14 100%); }
+  .sc-cta {
+    background: #FAFBF9;
+  }
+  .sc-cta .tag-top { color: rgba(27,67,50,0.5); }
+  .sc-cta .headline { color: var(--ink); }
+  .sc-cta .caption { color: var(--gray-500); }
+
+  /* APP MOCKUPS */
+  .app-mock {
+    position: absolute;
+    bottom: 24px; left: 24px; right: 24px;
+    background: var(--bg);
+    color: var(--ink);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .app-mock .label {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--gray-500);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .app-mock .big {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin-top: 4px;
+  }
+  .app-mock .small {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 4px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    background: var(--emerald-soft);
+    color: var(--emerald);
+    font-size: 10px;
+    font-weight: 800;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+
+  /* COMPARISON TABLE in final pre-CTA frame */
+  .compare {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+  }
+  .compare .col .title {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 6px;
+  }
+  .compare .col .what {
+    font-size: 18px;
+    font-weight: 900;
+    color: white;
+  }
+  .compare .col.ours .what { color: #34d399; }
+
+  .footer {
+    max-width: 1200px;
+    margin: 48px auto 0;
+    padding: 24px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--gray-300);
+  }
+  .footer h3 {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 12px;
+  }
+  .footer ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .footer li::before {
+    content: "ㆍ ";
+    color: var(--emerald);
+    font-weight: 800;
+  }
+  @media print {
+    body { padding: 0; }
+    .grid { gap: 16px; }
+    .frame { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>릴스 #1 — 챗GPT랑 뭐가 다른데?</h1>
+  <p>오운잘 Instagram Reels · 9:16 · 약 55초 · Week 1 컨텐츠 기둥: "GPT ≠ 오운잘"</p>
+</div>
+
+<div class="grid">
+
+  <!-- 1. HOOK -->
+  <div class="scene">
+    <div class="scene-meta"><span>01 · HOOK</span><span class="time">0:00–0:03</span></div>
+    <div class="frame sc-hook">
+      <div class="frame-inner">
+        <p class="tag-top">OHUNJAL · REEL #01</p>
+        <div>
+          <p class="headline">챗GPT랑<br>오운잘<br>뭐가 다르냐구요?</p>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>화면:</strong> 대표 얼굴 정면. 약간 어이없는 표정.</p>
+      <p class="note"><strong>자막:</strong> 큰 타이포 3줄 상단에 고정.</p>
+      <p class="note"><strong>대사:</strong> "챗GPT한테 다이어트 플랜 짜달라고 했더니"</p>
+    </div>
+  </div>
+
+  <!-- 2. GPT scroll -->
+  <div class="scene">
+    <div class="scene-meta"><span>02 · GPT 문제</span><span class="time">0:03–0:13</span></div>
+    <div class="frame sc-gpt">
+      <div class="frame-inner">
+        <p class="tag-top">ChatGPT · 답변 화면</p>
+        <div class="caption-bullets">
+          <p>ㆍ 답은 엄청 길고</p>
+          <p>ㆍ "개인마다 다르니 전문가 상담"</p>
+          <p>ㆍ 근데 내일 뭘 해야 할지는 모름</p>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>화면:</strong> ChatGPT 답변 스크롤 (2배속).</p>
+      <p class="note"><strong>자막:</strong> 3개 bullet 순차 등장 (각 3초).</p>
+      <p class="note"><strong>연출:</strong> 약간 피곤한 톤. 길이 강조.</p>
+    </div>
+  </div>
+
+  <!-- 3. Bridge -->
+  <div class="scene">
+    <div class="scene-meta"><span>03 · 전환</span><span class="time">0:13–0:18</span></div>
+    <div class="frame sc-bridge">
+      <div class="frame-inner" style="justify-content: center; align-items: center; text-align: center;">
+        <p class="tag-top" style="margin-bottom: 16px;">10년 트레이너 · 개발자</p>
+        <p class="headline">그래서<br>직접<br>만들었어요</p>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>화면:</strong> 대표 얼굴. 약간 자신감.</p>
+      <p class="note"><strong>자막:</strong> 중앙 정렬 3줄.</p>
+      <p class="note"><strong>대사:</strong> "그래서 10년간 트레이너로 본 패턴으로 앱을 직접 만들었어요"</p>
+    </div>
+  </div>
+
+  <!-- 4. App 1: 플랜 -->
+  <div class="scene">
+    <div class="scene-meta"><span>04 · 앱 — 플랜 생성</span><span class="time">0:18–0:22</span></div>
+    <div class="frame sc-app">
+      <div class="frame-inner">
+        <p class="tag-top">OHUNJAL · PLAN</p>
+        <div class="app-mock">
+          <span class="pill">2개월 다이어트 플랜</span>
+          <p class="big">Week 1 / 주 4회</p>
+          <p class="small">하체 · 가슴 · 등 · 러닝 순환</p>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>자막:</strong> "같은 질문 오운잘에 던져봤다"</p>
+      <p class="note"><strong>녹화:</strong> 홈 채팅 입력 → 플랜 생성 결과</p>
+    </div>
+  </div>
+
+  <!-- 5. App 2: 오늘 -->
+  <div class="scene">
+    <div class="scene-meta"><span>05 · 앱 — 오늘 세션</span><span class="time">0:22–0:27</span></div>
+    <div class="frame sc-app">
+      <div class="frame-inner">
+        <p class="tag-top">OHUNJAL · TODAY</p>
+        <div class="app-mock">
+          <span class="pill">오늘의 운동</span>
+          <p class="big">30분 · 5종</p>
+          <p class="small">바벨 스쿼트 · 레그 프레스 · 런지 · 카프 · Z2 러닝 10분</p>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>자막:</strong> "오늘 뭘 할지 바로 시작"</p>
+      <p class="note"><strong>녹화:</strong> 오늘 세션 진입 화면</p>
+    </div>
+  </div>
+
+  <!-- 6. App 3: 세트 -->
+  <div class="scene">
+    <div class="scene-meta"><span>06 · 앱 — 세트별 가이드</span><span class="time">0:27–0:32</span></div>
+    <div class="frame sc-app">
+      <div class="frame-inner">
+        <p class="tag-top">OHUNJAL · SET</p>
+        <div class="app-mock">
+          <span class="pill">SET 2 / 4</span>
+          <p class="big">바벨 스쿼트 · 8회</p>
+          <p class="small">60kg · 다음 쉬는 시간 90초</p>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>자막:</strong> "한 세트씩 옆에서 같이 감"</p>
+      <p class="note"><strong>녹화:</strong> 세트 진행 화면</p>
+    </div>
+  </div>
+
+  <!-- 7. App 4: 리포트 -->
+  <div class="scene">
+    <div class="scene-meta"><span>07 · 앱 — 경험 번역</span><span class="time">0:32–0:38</span></div>
+    <div class="frame sc-app">
+      <div class="frame-inner">
+        <p class="tag-top">OHUNJAL · REPORT</p>
+        <div class="app-mock">
+          <span class="pill">오늘의 변화</span>
+          <p class="big">"계단 3층<br>안 쉬고 올라간 날"</p>
+          <p class="small">숫자 아닌 일상 장면으로 기록</p>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>자막:</strong> "결과는 숫자 아닌 일상 변화로"</p>
+      <p class="note"><strong>녹화:</strong> 리포트 · 경험 번역 메시지</p>
+    </div>
+  </div>
+
+  <!-- 8. Payoff compare -->
+  <div class="scene">
+    <div class="scene-meta"><span>08 · 차별점</span><span class="time">0:38–0:50</span></div>
+    <div class="frame sc-hook">
+      <div class="frame-inner">
+        <p class="tag-top">차이가 뭐냐면</p>
+        <div>
+          <p class="headline">챗GPT가<br>답을 잘 한다면</p>
+          <p class="headline" style="color:#34d399; margin-top: 12px;">오운잘은<br>오늘 뛰게 합니다</p>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <p class="title">ChatGPT</p>
+            <p class="what">답변</p>
+          </div>
+          <div class="col ours">
+            <p class="title">OHUNJAL</p>
+            <p class="what">실행</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>화면:</strong> 대표 얼굴 + 하단 2단 대비 박스.</p>
+      <p class="note"><strong>대사:</strong> "챗GPT가 답을 잘 한다면 오운잘은 오늘 뛰게 만들어요"</p>
+    </div>
+  </div>
+
+  <!-- 9. CTA dark -->
+  <div class="scene">
+    <div class="scene-meta"><span>09 · CTA (앱 로고)</span><span class="time">0:50–0:55</span></div>
+    <div class="frame sc-hook">
+      <div class="frame-inner" style="justify-content: center; align-items: center; text-align: center;">
+        <p class="tag-top">AI 운동 파트너</p>
+        <p class="headline" style="font-size: 48px;">오운잘</p>
+        <p class="caption" style="margin-top: 16px; color: rgba(255,255,255,0.8);">
+          10년 트레이너가 한땀한땀<br>직접 만들고 있어요
+        </p>
+        <p class="caption" style="margin-top: 12px; color: #34d399; font-weight: 700;">
+          ohunjal.com
+        </p>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>화면:</strong> 앱 로고 등장.</p>
+      <p class="note"><strong>대사:</strong> "10년 트레이너가 한땀한땀 만들고 있어요"</p>
+    </div>
+  </div>
+
+  <!-- 10. End card (light) -->
+  <div class="scene">
+    <div class="scene-meta"><span>10 · 엔드 카드</span><span class="time">0:55–0:60</span></div>
+    <div class="frame sc-cta">
+      <div class="frame-inner">
+        <p class="tag-top">FOLLOW</p>
+        <div>
+          <p class="headline">@ohunjal.ai</p>
+          <p class="caption" style="margin-top: 20px; font-weight: 600;">
+            매주 2편<br>
+            GPT와 다른 운동 앱 이야기
+          </p>
+        </div>
+        <p class="caption" style="margin-top: auto; font-size: 12px; font-weight: 700; color: var(--emerald);">
+          → 프로필 링크 · ohunjal.com
+        </p>
+      </div>
+    </div>
+    <div class="frame-notes">
+      <p class="note"><strong>화면:</strong> 밝은 배경 전환. 인스타 계정 강조.</p>
+      <p class="note"><strong>대사:</strong> "궁금하시면 프로필 링크로"</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <h3>편집 가이드</h3>
+  <ul>
+    <li>각 프레임 스크린샷 → CapCut/VN 배경으로 넣고 대표 녹화 영상 오버레이</li>
+    <li>자막 폰트: Pretendard Bold / 900 · letterSpacing -0.03em · 가로 모바일 안전 영역 안쪽</li>
+    <li>색 톤: Emerald 계열 (#1B4332 / #2D6A4F) + 하이라이트 #34d399</li>
+    <li>전환: 컷 기본 · 3·4번에서 한 번만 페이드 블랙 (0.3초)</li>
+    <li>배경음: Lo-fi 차분 · -18dB · 대사 구간 -24dB 덕킹</li>
+    <li>가로 9:16 · 1080×1920 export · Instagram Reels 권장</li>
+  </ul>
+  <h3 style="margin-top: 20px;">브랜드 규칙 준수</h3>
+  <ul>
+    <li>이모지 전면 금지 (feedback_no_emoji.md) — 유니코드 심볼 "ㆍ" 사용</li>
+    <li>네러티브 발원지: 대표 임주용 10년차 트레이너 + 개발자</li>
+    <li>Hook-Story-Offer 구조 유지</li>
+    <li>GPT 비교는 "구조적 차이" 관점 · 타 브랜드 비방 X</li>
+  </ul>
+</div>
+
+</body>
+</html>
