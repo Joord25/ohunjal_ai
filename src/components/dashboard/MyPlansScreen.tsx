@@ -1,13 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   SavedPlan, deletePlan, getSavedPlans, remoteDeletePlan,
-  syncSavedPlansFromServer, getActivePrograms, getProgramSessions,
+  syncSavedPlansFromServer, getProgramSessions,
   deleteProgram, remoteDeleteProgram,
 } from "@/utils/savedPlans";
 import { getProgramSessionLabel } from "@/utils/programSessionLabels";
+import {
+  deriveProgramCompletions,
+  getNextProgramSessionFromHistory,
+  type CompletionEntry,
+} from "@/utils/programCompletion";
+import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
+import type { WorkoutHistory } from "@/constants/workout";
 
 interface MyPlansScreenProps {
   onBack: () => void;
@@ -22,11 +29,15 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistory[]>(() => getCachedWorkoutHistory());
+
   useEffect(() => {
     let cancelled = false;
     syncSavedPlansFromServer().then((fresh) => {
       if (!cancelled) setPlans(fresh);
     });
+    // 회의 64-ζ-γ: workout_history 는 source-of-truth. 진입 시 캐시 최신값 재로드.
+    setWorkoutHistory(getCachedWorkoutHistory());
     return () => { cancelled = true; };
   }, []);
 
@@ -51,9 +62,38 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
     setConfirmDeleteProgramId(null);
   };
 
-  // 프로그램 그룹 + 단일 플랜 분리
-  const programs = getActivePrograms();
-  const singlePlans = plans.filter(p => !p.programId);
+  // 회의 64-ζ-γ: 프로그램 그룹 + 완료 상태를 workout_history 기반으로 재계산.
+  // saved_plans.completedAt 필드 의존 제거 — 서버 sync 덮어쓰기·순서 오류에 영향 안 받음.
+  const { programs, singlePlans } = useMemo(() => {
+    const all = plans;
+    const programIds = new Set<string>();
+    const result: Array<{
+      programId: string;
+      programName: string;
+      completed: number;
+      total: number;
+      nextSession: SavedPlan | null;
+      completionMap: Map<string, CompletionEntry>;
+    }> = [];
+    for (const p of all) {
+      if (!p.programId || programIds.has(p.programId)) continue;
+      programIds.add(p.programId);
+      const sessions = getProgramSessions(p.programId);
+      const completionMap = deriveProgramCompletions(sessions, workoutHistory);
+      result.push({
+        programId: p.programId,
+        programName: p.programName ?? p.name,
+        completed: completionMap.size,
+        total: sessions.length,
+        nextSession: getNextProgramSessionFromHistory(sessions, workoutHistory),
+        completionMap,
+      });
+    }
+    return {
+      programs: result,
+      singlePlans: all.filter(p => !p.programId),
+    };
+  }, [plans, workoutHistory]);
   const isEmpty = programs.length === 0 && singlePlans.length === 0;
 
   return (
@@ -176,11 +216,12 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
                     );
                   })()}
 
-                  {/* 펼친 세션 리스트 */}
+                  {/* 펼친 세션 리스트 — 회의 64-ζ-γ: workout_history 기반 isDone 판정 */}
                   {isExpanded && (
                     <div className="border-t border-gray-100">
                       {sessions.map((s) => {
-                        const isDone = !!s.completedAt;
+                        const completion = prog.completionMap.get(s.id);
+                        const isDone = !!completion;
                         const isNext = !isDone && prog.nextSession?.id === s.id;
                         const ctxLabel = getProgramSessionLabel(s);
                         const displayDesc = ctxLabel?.description || s.sessionData.description || s.name;
@@ -206,8 +247,8 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
                                 )}
                                 {displayDesc}
                               </p>
-                              {isDone && s.completedAt && (
-                                <p className="text-[10px] text-gray-400">{formatDate(s.completedAt)}</p>
+                              {isDone && completion && (
+                                <p className="text-[10px] text-gray-400">{formatDate(completion.completedAtMs)}</p>
                               )}
                               {isNext && (
                                 <p className="text-[10px] text-[#2D6A4F]">{locale === "en" ? "Next" : "다음 세션"}</p>
