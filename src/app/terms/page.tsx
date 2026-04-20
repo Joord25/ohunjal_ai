@@ -161,12 +161,12 @@ export default function TermsPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-6 py-4">
-          <a href="/landing" className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="오운잘 AI" className="w-8 h-8 rounded-lg" />
             <span className="font-bold text-[#1B4332] text-lg">오운잘 AI</span>
           </a>
           <a
-            href="/landing"
+            href="/"
             className="px-5 py-2.5 bg-[#1B4332] text-white text-sm font-bold rounded-xl hover:bg-[#143728] transition-colors"
           >
             돌아가기
