@@ -2,6 +2,87 @@
 
 ---
 
+### 회의 64-ζ-γ: 장기 프로그램 완료 판정을 workout_history 기준으로 전환 (2026-04-21)
+
+**참석:** 대표(임주용), 평가자 Agent, 구현자 Agent
+
+**대표의 직관적 분석 (해결의 핵심):**
+> "히스토리는 자료가 남았으니 firestore에 기록됐다는 뜻이고, 그게 내 플랜 장기 프로그램에 연결이 안 되어있거나 잘못 연결된 거네. 웨이트 장기플랜은 **연결 안 됨** 문제, 러닝은 **중복 세션 순서 판정** 문제로 봐줘."
+
+**코드 경로로 확인된 두 케이스:**
+
+| 증상 | 메커니즘 |
+|---|---|
+| 다이어트 플랜 "연결 안 됨" | `workout_history` 저장 경로와 `saved_plans.completedAt` 마킹 경로가 분리됨 + resume 경로 마킹 누락(64-ζ-β) + `syncSavedPlansFromServer` 파괴적 덮어쓰기(`saveProgram`이 `completedAt: null` 고정) |
+| 10K S16 "순서 오류" | 4/19 `markSessionCompleted` 미존재 → 4/20 backfill v1이 sessionNumber 정렬 없이 Firestore 문서 순서로 매칭 → S1과 S16(둘 다 tt_2k) 동일 exerciseSet이라 S16에 잘못 저장됨 |
+
+**근본 원인 공통분모:** `saved_plans.completedAt` 필드 자체가 신뢰 불가능한 데이터 소스. 여러 경로에서 오염·유실 가능.
+
+**해결 방향 (대표 직관 반영):**
+`saved_plans.completedAt` 의존 버리고 `workout_history`를 source-of-truth로 전환. 렌더 타임에 두 컬렉션 매칭.
+
+**구현:**
+- **`src/utils/programCompletion.ts` (신규)** — `exerciseNameSet` 키 기반 1:1 매칭 알고리즘 (backfill v2 로직을 렌더 타임으로 이동):
+  - 프로그램 세션을 `exerciseKey` 별 큐로 재구성, 각 큐는 `sessionNumber ASC`
+  - `workout_history` 를 date ASC 정렬, 각 엔트리 1회 소비 → 첫 미매칭 세션에 할당
+  - `plan.createdAt` 이전 history는 제외 (다른 프로그램 오염 방지)
+  - `deriveProgramCompletions` / `getProgramProgressFromHistory` / `getNextProgramSessionFromHistory`
+- **`MyPlansScreen.tsx`** — `getActivePrograms` (completedAt 의존) 폐기, `useMemo`로 프로그램별 `completionMap` 계산. 세션 리스트/진행률/다음세션 CTA 모두 `completionMap` 기반
+
+**효과 (대표 폰 실측 확인):**
+- 10K S16 체크마크가 자동으로 **S1로 교정됨** (Firestore 데이터 건드리지 않고 UI만 올바르게)
+- 앞으로 resume 경로/sync 덮어쓰기 무관하게 완료 표시 신뢰 가능
+- 과거 backfill v1 오염 영향 자동 해소
+
+**파일 수정:**
+- `src/utils/programCompletion.ts` (신규)
+- `src/components/dashboard/MyPlansScreen.tsx`
+
+**빌드 검증:** `npm run build` 통과, tsc 깨끗.
+
+**이월 과제:**
+- `syncSavedPlansFromServer` 파괴적 덮어쓰기 자체는 그대로. 다른 필드(useCount/lastUsedAt)에는 영향 있을 수 있음. 별건 체크 필요.
+- Firestore 의 오염된 `completedAt` 데이터 클린업은 선택 사항 (UI가 올바르니 긴급성 낮음). 향후 admin 툴 재구현 시 reset만 수행.
+
+---
+
+### 회의 64-ζ-β: resume 경로 완료 마킹 누락 + strength 프로그램 programCategory 갭 (2026-04-21)
+
+**참석:** 대표(임주용), 평가자 Agent, 구현자 Agent
+
+**버그 1 (대표 실측):**
+> "2개월 여름맞이 다이어트 플랜도 오늘 1회차 완료했는데 완료 표시가 안 되네."
+
+**원인 진단 (평가자 코드 추적):**
+- [page.tsx:1096](src/app/app/page.tsx#L1096) `if (currentPlanSource === "program" && activeSavedPlanId)` 조건
+- [page.tsx:1270](src/app/app/page.tsx#L1270) "이전 플랜 이어서" 버튼이 `setCurrentPlanSource("resume")` 덮어씀
+- 결과: 뒤로가기 → 홈 → 이어서 경로로 완료하면 마킹 조건 실패 → 체크마크 미반영
+
+**수정:**
+```ts
+if (activeSavedPlanId && (currentPlanSource === "program" || currentPlanSource === "resume" || currentPlanSource === "saved")) {
+  markSessionCompleted(activeSavedPlanId);
+}
+```
+`activeSavedPlanId` 존재만으로 마킹. 단일 플랜(`saved`)이어도 completedAt 찍히지만 display 로직이 프로그램 세션에서만 소비 → 무해.
+
+**버그 2 (평가자 병렬 에이전트 발견):**
+`ChatHome.generateAndSaveProgram` ([:448-464](src/components/dashboard/ChatHome.tsx#L448-L464))이 strength 장기 프로그램 생성 시 `programCategory` 필드 누락. 향후 running/strength 구분 필터가 깨질 수 있는 잠재 버그.
+
+**수정:** `programCategory: "strength" as const` 명시.
+
+**에이전트 병렬 조사 결과 (주요 발견):**
+- **평가자 Agent** (일반 목적): 러닝 4프로그램(vo2_boost/10k/half/full) + 장기 플랜 예시 칩(summer_diet/vacation/long_full 등) 완료 flow 전수 PASS. 위 2건 제외 이상 없음
+- **데이터 조사 Agent** (일반 목적): `git show 91ba262:functions/src/admin/backfillSessionCompletion.ts` 로 deleted 파일 복원 분석. v1/v2 backfill 로직 차이 + `syncSavedPlansFromServer` 파괴적 덮어쓰기 흐름 확정. S16 오염이 Firestore 측에 있고 매 sync마다 로컬로 내려오는 구조임을 증명
+
+**파일 수정:**
+- `src/app/app/page.tsx` (조건 확장)
+- `src/components/dashboard/ChatHome.tsx` (programCategory)
+
+**빌드 검증:** `npm run build` 통과.
+
+---
+
 ### 회의 64-ζ: 장기 프로그램 동일 내용 세션 혼동 해소 — 맥락 라벨 + 세션번호 상시 노출 (2026-04-21)
 
 **참석:** 대표(임주용), 기획자 Agent, 평가자 Agent, 박서진 프엔 헤더

@@ -39,10 +39,23 @@ SPEC 상 의도적으로 **같은 slotType이 서로 다른 훈련 맥락에 재
 - `targetPaceSec: number | null` (초/km)
 - `slotType: string` (예: `"tt_2k"`, `"threshold_2x15"`, `"dress_rehearsal"`)
 
-### 완료 추적
+### 완료 추적 — workout_history source-of-truth (회의 64-ζ-γ, 2026-04-21)
 
-- 클라이언트: `markSessionCompleted(planId)` — `plan.id` 기준 로컬 `completedAt` 저장
-- ⚠ **서버 미저장 이슈 (미해결)**: Cloud Function `listSavedPlans`가 `completedAt: null` 리턴. `syncSavedPlansFromServer` 가 로컬 완료 상태 덮어쓸 잠재 리스크. 회의 64-ζ-β 이월.
+**중요:** `saved_plans.completedAt` 필드는 **믿지 말 것**. 완료 판정은 항상 `workout_history` 컬렉션 기준.
+
+- 렌더 타임 매칭: [src/utils/programCompletion.ts](../../src/utils/programCompletion.ts)
+- 알고리즘: `exerciseNameSet` 키로 세션 ↔ history 1:1 매칭, `sessionNumber ASC` 순서 보장
+- `MyPlansScreen` 은 `deriveProgramCompletions(sessions, workoutHistory)` 결과로 체크마크/진행률/다음세션 모두 결정
+
+**왜 이렇게 바꿨나 (재발 방지 맥락):**
+1. `markSessionCompleted` 는 로컬만 찍음 → `syncSavedPlansFromServer` 가 서버 `completedAt: null`로 덮어써 유실
+2. 과거 backfill v1 (commit e734fc2, 2026-04-19)이 `sessionNumber` 정렬 없이 Firestore 문서 순서로 매칭 → 동일 `slotType` 세션(tt_2k W1 vs W4 등)에서 잘못된 세션에 completedAt 저장
+3. 두 오염이 합쳐져 "내가 한 세션 ≠ 체크마크 찍힌 세션" 재현 사례 발생
+
+**새 유틸 사용 규칙:**
+- 프로그램 완료 상태 화면에 띄울 때 반드시 `getProgramProgressFromHistory` 계열 사용
+- `getActivePrograms` / `getProgramProgress` / `getNextProgramSession` (savedPlans.ts의 구 completedAt 의존 함수들) 은 **신규 코드에서 사용 금지**. 이미 사용 중이면 마이그레이션.
+- `markSessionCompleted` 호출 자체는 유지 (다른 필드 useCount/lastUsedAt 갱신 용도). 단, UI 체크마크 판정은 기반으로 삼지 말 것.
 
 ### 페이스 매트릭스
 
