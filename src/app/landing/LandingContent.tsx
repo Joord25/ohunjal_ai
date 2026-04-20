@@ -243,10 +243,10 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
       </section>
 
       {/* ═══ Section 2: HOW IT WORKS ═══ */}
-      <section ref={demoSectionRef} className="snap-start py-20 sm:py-28 px-6 bg-[#111111]">
+      <section ref={demoSectionRef} className="snap-start py-12 sm:py-28 px-6 bg-[#111111]">
         <div className="max-w-4xl mx-auto">
           <RevealOnScroll>
-            <h2 className="text-2xl sm:text-4xl font-black text-center text-white mb-12 sm:mb-16">{t.howItWorks.title}</h2>
+            <h2 className="text-2xl sm:text-4xl font-black text-center text-white mb-6 sm:mb-16">{t.howItWorks.title}</h2>
           </RevealOnScroll>
 
           {/* 데스크톱 (sm+): 기존 좌우 분할 레이아웃 */}
@@ -571,16 +571,16 @@ function MobileHowItWorksCarousel({ steps, locale }: { steps: StepData[]; locale
 
   return (
     <div className="sm:hidden">
-      {/* 가로 스와이프 트랙 — -mx-6 로 섹션 패딩 상쇄 후 w-screen 으로 full viewport */}
+      {/* 가로 스와이프 트랙 — overflow-y-hidden 으로 카드 내부 세로 스크롤 차단 */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth -mx-6"
+        className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide scroll-smooth overscroll-x-contain -mx-6"
       >
         {steps.map((step, i) => (
-          <div key={i} className="snap-center shrink-0 w-screen px-6">
+          <div key={i} className="snap-center snap-always shrink-0 w-screen px-6 flex flex-col">
             {/* 텍스트 먼저 — 라벨·타이틀·설명 */}
-            <div className="flex items-start gap-4 mb-6">
+            <div className="flex items-start gap-4 mb-4 shrink-0">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-sm bg-[#059669] text-white">
                 {String(i + 1).padStart(2, "0")}
               </div>
@@ -593,12 +593,12 @@ function MobileHowItWorksCarousel({ steps, locale }: { steps: StepData[]; locale
                     </span>
                   )}
                 </div>
-                <p className="text-sm mt-2 text-white/60 leading-relaxed">{highlightText(step.desc)}</p>
+                <p className="text-sm mt-1.5 text-white/60 leading-relaxed">{highlightText(step.desc)}</p>
               </div>
             </div>
 
-            {/* 폰 프레임 */}
-            <div className="mx-auto w-[75%] max-w-[280px]">
+            {/* 폰 프레임 — 크기 축소로 세로 공간 확보 */}
+            <div className="mx-auto w-[58%] max-w-[220px]">
               <div className="relative">
                 <div className="rounded-[30px] border-[3px] border-white/10 bg-[#1a1a1a] shadow-2xl overflow-hidden aspect-[9/19.5]">
                   <img
@@ -621,7 +621,7 @@ function MobileHowItWorksCarousel({ steps, locale }: { steps: StepData[]; locale
       </div>
 
       {/* 도트 인디케이터 */}
-      <div className="flex justify-center items-center gap-2 mt-8">
+      <div className="flex justify-center items-center gap-2 mt-5">
         {steps.map((_, i) => (
           <button
             key={i}
@@ -634,8 +634,8 @@ function MobileHowItWorksCarousel({ steps, locale }: { steps: StepData[]; locale
         ))}
       </div>
 
-      {/* 스와이프 힌트 (첫 로드 시에만 텍스트 힌트) */}
-      <p className="text-center text-xs text-white/30 mt-4">
+      {/* 스와이프 힌트 */}
+      <p className="text-center text-[11px] text-white/30 mt-2">
         {locale === "ko" ? "← 좌우로 넘겨보세요 →" : "← swipe →"}
       </p>
     </div>
