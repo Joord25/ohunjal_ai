@@ -2,6 +2,51 @@
 
 ---
 
+### 회의 64-ζ: 장기 프로그램 동일 내용 세션 혼동 해소 — 맥락 라벨 + 세션번호 상시 노출 (2026-04-21)
+
+**참석:** 대표(임주용), 기획자 Agent, 평가자 Agent, 박서진 프엔 헤더
+
+**버그 리포트 (대표 실측):**
+> "10K 50분 돌파에서 1번(2km 전력)을 했는데 동일 내용인 16번을 한 걸로 오인하게 됐어."
+
+**평가자 코드 근거:**
+- `functions/src/runningProgram.ts:568` + `:592-596` — Week 1 Day 1 override + Chapter 1(Week 4) boundaryTT 둘 다 `slotType="tt_2k"` 편성. 10K 4일/주 기준 Session 1과 Session 16이 동일 slotType
+- `:820-827` — 두 세션 모두 `title: "2K Time Trial — 기준점 측정"`, `description: "2km 전력 러닝 + 워밍업/쿨다운 유산소"` 완전 동일
+- `src/components/dashboard/MyPlansScreen.tsx:197` — 리스트는 `sessionData.description`만 노출, 구분자 없음. isDone 시 sessionNumber도 체크마크로 가림
+
+**근본 원인 2계층:**
+1. **설계 계층(주범):** SPEC이 동일 slotType 세션을 "기준점(W1)"과 "재측정(W4/W8/Peak)" 서로 다른 훈련 맥락에 배치했는데 UI에 맥락 차이가 한 글자도 드러나지 않음
+2. **추적 계층(부차):** 완료 마킹은 `plan.id` 기반이라 코드상 정상. 서버 `listSavedPlans` 싱크가 `completedAt`을 리셋하는 잠재 리스크는 별건으로 분리
+
+**자문단 근거 (source-grounded):**
+- Canova [Running Writings](https://runningwritings.com/2023/07/renato-canova-marathon-training-lecture.html) — "control test / verifica"는 같은 거리라도 훈련 주기 내 위치가 의미를 바꿈
+
+**대표 확정 (A+B 동시):**
+- A(기획): 각 TT/Dress에 역할 라벨 부여 — Base 진입/Base 완료/Threshold 해방/VO2 완료/Peak 점검
+- B(프론트): 세션번호(`#N`) 항상 노출, 체크마크가 가리지 않도록 description 앞에 prefix
+
+**구현 구조 (클라이언트 렌더 타임 매핑 — 서버/저장 데이터 불변):**
+- **`src/utils/programSessionLabels.ts` (신규)** — `getProgramSessionLabel({slotType, weekIndex, programGoal})` 맥락 라벨 매핑. tt_2k W1→"Base 진입 · 현재 2K 기준점", tt_2k else→"Base 완료 · 4주 성장 재측정", tt_5k vo2_boost→"VO2 완료 · 5K 최종 측정", tt_5k else→"Threshold 해방 · 5K 재측정", dress_rehearsal→"Peak 점검 · 레이스 시뮬레이션"
+- **`MyPlansScreen.tsx`** — 세션 리스트/다음 세션 CTA 양쪽에서 `getProgramSessionLabel` 적용. 리스트 각 행에 `#{sessionNumber}` prefix(회색 tabular-nums) — 체크마크 상태에서도 몇 회차인지 노출
+- **`page.tsx` onSelectPlan** — 프로그램 세션 선택 시 `applyProgramSessionLabel(plan.sessionData, plan)` → MasterPlanPreview/WorkoutSession/WorkoutReport 전 경로에서 맥락 라벨 일관 표시. 완료 후 workoutHistory에도 맥락 라벨로 기록됨
+
+**설계 원칙 (재활용 가능):**
+- 서버 생성기(runningProgram.ts) 스펙은 유지 — 저장된 기존 프로그램 마이그레이션 불필요
+- 렌더 타임 derive 로 기존 유저 프로그램까지 자동 반영
+- `slotType/weekIndex/programGoal` 3필드가 SavedPlan에 이미 저장돼 있었기에 가능 (회의 64-C 산물)
+
+**파일 수정:**
+- `src/utils/programSessionLabels.ts` (신규)
+- `src/components/dashboard/MyPlansScreen.tsx`
+- `src/app/app/page.tsx`
+
+**빌드 검증:** `npm run build` 통과. tsc diagnostics 깨끗.
+
+**미해결·이월 (회의 64-ζ-β):**
+- 데이터 무결성 — `syncSavedPlansFromServer`가 로컬 `completedAt`을 서버 null로 덮어쓰는 잠재 리스크. 서버에도 `completedAt` 저장 경로 필요. 대표 폰 localStorage 덤프로 현상 재현 조사 후 별건 처리
+
+---
+
 ### 회의 64-ε: 교체 바텀시트 필터·결과 그룹 순서 재정렬 (2026-04-20)
 
 **참석:** 대표(임주용), 구현자 Agent

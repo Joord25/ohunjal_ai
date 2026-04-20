@@ -21,6 +21,7 @@ import { FitnessReading } from "@/components/dashboard/FitnessReading";
 import { ChatHome } from "@/components/dashboard/ChatHome";
 import { MyPlansScreen } from "@/components/dashboard/MyPlansScreen";
 import { markPlanUsed, markSessionCompleted, remoteMarkPlanUsed } from "@/utils/savedPlans";
+import { applyProgramSessionLabel } from "@/utils/programSessionLabels";
 import { Onboarding } from "@/components/layout/Onboarding";
 import { NutritionTab } from "@/components/report/tabs/NutritionTab";
 import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from "@/utils/userProfile";
@@ -1175,7 +1176,12 @@ export default function Home() {
                 setShowPaywall(true);
                 return;
               }
-              setCurrentWorkoutSession(plan.sessionData);
+              // 회의 64-ζ: 장기 프로그램 세션은 slotType+weekIndex 기반 맥락 라벨 주입.
+              // 동일 slotType 세션(tt_2k W1 기준점 vs W4 재측정 등)을 미리보기/운동/리포트에서도 구분.
+              const sessionDataWithLabel = plan.programId
+                ? applyProgramSessionLabel(plan.sessionData, plan)
+                : plan.sessionData;
+              setCurrentWorkoutSession(sessionDataWithLabel);
               setActiveSavedPlanId(plan.id);
               // 회의 63-A: program session 은 plan.programId 로 구분
               setCurrentPlanSource(plan.programId ? "program" : "saved");

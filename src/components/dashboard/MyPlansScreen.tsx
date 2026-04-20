@@ -7,6 +7,7 @@ import {
   syncSavedPlansFromServer, getActivePrograms, getProgramSessions,
   deleteProgram, remoteDeleteProgram,
 } from "@/utils/savedPlans";
+import { getProgramSessionLabel } from "@/utils/programSessionLabels";
 
 interface MyPlansScreenProps {
   onBack: () => void;
@@ -152,7 +153,10 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
                   </div>
 
                   {/* 다음 세션 CTA */}
-                  {prog.nextSession && !isExpanded && !isEditMode && (
+                  {prog.nextSession && !isExpanded && !isEditMode && (() => {
+                    const nextLabel = getProgramSessionLabel(prog.nextSession);
+                    const nextDesc = nextLabel?.description || prog.nextSession.sessionData.description || (locale === "en" ? "Next session" : "다음 세션");
+                    return (
                     <button
                       onClick={() => onSelectPlan(prog.nextSession!)}
                       className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-100 text-left active:bg-emerald-50/50 transition-colors"
@@ -161,15 +165,16 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="flex-1 text-[12px] text-[#1B4332]">
+                      <span className="flex-1 text-[12px] text-[#1B4332] truncate">
                         <span className="font-bold">{prog.nextSession.sessionNumber}/{prog.total}</span>
-                        {" "}{prog.nextSession.name.split("/")[0]?.replace(prog.programName, "").trim() || (locale === "en" ? "Next session" : "다음 세션")}
+                        {" "}<span className="truncate">{nextDesc}</span>
                       </span>
                       <svg className="w-3 h-3 text-[#2D6A4F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-                  )}
+                    );
+                  })()}
 
                   {/* 펼친 세션 리스트 */}
                   {isExpanded && (
@@ -177,6 +182,8 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
                       {sessions.map((s) => {
                         const isDone = !!s.completedAt;
                         const isNext = !isDone && prog.nextSession?.id === s.id;
+                        const ctxLabel = getProgramSessionLabel(s);
+                        const displayDesc = ctxLabel?.description || s.sessionData.description || s.name;
                         return (
                           <button
                             key={s.id}
@@ -194,7 +201,10 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className={`text-[12px] font-bold truncate ${isNext ? "text-[#2D6A4F]" : "text-[#1B4332]"}`}>
-                                {s.sessionData.description || s.name}
+                                {s.sessionNumber != null && (
+                                  <span className="text-gray-400 font-black mr-1.5 tabular-nums">#{s.sessionNumber}</span>
+                                )}
+                                {displayDesc}
                               </p>
                               {isDone && s.completedAt && (
                                 <p className="text-[10px] text-gray-400">{formatDate(s.completedAt)}</p>
