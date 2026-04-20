@@ -404,25 +404,24 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
       </section>
 
       {/* ═══ Section 4: Pricing ═══ */}
-      <section className="snap-start py-20 sm:py-28 px-6 bg-[#111111]">
+      <section className="snap-start py-10 sm:py-28 px-6 bg-[#111111]">
         <div className="max-w-2xl mx-auto text-center">
           <RevealOnScroll>
-            <p className="text-sm text-[#34d399] font-bold tracking-wide mb-3">{t.pricing.label}</p>
-            <h2 className="text-2xl sm:text-4xl font-black text-white mb-4">
+            <p className="text-sm text-[#34d399] font-bold tracking-wide mb-2 sm:mb-3">{t.pricing.label}</p>
+            <h2 className="text-xl sm:text-4xl font-black text-white mb-2 sm:mb-4">
               <span className="block text-white/40">{(() => {
-                // 가격 숫자 부분만 line-through — KO: "19,800원", EN: "$15.99/mo"
                 const dim = t.pricing.headingDim;
                 const m = dim.match(/^(.*?)(\$?\d[\d,.]*.*)$/);
                 if (!m) return dim;
                 const [, prefix, price] = m;
                 return <>{prefix}<span className="line-through" style={{ color: "#6c6c6c", textDecorationColor: "#6c6c6c" }}>{price}</span></>;
               })()}</span>
-              <span className="block text-white mt-3 sm:mt-4">{t.pricing.headingBright}</span>
+              <span className="block text-white mt-2 sm:mt-4">{t.pricing.headingBright}</span>
             </h2>
-            <p className="text-base text-white/40 mb-12">{t.pricing.sub}</p>
+            <p className="text-sm sm:text-base text-white/40 mb-6 sm:mb-12">{t.pricing.sub}</p>
           </RevealOnScroll>
 
-          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-12">
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-0 sm:mb-12">
             <RevealOnScroll delay={100} className="hidden sm:block">
               <div className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-white/[0.02] text-left">
                 <p className="text-lg font-bold text-white mb-1">{t.pricing.free.name}</p>
@@ -439,23 +438,23 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
             </RevealOnScroll>
 
             <RevealOnScroll delay={200}>
-              <div className="p-6 sm:p-8 rounded-2xl border-2 border-[#059669] bg-white text-left relative shadow-lg">
+              <div className="p-4 sm:p-8 rounded-2xl border-2 border-[#059669] bg-white text-left relative shadow-lg">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#059669] text-white text-xs font-bold rounded-full">{t.pricing.premium.badge}</div>
-                <p className="text-lg font-bold text-[#1B4332] mb-1">{t.pricing.premium.name}</p>
-                <p className="text-sm text-gray-400 mb-4">{t.pricing.premium.desc}</p>
-                <div className="mb-3 flex items-end justify-center relative h-[160px] sm:h-[130px]">
-                  <img src={locale === "ko" ? "/price.png" : "/price_en1.png"} alt="Premium 1" className="absolute left-1/2 -translate-x-[75%] bottom-0 w-[45%] sm:w-[45%] rounded-xl shadow-lg z-10" />
-                  <img src={locale === "ko" ? "/price2.png" : "/price_en2.png"} alt="Premium 2" className="absolute left-1/2 -translate-x-[25%] bottom-0 w-[45%] sm:w-[45%] rounded-xl shadow-lg z-20" />
+                <p className="text-base sm:text-lg font-bold text-[#1B4332] mb-0.5 sm:mb-1">{t.pricing.premium.name}</p>
+                <p className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-4">{t.pricing.premium.desc}</p>
+                <div className="mb-2 sm:mb-3 flex items-end justify-center relative h-[110px] sm:h-[130px]">
+                  <img src={locale === "ko" ? "/price.png" : "/price_en1.png"} alt="Premium 1" className="absolute left-1/2 -translate-x-[75%] bottom-0 w-[42%] sm:w-[45%] rounded-xl shadow-lg z-10" />
+                  <img src={locale === "ko" ? "/price2.png" : "/price_en2.png"} alt="Premium 2" className="absolute left-1/2 -translate-x-[25%] bottom-0 w-[42%] sm:w-[45%] rounded-xl shadow-lg z-20" />
                 </div>
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg text-gray-300 line-through">{t.pricing.premium.priceOld}</span>
-                    <span className="text-3xl sm:text-4xl font-black text-[#1B4332]">{t.pricing.premium.price}</span>
-                    <span className="text-base font-medium text-gray-400">{t.pricing.premium.unit}</span>
+                <div className="mb-3 sm:mb-6">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-sm sm:text-lg text-gray-300 line-through">{t.pricing.premium.priceOld}</span>
+                    <span className="text-2xl sm:text-4xl font-black text-[#1B4332]">{t.pricing.premium.price}</span>
+                    <span className="text-sm sm:text-base font-medium text-gray-400">{t.pricing.premium.unit}</span>
                   </div>
-                  <span className="inline-block mt-2 px-2 py-0.5 bg-red-500/10 text-red-500 text-xs font-bold rounded-full">{t.pricing.premium.discount}</span>
+                  <span className="inline-block mt-1.5 sm:mt-2 px-2 py-0.5 bg-red-500/10 text-red-500 text-[11px] sm:text-xs font-bold rounded-full">{t.pricing.premium.discount}</span>
                 </div>
-                <ul className="space-y-3 text-sm text-gray-500">
+                <ul className="space-y-1.5 sm:space-y-3 text-[13px] sm:text-sm text-gray-500">
                   {t.pricing.premium.features.map((item) => (
                     <li key={item} className="flex items-center gap-2"><CheckSvg stroke="#059669" />{item}</li>
                   ))}

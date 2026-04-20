@@ -72,7 +72,7 @@ const ko: LandingTexts = {
     line1: "챗GPT랑 다른게 뭐냐구요?",
     line2: "말만 하는 AI 말고,",
     line3: "오늘 뛰게 하는 앱",
-    sub: ["한체대 석사 트레이너가 직접 개발한 앱.", "다이어트, 러닝, 근력운동까지"],
+    sub: ["ACSM·NASM 국제 가이드라인 기반, 한체대 박사진 검수.", "다이어트, 러닝, 근력운동까지"],
     stats: [
       { prefix: "주 ", suffix: "회", label: "평균 운동 빈도" },
       { prefix: "", suffix: "%", label: "루틴 완주율" },
@@ -148,7 +148,7 @@ const ko: LandingTexts = {
       },
       {
         q: "AI가 짜준 루틴, 믿고 따라 해도 안전한가요?",
-        a: "단순 텍스트 생성이 아닙니다. 국제 운동 가이드라인 **ACSM·NASM**과 **한체대** 운동과학 박사진 감수를 거친 알고리즘으로 설계됐어요. 부상·통증 부위를 말하면 해당 관절에 무리 가지 않는 대체 동작을 즉시 제안합니다.",
+        a: "단순 텍스트 생성이 아닙니다. 국제 운동 가이드라인 **ACSM·NASM**과 **한체대** 운동과학 박사진 검수를 거친 알고리즘으로 설계됐어요. 부상·통증 부위를 말하면 해당 관절에 무리 가지 않는 대체 동작을 즉시 제안합니다.",
       },
       {
         q: "PT 받기엔 비싸고 혼자 하긴 막막한데, 도움이 될까요?",
@@ -191,7 +191,7 @@ const en: LandingTexts = {
     line1: "Beyond ChatGPT?",
     line2: "Not just talk.",
     line3: "Plan to done.",
-    sub: ["Built by a 10-year trainer.", "Diet, running, strength — all in one app."],
+    sub: ["Built on ACSM·NASM international standards, reviewed by KNSU PhDs.", "Diet, running, strength — all in one app."],
     stats: [
       { prefix: "", suffix: "x", label: "Avg. weekly sessions" },
       { prefix: "", suffix: "%", label: "Completion rate" },
