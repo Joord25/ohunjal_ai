@@ -78,7 +78,6 @@ export const ShareCard: React.FC<ShareCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const date = sessionDate ? new Date(sessionDate) : new Date();
-  const dateStr = `${String(date.getFullYear()).slice(2)}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 
   const { totalVolume, allE1RMs, totalDurationSec, sessionCategory } = metrics;
   const isStrength = sessionCategory === "strength" || sessionCategory === "mixed";
@@ -257,35 +256,30 @@ export const ShareCard: React.FC<ShareCardProps> = ({
             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Helvetica Neue', sans-serif",
           }}
         >
-          {/* ===== Card 1: Summary ===== */}
+          {/* ===== Card 1: Summary (회의 64-η 2026-04-21: Rubik 통일·날짜 헤더 제거·운동 목록 타이트) ===== */}
           {currentCard === 0 && !isRunning && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center", textAlign: "center", width: "100%" }}>
-              {/* Training Type */}
-              <div>
-                <p style={{ color: labelColor, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em" }}>
-                  {dateStr}
-                </p>
-              </div>
-
+            <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", textAlign: "center", width: "100%", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
               {/* Main Exercises */}
               <div>
-                <p style={{ color: labelColor, fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" as const, marginBottom: 8 }}>
+                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   EXERCISES
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {mainExercises.slice(0, 6).map((ex, i) => (
                     <p key={i} style={{
                       color: "white",
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: 700,
-                      lineHeight: 1.4,
+                      lineHeight: 1.25,
+                      letterSpacing: "-0.01em",
                       textShadow: shadow,
+                      fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif",
                     }}>
                       {ex.displayName}
                     </p>
                   ))}
                   {mainExercises.length > 6 && (
-                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600 }}>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                       +{mainExercises.length - 6}
                     </p>
                   )}
@@ -293,19 +287,19 @@ export const ShareCard: React.FC<ShareCardProps> = ({
               </div>
 
               {/* Volume + Time row */}
-              <div style={{ display: "flex", gap: 24, justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: 28, justifyContent: "center" }}>
                 {isStrength && totalVolume > 0 && (
                   <div>
-                    <p style={{ color: labelColor, fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" as const, marginBottom: 4 }}>Volume</p>
-                    <p style={{ color: "white", fontSize: 28, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                    <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase" as const, marginBottom: 6, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>Volume</p>
+                    <p style={{ color: "white", fontSize: 32, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em", textShadow: shadow, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                       {Math.round(toDispW(totalVolume)).toLocaleString()}
-                      <span style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginLeft: 2 }}>{U}</span>
+                      <span style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", marginLeft: 3, fontWeight: 600, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>{U}</span>
                     </p>
                   </div>
                 )}
                 <div>
-                  <p style={{ color: labelColor, fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" as const, marginBottom: 4 }}>Time</p>
-                  <p style={{ color: "white", fontSize: 28, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase" as const, marginBottom: 6, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>Time</p>
+                  <p style={{ color: "white", fontSize: 32, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em", textShadow: shadow, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                     {formatDuration(totalDurationSec)}
                   </p>
                 </div>
