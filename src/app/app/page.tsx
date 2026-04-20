@@ -10,7 +10,7 @@ import { WorkoutReport } from "@/components/report/WorkoutReport";
 import { WorkoutSession } from "@/components/workout/WorkoutSession";
 import { ProofTab } from "@/components/dashboard/ProofTab";
 import { MyProfileTab } from "@/components/profile/MyProfileTab";
-import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, WorkoutHistory, RunningStats } from "@/constants/workout";
+import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, ExerciseStep, WorkoutHistory, RunningStats } from "@/constants/workout";
 import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { saveWorkoutHistory, updateWorkoutAnalysis, updateReportTabs, getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { auth, googleProvider } from "@/lib/firebase";
@@ -30,6 +30,12 @@ import { trackEvent, setAnalyticsUserId } from "@/utils/analytics";
 import { FREE_PLAN_LIMIT as TRIAL_FREE_PLAN_LIMIT, GUEST_TRIAL_LIMIT as TRIAL_GUEST_LIMIT } from "@/utils/trialStatus";
 import { I18nProvider, useTranslation } from "@/hooks/useTranslation";
 import { UnitsProvider } from "@/hooks/useUnits";
+import {
+  saveActiveSession,
+  clearActiveSession,
+  loadActiveSession,
+  type ActiveSessionProgress,
+} from "@/utils/activeSessionPersistence";
 
 const getDisplayName = (user: import("firebase/auth").User | null, fallback = "회원") => {
   const raw = user?.displayName?.split(" ")[0] || fallback;
@@ -346,6 +352,11 @@ export default function Home() {
   const [completedRitualIds, setCompletedRitualIds] = useState<string[]>([]);
   const [currentWorkoutSession, setCurrentWorkoutSession] = useState<WorkoutSessionData | null>(null);
   const [activeSavedPlanId, setActiveSavedPlanId] = useState<string | null>(null);
+  // 회의 64-γ (2026-04-20): 모바일 백그라운드 복귀 시 WorkoutSession/MasterPlanPreview 하위 상태 hydrate용.
+  // 복원된 snapshot의 progress/previewExercises를 자식 컴포넌트에 1회 전달.
+  const [restoredProgress, setRestoredProgress] = useState<ActiveSessionProgress | null>(null);
+  const [restoredPreviewExercises, setRestoredPreviewExercises] = useState<ExerciseStep[] | null>(null);
+  const didAttemptRestoreRef = useRef(false);
   // 회의 63-A: workout_start/complete 가 저장 플랜 재실행 / 프로그램 / 재개 / 신규 채팅을 구분 못 해서
   //   funnel 분모 오염 (plan_generated 17 vs workout_start 204). source 태그로 분리.
   //   source 값 근거 (코드 진입점 전수 조사, 2026-04-18):
@@ -474,6 +485,55 @@ export default function Home() {
 
     return () => unsubscribe();
   }, []);
+
+  // 회의 64-γ (2026-04-20): 모바일 백그라운드에서 브라우저가 discard → 재로드 시 운동 세션 자동 복원.
+  // 초기화 완료 직후 1회만 시도. 12시간 초과 snapshot은 util에서 자동 폐기.
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (didAttemptRestoreRef.current) return;
+    didAttemptRestoreRef.current = true;
+    const snap = loadActiveSession();
+    if (!snap) return;
+    setCurrentWorkoutSession(snap.sessionData);
+    if (snap.planSource) setCurrentPlanSource(snap.planSource);
+    setActiveSavedPlanId(snap.activeSavedPlanId ?? null);
+    if (snap.condition !== undefined) setCurrentCondition(snap.condition ?? null);
+    if (snap.goal !== undefined) setCurrentGoal(snap.goal ?? null);
+    if (snap.session !== undefined) setCurrentSession(snap.session ?? null);
+    if (snap.recommendedIntensity !== undefined) setRecommendedIntensity(snap.recommendedIntensity ?? null);
+    setRestoredProgress(snap.progress ?? null);
+    setRestoredPreviewExercises(snap.previewExercises ?? null);
+    setView(snap.view);
+  }, [isInitialized]);
+
+  // 회의 64-γ: 현재 view가 운동 플로우(master_plan_preview/workout_session)일 때만 snapshot 저장.
+  // 그 외 view로 이동하면 자동 폐기 → 어제 하다 만 세션이 다음 날 유령처럼 뜨지 않음.
+  useEffect(() => {
+    if (!isInitialized) return;
+    const inWorkoutFlow = (view === "master_plan_preview" || view === "workout_session") && !!currentWorkoutSession;
+    if (inWorkoutFlow) {
+      saveActiveSession({
+        view,
+        sessionData: currentWorkoutSession!,
+        planSource: currentPlanSource,
+        activeSavedPlanId,
+        condition: currentCondition,
+        goal: currentGoal,
+        session: currentSession,
+        recommendedIntensity,
+        // progress/previewExercises는 하위 컴포넌트가 updateActiveSession으로 패치
+      });
+    } else {
+      clearActiveSession();
+    }
+  }, [isInitialized, view, currentWorkoutSession, currentPlanSource, activeSavedPlanId, currentCondition, currentGoal, currentSession, recommendedIntensity]);
+
+  // 회의 64-γ: 자식 컴포넌트가 restored 값을 consume 한 뒤 2회 복원되지 않도록 1-shot 처리.
+  // view가 해당 플로우를 벗어나면 cleanup.
+  useEffect(() => {
+    if (view !== "workout_session" && restoredProgress) setRestoredProgress(null);
+    if (view !== "master_plan_preview" && restoredPreviewExercises) setRestoredPreviewExercises(null);
+  }, [view, restoredProgress, restoredPreviewExercises]);
 
   // Back button interception — prevent accidental app exit on mobile
   const viewRef = useRef(view);
@@ -940,6 +1000,7 @@ export default function Home() {
           <MasterPlanPreview
             sessionData={currentWorkoutSession}
             source={currentPlanSource}
+            restoredExercises={restoredPreviewExercises}
             onStart={(modifiedData) => {
               // 회의 64-N (2026-04-19): 운동 시작 시점 체험 소진 체크 — 대표 지시 "제발 페이월 잘 뜨게".
               // 기존: Master Plan 체류 중 체험이 소진돼도 "운동 시작" 누르면 그냥 통과하던 버그.
@@ -996,6 +1057,7 @@ export default function Home() {
           <WorkoutSession
             sessionData={currentWorkoutSession}
             source={currentPlanSource}
+            restoredProgress={restoredProgress}
             onComplete={(completedData, logs, timing, runningStats) => {
               trackEvent("workout_complete", { session_number: getPlanCount(), duration_min: Math.round(timing.totalDurationSec / 60), source: currentPlanSource });
               setCurrentWorkoutSession(completedData);

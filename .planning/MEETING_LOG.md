@@ -2,6 +2,109 @@
 
 ---
 
+### 회의 64-ε: 교체 바텀시트 필터·결과 그룹 순서 재정렬 (2026-04-20)
+
+**참석:** 대표(임주용), 구현자 Agent
+
+**대표 지시:**
+> "대체운동 선택시 가슴, 등, 하체, 어깨, 팔 이런순으로..."
+
+**결정:**
+- [LABELED_EXERCISE_POOLS](../src/constants/workout.ts#L246) 배열 순서 = [PlanBottomSheets.tsx:260-270, 315-325](../src/components/plan/PlanBottomSheets.tsx#L260-L325) 의 필터 pill · 검색 결과 그룹 헤더 순서. 배열 자체를 재정렬.
+- 새 순서: **가슴 → 등 → 하체 → 어깨 → 이두 → 삼두 → 후면 어깨 → 종아리 → 코어 → 전신 → 플라이오 → 웜업 → 가동성**
+- "팔" = 이두+삼두 (대표 지시 자연어). 후면 어깨는 보조 근육이라 바로 뒤.
+
+**first-match 무결성 검증:**
+- 공유 운동의 `getAlternativeExercises()` first-match 그룹이 기존과 동일하게 유지되는지 확인:
+  - 친업 → 등 ✓ (이두보다 앞)
+  - 폼롤러 흉추 가동성 → 등 ✓ (코어/가동성보다 앞)
+  - 케틀벨 스윙 → 하체 ✓ (전신보다 앞)
+  - 마운틴 클라이머 (Climber 단수) → 코어 ✓ (플라이오의 복수형과 분리)
+  - 데드버그·베어 크롤 → 코어 ✓
+  - 버피 계열 → 플라이오 ✓
+
+**파일 수정:**
+- `src/constants/workout.ts` — `LABELED_EXERCISE_POOLS` 배열 순서 재정렬 + 주석 갱신
+
+**빌드 검증:** `npm run build` 통과.
+
+---
+
+### 회의 64-δ: 버피·에어 스쿼트 등 교체 버튼 미노출 버그 (2026-04-20)
+
+**참석:** 대표(임주용), 기획자 Agent, 구현자 Agent
+
+**버그 리포트 (대표):**
+> "에어스쿼트, 버피 이친구들은 왜 운동교체가 안뜰까여?"
+
+**원인 진단:**
+- [MasterPlanPreview.tsx:605](../src/components/plan/MasterPlanPreview.tsx#L605) 의 `canSwap = getAlternativeExercises(name).length > 0` 로직이 `LABELED_EXERCISE_POOLS` 이름 매칭에 의존. 매칭 실패 시 빈 배열 → `canSwap=false` → 교체 버튼 숨김.
+- 서버 [functions/src/workoutEngine.ts:1251, 1276, 1529](../functions/src/workoutEngine.ts) 에는 "에어 스쿼트 (Air Squat)", "버피 (Burpees)", "스텝아웃 버피 (Step-out Burpees)" 등록.
+- 클라이언트 [src/constants/workout.ts:246-259](../src/constants/workout.ts#L246-L259) 의 `LABELED_EXERCISE_POOLS` 에는 이 운동들 누락. 근력/머신 중심이라 **플라이오/맨몸 카디오 계열 카테고리 자체가 없었음**.
+- 서버·클라이언트 풀 diff 결과 핵심 누락 76건 확인 (`/tmp/missing.txt`).
+
+**수정 방향 (대표 승인, A+B+C 조합):**
+1. **C. 플라이오 카테고리 신설** — 버피·점프 스쿼트·점핑잭·마운틴클라이머·하이니즈·스피드스케이터 등 HIIT/맨몸 카디오 13종을 "전신"(바벨/케틀벨 컴파운드 위주)에서 분리.
+2. **A. 하체 보강** — 에어 스쿼트, 월 스쿼트, 힙 브릿지, 클램쉘, 리버스 런지 복수형 변형 추가.
+3. **B. 기타 누락 동기화** — 코어(터키시 겟업, 케틀벨 암바/윈드밀, 데드버그 별칭, 베어 크롤), 등(스트레이트 암 풀다운, 시티드 로우 별칭).
+
+**전신 아이콘 (대표 지시):**
+- Figma Kenko UI Kit `node-id=74:2359` SVG 다운로드 → `public/icons/body/fullbody.svg`.
+- [bodyIcon.ts:73-82](../src/components/plan/bodyIcon.ts#L73-L82) `GROUP_TO_ICON` 에 `"전신"`, `"플라이오"` 매핑 추가.
+
+**파일 수정:**
+- `src/constants/workout.ts` — `LABELED_EXERCISE_POOLS` (하체/등/코어 보강 + "플라이오" 신설)
+- `src/components/plan/bodyIcon.ts` — GROUP_TO_ICON 전신·플라이오 매핑
+- `public/icons/body/fullbody.svg` (신규, Figma에서 추출)
+
+**남은 과제 (회의 64-δ-β):**
+- 서버·클라이언트 풀 SSOT 분리 구조는 그대로 유지 (보안 설계, [cloud-functions.md](../.claude/rules/cloud-functions.md)). 재발 방지를 위해 CI 테스트로 "서버 풀 운동명은 클라이언트 풀에도 존재" 계약 강제하는 안 제안.
+
+**빌드 검증:** `npm run build` 통과.
+
+---
+
+### 회의 64-γ: 모바일 백그라운드 복귀 시 운동 세션 유실 방지 (2026-04-20)
+
+**참석:** 대표(임주용), 기획자 Agent, 구현자 Agent
+
+**버그 리포트 (대표):**
+> "모바일 환경에서 운동하다가 카톡같은게 와서 창을 숨겼다가 다시 띄우니깐 하던 운동이 새로고침되는 경우가 생겨서 기존 운동 내용이 날아가버리는데 이거 문제가 좀 있는데 방법이 있을까요?"
+
+**원인 진단:**
+- `WorkoutSession` 진행 상태(exercises/currentExerciseIndex/currentSet/logs/timings/sessionStart epoch/runningStats)가 전부 React state·ref만 보유. localStorage 백업 없음.
+- `page.tsx`의 `beforeunload` 핸들러는 PC 새로고침 경고용일 뿐 모바일 백그라운드 discard에는 무력.
+- iOS Safari / Android Chrome / 카톡·인스타 인앱 웹뷰가 메모리 압박 시 페이지를 discard → 복귀 시 새로고침 → `view="home_chat"` 초기화로 세션 소실.
+
+**UX 방향 결정 (대표 지시):**
+> "굳이 배너 노출 필요없이 계속 페이지 내 타이머나 시간 내용들은 진행되고 있다가 다시 돌아오면 될거같은데"
+
+즉, "이어서 하기" 배너 없이 복귀 시 자동으로 운동 화면/타이머로 투명하게 복원.
+
+**3가지 결정 (대표 승인):**
+1. **러닝은 재개 버튼 필요** — GPS가 백그라운드에서 물리적으로 추적 불가. FitScreen `isPlaying` 기본값이 `false`이므로 페이지 재마운트 시 자동 일시정지 상태로 복귀 (별도 로직 불필요).
+2. **플랜 미리보기도 복원 대상** — 편집 중이던 운동 배열을 snapshot에 같이 저장.
+3. **12시간 TTL** — 어제 하다 만 세션이 오늘 유령처럼 뜨지 않도록 자동 폐기.
+
+**구현:**
+- **`src/utils/activeSessionPersistence.ts` (신규)** — snapshot schema + save/update/load/clear. 키: `ohunjal_active_session`, TTL 43,200,000ms, schema v1.
+- **`WorkoutSession.tsx`** — `restoredProgress?` prop 추가 → 상태 hydrate. `sessionStartRef`를 복원된 epoch로 초기화해 경과 시간 재계산. state 변화 + `pagehide` + `visibilitychange(hidden)` 3중 플러시.
+- **`MasterPlanPreview.tsx`** — `restoredExercises?` prop + `localExercises` 변화 시 `updateActiveSession` 패치.
+- **`app/page.tsx`** — isInitialized 완료 후 1회 `loadActiveSession()` → view·sessionData·planSource·condition·goal·session·recommendedIntensity·progress·previewExercises 일괄 복원. view가 `master_plan_preview`/`workout_session` 일 때만 base snapshot 유지, 그 외 view 진입 시 `clearActiveSession()`.
+
+**알려진 한계:**
+- 러닝 중 GPS 누적 거리는 discard 시 소실(백그라운드 GPS 웹 불가). 완주된 러닝 세트의 `runningStats`만 보존. 카톡 짧게 답장하는 일반 케이스는 BFCache가 대부분 커버 → 이 경로는 BFCache 실패 시 안전망.
+
+**파일 수정:**
+- `src/utils/activeSessionPersistence.ts` (신규)
+- `src/components/workout/WorkoutSession.tsx`
+- `src/components/plan/MasterPlanPreview.tsx`
+- `src/app/app/page.tsx`
+
+**빌드 검증:** `npm run build` 통과. lint는 pre-existing `Date.now()` in `useRef` 패턴과 동일 계열만 감지됨 (신규 에러 없음).
+
+---
+
 ### 회의 64-α: 러닝 리포트 Kenko 재디자인 스프린트 (2026-04-19 저녁)
 
 **참석:** 대표(임주용), 기획자 Agent, 평가자 Agent

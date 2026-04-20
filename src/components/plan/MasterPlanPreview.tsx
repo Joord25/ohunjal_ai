@@ -15,6 +15,7 @@ import { PlanSplitShell, FocusedPane } from "./PlanSplitShell";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
+import { updateActiveSession } from "@/utils/activeSessionPersistence";
 
 interface MasterPlanPreviewProps {
   sessionData: WorkoutSessionData;
@@ -32,6 +33,8 @@ interface MasterPlanPreviewProps {
   savedPlanId?: string;
   /** 회의 63-A: plan_preview_view / plan_preview_start funnel 분리용 source 태그 */
   source?: "chat" | "saved" | "program" | "resume";
+  /** 회의 64-γ: 모바일 백그라운드 discard 복귀 시 편집 중이던 운동 배열 hydrate */
+  restoredExercises?: ExerciseStep[] | null;
 }
 
 const MUSCLE_GROUP_EN: Record<string, string> = {
@@ -208,15 +211,24 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   onGuestSaveAttempt,
   savedPlanId,
   source = "chat",
+  restoredExercises = null,
 }) => {
   const { t, locale } = useTranslation();
   // Local mutable copy of exercises (for set count adjustments)
-  const [localExercises, setLocalExercises] = useState<ExerciseStep[]>(() =>
-    sessionData.exercises.map(ex => ({ ...ex, count: rebuildCount(ex, t, locale) }))
-  );
+  // 회의 64-γ: 복원된 편집 상태(restoredExercises)가 있으면 그걸 우선
+  const [localExercises, setLocalExercises] = useState<ExerciseStep[]>(() => {
+    const base = restoredExercises ?? sessionData.exercises;
+    return base.map(ex => ({ ...ex, count: rebuildCount(ex, t, locale) }));
+  });
 
   // 회의 63-A: source 포함 (chat / saved / program / resume)
   useEffect(() => { trackEvent("plan_preview_view", { exercise_count: sessionData.exercises.length, source }); }, []);
+
+  // 회의 64-γ (2026-04-20): 편집 상태를 활성 세션 snapshot에 실시간 반영.
+  // 카톡·인스타 앱 전환 후 복귀 시 편집한 운동 배열 그대로 유지.
+  useEffect(() => {
+    updateActiveSession({ previewExercises: localExercises });
+  }, [localExercises]);
 
   // Sync when sessionData changes (e.g. after regenerate)
   useEffect(() => {

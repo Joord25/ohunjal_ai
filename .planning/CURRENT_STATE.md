@@ -367,6 +367,7 @@
 - **세션 중 운동 추가** — 모든 세트 완료 후 검색/필터 화면 → 추가하거나 "마침"
 - **운동 스킵** — Timer SKIP 버튼
 - **중간 이탈** — 뒤로가기 누를 때마다 세트 역추적, 첫 세트에서 누르면 세션 이탈
+- **백그라운드 복귀 자동 복원** (회의 64-γ, 2026-04-20) — 카톡/인스타 앱 전환 후 브라우저가 페이지 discard 시 `ohunjal_active_session` (localStorage, TTL 12h) 에서 view/sessionData/progress 자동 hydrate. 러닝은 `isPlaying=false` 기본값으로 재개 버튼 필요 (GPS 백그라운드 추적 불가 물리 제약). 유틸: [activeSessionPersistence.ts](../src/utils/activeSessionPersistence.ts).
 
 **완료 흐름:**
 ```

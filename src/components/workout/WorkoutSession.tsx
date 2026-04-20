@@ -8,6 +8,7 @@ import { trackEvent } from "@/utils/analytics";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
+import { updateActiveSession, type ActiveSessionProgress } from "@/utils/activeSessionPersistence";
 
 const MUSCLE_GROUP_EN: Record<string, string> = {
   "웜업": "Warm-up", "가슴": "Chest", "어깨": "Shoulders", "삼두": "Triceps",
@@ -26,6 +27,8 @@ interface WorkoutSessionProps {
   onBack: () => void;
   /** 회의 63-A: workout_start funnel 분리용 source 태그 */
   source?: "chat" | "saved" | "program" | "resume";
+  /** 회의 64-γ: 모바일 백그라운드 discard 복귀 시 진행 상태 hydrate */
+  restoredProgress?: ActiveSessionProgress | null;
 }
 
 export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
@@ -33,25 +36,33 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   onComplete,
   onBack,
   source = "chat",
+  restoredProgress = null,
 }) => {
   const { t, locale } = useTranslation();
   // Initialize exercises with a deep copy to allow mutations for adaptive logic
-  const [exercises, setExercises] = useState<ExerciseStep[]>(() => 
-    JSON.parse(JSON.stringify(sessionData.exercises))
+  // 회의 64-γ: 복원된 snapshot이 있으면 그 exercises(adaptive 변형분 포함)로 hydrate
+  const [exercises, setExercises] = useState<ExerciseStep[]>(() =>
+    restoredProgress?.exercises
+      ? JSON.parse(JSON.stringify(restoredProgress.exercises))
+      : JSON.parse(JSON.stringify(sessionData.exercises))
   );
-  
-  const [currentExerciseIndex, setCurrentIndex] = useState(0);
-  const [currentSet, setCurrentSet] = useState(1);
+
+  const [currentExerciseIndex, setCurrentIndex] = useState(restoredProgress?.currentExerciseIndex ?? 0);
+  const [currentSet, setCurrentSet] = useState(restoredProgress?.currentSet ?? 1);
   const [isResting, setIsResting] = useState(false);
   const [restTimer, setRestTimer] = useState(60);
-  const [logs, setLogs] = useState<Record<number, ExerciseLog[]>>({});
+  const [logs, setLogs] = useState<Record<number, ExerciseLog[]>>(restoredProgress?.logs ?? {});
   // 회의 41: 러닝 인터벌 완주 시 FitScreen에서 산출되는 runningStats 저장
-  const runningStatsRef = useRef<RunningStats | null>(null);
+  const runningStatsRef = useRef<RunningStats | null>(restoredProgress?.runningStats ?? null);
   // 회의 43 후속: 안정화된 콜백 — FitScreen useEffect가 매초 재실행되는 문제 방지
+  // 회의 64-γ: ref 변화는 useEffect 트리거 안 하므로 러닝 완주 시점에 즉시 persistence 플러시
   const handleRunningStatsComputed = useCallback((stats: RunningStats) => {
     runningStatsRef.current = stats;
+    updateActiveSession({
+      progress: { ...progressSnapshotRef.current, runningStats: stats },
+    });
   }, []);
-  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [showAddExercise, setShowAddExercise] = useState(restoredProgress?.showAddExercise ?? false);
   const [addSearch, setAddSearch] = useState("");
   const [pendingExercise, setPendingExercise] = useState<string | null>(null);
   const [addSets, setAddSets] = useState(3);
@@ -61,10 +72,15 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   useEffect(() => { trackEvent("workout_start", { exercise_count: sessionData.exercises.length, source }); }, []);
 
   // Timing: session start + per-exercise tracking
-  const sessionStartRef = useRef(Date.now());
-  const exerciseStartRef = useRef(Date.now());
-  const timingsRef = useRef<ExerciseTiming[]>([]);
-  const [elapsedSec, setElapsedSec] = useState(0);
+  // 회의 64-γ: 복원 시 저장된 epoch를 그대로 복원해 타이머가 "끊긴 것처럼 보이지 않게" 이어짐
+  const sessionStartRef = useRef(restoredProgress?.sessionStartEpoch ?? Date.now());
+  const exerciseStartRef = useRef(restoredProgress?.exerciseStartEpoch ?? Date.now());
+  const timingsRef = useRef<ExerciseTiming[]>(restoredProgress?.timings ? [...restoredProgress.timings] : []);
+  const [elapsedSec, setElapsedSec] = useState(
+    restoredProgress?.sessionStartEpoch
+      ? Math.max(0, Math.floor((Date.now() - restoredProgress.sessionStartEpoch) / 1000))
+      : 0
+  );
 
   const currentExercise = exercises[currentExerciseIndex];
   const totalExercises = exercises.length;
@@ -101,6 +117,47 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       setElapsedSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
     }, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // 회의 64-γ (2026-04-20): 운동 진행 상태를 localStorage에 실시간 백업.
+  // 카톡·인스타 앱 전환 후 브라우저가 페이지를 discard해도 복원 가능.
+  // 매 state 변화마다 저장 + pagehide/visibilitychange hidden 시 강제 플러시.
+  const progressSnapshotRef = useRef<ActiveSessionProgress>({
+    exercises,
+    currentExerciseIndex,
+    currentSet,
+    logs,
+    timings: timingsRef.current,
+    sessionStartEpoch: sessionStartRef.current,
+    exerciseStartEpoch: exerciseStartRef.current,
+    runningStats: runningStatsRef.current,
+    showAddExercise,
+  });
+  useEffect(() => {
+    const snap: ActiveSessionProgress = {
+      exercises,
+      currentExerciseIndex,
+      currentSet,
+      logs,
+      timings: timingsRef.current,
+      sessionStartEpoch: sessionStartRef.current,
+      exerciseStartEpoch: exerciseStartRef.current,
+      runningStats: runningStatsRef.current,
+      showAddExercise,
+    };
+    progressSnapshotRef.current = snap;
+    updateActiveSession({ progress: snap });
+  }, [exercises, currentExerciseIndex, currentSet, logs, showAddExercise]);
+
+  useEffect(() => {
+    const flush = () => updateActiveSession({ progress: progressSnapshotRef.current });
+    const onVis = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   // Rest timer logic

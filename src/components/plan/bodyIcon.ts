@@ -78,6 +78,9 @@ const GROUP_TO_ICON: Record<string, string> = {
   "어깨": "/icons/body/shoulder.svg",
   "후면 어깨": "/icons/body/rear-delt.svg",
   "코어": "/icons/body/core.svg",
+  // 회의 64-δ (2026-04-20, 대표 지시): 전신·플라이오 Figma Kenko 아이콘 매핑
+  "전신": "/icons/body/fullbody.svg",
+  "플라이오": "/icons/body/fullbody.svg",
 };
 
 /**
