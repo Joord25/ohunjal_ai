@@ -261,7 +261,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", width: "100%", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
               {/* Main Exercises — html2canvas 호환: gap 대신 각 블록 marginBottom 사용 */}
               <div style={{ marginBottom: 24 }}>
-                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase" as const, margin: 0, marginBottom: 10, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase" as const, margin: 0, marginBottom: 16, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   EXERCISES
                 </p>
                 {/* html2canvas 호환: flex gap 미지원 → marginBottom 명시 (회의 64-α 기록 · Running 카드 동일 패턴) */}
@@ -271,12 +271,12 @@ export const ShareCard: React.FC<ShareCardProps> = ({
                       color: "white",
                       fontSize: 15,
                       fontWeight: 700,
-                      lineHeight: 1.2,
+                      lineHeight: 1.4,
                       letterSpacing: "-0.01em",
                       textShadow: shadow,
                       fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif",
                       margin: 0,
-                      marginBottom: 6,
+                      marginBottom: 12,
                     }}>
                       {ex.displayName}
                     </p>
@@ -290,7 +290,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({
               </div>
 
               {/* Volume + Time row — html2canvas 호환: flex gap 대신 marginRight 사용 */}
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
                 {isStrength && totalVolume > 0 && (
                   <div style={{ marginRight: 28 }}>
                     <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase" as const, marginBottom: 6, margin: 0, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>Volume</p>
