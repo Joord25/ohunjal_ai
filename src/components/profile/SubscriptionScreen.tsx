@@ -886,15 +886,19 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
             <button
               onClick={handleSubscribe}
               disabled={isProcessing}
-              className="w-full py-4 rounded-2xl bg-[#FEE500] text-[#3C1E1E] font-bold text-base active:scale-[0.98] transition-all shadow-lg disabled:opacity-50"
+              className={
+                locale === "ko"
+                  ? "w-full py-4 rounded-2xl bg-[#FEE500] text-[#3C1E1E] font-bold text-base active:scale-[0.98] transition-all shadow-lg disabled:opacity-50"
+                  : "w-full py-4 rounded-2xl bg-[#1B4332] text-white font-bold text-base active:scale-[0.98] transition-all shadow-lg disabled:opacity-50 hover:bg-[#143728]"
+              }
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-[#3C1E1E] border-t-transparent rounded-full animate-spin" />
+                  <div className={`w-4 h-4 border-2 ${locale === "ko" ? "border-[#3C1E1E]" : "border-white"} border-t-transparent rounded-full animate-spin`} />
                   {t("sub.cancel.processing")}
                 </span>
               ) : (
-                t("sub.kakaoPay")
+                locale === "ko" ? t("sub.kakaoPay") : t("sub.subscribeIntl")
               )}
             </button>
 
