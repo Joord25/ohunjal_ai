@@ -64,19 +64,45 @@ Phase 2 (별도 커밋 예정):
 
 ---
 
-### 회의 64-M2: 관리자 대시보드 단순화 (2026-04-22)
+### 회의 64-M2: 관리자 대시보드 정비 (2026-04-22)
 
-Step A (완료): 데이터 부족·broken 섹션 5종 제거
+**Step A (완료): 데이터 부족·broken 섹션 5종 제거**
 - ARPU/Churn (결제 1건 규모 노이즈)
 - 월별 추이 6개월 (데이터 부족)
 - GA4 funnel 3종 (맞춤 측정기준 미등록)
-- 무료 풀 소진 (새 퍼널에 흡수 예정)
-- User Segment Stats 표 (새 퍼널로 대체 예정)
+- 무료 풀 소진 (새 퍼널에 흡수)
+- User Segment Stats 표 (새 퍼널로 대체)
 
-Step B+C (대기): 유저 행동 퍼널 백엔드 집계 + UI
-- 5단계: 앱 진입 → 챗 시작 → 플랜 생성 → 운동 기록 → (중도 vs 완주)
-- 세그먼트: 비로그인 / 로그인 분리
-- 회의 64-M3 완료 후 재개 (중도/완주 구분이 퍼널에 반영돼야 하므로)
+**Step B (완료): 유저 행동 퍼널 백엔드 집계 + UI**
+
+구조:
+- 단계: 앱 진입 → 챗 시작 → 플랜 생성 → 운동 기록 → 운동 완주
+- 세그먼트: 비로그인(anon) / 로그인(가입자) 분리
+- 버킷: 오늘 · 어제 · 이번 주 · 이번 달 · 전체
+- 단계별 이탈률 ▼N% 표시
+
+데이터 소스:
+- 앱 진입: Firebase Auth creationTime (isAnonymous 분리)
+- 비로그인 챗/플랜: trial_ips.firstSeenAt · chatCount / count
+- 로그인 챗/플랜: users.chatCount / planCount (Auth cohort)
+- 운동 기록/완주: workout_history collectionGroup, uid별 최초 date
+- 완주 판정: abandoned !== true (회의 64-M3 Phase 1 연동)
+
+제약:
+- 비로그인 세그먼트: anon uid ↔ IP 해시 매칭 불가 → 단계별 타임축 상이 (근사)
+- 로그인 세그먼트: uid 일관 cohort → 정확
+
+배포:
+- `firebase deploy --only functions` 완료 (adminDashboard)
+- 기타 함수 HTTP 409 race condition (이번 변경 없음, 기존 버전 작동)
+
+**파일 수정:**
+- [functions/src/admin/admin.ts](functions/src/admin/admin.ts) — 퍼널 집계 로직
+- [src/app/admin/page.tsx](src/app/admin/page.tsx) — 퍼널 UI + DashboardData.funnel 타입
+
+**이월 과제:**
+- 로그인 유저 firstChatAt / firstPlanAt 타임스탬프 스키마 추가 (이벤트 시점 기준 버킷링 정밀화)
+- 비로그인 세그먼트 chat/plan 링키지 정리 (현재 trial_ips 기준으로 세그먼트 간 경계 모호)
 
 ---
 
