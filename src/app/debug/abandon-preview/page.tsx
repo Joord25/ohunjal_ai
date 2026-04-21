@@ -92,14 +92,14 @@ export default function AbandonPreviewPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-2">
               <span className="text-[11px] font-medium text-gray-400">4월 22일 (수)</span>
-              <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1">
                 <svg className="w-3 h-3 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
                 </svg>
                 <span className="text-[10px] font-bold text-amber-700 tracking-wide">{t("report.abandonedBadge")}</span>
-              </div>
+              </span>
             </div>
             <div className="w-9" />
           </div>
