@@ -889,9 +889,12 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               className={
                 locale === "ko"
                   ? "w-full py-4 rounded-2xl bg-[#FEE500] text-[#3C1E1E] font-bold text-base active:scale-[0.98] transition-all shadow-lg disabled:opacity-50"
-                  : "w-full py-[17px] rounded-full bg-black text-white font-medium text-[17px] -tracking-[0.01em] active:scale-[0.99] transition-all disabled:opacity-50 hover:bg-[#1d1d1f]"
+                  : "w-full py-[11px] rounded-lg bg-[#5E6AD2] text-white font-medium text-[14px] -tracking-[0.01em] transition-all disabled:opacity-50 hover:bg-[#4F5BC4] active:bg-[#424EB3]"
               }
-              style={locale !== "ko" ? { fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif" } : undefined}
+              style={locale !== "ko" ? {
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+                boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.12), 0 1px 2px 0 rgba(0,0,0,0.08), 0 0 0 0.5px rgba(94,106,210,0.4)",
+              } : undefined}
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">
@@ -909,10 +912,10 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               </p>
             ) : (
               <p
-                className="text-[12px] text-[#86868b] text-center leading-relaxed mt-2 -tracking-[0.005em]"
-                style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif" }}
+                className="text-[12px] text-[#6b6b76] text-center mt-2 -tracking-[0.005em]"
+                style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif" }}
               >
-                Subscription automatically renews. Cancel anytime.
+                Renews monthly. Cancel anytime.
               </p>
             )}
           </div>
