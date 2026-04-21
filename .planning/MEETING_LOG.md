@@ -2,6 +2,46 @@
 
 ---
 
+### 회의 64-M1: EN 랜딩 Hero 제목 — 네이티브 카피로 교체 (2026-04-22)
+
+**참석:** 대표(임주용), Claude(기획자), 김경록(일헥타르), Seth Godin, Kevin Kelly
+
+**배경:**
+- 현재 EN hero: "Beyond ChatGPT? / Not just talk. / Plan to done."
+- 대표가 현지인 카피라이터 3개 후보 제시
+- 1차 회의에서 Claude가 한국어 자문 프레임(Godin/Kelly/일헥타르)을 영어 광고 카피 판정에 과잉 적용 → 한국 hero 직역본(후보 A)을 1순위 추천 → 대표 반박: "자기 나라 언어와 카피라이팅도 못하는데 자문단 있으면 뭐해요"
+- 재판정: 영어 fitness·tech 광고 문법(Peloton/Nike/Apple 계열) 1차, 전략 프레임 2차
+
+**최종 선택: 후보 2 — "ChatGPT talks / You've got a / body to train / Let's go"**
+
+**판정 근거 (네이티브 광고 카피 문법):**
+- 3-beat 리듬: 문제 → 자기 몸 환기 → 활성화
+- **"You've got a body to train"** 이 카피의 심장 — 화면 너머 독자 몸을 지목 (Peloton "There is no finish line" 계열 신체 환기)
+- "Let's go" 는 클리셰 아닌 fitness 카테고리 canonical CTA (Nike 계보), emerald 강조와 아래 CTA 버튼 색 연결로 시각 연속성
+- 후보 1(깔끔하지만 정보 전달 수준)·후보 3(shame-bait 리스크) 대비 활성도 + 훅 강도 우위
+
+**최종 카피 조정 (대표 판단):**
+- "only" 제거 + 마침표 전부 삭제 — 더 미니멀·젊은 톤, 원래 mobile 대형 폰트(10vw) 유지 가능
+- "You've got a body to train" 모바일 줄바꿈: "You've got a" / "body to train" 2분할 (전치사 위치 아닌 자연 리듬 기준 — 현지 판단)
+
+**파일 수정:**
+- [src/app/landing/landingTexts.ts:191-194](src/app/landing/landingTexts.ts#L191-L194)
+  - line1: "ChatGPT talks"
+  - line2: "You've got a"
+  - line2b: "body to train"
+  - line3: "Let's go" (emerald 강조)
+
+**부산물 (재발 방지):**
+- [memory/feedback_native_copy_frame.md](../../../.claude/projects/-Users-joord-Desktop-Joord-ohunjal-ai/memory/feedback_native_copy_frame.md) 신설 — 네이티브 카피는 현지 광고 문법 1차, 한국어 전략 프레임 2차
+
+**빌드 검증:** `npm run build` 통과.
+
+**이월 과제:**
+- EN sub/stats/trust 섹션도 KO 대비 네러티브 밀도 낮음 — 별도 회의로 톤 점검 필요
+- JA/ZH 확장 시 동일 원칙(현지 광고 문법 1차) 적용
+
+---
+
 ### 회의 64-ζ-γ: 장기 프로그램 완료 판정을 workout_history 기준으로 전환 (2026-04-21)
 
 **참석:** 대표(임주용), 평가자 Agent, 구현자 Agent

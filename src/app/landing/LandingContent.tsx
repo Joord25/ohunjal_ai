@@ -207,8 +207,20 @@ export default function LandingContent({ locale = "ko" }: { locale?: LandingLoca
               <span className="text-white">{t.hero.line1}</span><br />
               <span aria-hidden="true" className="block h-4 sm:h-6" />
               {t.hero.line1b && <><span className="text-white">{t.hero.line1b}</span><br /></>}
-              {t.hero.line2 && <><span className="text-white">{t.hero.line2}</span><br /></>}
-              {t.hero.line2b && <><span className="text-white">{t.hero.line2b}</span><br /></>}
+              {t.hero.line2 && (
+                <>
+                  <span className="text-white">{t.hero.line2}</span>
+                  {t.hero.line2b ? (
+                    <>
+                      <br className="sm:hidden" />
+                      <span className="hidden sm:inline"> </span>
+                      <span className="text-white">{t.hero.line2b}</span>
+                    </>
+                  ) : null}
+                  <br />
+                </>
+              )}
+              <span aria-hidden="true" className="block h-4 sm:h-6" />
               <span className="text-[#34d399]">{t.hero.line3}</span>
             </h1>
           </RevealOnScroll>

@@ -72,7 +72,7 @@ const ko: LandingTexts = {
     line1: "챗GPT랑 다른게 뭐냐구요?",
     line2: "말만 하는 AI 말고,",
     line3: "오늘 뛰게 하는 앱",
-    sub: ["ACSM·NASM 국제 가이드라인 기반", "한체대 박사진 검수 · 다이어트, 러닝, 근력운동까지"],
+    sub: ["ACSM·NASM 국제 운동 가이드라인 기반", "한체대 박사진 검수 · 다이어트, 러닝, 근력운동까지"],
     stats: [
       { prefix: "주 ", suffix: "회", label: "평균 운동 빈도" },
       { prefix: "", suffix: "%", label: "루틴 완주율" },
@@ -188,9 +188,10 @@ const ko: LandingTexts = {
 const en: LandingTexts = {
   nav: { brand: "Ohunjal AI", cta: "Get Started" },
   hero: {
-    line1: "Beyond ChatGPT?",
-    line2: "Not just talk.",
-    line3: "Plan to done.",
+    line1: "ChatGPT talks",
+    line2: "You've got a",
+    line2b: "body to train",
+    line3: "Let's go",
     sub: ["Built on ACSM·NASM international standards", "Reviewed by KNSU PhDs · Diet, running, strength"],
     stats: [
       { prefix: "", suffix: "x", label: "Avg. weekly sessions" },
@@ -261,7 +262,7 @@ const en: LandingTexts = {
       },
       {
         q: "PT is too expensive and going solo feels lost — can this help?",
-        a: "Built for exactly that. If PT at **50,000–80,000 KRW/session** feels heavy, hire a 24/7 AI coach for the price of a coffee a month. Zero time wasted figuring out what to do — and **9 out of 10** users complete their routines.",
+        a: "Built for exactly that. If personal training at **$75–100/session** feels heavy, hire a 24/7 AI coach for the price of a coffee a month. Zero time wasted figuring out what to do — and **9 out of 10** users complete their routines.",
       },
       {
         q: "I'm worried I'll lose motivation and quit.",
@@ -269,7 +270,7 @@ const en: LandingTexts = {
       },
       {
         q: "Is free enough? What does Premium add?",
-        a: "Free gives you the full AI routine experience (**2 free plans** + **3 AI chats** + workout logs). Want faster growth? Premium unlocks unlimited plans, AI analysis reports, **unlimited AI nutrition coach** chat, and growth prediction reports. Just **6,900 KRW/month**.",
+        a: "Free gives you the full AI routine experience (**2 free plans** + **3 AI chats** + workout logs). Want faster growth? Premium unlocks unlimited plans, AI analysis reports, **unlimited AI nutrition coach** chat, and growth prediction reports. Just **$4.99/month**.",
       },
       {
         q: "Cancellation, refunds, data protection?",
