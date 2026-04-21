@@ -29,6 +29,9 @@ const GRASS_COLORS = [
   { bg: "bg-[#1B4332]", text: "text-white", shadow: "shadow-md shadow-[#1B4332]/30" },
 ];
 
+// 회의 64-M3 UI: 중도 종료일은 intensity 의미 없음 → 단일 앰버 톤
+const ABANDONED_GRASS = { bg: "bg-amber-200", text: "text-amber-900", shadow: "shadow-sm shadow-amber-200/40" };
+
 interface ProofTabProps {
   lockedRuleIds: string[]; // Not used in this version, but kept for compatibility
   onShowPrediction?: () => void;
@@ -412,7 +415,13 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
               const isCompleted = daySessions.length > 0;
               const isToday = isCurrentMonth && day === today.getDate();
 
-              // Grass intensity: total minutes across all sessions
+              // 회의 64-M3: 중도 전용일 = 완주 세션 0 + 중도 세션 ≥1. 혼합일(완주+중도)은 emerald + 느낌표 배지
+              const hasNonAbandoned = daySessions.some(h => h.abandoned !== true);
+              const hasAbandoned = daySessions.some(h => h.abandoned === true);
+              const isAbandonedOnly = isCompleted && !hasNonAbandoned;
+              const isMixedDay = hasNonAbandoned && hasAbandoned;
+
+              // Grass intensity: total minutes across all sessions (완주 우선일에만 적용)
               const totalMin = daySessions.reduce((s, h) => s + (h.stats?.totalDurationSec || 0), 0) / 60;
               const grassLevel = !isCompleted ? 0
                 : totalMin <= 0 ? 2 // fallback: duration unknown → mid level
@@ -421,7 +430,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                 : totalMin < 50 ? 3
                 : 4;
 
-              const g = GRASS_COLORS[grassLevel];
+              const g = isAbandonedOnly ? ABANDONED_GRASS : GRASS_COLORS[grassLevel];
 
               return (
                 <div
@@ -440,7 +449,12 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
                   } ${isToday ? 'ring-2 ring-emerald-400 ring-offset-2' : ''}`}
                 >
                   {day}
-                  {daySessions.length > 1 && (
+                  {/* 회의 64-M3: 혼합일(완주+중도) = amber 느낌표 / 그 외 multi-session = 카운트 */}
+                  {isMixedDay ? (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-[8px] font-black text-white leading-none">!</span>
+                    </span>
+                  ) : daySessions.length > 1 && (
                     <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <span className="text-[7px] font-black text-[#2D6A4F]">{daySessions.length}</span>
                     </span>
@@ -459,6 +473,11 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
             <div className="w-3 h-3 rounded-sm bg-[#1B4332]" />
             <span className="text-[10px] text-gray-400 font-medium">{locale === "ko" ? "많음" : "More"}</span>
             <span className="text-[10px] text-gray-500 ml-1">{locale === "ko" ? "· 운동시간 기준" : "· by duration"}</span>
+          </div>
+          {/* 회의 64-M3: 중도 종료 범례 */}
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <div className="w-3 h-3 rounded-sm bg-amber-200" />
+            <span className="text-[10px] text-gray-500">{locale === "ko" ? "중도 종료" : "Incomplete"}</span>
           </div>
         </div>
         ) : proofView === "bodypart" ? (
