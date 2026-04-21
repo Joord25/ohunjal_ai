@@ -82,17 +82,28 @@ export default function AbandonPreviewPage() {
         </div>
       </section>
 
-      {/* 2. Report 배지 */}
+      {/* 2. Report 상단 — 날짜 아래 인라인 중도 표시 */}
       <section>
-        <h2 className="text-sm font-black text-gray-700 mb-3 uppercase tracking-widest">2. WorkoutReport 상단 배지</h2>
+        <h2 className="text-sm font-black text-gray-700 mb-3 uppercase tracking-widest">2. WorkoutReport 상단 (날짜 + 중도 표시)</h2>
         <div className="bg-[#FAFAFA] rounded-2xl p-6">
-          <div className="mb-4 flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-amber-50 border border-amber-200 w-fit mx-auto">
-            <svg className="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" d="M12 8v4M12 16h.01" />
-            </svg>
-            <span className="text-[11px] font-bold text-amber-700 tracking-wide">{t("report.abandonedBadge")}</span>
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <button className="p-2 -ml-2">
+              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[11px] font-medium text-gray-400">4월 22일 (수)</span>
+              <div className="flex items-center gap-1">
+                <svg className="w-3 h-3 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
+                </svg>
+                <span className="text-[10px] font-bold text-amber-700 tracking-wide">{t("report.abandonedBadge")}</span>
+              </div>
+            </div>
+            <div className="w-9" />
           </div>
-          <p className="text-center text-xs text-gray-400">(실제 리포트 최상단에 이 배지가 추가됩니다)</p>
+          <p className="text-center text-xs text-gray-400 mt-4">(날짜 아래 한 줄 인라인 — 배경 없음)</p>
         </div>
       </section>
 
