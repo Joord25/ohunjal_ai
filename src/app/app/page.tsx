@@ -381,10 +381,11 @@ export default function Home() {
   const [lastPrevExp, setLastPrevExp] = useState<number>(0);
   const [recommendedIntensity, setRecommendedIntensity] = useState<"high" | "moderate" | "low" | null>(null);
   // Auto-open paywall if returning from KakaoPay redirect with billing key
+  // OR from Paddle checkout (?paddle_success=1)
   const [showPaywall, setShowPaywall] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      return !!(params.get("billing_key") || params.get("billingKey"));
+      return !!(params.get("billing_key") || params.get("billingKey") || params.get("paddle_success"));
     }
     return false;
   });

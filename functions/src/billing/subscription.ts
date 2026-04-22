@@ -275,9 +275,10 @@ export const getSubscription = onRequest(
 /**
  * POST /cancelSubscription
  * Cancels auto-renewal. Subscription remains active until expiresAt.
+ * Provider 분기: Paddle 은 Management API 호출 후 webhook 으로 Firestore 반영.
  */
 export const cancelSubscription = onRequest(
-  { cors: true },
+  { cors: true, secrets: ["PADDLE_API_KEY"] },
   async (req, res) => {
     if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
 
@@ -292,6 +293,69 @@ export const cancelSubscription = onRequest(
         return;
       }
 
+      const data = doc.data()!;
+      const provider = data.provider || "portone"; // legacy doc 은 PortOne 로 간주
+
+      // Paddle 구독: Management API 로 취소 요청, webhook 이 Firestore 업데이트 담당
+      if (provider === "paddle") {
+        const paddleSubId = data.paddleSubscriptionId;
+        if (!paddleSubId) {
+          res.status(400).json({ error: "Paddle subscription id missing." });
+          return;
+        }
+
+        const apiKey = process.env.PADDLE_API_KEY;
+        if (!apiKey) {
+          console.error("[cancelSubscription] PADDLE_API_KEY not configured");
+          res.status(500).json({ error: "Server misconfigured" });
+          return;
+        }
+
+        // Sandbox vs Production base URL — API 키 prefix 로 판단
+        // (sandbox API 키는 `sdbx_` 로 시작)
+        const isSandbox = apiKey.startsWith("sdbx_") || apiKey.startsWith("pdl_sdbx_");
+        const base = isSandbox ? "https://sandbox-api.paddle.com" : "https://api.paddle.com";
+
+        const paddleRes = await fetch(`${base}/subscriptions/${paddleSubId}/cancel`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ effective_from: "next_billing_period" }),
+        });
+
+        if (!paddleRes.ok) {
+          const errBody = await paddleRes.text().catch(() => "");
+          console.error("[cancelSubscription] Paddle API failed:", paddleRes.status, errBody);
+          res.status(502).json({ error: "Paddle 해지 요청 실패" });
+          return;
+        }
+
+        // 낙관적 Firestore 갱신 (webhook 도 곧 올 거지만 UI 즉시 반영 목적)
+        await db.collection("subscriptions").doc(uid).update({
+          status: "cancelled",
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        const { reason } = req.body || {};
+        if (reason) {
+          await db.collection("cancel_feedbacks").add({
+            uid,
+            reason,
+            provider: "paddle",
+            cancelledAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        res.status(200).json({
+          status: "cancelled",
+          expiresAt: data.expiresAt || null,
+        });
+        return;
+      }
+
+      // PortOne (기존 경로): auto-renewal 중단만 하고 expiresAt 까지 active 유지
       await db.collection("subscriptions").doc(uid).update({
         status: "cancelled",
         updatedAt: FieldValue.serverTimestamp(),

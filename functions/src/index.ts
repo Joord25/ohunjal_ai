@@ -10,6 +10,7 @@ export { planSession, getGuestTrialStatus, generateProgramSessions } from "./pla
 export { savePlan, listSavedPlans, deleteSavedPlan, markSavedPlanUsed, saveProgram, deleteProgram } from "./plan/savedPlans";
 export { generateRunningProgramFn, checkFullSub3GateFn } from "./plan/runningProgramApi";
 export { subscribe, getSubscription, cancelSubscription, submitRefundRequest } from "./billing/subscription";
+export { paddleWebhook } from "./billing/paddleWebhook";
 export { selfDeleteAccount } from "./billing/selfDelete";
 export { adminActivate, adminCheckUser, adminCheckSelf, adminDeactivate, adminDashboard, adminListUsers, adminListPayments, adminLogs, adminCancelFeedbacks, adminRefundRequests, adminProcessRefund } from "./admin/admin";
 export { adminAnalyticsFunnel } from "./admin/analyticsFunnel";

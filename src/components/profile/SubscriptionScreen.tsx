@@ -496,6 +496,18 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
     } else if (billingKey) {
       window.history.replaceState({}, "", window.location.pathname);
     }
+
+    // Paddle 결제 성공 리다이렉트 처리 (webhook 이 subscription doc 업데이트 중)
+    const paddleSuccess = params.get("paddle_success");
+    if (paddleSuccess === "1" && !sessionStorage.getItem("paddle_success_processed")) {
+      sessionStorage.setItem("paddle_success_processed", "1");
+      window.history.replaceState({}, "", window.location.pathname);
+      trackEvent("purchase", { plan: "monthly", value: 4.99, currency: "USD", payment_method: "paddle" });
+      // webhook 처리 여유 5초 후 재조회 (이벤트 → Firestore 반영 latency 대비)
+      setTimeout(() => checkSubscription(), 5000);
+    } else if (paddleSuccess) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
 
   const checkSubscription = async () => {
