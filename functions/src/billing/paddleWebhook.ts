@@ -121,10 +121,20 @@ async function handleEvent(body: PaddleWebhookPayload): Promise<void> {
 
   switch (event_type) {
     case "subscription.activated":
-    case "subscription.updated":
-    case "subscription.resumed":
+    case "subscription.resumed": {
       await upsertSubscription(data as unknown as PaddleSubscriptionData, "active");
       return;
+    }
+    case "subscription.updated": {
+      // `.updated` 는 기본 active 로 처리하지만, 유저가 해지 요청 후엔 Paddle 이 status=active 로
+      // 보내면서 scheduled_change.action="cancel" 또는 canceled_at 을 포함해 보냄. 이 경우 로컬은
+      // 이미 "cancelled" 상태로 확정돼 있어야 재해지 시도 시 pending_changes 400 충돌이 사라짐.
+      const sub = data as unknown as PaddleSubscriptionData;
+      const isCancellationPending =
+        !!sub.canceled_at || sub.scheduled_change?.action === "cancel";
+      await upsertSubscription(sub, isCancellationPending ? "cancelled" : "active");
+      return;
+    }
     case "subscription.canceled":
       await upsertSubscription(data as unknown as PaddleSubscriptionData, "cancelled");
       return;

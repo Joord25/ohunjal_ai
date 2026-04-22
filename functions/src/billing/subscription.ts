@@ -328,6 +328,24 @@ export const cancelSubscription = onRequest(
         if (!paddleRes.ok) {
           const errBody = await paddleRes.text().catch(() => "");
           console.error("[cancelSubscription] Paddle API failed:", paddleRes.status, errBody);
+
+          // 이미 해지 스케줄 잡혀있으면 Paddle 이 subscription_locked_pending_changes 400 반환.
+          // 이 경우 Firestore 만 cancelled 로 동기화 후 성공 응답 (UI 재노출 루프 방지).
+          const isAlreadyCanceled =
+            paddleRes.status === 400 && errBody.includes("subscription_locked_pending_changes");
+
+          if (isAlreadyCanceled) {
+            await db.collection("subscriptions").doc(uid).update({
+              status: "cancelled",
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+            res.status(200).json({
+              status: "cancelled",
+              expiresAt: data.expiresAt || null,
+            });
+            return;
+          }
+
           res.status(502).json({ error: "Paddle 해지 요청 실패" });
           return;
         }
