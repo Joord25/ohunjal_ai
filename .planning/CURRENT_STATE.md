@@ -1,6 +1,6 @@
 # CURRENT_STATE.md — 앱 UI/기능 인벤토리 SSOT
 
-**최종 갱신:** 2026-04-18 PM (회의 64-E: Phase 4.1+4.3+4.6 완료 — 게이트 정밀화 + 코치 자동 안내 + 평가자 루브릭 강화)
+**최종 갱신:** 2026-04-23 (회의 64-M2/M3 · 64-ζ/η · 랜딩 브랜드 캐즘 재작성 · Paddle 통합 · 러닝 UI Wave 1~3 · 중도 종료 반영)
 
 이 문서는 "오운잘 앱의 각 화면에 어떤 UI와 기능이 실제로 구현되어 있는지"의 단일 진실 공급원입니다.
 모든 항목은 코드 검증 기반 (`file:line` 인용). 추측 금지. 미검증은 **⚠ 미검증** 마킹.
@@ -117,8 +117,8 @@
 
 | 탭 | 내용 |
 |---|---|
-| **캘린더** | 월 그리드 (일~토), 날짜별 잔디 색상 5단계 (운동시간 기반), 오늘 표시 링, 세션 多개 시 배지 |
-| **부위도감** | 7부위 횡 바그래프 (가슴/등/어깨/하체/팔/코어/유산소), maxCount=8 정규화 |
+| **캘린더** | 월 그리드 (일~토), 날짜별 잔디 색상 5단계 (운동시간 기반), 오늘 표시 링, 세션 多개 시 배지. **중도 종료 표현 (회의 64-M3):** 중도 전용일 = 단일 앰버 색 · 혼합일(완주+중도) = emerald + 느낌표 배지 · 하단 범례 노출 |
+| **부위도감** | 7부위 횡 바그래프 (가슴/등/어깨/하체/팔/코어/유산소), maxCount=8 정규화. **러닝 세션도 유산소 카운트에 집계** (2026-04-20 버그 fix) |
 | **체중변화** | `WeightTrendChart` + "모두 보기" (조건부: weightLog.length > 0) |
 | **티어** | 시즌 그래디언트 카드 (Diamond~Bronze 5티어), 프로그레스 바, 최근 10개 경험치 로그 |
 
@@ -126,6 +126,7 @@
 - 훈련 레벨 카드 (Advanced/Intermediate/Beginner)
 - `LoadTimelineChart` (4주 로드 타임라인)
 - `VolumeTrendChart` (부피 트렌드)
+- **`MonthlyRunningScience` — 월간 러닝 과학데이터 3서브탭** (회의 64-β, 2026-04-19/20): `src/components/report/MonthlyRunningScience.tsx` 기반, 히스토리 탭 과학데이터 토글 안으로 이동됨
 - 성장 예측 버튼 (조건부: `onShowPrediction` prop 있을 때)
 
 **⑥ 전체 기록 없을 때 안내** (history.length === 0)
@@ -367,6 +368,7 @@
 - **세션 중 운동 추가** — 모든 세트 완료 후 검색/필터 화면 → 추가하거나 "마침"
 - **운동 스킵** — Timer SKIP 버튼
 - **중간 이탈** — 뒤로가기 누를 때마다 세트 역추적, 첫 세트에서 누르면 세션 이탈
+- **중도 종료** (회의 64-M3, 2026-04-22) — FitScreen 하단 "운동 종료" 버튼 → 인용 기반 설득 팝업 (명언 + 진행도 + 경고) → 2버튼(계속 / 지금 종료). 1세트 이상 기록 시 `abandoned: true` 플래그로 workout_history 저장, 0세트면 onBack 폴백. onAbandon prop 있을 때만 버튼 노출. 프리뷰 디버그 라우트: [/debug/abandon-preview](../src/app/debug/abandon-preview/page.tsx)
 - **백그라운드 복귀 자동 복원** (회의 64-γ, 2026-04-20) — 카톡/인스타 앱 전환 후 브라우저가 페이지 discard 시 `ohunjal_active_session` (localStorage, TTL 12h) 에서 view/sessionData/progress 자동 hydrate. 러닝은 `isPlaying=false` 기본값으로 재개 버튼 필요 (GPS 백그라운드 추적 불가 물리 제약). 유틸: [activeSessionPersistence.ts](../src/utils/activeSessionPersistence.ts).
 
 **완료 흐름:**
@@ -381,12 +383,22 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 ### WorkoutReport (운동 완료 리포트)
 
 **컴포넌트:** [src/components/report/WorkoutReport.tsx](../src/components/report/WorkoutReport.tsx)
-**탭 구조:** 3탭 — `status(오늘 폼) / today(요약) / next(다음)` [WorkoutReport.tsx:654](../src/components/report/WorkoutReport.tsx#L654)
+**탭 구조:** 3탭 — `status(오늘 폼) / today(요약) / next(다음)`
 
 **탭별 내용:**
 - **오늘 폼** (`status`): 피트니스 나이, 6부위 랭킹(가슴/등/어깨/코어&팔/하체/체력), 종합 등수
 - **요약** (`today`): 4주 칼로리 추이 그래프, 운동 요약, 강도/볼륨, 지난번 대비, 운동과학 데이터 토글
 - **다음** (`next`): 다음 운동 조언, 이번 주 퀘스트(고/중/저강도), 이번 주 기록
+
+**러닝 리포트 Kenko 리디자인 Wave 1~3** (회의 64-T/U/W, 2026-04-19):
+- runType 8종 분기 렌더 — interval A/B, 연속 유산소 C, 하이브리드 D, 특수 E 등 아키타입별 카드 레이아웃
+- Batch D: Time Trial v1 카드 (회의 64-Y)
+- Batch E: 러닝 → 체력 축 연결 (회의 64-X)
+- RunningReportBody 가 runType 감지 후 해당 카드 선택
+
+**중도 종료 표시** (회의 64-M3, 2026-04-22):
+- `abandoned` prop 전달되면 헤더 공유 버튼 옆에 **붉은색 인라인 "중도 종료" 라벨** 노출
+- 중도 종료 세션은 AI 코치/피드백 영역 숨김 (`!sessionDate && !abandoned` 조건)
 
 **하단 CTA:** 공유 / 완료
 
@@ -404,8 +416,12 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 - **Brand Admiration 인트로** (운동 ≥3회 시 노출) — "지금까지의 당신, [페르소나]형이 완성되고 있어요"
 - **가격 카드** (Early Bird 배지) — ~~9,900원~~ **6,900원/월** (KO), ~~$7.99~~ **$4.99/mo** (EN)
 - **혜택 bullet** — unlimited / prediction / levelAnalysis / sessionReport / nutritionCoach
-- **CTA** — "KakaoPay 결제" (Yellow #FEE500), 로딩 스핀
+- **CTA — locale 기반 결제 분기** ([SubscriptionScreen.tsx:534-536](../src/components/profile/SubscriptionScreen.tsx#L534-L536)):
+  - `locale === "ko"` → **KakaoPay 결제** (Yellow #FEE500) · PortOne SDK 빌링키 발급
+  - `locale !== "ko"` → **Subscribe** 버튼 · Paddle.js `Checkout.open()` 으로 결제, successUrl 리다이렉트
+- **EN 구독 UI 리디자인** (2026-04-21): 미국 SaaS 스타일 Apple-inspired → Linear 조정 → 최종 오운잘 톤앤매너 통일
 - **에러 박스** (결제 실패/취소 시)
+- ⚠ 현재 `locale` 기준 분기라 "한국인이 EN 버전 보면 Paddle로 빠짐" — **지역(IP/타임존) 기반 전환 과제 pending**
 
 **프리미엄 화면:**
 - **구독 상태 카드** (진녹색) — 체크마크 + "프리미엄 구독 중" + 다음 결제일(locale 포맷)
@@ -413,11 +429,18 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 - **결제 이력 상세 보기** 버튼 → `showSubDetail` 토글 → payments 배열 렌더
 - **해지 버튼** (회색 언더라인, 하단 고정)
 
-**PortOne 결제 연동:**
+**PortOne 결제 연동 (KO):**
 - 동적 로드: `https://cdn.portone.io/v2/browser-sdk.js`
 - `window.PortOne.requestIssueBillingKey` — storeId/channelKey/billingKeyMethod=EASY_PAY, PC는 IFRAME / Mobile은 REDIRECTION
 - 성공 시 `POST /api/subscribe` (billingKey, Bearer 토큰) + analytics `purchase`
 - 모바일 리다이렉트: URL `billing_key` 감지 → sessionStorage 중복 방지 → 자동 처리
+
+**Paddle.js 결제 연동 (EN)** (회의 2026-04-21):
+- [src/utils/paddle.ts](../src/utils/paddle.ts) — `getPaddle()` 인스턴스 싱글톤, `initializePaddle({ environment, token })`
+- env: `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` + `NEXT_PUBLIC_PADDLE_ENV` (sandbox/production) + `NEXT_PUBLIC_PADDLE_PRICE_MONTHLY`
+- `paddle.Checkout.open({ items: [{ priceId, quantity: 1 }], customer: { email }, customData: { uid } })`
+- successUrl: `/app?paddle_success=1`
+- Paddle 심사용 **환불정책 페이지** 추가 + Pricing 앵커 (landing) — `/terms`·`/privacy`·환불정책
 
 **해지 플로우 (2단계 오버레이, 탭바 숨김):**
 - **Step 1** — 잃게 될 혜택 5개 X 표시 + 취소 이유 라디오(가격/기능/다른이유/쉬고싶음/기타) + 기타 선택 시 textarea
@@ -481,14 +504,14 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 - [src/app/landing/LandingContent.tsx](../src/app/landing/LandingContent.tsx) / [src/app/landing/landingTexts.ts](../src/app/landing/landingTexts.ts)
 - SEO: [src/app/layout.tsx](../src/app/layout.tsx)
 
-**섹션 순서 (위 → 아래):**
+**섹션 순서 (위 → 아래, 섹션별 `scroll-snap-type: y mandatory` 스냅 스크롤):**
 1. **Top Nav** (스크롤 시 숨김) — 로고+브랜드, 언어 전환(`/` ↔ `/en`), "바로 시작" CTA
-2. **Hero** — 3줄 제목(AI 3초 만에) + 부제 + Google Cloud/Gemini 배지 + 통계 3개 카운트업(`3.2x / 94% / 28%`) + 스크롤 화살표
-3. **How It Works** — 4단계 (AI와 대화 → 루틴 완성 → 코치 피드백 → **영양(Premium)**), 데스크톱 폰 프레임 3초 자동 사이클 + 클릭 전환, 모바일 순차
+2. **Hero** — **브랜드 캐즘 재작성 (2026-04-21)**, Hero Sub 2줄 분리 신뢰 강화, 통계 3개 카운트업(`3.2x / 94% / 28%`), EN 버전은 **네이티브 카피** (2026-04-22) + PC/모바일 반응형 줄바꿈
+3. **How It Works** — **브랜드 캐즘 재작성**, 4단계 (AI와 대화 → 루틴 완성 → 코치 피드백 → **영양(Premium)**). **데스크톱**: 폰 프레임 3초 자동 사이클 + 클릭 전환. **모바일 (2026-04-21)**: 가로 캐러셀 + 섹션별 스냅 스크롤, 카드 높이·스와이프 감도 개선
 4. **Trust** — "Backed by\n한체대 · ACSM · NASM" + 7개 기관 무한 스크롤 로고 (KNSU/Inha/KISED/MSS/NASM·KFTA/ACSM/NSCA Korea) + 사용자 후기(KO 9개, EN "coming soon")
-5. **Pricing** — "기존 19,800원 vs 오운잘 6,900원" / Free 플랜(비로그인 1회 + 무료 2회 + 채팅 3회 + 기록 저장) / Premium 플랜(6,900원/월 ~~9,900원~~, 6개 혜택 — AI 플랜 무제한/세션 리포트/코치 피드백/영양 코칭/성장 예측/**장기 프로그램 모드 저장**)
-6. **FAQ** — 6개 아코디언 (유튜브와 차이 / AI 안전성 / PT 대비 / 의지 걱정 / 무료 vs 프리미엄 / 취소·환불·데이터)
-7. **Footer** — 미션 + 회사 정보(KO 5줄/EN 4줄) + 약관·개인정보 링크(`/terms`·`/privacy` 또는 `/en/*`)
+5. **Pricing** — "기존 19,800원 vs 오운잘 6,900원" / Free 플랜(비로그인 1회 + 무료 2회 + 채팅 3회 + 기록 저장) / Premium 플랜(6,900원/월 ~~9,900원~~, 6개 혜택 — AI 플랜 무제한/세션 리포트/코치 피드백/영양 코칭/성장 예측/**장기 프로그램 모드 저장**). 모바일 compact + **Paddle 심사용 앵커 ID** 추가
+6. **FAQ** — 6개 아코디언 (유튜브와 차이 / AI 안전성 / PT 대비 / 의지 걱정 / 무료 vs 프리미엄 / 취소·환불·데이터), 검수 용어 정리
+7. **Footer** — 미션 + 회사 정보(KO 5줄/EN 4줄) + 약관·개인정보 링크(`/terms`·`/privacy` 또는 `/en/*`) + 환불정책 (Paddle 심사용 신설)
 
 **주요 CTA:**
 - **상단 네비 CTA** — `/app?lang=ko` or `/app?lang=en`, analytics `landing_cta_click {section: "nav"}`
@@ -520,15 +543,16 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 
 **탭 6개:**
 
-**① 대시보드** (회의 63 보강)
-- **오늘 할 일** (Inbox Zero) — 환불 대기 / 3일 내 만료 / 7일 해지 피드백 (0건이면 🎉)
+**① 대시보드** (회의 64-M2 단순화, 2026-04-22 — 데이터 부족·broken 섹션 5종 제거)
+- **오늘 할 일** (Inbox Zero) — 환불 대기 / 3일 내 만료 / 7일 해지 피드백 (0건이면 완료 표시)
 - **핵심 메트릭 카드** (드릴다운) — 전체/구독중/무료/3일만료
 - **매출 카드** — 이번 달 매출 + 전월 대비 %, ARPU, 결제 건수
-- **성장 지표** — CVR(체험→가입/가입→결제/체험→결제) · **ARPU 누적(구 LTV, 회의 63 명칭 정정)** · Churn(누적 기준 명시) · Total Revenue
-- **월간 추이 6개월** (회의 63 신설) — 매출 바차트 + 가입/신규결제 듀오 바 + 테이블 (신규가입/신규결제/매출/해지)
-- **Funnel · GA4** (회의 63 신설) — 7/14/30일 window 토글. ① 차별성 KPI (plan→start→complete) ② 후킹 효과 (greeting→CTA) ③ 페이월 트리거 분포. `GA_PROPERTY_ID` 미설정 시 "설정 필요" 안내 표시
-- **무료 풀 소진** — 비로그인 1회 한도 / 로그인 무료 2회 한도 (페이월 hit 클릭 시 해당 유저 필터)
-- **사용자 세그먼트** — 체험(**trial_ips SSOT, 회의 63**)/가입/결제 × 오늘·어제·이번주·이번달·전체 + 증감률
+- **성장 지표** — CVR(체험→가입/가입→결제/체험→결제) · ARPU 누적 · Churn · Total Revenue
+- **월간 추이 6개월** — 매출 바차트 + 가입/신규결제 듀오 바 + 테이블
+- **유저 행동 퍼널 (회의 64-M2 Step B, 2026-04-22)** — 신규. 세그먼트 2종(비로그인/로그인) × 5단계(앱 진입 → 챗 시작 → 플랜 생성 → 운동 기록 → 운동 완주) × 5시간 버킷(오늘/어제/이번주/이번달/전체). 각 단계 이탈률 % 표시
+- **Funnel · GA4** (회의 63) — 7/14/30일 window 토글. ① 차별성 KPI (plan→start→complete) ② 후킹 효과 (greeting→CTA) ③ 페이월 트리거 분포
+- **무료 풀 소진** — 비로그인 1회 한도 / 로그인 무료 2회 한도
+- **사용자 세그먼트** — 체험/가입/결제 × 오늘·어제·이번주·이번달·전체 + 증감률
 
 **② 유저 탭**
 - 실시간 필터 (이메일·이름·UID, 300ms debounce)
@@ -589,7 +613,29 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 - **GA**: 7개 이벤트 (`running_program_sheet_open`/`select`/`gate_pass`/`gate_fail`/`created`/`create_failed`/`sheet_abandoned`)
 - **배포 주문 필수**: functions 먼저 (`firebase deploy --only functions`) → Hosting (`git push` 자동). 순서 바뀌면 404.
 - **Phase 4** (회의 64-E): 게이트 GPS 자동 계산 + Half 실제 입력 (placeholder 제거) / 생성 직후 코치 자동 안내 3줄 / 평가자 루브릭 강화 + `feedback_no_decorative_svg.md` 신규
+- **Phase 5 완료 판정 SSOT 전환** (회의 64-ζ-γ, 2026-04-21): 장기 프로그램 완료 표시는 `saved_plans.completedAt` 대신 **`workout_history` 컬렉션 기준**으로 교체. [src/utils/programCompletion.ts](../src/utils/programCompletion.ts) 의 `deriveProgramCompletions(sessions, workoutHistory)` 가 `exerciseNameSet` 키 + `sessionNumber ASC` 매칭. 구 함수(`getActivePrograms`/`getProgramProgress`/`getNextProgramSession`) 신규 코드 사용 금지
+- **동일 slotType 맥락 라벨** (회의 64-ζ, 2026-04-21): Week 1 tt_2k vs Week 4 tt_2k 같이 같은 slotType이 다른 훈련 맥락에 재편성될 때 구분을 위한 라벨 매핑. [src/utils/programSessionLabels.ts](../src/utils/programSessionLabels.ts)
 - 상세 SPEC: [.planning/RUNNING_PROGRAM_SPEC.md](./RUNNING_PROGRAM_SPEC.md)
+
+**ShareCard 안정화** (회의 64-η, 2026-04-20/21):
+- 웨이트 공유카드 + 러닝 공유카드 폰트 **Rubik 통일** (var(--font-rubik)) · letterSpacing 통일
+- html2canvas 4대 gotcha 전면 대응 — `flex gap` → `marginBottom`/`marginRight` 마이그레이션 / `<p>` 브라우저 디폴트 margin 제거 / iOS Safari `linear-gradient` + `backgroundColor` solid fallback 병용 / `document.fonts.ready` await
+- 공유카드 상단 날짜·타입 라벨 제거 (대표 지시 2026-04-19/21)
+- scale: 3 이상 캡처 (Retina)
+- 룰: [.claude/rules/share-card.md](../.claude/rules/share-card.md)
+
+**중도 종료 기능 full stack** (회의 64-M3, 2026-04-22):
+- Type: `WorkoutHistory.abandoned?: boolean`
+- FitScreen 하단 "운동 종료" 버튼 → WorkoutSession 설득 팝업
+- ProofTab 캘린더 앰버 색상 + 혼합일 느낌표 + 하단 범례
+- WorkoutReport 헤더 공유 버튼 옆 붉은색 인라인 라벨
+- Coach/feedback 영역 숨김 (`!abandoned` 조건)
+- 프리뷰 라우트: [/debug/abandon-preview](../src/app/debug/abandon-preview/page.tsx)
+
+**브랜드 전략 시스템** (2026-04-21):
+- 마케팅 자문단 + 브랜드 캐즘 전략 시스템 구축 — [.planning/strategies/brand-chasm-marketing.md](./strategies/brand-chasm-marketing.md) / [.planning/advisors/marketing.md](./advisors/marketing.md)
+- 릴스 #1 제작 자산 (스토리보드 + Seedance 프롬프트) — [.planning/design/reel-1-seedance-prompts.md](./design/reel-1-seedance-prompts.md)
+- 룰: [.claude/rules/marketing-meeting.md](../.claude/rules/marketing-meeting.md) — 마케팅/홍보/브랜딩 회의 자동 자문단 소환
 
 ---
 
