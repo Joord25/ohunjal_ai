@@ -3852,3 +3852,158 @@ if (manualComplete && phaseRef.current === "sprint" && roundRef.current >= cfg.r
 
 ### 배포
 클라만 (서버 변경 없음). `git push` 하면 CI 자동 배포.
+
+---
+
+## 회의 2026-04-24 후속 ②: FitScreen 우측 상단 스킵·종료 2-아이콘
+
+### 대표 요청
+"운동 종료 버튼 왼쪽에 아이콘으로 스킵 버튼이랑 운동종료 버튼을 아이콘으로 두개 fitscreen 우측 상단에 있도록 만들어줄래? 이건 웜업, 메인, 코어, 추가유산소 다 있도록"
+
+### 설계 컨펌
+SKIP 의미 3안 중 **A) 현재 운동 스킵 → 다음 운동으로** 확정 (대표 컨펌). SVG 라인 아이콘 스타일 (기존 back 버튼 규약).
+
+### 변경
+- [src/components/workout/FitScreen.tsx](../src/components/workout/FitScreen.tsx): `onSkipExercise?: () => void` prop 추가. 기존 "운동 종료" 텍스트 필 → 아이콘 2개(⏩ 스킵 이중 chevron · ⎋ 운동종료 logout-arrow). `isDoneAnimating || view === "feedback"` 중엔 opacity 30 + pointer-events-none.
+- [src/components/workout/WorkoutSession.tsx](../src/components/workout/WorkoutSession.tsx): `handleSkipExercise()` 신설. `timingsRef.push` (세션 시간 정합 유지) + 세트 로그 없음 + `currentIndex++`. 마지막 운동 스킵 시 `showAddExercise=true` 로 add-exercise 화면 진입.
+- 기존 `onEndClick` (중도종료 팝업) 동작 동일 유지.
+
+### 검증
+Next.js `npm run build` PASS. 모든 phase (warmup/strength/core/cardio) 노출 확인. 커밋 `0df4513`.
+
+### 배포
+클라만 — `git push` 하면 CI 자동 배포.
+
+---
+
+## 회의 2026-04-24 후속 ③: ShareCard margin 간격 벌어짐 재발 fix
+
+### 대표 리포트 (스샷 첨부)
+"쉐어 카드 다운받으니깐 왜 또 벌어져있지? 분명히 그때 잡았는데 줄간격..."
+
+러닝 공유카드 다운로드 PNG 에서 Distance/Pace/Time 사이 거대한 공백.
+
+### 원인
+[.claude/rules/share-card.md](../.claude/rules/share-card.md) 룰 #2 위반. `<p>` 브라우저 UA 디폴트 margin 1em 을 html2canvas 가 그대로 반영 → fontSize 52 값에 top 52px 추가됨.
+
+**회의 64-η(2026-04-21)에서 웨이트 카드만 `margin:0` 처리하고 러닝 카드는 누락된 상태**였음. 수정 스윕이 특정 카드에만 적용된 누수.
+
+### 변경 (재발 방지 전면 sweep)
+- [src/components/report/ShareCard.tsx](../src/components/report/ShareCard.tsx):
+  - Card 0 러닝 (Distance/Pace/Time) — 모든 `<p>` `margin:0` 명시
+  - Card 1 러닝 weekly — `gap:28` → `marginBottom`, 모든 `<p>` `margin:0`
+  - Card 2 웨이트 PR 카드 — `gap:28/24` → `marginBottom`, 모든 `<p>` `margin:0`
+  - Card 2 웨이트 노력요약 — `gap:28` → `marginBottom`, 모든 `<p>` `margin:0`
+- [src/components/plan/PlanShareCard.tsx](../src/components/plan/PlanShareCard.tsx): 헤더·Stats·Phase 전체에 `margin:0` + `gap` → `marginRight` 마이그 (선제적 재발 방지).
+
+### 검증
+Next.js `npm run build` PASS. 시각적 미리보기는 그대로 유지 (spacing 값 동일, 소스만 변경). 커밋 `7935ba6`.
+
+### 배포
+클라만. 렌더 타임 fix 라 **과거 저장 세션도 재다운로드 시 정상** 표시됨.
+
+---
+
+## 회의 2026-04-24 후속 ④: 인터벌 상세 라운드 1 sprintPace 누락 fix
+
+### 대표 리포트 (스샷)
+"라운드 1 짤리는거 보이지 UI 확인부탁드려요 디자이너님"
+→ 재확인 결과 "UI 가 아니라 데이터 문제" 로 판명.
+
+### 원인 (데이터 생성 단계 결함)
+[src/components/workout/FitScreen.tsx](../src/components/workout/FitScreen.tsx) 의 `gpsMarkPhase(phase, round)` 가 **페이즈 전환 시점에만 호출**됨 (L564 sprint→recovery, L602 recovery→sprint). 세션 최초 round 1 sprint 시작 시점은 `phaseStartMsRef` 만 세팅하고 mark 기록 안 함.
+
+결과 phaseMarks: `[{rec,1}, {sprint,2}, {rec,2}, ...]` — round 1 sprint 마크 빠짐. `computeIntervalRounds` 가 mark 기반 segment 를 만들므로 round 1 sprint 구간 자체가 존재하지 않음 → `sprintPace: null` 로 Firestore 저장 → UI 가 `formatPace(null) = "—"` 정확히 렌더.
+
+"UI 짤림" 처럼 보였지만 실제로는 null 의 em dash 렌더였음 (UI 착시).
+
+### 변경
+[FitScreen.tsx:483-486](../src/components/workout/FitScreen.tsx#L483) 최초 시작 분기에 `gpsMarkPhase("sprint", 1)` 1회 기록. pause/resume 시 `phaseStartMsRef !== 0` 이라 분기 미진입 → 중복 mark 없음.
+
+### 한계
+`RunningStats.intervalRounds` 는 세션 종료 시점에 1회 계산돼 Firestore 에 저장. 원본 `phaseMarks` 와 GPS `points` 는 용량 이슈로 저장 안 함. **기존 broken 세션은 재계산 불가** — 새 세션부터 유효.
+
+### 검증
+Next.js `npm run build` PASS. 커밋 `33c79ed`.
+
+### 배포
+클라만. 새 인터벌 세션 1회 돌려서 라운드 1 sprint 값 숫자 표시 확인 필요.
+
+---
+
+## 회의 2026-04-24 후속 ⑤: 인터벌 거리 midpoint 정확도 + 휴식종료 사운드 가청성
+
+### 대표 리포트
+"400m 인터벌때 200m 에서 중간 알람이 아니아 230m? 그쯤에서 울리고 그리고 휴게시간 끝나도 알림음이 나왔으면 좋겠어!"
+
+두 이슈:
+1. 400m 인터벌 중간 알람이 200m 가 아닌 ~230m 에서 울림
+2. 휴식 끝날 때 알림음이 없거나 안 들림
+
+### 원인
+
+**#1 중간 알람**: [FitScreen.tsx:613-619](../src/components/workout/FitScreen.tsx#L613) 의 midpoint 로직이 `Math.floor(phaseTotal / 2)` — **시간 절반 기반**. 거리 기반 sprint 는 `phaseTotal` 이 `estimateSprintSec()` 추정치 (paceGuide 평균 × 거리). 유저가 추정보다 빠르면 시간 절반 시점에 이미 더 먼 거리 도달 (400m 목표에 ~230m 울림).
+
+**#2 휴식종료 사운드**: 인터벌 사운드 의미가 뒤집혀있음.
+- sprint→recovery (rest 시작): `playAlarmSound("rest_end")` — 3 bells 큰 소리 (이름 역설적 — rest 가 시작하는 순간에 rest_end 재생)
+- recovery→sprint (rest 끝남): `playAlarmSound("start")` — 단일 퍼커션, 조용 → 유저가 놓침
+- 강엉잠 rest 타이머 [L838](../src/components/workout/FitScreen.tsx#L838)는 정상: rest 끝날 때 `"rest_end"` (3 bells)
+- **인터벌만 반대 매핑**
+
+### 변경
+
+**#1 거리 midpoint**: 거리 기반 sprint (`cfg.sprintDist != null && gpsIsAvailable && !isIndoor`) 는 거리 절반(예: 200m) 도달 시 발동. 시간 기반 인터벌·recovery 는 기존 시간 기준 유지.
+
+```ts
+const isDistanceSprint = phaseRef.current === "sprint"
+  && cfg.sprintDist != null && gpsIsAvailable && !isIndoor;
+midReached = isDistanceSprint
+  ? (gpsDistanceRef.current - phaseStartDistRef.current) >= (cfg.sprintDist! / 2)
+  : (midpoint > 0 && remainingInt <= midpoint);
+```
+
+**#2 사운드 의미 정리**:
+- sprint→recovery: `"rest_end"` → `"start"` (짧은 stop 신호)
+- recovery→sprint: `"start"` → `"rest_end"` (3 bells "가자!" 신호). 강엉잠 rest 와 통일.
+- rec→sprint 진동도 `[100]` → `[200,100,200]` 2-pulse 로 강화.
+
+### 검증
+Next.js `npm run build` PASS. 커밋 `b1c3452`.
+
+### 배포
+클라만. 400m 인터벌 1회 돌려서 200m midpoint + rec→sprint 3-bell 확인 필요.
+
+---
+
+## 회의 2026-04-24 후속 ⑥: 러닝 세션 전종 감사 (동일 클래스 버그 유무 점검)
+
+### 대표 요청
+"다른 러닝 프로그램에서도 비슷한 문제 있는지 다 확인부탁드려요"
+
+최근 4건 fix (#1 거리 midpoint, #2 사운드 swap, #3 round1 sprint mark, #4 라스트 라운드 manual complete) 의 적용 범위 및 놓친 세션 타입 점검.
+
+### 감사 방법
+러닝 세션 생성기 전수 조사:
+- [functions/src/workoutEngine.ts](../functions/src/workoutEngine.ts) `generateRunningWorkout` (4 legacy 타입)
+- [functions/src/runningProgram.ts](../functions/src/runningProgram.ts) 17 slotType 빌더
+- FitScreen 라우팅 (`deriveIntervalSpec` → `isIntervalMode` 판정)
+
+### 결과: **4 fix 전종 자동 커버리지**
+
+| 세션 타입 | 구조 | 적용 상태 |
+|---|---|---|
+| 시간 기반 인터벌 (walkrun, fartlek/vo2_interval, sprint_interval 30s, strides, norwegian_4x4, pure_sprints) | sprintSec+recoverySec | #2/#3/#4 ✓, #1 은 N/A (시간 정확) |
+| 거리 기반 인터벌 (intervals_400/800/1000/1600m, race_pace_interval) | sprintDist+recoverySec, `runKind:"continuous"` 태그지만 intervalSpec 포함 → FitScreen interval UI | **4 fix 전부 ✓** |
+| 연속 러닝 (tempo, easy, long, threshold, threshold_2x15, long_with_mp, specific_long) | 단일 시간/거리, phase 전환 없음 | 해당 없음 |
+| 타임트라이얼 (tt_2k, tt_5k, dress_rehearsal) | 단일 거리 continuous | 해당 없음 |
+| 워밍업/쿨다운 타이머 | isTimerMode 별도 useEffect | 별도, 이슈 없음 (고정 시간, 추정 아님) |
+
+**커버리지 달성 이유**: 모든 인터벌이 FitScreen 단일 useEffect 통과. `deriveIntervalSpec` 이 `runKind:"continuous"` 여도 intervalSpec 있으면 interval UI 활성 (박서진 회의 64-I 원칙). `recoveryDist` 필드는 정의만 있고 실사용 0건.
+
+### 경미 리팩터 2건 (보류 — 유저 리포트 없음)
+
+1. **거리 기반 sprint 의 3-2-1 tick 이 시간 기반**: 유저가 추정보다 빠르면 실제 거리 도달 전 "3초 남음" 울림. 개선 방향: 거리 기반이면 tick 도 거리(50m/30m/10m 남음) 기준 변경. 유저 요청 없음 → 보류.
+2. **pause 중 GPS 드리프트 가능성**: `phaseStartDistRef` 가 pause 시 shift 안 됨. useGpsTracker 의 auto-pause (10초 정지)가 대부분 막지만 edge case. 유저 리포트 없음 → 보류.
+
+### 배포
+감사만 — 코드 변경 없음.
