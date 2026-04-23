@@ -6,6 +6,11 @@
           {
             "type": "command",
             "command": "node .claude/hooks/gsd-check-update.js"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-start-state-check.sh",
+            "timeout": 5
           }
         ]
       }
