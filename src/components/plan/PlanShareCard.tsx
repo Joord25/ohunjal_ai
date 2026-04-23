@@ -167,8 +167,9 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
           }}
         >
           {/* Header */}
+          {/* 회의 2026-04-24: html2canvas gap 미지원 + <p> UA 디폴트 margin 1em → PNG 간격 벌어짐 fix */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
               <span style={{
                 fontSize: 9,
                 fontWeight: 900,
@@ -177,6 +178,7 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
                 padding: "2px 6px",
                 borderRadius: 4,
                 letterSpacing: "0.1em",
+                marginRight: intensityLabel ? 6 : 0,
               }}>
                 AI
               </span>
@@ -193,23 +195,23 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
                 </span>
               )}
             </div>
-            <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.2, letterSpacing: "-0.02em" }}>
+            <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.2, letterSpacing: "-0.02em", margin: 0 }}>
               {locale === "ko" ? "오늘의 운동 플랜" : "Today's Workout Plan"}
             </p>
-            <p style={{ fontSize: 10, color: textSecondary, marginTop: 4, fontWeight: 600 }}>
+            <p style={{ fontSize: 10, color: textSecondary, margin: 0, marginTop: 4, fontWeight: 600 }}>
               {dateStr}
             </p>
           </div>
 
-          {/* Stats Row */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <div style={{ background: pillBg, borderRadius: 10, padding: "6px 12px", flex: 1, textAlign: "center" }}>
-              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const }}>{locale === "ko" ? "종목" : "EXERCISES"}</p>
-              <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.3 }}>{totalExercises}</p>
+          {/* Stats Row — flex gap 대신 marginRight */}
+          <div style={{ display: "flex", marginBottom: 16 }}>
+            <div style={{ background: pillBg, borderRadius: 10, padding: "6px 12px", flex: 1, textAlign: "center", marginRight: 8 }}>
+              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const, margin: 0 }}>{locale === "ko" ? "종목" : "EXERCISES"}</p>
+              <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.3, margin: 0 }}>{totalExercises}</p>
             </div>
             <div style={{ background: pillBg, borderRadius: 10, padding: "6px 12px", flex: 1, textAlign: "center" }}>
-              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const }}>{locale === "ko" ? "총 세트" : "TOTAL SETS"}</p>
-              <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.3 }}>{totalSets}</p>
+              <p style={{ fontSize: 8, fontWeight: 800, color: textTertiary, letterSpacing: "0.15em", textTransform: "uppercase" as const, margin: 0 }}>{locale === "ko" ? "총 세트" : "TOTAL SETS"}</p>
+              <p style={{ fontSize: 18, fontWeight: 900, color: textPrimary, lineHeight: 1.3, margin: 0 }}>{totalSets}</p>
             </div>
           </div>
 
@@ -217,9 +219,9 @@ export const PlanShareCard: React.FC<PlanShareCardProps> = ({
           <div>
             {grouped.map((phase, pi) => (
               <div key={phase.key} style={{ marginBottom: pi < grouped.length - 1 ? 12 : 0 }}>
-                {/* Phase Label */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <div style={{ width: 3, height: 14, borderRadius: 2, background: phase.meta.color }} />
+                {/* Phase Label — flex gap 대신 marginRight */}
+                <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ width: 3, height: 14, borderRadius: 2, background: phase.meta.color, marginRight: 6 }} />
                   <span style={{ fontSize: 8, fontWeight: 900, color: textTertiary, letterSpacing: "0.15em" }}>
                     {phase.meta.label}
                   </span>

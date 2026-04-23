@@ -319,11 +319,12 @@ export const ShareCard: React.FC<ShareCardProps> = ({
               {/* html2canvas 호환 위해 gap 대신 marginBottom 사용 */}
 
               {/* Distance */}
+              {/* 회의 2026-04-24: 다운로드 PNG 간격 벌어짐 fix — 모든 <p>에 margin:0 명시 (html2canvas 가 UA 디폴트 1em top/bottom 을 그대로 반영) */}
               <div style={{ textAlign: "center", marginBottom: 12 }}>
-                <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", marginBottom: 4, lineHeight: 1, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", margin: 0, marginBottom: 4, lineHeight: 1, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   {t("share.running.distance")}
                 </p>
-                <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, margin: 0, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   {formatRunDistanceKm(runningStats?.distance)}
                   <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 600, letterSpacing: "-0.01em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>{t("share.running.unitKm")}</span>
                 </p>
@@ -331,10 +332,10 @@ export const ShareCard: React.FC<ShareCardProps> = ({
 
               {/* Pace */}
               <div style={{ textAlign: "center", marginBottom: 12 }}>
-                <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", marginBottom: 4, lineHeight: 1, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", margin: 0, marginBottom: 4, lineHeight: 1, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   {t("share.running.pace")}
                 </p>
-                <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, margin: 0, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   {formatPace(runningStats?.sprintAvgPace ?? runningStats?.avgPace)}
                   <span style={{ fontSize: 20, color: "white", marginLeft: 5, fontWeight: 600, letterSpacing: "-0.01em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>{t("share.running.unitPerKm")}</span>
                 </p>
@@ -342,10 +343,10 @@ export const ShareCard: React.FC<ShareCardProps> = ({
 
               {/* Time */}
               <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", marginBottom: 4, lineHeight: 1, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: "white", fontSize: 15, fontWeight: 600, letterSpacing: "0em", margin: 0, marginBottom: 4, lineHeight: 1, fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   {t("share.running.time")}
                 </p>
-                <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
+                <p style={{ color: "white", fontSize: 52, fontWeight: 700, lineHeight: 1, margin: 0, textShadow: shadow, letterSpacing: "-0.02em", fontFamily: "var(--font-rubik), -apple-system, BlinkMacSystemFont, sans-serif" }}>
                   {formatRunDuration(runningStats?.duration ?? totalDurationSec).replace(/:/g, " : ")}
                 </p>
               </div>
@@ -355,39 +356,40 @@ export const ShareCard: React.FC<ShareCardProps> = ({
           )}
 
           {/* ===== Card 2: PR 달성 or 노력 요약 ===== */}
+          {/* 회의 2026-04-24: html2canvas gap 미지원 + <p> UA 디폴트 margin 1em → PNG 간격 벌어짐 fix */}
           {currentCard === 1 && isRunning && weeklyRunning && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 28, alignItems: "center", width: "100%" }}>
-              <p style={{ color: labelColor, fontSize: 11, fontWeight: 800, letterSpacing: "0.15em" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+              <p style={{ color: labelColor, fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", margin: 0, marginBottom: 28 }}>
                 {t("share.running.weekly.title")}
               </p>
 
               {/* Runs */}
-              <div style={{ textAlign: "center" }}>
-                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+              <div style={{ textAlign: "center", marginBottom: 28 }}>
+                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>
                   {t("share.running.weekly.runs")}
                 </p>
-                <p style={{ color: "white", fontSize: 44, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                <p style={{ color: "white", fontSize: 44, fontWeight: 900, lineHeight: 1, margin: 0, textShadow: shadow }}>
                   {weeklyRunning.runs}
                 </p>
               </div>
 
               {/* Total Time */}
-              <div style={{ textAlign: "center" }}>
-                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+              <div style={{ textAlign: "center", marginBottom: 28 }}>
+                <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>
                   {t("share.running.weekly.totalTime")}
                 </p>
-                <p style={{ color: "white", fontSize: 36, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                <p style={{ color: "white", fontSize: 36, fontWeight: 900, lineHeight: 1, margin: 0, textShadow: shadow }}>
                   {formatRunDuration(weeklyRunning.totalDuration)}
                 </p>
               </div>
 
               {/* Total Distance (실내 누적 제외 — distance > 0만) */}
               {weeklyRunning.totalDistance > 0 && (
-                <div style={{ textAlign: "center" }}>
-                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                <div style={{ textAlign: "center", marginBottom: 28 }}>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>
                     {t("share.running.weekly.totalDistance")}
                   </p>
-                  <p style={{ color: "white", fontSize: 36, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                  <p style={{ color: "white", fontSize: 36, fontWeight: 900, lineHeight: 1, margin: 0, textShadow: shadow }}>
                     {formatRunDistanceKm(weeklyRunning.totalDistance)}
                     <span style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginLeft: 4, fontWeight: 700 }}>{t("share.running.unitKm")}</span>
                   </p>
@@ -402,41 +404,42 @@ export const ShareCard: React.FC<ShareCardProps> = ({
           {currentCard === 1 && !isRunning && (() => {
             const totalSetsCount = mainExercises.reduce((sum, ex) => sum + ex.sets, 0);
 
+            // 회의 2026-04-24: html2canvas gap 미지원 + <p> UA 디폴트 margin → PNG 간격 벌어짐 fix (Card 2 웨이트)
             if (hasPR) {
               // PR 카드
               const topPR = prs[0];
               const improvement = Math.round(topPR.value - topPR.prevBest);
               return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 28, alignItems: "center", width: "100%" }}>
-                  <p style={{ color: "#FCD34D", fontSize: 11, fontWeight: 800, letterSpacing: "0.15em" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                  <p style={{ color: "#FCD34D", fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", margin: 0, marginBottom: 28 }}>
                     PERSONAL RECORD
                   </p>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-                    <div>
-                      <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                  <div style={{ display: "flex", flexDirection: "column", width: "100%", marginBottom: 28 }}>
+                    <div style={{ marginBottom: 24 }}>
+                      <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>
                         {locale === "ko" ? getExerciseName(topPR.exerciseName, locale).split("(")[0].trim() : getExerciseName(topPR.exerciseName, locale)}
                       </p>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                      <div style={{ display: "flex", alignItems: "baseline" }}>
                         <span style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
                           {Math.round(toDispW(topPR.value))}
                         </span>
-                        <span style={{ color: labelColor, fontSize: 16, fontWeight: 700 }}>{U}</span>
-                        <span style={{ color: "#FCD34D", fontSize: 14, fontWeight: 800, marginLeft: 4 }}>+{Math.round(toDispW(typeof improvement === "number" ? improvement : parseFloat(String(improvement))))}</span>
+                        <span style={{ color: labelColor, fontSize: 16, fontWeight: 700, marginLeft: 6 }}>{U}</span>
+                        <span style={{ color: "#FCD34D", fontSize: 14, fontWeight: 800, marginLeft: 10 }}>+{Math.round(toDispW(typeof improvement === "number" ? improvement : parseFloat(String(improvement))))}</span>
                       </div>
                     </div>
 
-                    {prs.slice(1, 3).map((pr, i) => (
-                      <div key={i}>
-                        <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                    {prs.slice(1, 3).map((pr, i, arr) => (
+                      <div key={i} style={{ marginBottom: i === arr.length - 1 ? 0 : 24 }}>
+                        <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>
                           {locale === "ko" ? getExerciseName(pr.exerciseName, locale).split("(")[0].trim() : getExerciseName(pr.exerciseName, locale)}
                         </p>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                        <div style={{ display: "flex", alignItems: "baseline" }}>
                           <span style={{ color: "white", fontSize: 28, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
                             {Math.round(toDispW(pr.value))}
                           </span>
-                          <span style={{ color: labelColor, fontSize: 14, fontWeight: 700 }}>{U}</span>
-                          <span style={{ color: "#FCD34D", fontSize: 12, fontWeight: 800, marginLeft: 4 }}>+{Math.round(toDispW(pr.value - pr.prevBest))}</span>
+                          <span style={{ color: labelColor, fontSize: 14, fontWeight: 700, marginLeft: 6 }}>{U}</span>
+                          <span style={{ color: "#FCD34D", fontSize: 12, fontWeight: 800, marginLeft: 10 }}>+{Math.round(toDispW(pr.value - pr.prevBest))}</span>
                         </div>
                       </div>
                     ))}
@@ -449,25 +452,25 @@ export const ShareCard: React.FC<ShareCardProps> = ({
 
             // 노력 요약 카드 — Strava 스타일 미니멀
             return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 28, alignItems: "center", width: "100%" }}>
-                <div style={{ textAlign: "center" }}>
-                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Sets</p>
-                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                <div style={{ textAlign: "center", marginBottom: 28 }}>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>Sets</p>
+                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, margin: 0, textShadow: shadow }}>
                     {totalSetsCount}<span style={{ color: labelColor, fontSize: 16, fontWeight: 700, marginLeft: 4 }}>{locale === "ko" ? "세트" : "sets"}</span>
                   </p>
                 </div>
 
-                <div style={{ textAlign: "center" }}>
-                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Time</p>
-                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                <div style={{ textAlign: "center", marginBottom: 28 }}>
+                  <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>Time</p>
+                  <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, margin: 0, textShadow: shadow }}>
                     {formatDuration(totalDurationSec)}
                   </p>
                 </div>
 
                 {isStrength && totalVolume > 0 && (
-                  <div style={{ textAlign: "center" }}>
-                    <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Volume</p>
-                    <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, textShadow: shadow }}>
+                  <div style={{ textAlign: "center", marginBottom: 28 }}>
+                    <p style={{ color: labelColor, fontSize: 11, fontWeight: 600, margin: 0, marginBottom: 4 }}>Volume</p>
+                    <p style={{ color: "white", fontSize: 40, fontWeight: 900, lineHeight: 1, margin: 0, textShadow: shadow }}>
                       {Math.round(toDispW(totalVolume)).toLocaleString()}<span style={{ color: labelColor, fontSize: 16, fontWeight: 700, marginLeft: 4 }}>{U}</span>
                     </p>
                   </div>
