@@ -484,6 +484,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
       phaseStartMsRef.current = now;
       sessionStartMsRef.current = now;
       phaseStartDistRef.current = gpsDistanceRef.current;
+      // 회의 2026-04-24: round 1 sprint 시작 mark 기록.
+      //   누락되면 computeIntervalRounds 가 round 1 sprint 구간을 분해하지 못해
+      //   인터벌 상세 리포트의 "라운드 1" sprintPace 가 null("—") 로 표시됨.
+      //   pause/resume 시엔 phaseStartMsRef 가 0 이 아니므로 이 분기 미진입 → 중복 mark 없음.
+      gpsMarkPhase("sprint", 1);
     } else if (pausedAtMsRef.current > 0) {
       // 일시정지 지속 시간만큼 phaseStart + sessionStart 앞으로 shift (경과시간 유지)
       const pauseDelta = now - pausedAtMsRef.current;
