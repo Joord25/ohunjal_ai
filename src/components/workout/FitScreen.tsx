@@ -57,6 +57,9 @@ interface FitScreenProps {
   onRunningStatsComputed?: (stats: RunningStats) => void;
   // 회의 64-M3: 우측 상단 "운동 종료" 버튼 — 팝업 오픈 (기존 skip 기능 대체)
   onEndClick?: () => void;
+  // 회의 2026-04-24: 우측 상단 "현재 운동 스킵" 아이콘 — 세트 기록 없이 다음 운동으로.
+  //   warmup/strength/core/cardio 전 phase 공통 노출.
+  onSkipExercise?: () => void;
 }
 
 export const FitScreen: React.FC<FitScreenProps> = ({
@@ -76,6 +79,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   lastSessionRecord,
   onRunningStatsComputed,
   onEndClick,
+  onSkipExercise,
 }) => {
   const { t, locale } = useTranslation();
   const { system: unitSystem, labels: unitLabels } = useUnits();
@@ -1235,14 +1239,37 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           </span>
         </div>
 
-        {/* 회의 64-M3: 우측 상단 "운동 종료" 버튼 — 모든 모드 공통, 기존 skip 기능 대체 */}
-        {onEndClick ? (
-          <button
-            onClick={onEndClick}
-            className="absolute right-6 z-10 text-xs font-black text-gray-400 tracking-widest hover:text-gray-600 transition-colors bg-gray-100 px-3 py-1.5 rounded-full"
-          >
-            {t("fit.end")}
-          </button>
+        {/* 회의 2026-04-24: 우측 상단 액션 아이콘 2개 (스킵 + 운동종료).
+            warmup/strength/core/cardio 전 phase 공통 노출. isDoneAnimating·feedback view 중엔 비활성. */}
+        {(onSkipExercise || onEndClick) ? (
+          <div className="flex items-center gap-1 z-10 relative">
+            {onSkipExercise && (
+              <button
+                onClick={onSkipExercise}
+                disabled={isDoneAnimating || view === "feedback"}
+                aria-label={t("fit.skip")}
+                title={t("fit.skip")}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+            {onEndClick && (
+              <button
+                onClick={onEndClick}
+                disabled={isDoneAnimating || view === "feedback"}
+                aria-label={t("fit.end")}
+                title={t("fit.end")}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            )}
+          </div>
         ) : (
           <div className="w-10" />
         )}

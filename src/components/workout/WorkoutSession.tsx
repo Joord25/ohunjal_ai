@@ -372,6 +372,26 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     setExercises(updated);
   };
 
+  /** 회의 2026-04-24: FitScreen 우측 상단 스킵 아이콘 — 현재 운동을 건너뛰고 다음 운동으로.
+   *  세트 기록 없이 진행. 마지막 운동을 스킵하면 add-exercise 화면으로 진입해 마침 or 운동 추가 선택 가능. */
+  const handleSkipExercise = () => {
+    const now = Date.now();
+    timingsRef.current.push({
+      exerciseIndex: currentExerciseIndex,
+      startedAt: exerciseStartRef.current,
+      endedAt: now,
+      durationSec: Math.round((now - exerciseStartRef.current) / 1000),
+    });
+    if (currentExerciseIndex < totalExercises - 1) {
+      exerciseStartRef.current = now;
+      setCurrentIndex((prev) => prev + 1);
+      setCurrentSet(1);
+      setIsResting(false);
+    } else {
+      setShowAddExercise(true);
+    }
+  };
+
   const formatElapsed = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -562,6 +582,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         lastSessionRecord={lastSessionRecord}
         onRunningStatsComputed={handleRunningStatsComputed}
         onEndClick={onAbandon ? () => setShowAbandonModal(true) : undefined}
+        onSkipExercise={handleSkipExercise}
       />
 
       {/* 회의 64-M3: 중도 종료 확인 팝업 */}
