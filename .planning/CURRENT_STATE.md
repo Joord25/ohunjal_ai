@@ -1,6 +1,6 @@
 # CURRENT_STATE.md — 앱 UI/기능 인벤토리 SSOT
 
-**최종 갱신:** 2026-04-24 (AdviceCard ↔ MasterPlan 운동 동기화 — workoutTable exerciseList 바인딩)
+**최종 갱신:** 2026-04-24 PM (AdviceCard↔MasterPlan 동기화 + 인터벌 4종 fix + 우측 상단 스킵·종료 아이콘 + ShareCard margin 재발 fix + 러닝 세션 전종 감사)
 
 이 문서는 "오운잘 앱의 각 화면에 어떤 UI와 기능이 실제로 구현되어 있는지"의 단일 진실 공급원입니다.
 모든 항목은 코드 검증 기반 (`file:line` 인용). 추측 금지. 미검증은 **⚠ 미검증** 마킹.
@@ -603,6 +603,27 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 ---
 
 # 🔧 내부 인프라 (유저 미노출)
+
+**FitScreen 우측 상단 스킵·종료 2-아이콘** (2026-04-24 PM):
+- 기존 "운동 종료" 텍스트 필을 **아이콘 2개**로 교체: ⏩ 스킵 (이중 chevron) + ⎋ 운동종료 (logout-arrow).
+- 스킵: 현재 운동을 세트 기록 없이 다음 운동으로 이동 ([WorkoutSession.handleSkipExercise](../src/components/workout/WorkoutSession.tsx)). 마지막 운동 스킵 시 add-exercise 화면.
+- warmup / strength / core / cardio 전 phase 공통 노출. `isDoneAnimating || view==="feedback"` 중엔 opacity 30 + pointer-events-none.
+
+**인터벌 러닝 4종 fix** (2026-04-24 PM, 회의 2026-04-24):
+- **라스트 라운드 sprint 수동 완료 즉시 종료** ([FitScreen.tsx](../src/components/workout/FitScreen.tsx)): 기존엔 manualComplete 가 sprint→recovery 전이만 해서 "완료 버튼 안 눌림"처럼 보였음. `manualComplete && sprint && 라스트 라운드` 3조건 AND 시 즉시 `timerCompleted=true` + runningStats 콜백.
+- **라운드 1 sprintPace 누락 fix** ([FitScreen.tsx:483](../src/components/workout/FitScreen.tsx#L483)): 최초 세션 시작 시 `gpsMarkPhase("sprint", 1)` 1회 기록. 이전엔 phaseMarks 가 `[{rec,1}, {sprint,2}, ...]` 로 시작해 computeIntervalRounds 가 round 1 sprint 구간을 못 만들어 `sprintPace=null` → UI 가 "—" 로 표시. 새 세션부터 유효 (과거 레코드는 이미 null 저장됨, 재계산 불가).
+- **거리 기반 midpoint 알람**: 거리 기반 sprint(`sprintDist != null + GPS`)는 거리 절반 도달 시 발동 (400m → 200m). 기존 `phaseTotal/2` 는 estimateSprintSec 추정치 기반이라 유저가 빠르면 ~230m 에서 울림.
+- **인터벌 사운드 의미 정리**: sprint→recovery = `"start"` (짧은 stop), recovery→sprint = `"rest_end"` (3 bells 큰 소리). 강엉잠 rest 종료 (L838) 와 사운드 통일. 진동도 rec→sprint 를 `[200,100,200]` 2-pulse 로 강화.
+
+**러닝 세션 전종 감사** (2026-04-24 PM):
+- 시간 기반 인터벌 (walkrun/fartlek/sprint30s/strides/norwegian_4x4/pure_sprints), 거리 기반 인터벌 (400m/800m/1000m/1600m/race_pace_interval), 연속 러닝 (tempo/easy/long/threshold/threshold_2x15/long_with_mp/specific_long), 타임트라이얼 (tt_2k/tt_5k/dress_rehearsal) 전부 점검.
+- 결론: 4 fix 가 **모든 관련 인터벌 타입에 자동 적용**됨. 이유 — 모든 인터벌이 FitScreen 단일 useEffect 통과, `deriveIntervalSpec` 이 `runKind: "continuous"` 여도 intervalSpec 있으면 interval UI 활성화. `recoveryDist` 필드는 정의만 있고 실사용 0건.
+- 미해결 경미 리팩터 2건: (1) 거리 기반 sprint 의 3-2-1 tick 이 timer 기반이라 유저가 빠르면 실제 도달 전 울림. (2) pause 중 GPS 드리프트로 `phaseStartDistRef` 과대 계산 가능성. 둘 다 유저 리포트 없어 보류.
+
+**ShareCard 간격 재발 fix** (2026-04-24 PM, 회의 2026-04-24):
+- 러닝 공유카드 다운로드 PNG 에서 Distance/Pace/Time 간격이 거대하게 벌어짐. 원인: `<p>` UA 디폴트 margin 1em 을 html2canvas 가 반영 (회의 64-η 에서 웨이트 카드는 잡았으나 러닝 카드 누락).
+- 재발 방지 차원 전면 sweep: [ShareCard.tsx](../src/components/report/ShareCard.tsx) Card 0 러닝/Card 1 weekly/Card 2 PR·노력 요약 전부 `margin:0` + `gap` → `marginBottom/marginRight` 마이그. [PlanShareCard.tsx](../src/components/plan/PlanShareCard.tsx) 헤더/Stats/Phase 도 동일.
+- 룰: [.claude/rules/share-card.md](../.claude/rules/share-card.md) (4대 gotcha 포함).
 
 **AdviceCard ↔ MasterPlan 운동 동기화** (2026-04-24, 회의 2026-04-24):
 - **배경**: AdviceCard `workoutTable` 은 디스플레이용 텍스트였고, "오늘 이 운동 시작" 클릭 시 서버는 `sessionMode/targetMuscle/goal` enum 3개만 받아 고정 balanced/split 템플릿으로 재생성 → 유저가 본 운동과 실제 세션 불일치.
