@@ -29,11 +29,21 @@ interface PaymentRecord {
   uid: string;
   email: string;
   amount: number;
+  currency: string;         // 회의 2026-04-23: KRW/USD 표시용
+  provider?: string | null; // portone / paddle (legacy 는 없음)
   plan: string;
   status: string;
   paidAt: string | null;
   periodStart: string | null;
   periodEnd: string | null;
+}
+
+// 통화별 금액 표기 유틸 (회의 2026-04-23)
+function formatMoney(amount: number, currency: string): string {
+  const c = (currency || "KRW").toUpperCase();
+  if (c === "USD") return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (c === "KRW") return `₩${Math.round(amount).toLocaleString()}`;
+  return `${c} ${amount.toLocaleString()}`;
 }
 
 interface UserStats {
@@ -286,7 +296,8 @@ export default function AdminPage() {
   // 매출 상세 (payments 탭) — Firestore payments 서브컬렉션 기반
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [paymentsTotal, setPaymentsTotal] = useState(0);
-  const [paymentsTotalAmount, setPaymentsTotalAmount] = useState(0);
+  // 회의 2026-04-23: 통화별 합계 — KRW/USD 혼합 합산 방지
+  const [paymentsTotalsByCurrency, setPaymentsTotalsByCurrency] = useState<Record<string, number>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
 
   // 회의 63: GA4 funnel 3종 (후킹/차별성/페이월)
@@ -469,7 +480,7 @@ export default function AdminPage() {
         const data = await res.json();
         setPayments(data.payments || []);
         setPaymentsTotal(data.total || 0);
-        setPaymentsTotalAmount(data.totalAmount || 0);
+        setPaymentsTotalsByCurrency(data.totalsByCurrency || {});
       }
     } catch { /* ignore */ }
     setLoadingPayments(false);
@@ -1262,11 +1273,25 @@ export default function AdminPage() {
         {/* Payments Tab — 결제 내역 (Firestore payments 서브컬렉션 기반) */}
         {tab === "payments" && (
           <div>
-            {/* 요약 카드 */}
+            {/* 요약 카드 — 회의 2026-04-23: KRW/USD 분리 표기 (환율 변동으로 합산 무의미) */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
                 <p className="text-xs text-gray-400 mb-1">최근 100건 합계</p>
-                <p className="text-xl font-black text-[#1B4332]">₩{paymentsTotalAmount.toLocaleString()}</p>
+                {(() => {
+                  const currencies = Object.keys(paymentsTotalsByCurrency).sort();
+                  if (currencies.length === 0) {
+                    return <p className="text-xl font-black text-[#1B4332]">₩0</p>;
+                  }
+                  return (
+                    <div className="flex flex-col items-center gap-0.5">
+                      {currencies.map((c) => (
+                        <p key={c} className="text-xl font-black text-[#1B4332] leading-tight">
+                          {formatMoney(paymentsTotalsByCurrency[c] || 0, c)}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
                 <p className="text-xs text-gray-400 mb-1">건수</p>
@@ -1292,8 +1317,13 @@ export default function AdminPage() {
                   {payments.map((p, i) => (
                     <div key={p.paymentId || i} className={`px-4 py-3 ${i < payments.length - 1 ? "border-b border-gray-50" : ""}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-gray-800 truncate flex-1 min-w-0">{p.email}</p>
-                        <span className="text-sm font-black text-[#1B4332] shrink-0 ml-2">₩{p.amount.toLocaleString()}</span>
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{p.email}</p>
+                          {p.provider === "paddle" && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[9px] font-bold">Paddle</span>
+                          )}
+                        </div>
+                        <span className="text-sm font-black text-[#1B4332] shrink-0 ml-2">{formatMoney(p.amount, p.currency)}</span>
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-gray-400 gap-2">
                         <span className="shrink-0">

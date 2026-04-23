@@ -132,6 +132,8 @@ export const adminListPayments = onRequest(
         paymentId: string;
         uid: string;
         amount: number;
+        currency: string;       // 회의 2026-04-23: KRW/USD 구분 위해 명시 저장
+        provider: string | null;
         plan: string;
         status: string;
         paidAt: string | null;
@@ -146,6 +148,9 @@ export const adminListPayments = onRequest(
           paymentId: data.paymentId || doc.id,
           uid,
           amount: Number(data.amount || 0),
+          // legacy 문서는 currency 필드 없음 → KRW 로 간주 (PortOne 만 있던 시절)
+          currency: (data.currency || "KRW").toString().toUpperCase(),
+          provider: data.provider || null,
           plan: data.plan || "",
           status: data.status || "paid",
           paidAt: data.paidAt || null,
@@ -174,13 +179,19 @@ export const adminListPayments = onRequest(
         email: uidToEmail.get(r.uid) || "(unknown)",
       }));
 
-      // 집계 요약
-      const totalAmount = topRows.reduce((sum, r) => sum + r.amount, 0);
+      // 집계 요약 — 통화별 분리 (회의 2026-04-23: KRW+USD 혼합 합산 방지)
+      const totalsByCurrency: Record<string, number> = {};
+      for (const r of topRows) {
+        totalsByCurrency[r.currency] = (totalsByCurrency[r.currency] || 0) + r.amount;
+      }
 
       res.status(200).json({
         payments: enriched,
         total: enriched.length,
-        totalAmount,
+        // legacy 프론트 호환 — KRW 합만 보내는 totalAmount 유지하되, 정확한 값은
+        // totalsByCurrency 를 보는 새 UI 에서만 참조할 것.
+        totalAmount: totalsByCurrency.KRW || 0,
+        totalsByCurrency,
       });
     } catch (error) {
       console.error("adminListPayments error:", error);
