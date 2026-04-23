@@ -1310,7 +1310,7 @@ export default function Home() {
             }}
             getBlockReason={() => {
               if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) return "guest_exhausted";
-              if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) return "free_limit";
+              if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) return "free_plan_limit";
               return null;
             }}
             onRequestLogin={() => {

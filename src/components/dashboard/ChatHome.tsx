@@ -110,7 +110,9 @@ const EXAMPLE_CHIPS_MORE: ExampleChip[] = [
   { key: "chat_home.example.vacation_7day", labelKo: "휴가 전 7일 팔뚝", labelEn: "7-day arm plan", icon: "calendar" },
   { key: "chat_home.example.long_full", labelKo: "내 스펙 맞춤 플랜", labelEn: "Full profile plan", icon: "full" },
 ];
-type UpgradeTrigger = "guest_exhausted" | "free_limit" | "high_value";
+// free_chat_limit = parseIntent 채팅 3회 소진 (유저가 "플랜 다 썼다"고 오해 방지용 분리)
+// free_plan_limit = planSession 플랜 생성 2회 소진
+type UpgradeTrigger = "guest_exhausted" | "free_chat_limit" | "free_plan_limit" | "high_value";
 
 /** 장기 프로그램 Gemini 응답 */
 interface ProgramSessionParam {
@@ -748,7 +750,8 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           try { code = (await res.json())?.code; } catch { /* ignore */ }
           let trig: UpgradeTrigger | null = null;
           if (code === "GUEST_CHAT_LIMIT" || code === "TRIAL_LIMIT") trig = "guest_exhausted";
-          else if (code === "FREE_CHAT_LIMIT" || code === "FREE_LIMIT") trig = "free_limit";
+          else if (code === "FREE_CHAT_LIMIT") trig = "free_chat_limit";
+          else if (code === "FREE_LIMIT") trig = "free_plan_limit";
           else if (code === "PREMIUM_REQUIRED") trig = "high_value";
           if (trig) {
             trackEvent("chat_plan_failed", { reason: code ?? `http_${res.status}`, latency_ms: Date.now() - submitStart });
@@ -1014,9 +1017,22 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
             if ("kind" in msg && msg.kind === "upgrade") {
               const trig = msg.trigger;
               const isGuest = trig === "guest_exhausted";
+              const isChatLimit = trig === "free_chat_limit";
               const title = locale === "en"
-                ? (isGuest ? "Free trial done" : trig === "high_value" ? "This needs Premium" : "Free plans used up")
-                : (isGuest ? "오늘 체험 다 썼어요" : trig === "high_value" ? "프리미엄이 더 잘 맞아요" : "이번 달 무료 플랜 다 썼어요");
+                ? (isGuest
+                    ? "Free trial done"
+                    : trig === "high_value"
+                      ? "This needs Premium"
+                      : isChatLimit
+                        ? "Free chat limit reached"
+                        : "Free plans used up")
+                : (isGuest
+                    ? "오늘 체험 다 썼어요"
+                    : trig === "high_value"
+                      ? "프리미엄이 더 잘 맞아요"
+                      : isChatLimit
+                        ? "이번 달 무료 대화 횟수를 다 썼어요"
+                        : "이번 달 무료 플랜 다 썼어요");
               const body = locale === "en"
                 ? (isGuest ? "Sign in to keep planning free for today." : "Unlock unlimited plans for 6,900 KRW/month.")
                 : (isGuest ? "로그인하면 오늘 계속 무료로 이어서 짜드릴 수 있어요." : "프리미엄이면 지금 바로 이어서 짜드릴 수 있어요. (월 6,900원)");
