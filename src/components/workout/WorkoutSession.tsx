@@ -219,7 +219,17 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       const exercise = updatedExercises[currentExerciseIndex];
 
       if (feedback === "too_easy" || feedback === "easy" || feedback === "fail") {
-        exercise.reps = Math.max(1, safeReps);
+        const newReps = Math.max(1, safeReps);
+        exercise.reps = newReps; // setDetails 없는 경우 fallback + 다음 세트 reps 소스
+        // setDetails 가 있으면 다음 세트(0-indexed = currentSet) 만 패치. 이후 세트는 플랜 의도 유지.
+        if (exercise.setDetails && exercise.setDetails.length > 0) {
+          const nextIdx = currentSet;
+          if (nextIdx < exercise.setDetails.length) {
+            const patched = [...exercise.setDetails];
+            patched[nextIdx] = { ...patched[nextIdx], reps: newReps };
+            exercise.setDetails = patched;
+          }
+        }
       }
       // "target": 유지 (no change)
 
@@ -562,12 +572,19 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       <FitScreen
         key={`${currentExerciseIndex}-${currentExercise.name}`}
         exercise={currentExercise}
-        setInfo={{
+        setInfo={(() => {
+          // setDetails[currentSet-1] 우선 소비 (MasterPlanPreview 에서 세트별 편집한 값). 없으면 단일 ex.reps/ex.weight fallback.
+          const detail = currentExercise.setDetails?.[currentSet - 1];
+          const rawReps = detail?.reps ?? currentExercise.reps;
+          const targetReps = typeof rawReps === "number" ? rawReps : parseInt(String(rawReps)) || 12;
+          const targetWeight = detail?.weight ?? currentExercise.weight ?? "Bodyweight";
+          return {
             current: currentSet,
             total: currentExercise.sets || 1,
-            targetReps: (typeof currentExercise.reps === "number" ? currentExercise.reps : parseInt(String(currentExercise.reps)) || 12), // Guard: AI may return string
-            targetWeight: currentExercise.weight || "Bodyweight"
-        }}
+            targetReps,
+            targetWeight,
+          };
+        })()}
         exerciseIndex={currentExerciseIndex + 1}
         totalExercises={totalExercises}
         onSetComplete={handleSetComplete}
