@@ -107,12 +107,20 @@ export const StatusTab: React.FC<StatusTabProps> = ({
     };
   });
 
-  // 종합 퍼센타일
+  // 종합 퍼센타일 (표시용 — 회의 54 EASING 적용된 categoryPercentiles 사용)
   const overallPercentile = computeOverallPercentile(categoryPercentiles);
   const overallRank = percentileToRank(overallPercentile);
 
-  // 피트니스 나이
-  const fitnessAge = computeFitnessAge(overallPercentile, age, gender);
+  // 피트니스 나이 — 회의 2026-04-24: raw ACSM (skipEasing) 으로 별도 산출.
+  //   화면 표시(육각형/등수)는 EASING 으로 동기부여 톤 유지하되,
+  //   나이 측정은 학문적 정확성 우선 (대표 지시 — 엘리트 X, 빡세게 ○).
+  const categoryPercentilesForAge: CategoryPercentile[] = categoryPercentiles.map((cp) => {
+    if (!cp.hasData || cp.category === "cardio") return cp; // cardio 는 별도 페이스 percentile, 그대로 사용
+    const rawPct = bwRatioToPercentile(cp.bwRatio, cp.category, gender, age, { skipEasing: true });
+    return { ...cp, percentile: rawPct };
+  });
+  const overallPercentileForAge = computeOverallPercentile(categoryPercentilesForAge);
+  const fitnessAge = computeFitnessAge(overallPercentileForAge, age, gender);
   const ageDiff = age - fitnessAge;
 
   // 데이터가 하나라도 있는지
@@ -129,10 +137,8 @@ export const StatusTab: React.FC<StatusTabProps> = ({
     tentative: cp.category === "cardio" && cp.hasData && !cardioStatus.isConfirmed,
   }));
 
-  // 회의 64-X Q5: 러닝 단독(체력 축만 데이터 있음) 판정
-  const cardioOnlyMode = hasAnyData
-    && categoryPercentiles.filter(c => c.hasData).length === 1
-    && categoryPercentiles.find(c => c.hasData)?.category === "cardio";
+  // 회의 2026-04-24: 자기 결함 노출 금지 룰(feedback_product_positioning) 따라
+  //   기존 cardioOnly amber 경고 제거. 데이터 있는 만큼으로 fitness age 표시.
 
   const ageGroupLabel = getAgeGroupLabel(age, locale);
   const genderLabel = isKo ? (gender === "male" ? "남성" : "여성") : (gender === "male" ? "men" : "women");
@@ -161,12 +167,6 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                 : (isKo ? "지금부터 시작하면 빠르게 달라져요" : "Start now and you'll improve fast")
             }
           </p>
-          {/* 회의 64-X Q5: 러닝 단독 — 체력 축만 계산된 상태임을 경고 */}
-          {cardioOnlyMode && (
-            <p className="text-[10px] font-bold text-amber-600 mt-1">
-              {t("status.fitnessAge.cardioOnly")}
-            </p>
-          )}
         </div>
       )}
 

@@ -4007,3 +4007,49 @@ Next.js `npm run build` PASS. 커밋 `b1c3452`.
 
 ### 배포
 감사만 — 코드 변경 없음.
+
+---
+
+## 회의 2026-04-24 후속 ⑦: 피트니스 나이 raw ACSM 분리 + cardioOnly 경고 제거
+
+### 대표 지시
+"나이 측정에서는 조금 더 타이트해도 될 것 같은데, 엘리트 체육인까진 아니더라도" → **A안 채택 (raw ACSM)**.
+"유저에게 우리 앱이 빈틈이 있다 보여주는 것 같은데?" → 자기 결함 노출 금지 (`feedback_product_positioning` 룰).
+
+### 배경 및 원인
+- 회의 54 (2026-04-12) EASING_FACTORS 적용 — chest/back/legs ×0.93 / shoulder ×0.82 / core ×0.80 — 화면 표시 percentile 동기부여 톤.
+- **부수효과**: 같은 EASING 이 fitness age 산출에도 그대로 적용 → 30대 일반인이 fitness age 27-28세 (3-3.5살 어림) → 너무 후함.
+- 추가 발견: cardio-only 케이스에 amber 경고 ("체력 축만 측정됨") 띄우고 있었으나, 학문적으론 **HUNT3 정통 fitness age 모델이 cardio 단일 기반 (Nes BM et al. 2014, [PubMed 24576865](https://pubmed.ncbi.nlm.nih.gov/24576865/))** — 즉 가장 정통한 케이스에 가장 큰 경고를 띄우는 모순. 게다가 weight-only 경고는 0건 → 일관성 무너짐.
+
+### 자문단 (3차 회의)
+- **한체대 교수 (체력평가)**: HUNT3 모델 = VO2max 기반 단일 지표. 우리 앱의 "근력+체력 종합" fitness age 는 학계 검증된 모델 아님. ±12.5 cap 자체는 합리적 (HUNT3 ±15).
+- **운동생리학자 (ACSM)**: 비선형 매핑보다 현재 선형 0.25 가 정규분포 변환된 percentile 입력엔 더 적절. 다만 EASING 적용된 percentile 이 fitness age 입력으로 들어가면 over-correction.
+- **건강운동관리사**: 5살 이상 어림 = 신뢰 역효과 zone. 1-2살 어림이 동기부여+신뢰 둘 다 잡음.
+- **김경록·Seth Godin·박충환 (마케팅)**: "참고용" / "신뢰도 N/6" 같은 라벨은 자기 결함 광고. 브랜드 캐즘 Stage 1 에서 치명적. UI 라벨 강화 X.
+
+### 변경
+
+**[src/utils/fitnessPercentile.ts](../src/utils/fitnessPercentile.ts)**:
+- `bwRatioToPercentile(bwRatio, cat, gender, age, opts?: { skipEasing?: boolean })` — 신규 옵션 인자.
+- 기본 동작 (default): EASING 적용 (회의 54 그대로) — 화면 표시용.
+- `skipEasing: true`: raw ACSM 사용 — fitness age 산출 전용.
+
+**[src/components/report/tabs/StatusTab.tsx](../src/components/report/tabs/StatusTab.tsx)**:
+- `categoryPercentilesForAge` 신설 — 각 부위 percentile 을 `skipEasing: true` 로 재계산 (cardio 는 별도 페이스 percentile 그대로).
+- `overallPercentileForAge` → `computeFitnessAge` 입력. 화면 표시 percentile (기존 `categoryPercentiles`) 은 변화 없음.
+- `cardioOnlyMode` 변수 + amber 경고 블록 제거. i18n key `status.fitnessAge.cardioOnly` 는 잔존 (다른 곳 사용 가능성, 후속 정리).
+
+### 영향 시뮬 (30대 남자 75kg, 평균 능력)
+
+| | 화면 표시 (육각형/등수) | fitness age |
+|---|---|---|
+| Before | 평균 percentile ~62 (변화 없음) | 27-28세 (3-3.5살 어림) |
+| After | 평균 percentile ~62 (**변화 없음**) | **30세 ± 1** (정확) |
+
+→ 유저가 보는 화면 변화 0. fitness age 만 학문 정확성 회복.
+
+### 검증
+Next.js `npm run build` PASS. 대표 컨펌 받고 진행.
+
+### 배포
+클라만 — `git push` 하면 CI 자동.

@@ -573,12 +573,17 @@ export function getCardioConfidenceStatus(
   return { eligibleRunCount: eligible.length, daysSinceFirstRun, isConfirmed };
 }
 
-/** BW ratio → 퍼센타일 (보간) */
+/** BW ratio → 퍼센타일 (보간).
+ *  회의 2026-04-24: opts.skipEasing — fitness age 산출용 raw ACSM 경로.
+ *  기본(false): 회의 54 EASING 적용 → 화면 표시(육각형/등수)용. 일반인이 50th 도달 쉬움.
+ *  true: raw ACSM thresholds → 피트니스 나이 계산용. 한국 일반인엔 빡세지만 학문적 정확.
+ */
 export function bwRatioToPercentile(
   bwRatio: number,
   category: FitnessCategory,
   gender: "male" | "female",
   age: number,
+  opts?: { skipEasing?: boolean },
 ): number {
   if (category === "cardio") return 50; // cardio는 getCardioPacePercentile 사용
 
@@ -586,8 +591,8 @@ export function bwRatioToPercentile(
   const rawTable = PERCENTILE_TABLE[gender]?.[ageGroup]?.[category];
   if (!rawTable) return 50;
 
-  // 회의 54: 부위별 완화 계수 적용 (원본 표 × easing) → threshold가 낮아져 일반인이 더 높은 percentile 획득
-  const easing = EASING_FACTORS[category] ?? 1.0;
+  // 회의 54 EASING — 표시용 (default). 회의 2026-04-24: skipEasing 시 raw ACSM 사용.
+  const easing = opts?.skipEasing ? 1.0 : (EASING_FACTORS[category] ?? 1.0);
   const table = rawTable.map(v => v * easing);
 
   // 보간: table[0]=10th ... table[8]=90th
