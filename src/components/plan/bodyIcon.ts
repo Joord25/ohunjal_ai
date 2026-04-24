@@ -28,6 +28,9 @@ const GLUTE: Set<string> = new Set([
   "케틀벨 와이드 스쿼트 (Kettlebell Wide Squat)",
   "덤벨 와이드 스쿼트 (Dumbbell Wide Squat)",
   "와이드 스쿼트 (Wide Squat)",
+  // 회의 2026-04-24: BW 보강 둔근 단축 isometric — glutes 아이콘
+  "싱글 레그 글루트 브릿지 (Single-Leg Glute Bridge)",
+  "프론 힙 익스텐션 (Prone Hip Extension)",
 ]);
 
 const ADDUCTOR: Set<string> = new Set([
@@ -68,6 +71,9 @@ const POSTERIOR_LEG: Set<string> = new Set([
   "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)",
   "레그 컬 (Leg Curl)",
   "원 레그 루마니안 데드리프트 (Single Leg RDL)",
+  // 회의 2026-04-24: BW 보강 후면 사슬 hinge 패턴 — deadlift 아이콘
+  "굿모닝 (Bodyweight Good Morning)",
+  "힙 힌지 홀드 (Hip Hinge Hold)",
 ]);
 
 const GROUP_TO_ICON: Record<string, string> = {

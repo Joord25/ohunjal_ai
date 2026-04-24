@@ -1271,24 +1271,30 @@ function generateHomeWorkout(
     "덤벨 플로어 프레스 (Dumbbell Floor Press)",
     "덤벨 숄더 프레스 (Seated Dumbbell Press)", "아놀드 프레스 (Arnold Press)",
   ]));
+  // 회의 2026-04-24: BW 보강 운동들은 bwOnly 모드 전용. 일반 home_training (장비 가정)
+  // 에서는 익숙한 장비 운동만 노출하도록 분기. 회의 64-M4 누수 fix.
   const homePull = pick(filterBW([
     "덤벨 로우 (Dumbbell Row)", "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)",
     "인버티드 로우 (Inverted Row)", "TRX 로우 (TRX Row)",
     "슈퍼맨 동작 (Superman)", "케틀벨 로우 (Kettlebell Row)",
     "덤벨 컬 (Dumbbell Curl)", "해머 컬 (Hammer Curl)",
-    // BW 보강
-    "리버스 스노우 엔젤 (Reverse Snow Angel)", "Y-T-W 레이즈 (Y-T-W Raises)",
-    "프론 코브라 (Prone Cobra)", "타올 로우 (Towel Row)",
+    // BW 보강 — bwOnly 전용 (장비 없는 유저 다양성 확보)
+    ...(bwOnly ? [
+      "리버스 스노우 엔젤 (Reverse Snow Angel)", "Y-T-W 레이즈 (Y-T-W Raises)",
+      "프론 코브라 (Prone Cobra)", "타올 로우 (Towel Row)",
+    ] : []),
   ]));
   const homeHinge = pick(filterBW([
     "케틀벨 스윙 (Kettlebell Swing)", "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)",
     "글루트 브릿지 (Glute Bridge)", "덤벨 힙 쓰러스트 (Dumbbell Hip Thrust)",
     "싱글 레그 케틀벨 RDL (Single-Leg Kettlebell RDL)",
     "원 레그 루마니안 데드리프트 (Single Leg RDL)",
-    // BW 보강
-    "싱글 레그 글루트 브릿지 (Single-Leg Glute Bridge)",
-    "굿모닝 (Bodyweight Good Morning)", "힙 힌지 홀드 (Hip Hinge Hold)",
-    "프론 힙 익스텐션 (Prone Hip Extension)",
+    // BW 보강 — bwOnly 전용
+    ...(bwOnly ? [
+      "싱글 레그 글루트 브릿지 (Single-Leg Glute Bridge)",
+      "굿모닝 (Bodyweight Good Morning)", "힙 힌지 홀드 (Hip Hinge Hold)",
+      "프론 힙 익스텐션 (Prone Hip Extension)",
+    ] : []),
   ]));
   const homeFullBody = pick(filterBW([
     "버피 (Burpees)", "덤벨 쓰러스터 (Dumbbell Thruster)", "스텝아웃 버피 (Step-out Burpees)",

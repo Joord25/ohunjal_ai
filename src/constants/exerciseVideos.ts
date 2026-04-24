@@ -329,6 +329,18 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "싱글 레그 밸런스": "mjzu4CEkTLE",
   "마무리 조깅": "Gn5t6izrn5Y",
   "걷기 또는 가벼운 조깅": "Gn5t6izrn5Y",
+
+  // ══════════════════════════════════
+  // ── BW 보강 (회의 64-M4 + 2026-04-24 동기화 — bwOnly 모드 전용) ──
+  // ══════════════════════════════════
+  "리버스 스노우 엔젤": "R7jH-CNUb_c",
+  "Y-T-W 레이즈": "8RJLYUH0akM",
+  "프론 코브라": "hgjCwjO2YUY",
+  "타올 로우": "7GZq8z7tCs0",
+  "싱글 레그 글루트 브릿지": "V1NKta2znwU",
+  "굿모닝": "sAAn3y-qxP4",
+  "힙 힌지 홀드": "lvF6NckaNtQ",
+  "프론 힙 익스텐션": "CLxYwpYDX9U",
 };
 
 /** 동의어 → 대표 이름 정규화 */
