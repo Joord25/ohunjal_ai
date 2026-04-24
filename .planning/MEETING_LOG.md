@@ -4053,3 +4053,96 @@ Next.js `npm run build` PASS. 대표 컨펌 받고 진행.
 
 ### 배포
 클라만 — `git push` 하면 CI 자동.
+
+---
+
+## 회의 2026-04-25 — 저장소 정리 세션 (용량 회수 + 문서 구조 개선)
+
+### 대표 요청
+"불필요하게 남은게 많은거 같아서 좀 하나하나 씩 정리하게" — 루트 디렉토리 전수 감사 + 미사용 에셋/스테일 문서/중복 의존성 정리.
+
+### 1. 삭제 — 빌드/실험 산물 (~425M)
+
+| 대상 | 용량 | 근거 |
+|---|---|---|
+| `experiments/` | 42M | README 명시 "쓰고 폐기" · .gitignore 등록 · 마지막 활동 Apr 15 |
+| `.firebase/ounjal/` + 캐시 | 4.2M | typo 프로젝트 잔재 (.firebaserc default=ohunjal). 마지막 Mar 8 |
+| `.next/` | 381M | 빌드 캐시. dev 서버 확인 후 (3000 비어있음) 삭제. `npm run build` 재생성 |
+| `.gstack/` | 1M | gstack QA 로그 · .gitignore 등록 |
+| `.DS_Store` 잔재 4개 | 소량 | macOS 메타 |
+
+### 2. `.planning/` 구조 개선
+
+**archive 이동 8건** (git mv 이력 보존):
+- `landing-redesign-brief.md` (실행 완료: 04-21 브랜드 캐즘 재작성)
+- `proof-tab-redesign-prep.md` (prep 후 리디자인 실행 완료)
+- `master-plan-redesign/AUDIT.md` (PlanLibraryPane/PlanSelectedPane 분리 반영)
+- `SPEC-64-XYZ.md` (Batch D/E 완료 → CURRENT_STATE 러닝리포트 Wave1-3)
+- `DESIGN-RUNNING-REPORT-KENKO.md` (회의 64-α Kenko 리디자인 실행 완료)
+- `audits/GEO-AUDIT-2026-04-02.md` (23일 전 감사, JSON-LD 5종 등 개선됨)
+- `da-refactor-design.md` (트랙 A 이벤트 보강만 실행, 트랙 B/C 대표 킬 확정)
+- `metrics-guide.md` (46일 방치, 컴포넌트 SSOT 역할 이관 — 참고문헌만 보존 가치)
+
+**삭제 7건 — `.planning/codebase/`**:
+- ARCHITECTURE/CONCERNS/CONVENTIONS/INTEGRATIONS/STACK/STRUCTURE/TESTING.md
+- 2026-03-31 자동 생성 (25일 전), 이후 러닝 프로그램/Kenko/Paddle/AdviceCard 동기화 대량 변경 → 실제와 괴리
+- `.claude/rules/` 가 실질 규칙 역할 중이라 중복
+
+### 3. `public/` 미사용 에셋 삭제 (-43M)
+
+전 프로젝트 grep 0 refs 검증 후:
+- `is-it-right2.mp4` (41.6M) — 랜딩 리디자인으로 제거된 영상
+- `login-logo` 구버전 2개 (3.1M)
+- `bigdog.png`, `favicon_emerald_10B981_transparent.png`
+- `icons/body-blue-backup/` (6 SVG) — 이름만 backup 폴더 (실사용 `favicon_backup.png` 는 AI 코치 아바타 7곳 사용 중, 유지)
+- Next.js 템플릿 잔재 5개 SVG (file/globe/next/vercel/window)
+
+### 4. `package.json` 의존성 제거 (3개)
+
+정밀 검증 후:
+- `@google/genai` — frontend 0 imports (functions/ 에만 사용, functions/package.json 별도 선언됨)
+- `framer-motion` — src/ + functions/ 전체 0 imports
+- `pretendard` — CDN 로드 중 ([layout.tsx:117](../src/app/layout.tsx#L117) jsdelivr), npm 패키지 중복
+
+검증: `npm run build` + test 22/22 통과.
+
+### 5. `README.md` 재작성
+
+- Before: Next.js create-next-app 보일러플레이트 33줄, "ohunjal" 0회 언급
+- After: 오운잘 제품 소개 + 기술 스택 + 개발/배포 명령어 + .env.local 카탈로그 + 프로젝트 구조 + CLAUDE.md/CURRENT_STATE/MEETING_LOG 링크 (80줄)
+
+### 6. `package.json` 스크립트 보강
+
+신규 4개 추가:
+- `typecheck`: `tsc --noEmit` (빌드 없이 타입 체크)
+- `functions:build`, `functions:serve`, `functions:deploy`: CLAUDE.md 명시된 `cd functions && ...` 패턴을 루트 스크립트로 노출
+
+### 커밋 (총 5개)
+
+| 해시 | 메시지 |
+|---|---|
+| `0771300` | chore(planning): 완료 문서 archive 이동 + 스테일 codebase 스냅샷 제거 |
+| `f9d69f5` | chore(public): 미사용 에셋 정리 (-43M) |
+| `c9f2f3f` | chore(deps): 미사용·중복 의존성 3개 제거 |
+| `8233977` | docs(readme): 프로젝트 소개 재작성 |
+| `7c2ae4a` | chore(scripts): 편의 npm 스크립트 4개 추가 |
+
+### 검증
+- `npm run build` PASS (15/15 정적 페이지)
+- `npm run test` 22/22 통과
+- `npm run typecheck` exit 0
+- Firebase Hosting CI 자동 재배포 완료
+
+### 결과
+
+- **용량 회수:** ~471M (디스크) + 43M (저장소 bundle)
+- **문서 구조:** `.planning/` 정리 — 핵심 4개 + archive/ + advisors/ + design/ + strategies/ 만 남음
+- **개발자 경험:** README 정상화 + typecheck 스크립트 + functions:* 편의 스크립트
+
+### 미해결 과제
+- `public/` 에 1ref 파일들 (price/how-it-works/로고 등) 재검증 — 대표 판단: **필요한 파일**로 유지 (랜딩·프라이싱 실사용 의심)
+- 이번 세션 CURRENT_STATE.md 업데이트 — 유저 미노출 내부 인프라 변경이므로 기록 불요 (MEETING_LOG 로 충분)
+
+### 재발 방지 룰
+- `.planning/` 완료 문서는 실행 확인 후 archive/ 이동 원칙 (신규 적용)
+- npm 의존성 추가 시 실사용 확인 — CDN 사용 시 npm 중복 지양
