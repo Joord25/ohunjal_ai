@@ -146,12 +146,19 @@ export function useYouTubeIframe({ containerId, onReady }: UseYouTubeIframeOpts)
 
     return () => {
       cancelled = true;
-      try {
-        playerRef.current?.destroy();
-      } catch {
-        // ignore
-      }
+      const player = playerRef.current;
       playerRef.current = null;
+      // React 가 wrapper DOM 을 commit-제거한 후에 destroy 가 호출되도록 비동기.
+      // 동기 호출 시 IFrame Player 가 노드를 미리 떼어내 React 의 insertBefore mismatch (Uncaught NotFoundError) 유발.
+      if (player) {
+        setTimeout(() => {
+          try {
+            player.destroy();
+          } catch {
+            // ignore — 이미 detached 노드에서 호출 시 silent
+          }
+        }, 0);
+      }
     };
   }, [containerId]);
 

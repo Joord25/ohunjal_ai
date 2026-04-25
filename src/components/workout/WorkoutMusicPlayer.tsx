@@ -250,9 +250,13 @@ export function WorkoutMusicPlayer({ enabled, onUnavailable, registerHandle, uiP
 
   return (
     <>
-      {/* iframe 은 audio-only 용도 — 화면 밖으로 이동 (WorkoutSession 마운트 기준 stable, FitScreen remount 영향 X) */}
+      {/*
+        wrapper 패턴 — IFrame Player 가 inner div(PLAYER_CONTAINER_ID)를 iframe 으로 대체하므로
+        React 가 그 영역을 직접 관리하면 unmount 시 insertBefore mismatch 발생.
+        wrapper div 만 React 가 관리하고, inner div 는 외부 라이브러리(YouTube)에 위임.
+      */}
       <div
-        id={PLAYER_CONTAINER_ID}
+        aria-hidden="true"
         style={{
           position: "fixed",
           top: "-9999px",
@@ -263,7 +267,9 @@ export function WorkoutMusicPlayer({ enabled, onUnavailable, registerHandle, uiP
           pointerEvents: "none",
           opacity: 0,
         }}
-      />
+      >
+        <div id={PLAYER_CONTAINER_ID} />
+      </div>
       {/* 미니바 UI 는 portal 로 FitScreen 의 DONE 직전 슬롯에 렌더 (와이어프레임 정확 위치). 슬롯 없으면 미렌더. */}
       {uiPortalTarget ? createPortal(ui, uiPortalTarget) : null}
     </>
