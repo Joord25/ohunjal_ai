@@ -20,6 +20,26 @@ import { WeightTrendChart } from "./WeightTrendChart";
 import { LoadTimelineChart } from "./LoadTimelineChart";
 import { VolumeTrendChart } from "./VolumeTrendChart";
 import { MonthlyRunningScience } from "@/components/report/MonthlyRunningScience";
+import {
+  type FitnessCategory,
+  getCategoryBestBwRatio,
+  bwRatioToPercentile,
+  percentileToRank,
+  getBestRunningPace,
+  getCardioPacePercentile,
+  getCardioConfidenceStatus,
+  getAgeGroupLabel,
+} from "@/utils/fitnessPercentile";
+
+const RANK_CATEGORY_LABELS: Record<FitnessCategory, { ko: string; en: string }> = {
+  chest: { ko: "가슴", en: "Chest" },
+  back: { ko: "등", en: "Back" },
+  shoulder: { ko: "어깨", en: "Shoulder" },
+  legs: { ko: "하체", en: "Legs" },
+  core: { ko: "코어 & 팔", en: "Core & Arms" },
+  cardio: { ko: "체력", en: "Cardio" },
+};
+const RANK_CATEGORIES: FitnessCategory[] = ["chest", "back", "shoulder", "legs", "core", "cardio"];
 
 const GRASS_COLORS = [
   { bg: "bg-gray-50", text: "text-gray-300", shadow: "" },
@@ -377,7 +397,7 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           <div className="flex gap-0.5 bg-[#2D6A4F]/10 p-1 m-3 mb-0 rounded-xl">
             {([
               { key: "calendar" as const, label: locale === "ko" ? "캘린더" : "Calendar" },
-              { key: "bodypart" as const, label: locale === "ko" ? "부위도감" : "Body Log" },
+              { key: "bodypart" as const, label: locale === "ko" ? "내 등수" : "My Rank" },
               { key: "weight" as const, label: locale === "ko" ? "체중변화" : "Weight" },
               { key: "tier" as const, label: locale === "ko" ? "티어" : "Tier" },
             ]).map(tab => (
@@ -481,51 +501,81 @@ export const ProofTab: React.FC<ProofTabProps> = ({ onShowPrediction }) => {
           </div>
         </div>
         ) : proofView === "bodypart" ? (
-          /* === 부위 도감 탭 === */
-          <div className="p-4 min-h-[320px] flex items-center">
+          /* === 내 등수 탭 === 부위별 퍼센타일 (전체 history 기준 누적) */
+          <div className="p-4 min-h-[320px]">
             {(() => {
-              const partCount: Record<string, number> = {};
-              for (const h of monthHistory) {
-                const title = (h.sessionData.title || h.sessionData.description || "").toLowerCase();
-                // runningStats 존재 = 러닝 세션 확정 (title 매칭보다 신뢰도 높음)
-                // 러닝 프로그램 세션 제목(예: "2K Time Trial", "Norwegian 4×4", "스트라이드")엔 '러닝/run' 키워드 없을 수 있음
-                if (h.runningStats) {
-                  partCount["cardio"] = (partCount["cardio"] || 0) + 1;
-                  continue; // 러닝 세션은 cardio로만 카운트 (웨이트 정규식 영향 제외)
-                }
-                if (/가슴|chest|push|푸쉬/.test(title)) partCount["chest"] = (partCount["chest"] || 0) + 1;
-                if (/등|back|pull|당기/.test(title)) partCount["back"] = (partCount["back"] || 0) + 1;
-                if (/어깨|shoulder|숄더/.test(title)) partCount["shoulder"] = (partCount["shoulder"] || 0) + 1;
-                if (/하체|leg|lower|스쿼트|squat/.test(title)) partCount["legs"] = (partCount["legs"] || 0) + 1;
-                if (/팔|arm|이두|삼두|bicep|tricep/.test(title)) partCount["arms"] = (partCount["arms"] || 0) + 1;
-                if (/코어|core|복근|abs/.test(title)) partCount["core"] = (partCount["core"] || 0) + 1;
-                // runningStats 없는 세션도 제목에 러닝 키워드 있으면 cardio (HIIT/서킷 등)
-                if (/러닝|유산소|cardio|run|hiit|서킷|인터벌|interval|템포|tempo|스프린트|sprint|스트라이드|strides/.test(title)) {
-                  partCount["cardio"] = (partCount["cardio"] || 0) + 1;
-                }
+              const age = !isNaN(savedBirthYear) ? new Date().getFullYear() - savedBirthYear : 30;
+              const bodyWeightKg = !isNaN(savedBodyWeight) ? savedBodyWeight : 0;
+              const gender = savedGender;
+
+              if (!gender || bodyWeightKg <= 0) {
+                return (
+                  <p className="text-sm text-gray-400 text-center py-12">
+                    {locale === "ko" ? "프로필 설정 후 등수가 표시돼요" : "Set profile to see your rank"}
+                  </p>
+                );
               }
-              const parts = [
-                { key: "chest", ko: "가슴", en: "Chest" }, { key: "back", ko: "등", en: "Back" },
-                { key: "shoulder", ko: "어깨", en: "Shoulder" }, { key: "legs", ko: "하체", en: "Legs" },
-                { key: "arms", ko: "팔", en: "Arms" }, { key: "core", ko: "코어", en: "Core" },
-                { key: "cardio", ko: "유산소", en: "Cardio" },
-              ];
-              const maxCount = 8;
+
+              // 누적 기준 (전체 history) 카테고리별 best bwRatio
+              const bestByCategory = getCategoryBestBwRatio([], {}, history, bodyWeightKg);
+
+              // cardio 페이스 percentile (러닝 history 기반)
+              const runningHistory = history
+                .filter(h => h.runningStats)
+                .map(h => ({ date: h.date, runningStats: h.runningStats! }));
+              const cardioStatus = getCardioConfidenceStatus(runningHistory);
+              const cardioBestPace = getBestRunningPace(runningHistory);
+
+              const rows = RANK_CATEGORIES.map((cat) => {
+                if (cat === "cardio") {
+                  if (cardioStatus.eligibleRunCount === 0 || cardioBestPace == null) {
+                    return { category: cat, percentile: 0, rank: null as number | null, hasData: false };
+                  }
+                  const percentile = getCardioPacePercentile(cardioBestPace, gender, age);
+                  return { category: cat, percentile, rank: percentileToRank(percentile), hasData: true };
+                }
+                const bwRatio = bestByCategory.get(cat);
+                if (!bwRatio || bwRatio <= 0) {
+                  return { category: cat, percentile: 0, rank: null as number | null, hasData: false };
+                }
+                const percentile = bwRatioToPercentile(bwRatio, cat, gender, age);
+                return { category: cat, percentile, rank: percentileToRank(percentile), hasData: true };
+              });
+
+              const ageGroup = getAgeGroupLabel(age, locale);
+              const genderLabel = locale === "ko"
+                ? (gender === "male" ? "남성" : "여성")
+                : (gender === "male" ? "Men" : "Women");
+
               return (
-                <div className="space-y-2.5 w-full">
-                  {parts.map(p => {
-                    const count = partCount[p.key] || 0;
-                    const pct = Math.min((count / maxCount) * 100, 100);
-                    return (
-                      <div key={p.key} className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-[#1B4332]/60 w-10 shrink-0">{locale === "ko" ? p.ko : p.en}</span>
-                        <div className="flex-1 h-2 bg-[#2D6A4F]/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#2D6A4F] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                <div className="w-full">
+                  <p className="text-[11px] text-[#1B4332]/40 text-center mb-4">
+                    {locale === "ko"
+                      ? `${ageGroup} ${genderLabel} 100명 중 위치 (전체 기준)`
+                      : `Position out of 100 ${ageGroup} ${genderLabel} (all-time)`}
+                  </p>
+                  <div className="space-y-2.5">
+                    {rows.map((r) => {
+                      const label = RANK_CATEGORY_LABELS[r.category];
+                      const labelText = locale === "ko" ? label.ko : label.en;
+                      return (
+                        <div key={r.category} className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-[#1B4332]/60 w-14 shrink-0">{labelText}</span>
+                          <div className="flex-1 h-2 bg-[#2D6A4F]/10 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${r.hasData ? "bg-[#2D6A4F]" : "bg-gray-300"}`}
+                              style={{ width: `${r.hasData ? r.percentile : 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-[#1B4332]/40 w-10 text-right tabular-nums">
+                            {r.hasData
+                              ? (locale === "ko" ? `${r.rank}등` : `#${r.rank}`)
+                              : "—"}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-bold text-[#1B4332]/40 w-4 text-right">{count}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
