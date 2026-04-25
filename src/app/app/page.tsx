@@ -1181,9 +1181,9 @@ export default function Home() {
           <WorkoutReport
             sessionData={currentWorkoutSession}
             logs={workoutLogs}
-            bodyWeightKg={currentCondition?.bodyWeightKg}
-            gender={currentCondition?.gender}
-            birthYear={currentCondition?.birthYear}
+            bodyWeightKg={currentCondition?.bodyWeightKg ?? (() => { const w = parseFloat(localStorage.getItem("ohunjal_body_weight") || ""); return isNaN(w) ? undefined : w; })()}
+            gender={currentCondition?.gender ?? (localStorage.getItem("ohunjal_gender") as "male" | "female") ?? undefined}
+            birthYear={currentCondition?.birthYear ?? (() => { const y = parseInt(localStorage.getItem("ohunjal_birth_year") || ""); return isNaN(y) ? undefined : y; })()}
             savedDurationSec={workoutDurationSec}
             precomputedExpGained={lastExpGained}
             precomputedPrevExp={lastPrevExp}
