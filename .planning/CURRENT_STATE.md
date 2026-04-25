@@ -1,6 +1,6 @@
 # CURRENT_STATE.md — 앱 UI/기능 인벤토리 SSOT
 
-**최종 갱신:** 2026-04-24 PM (AdviceCard↔MasterPlan 동기화 + 인터벌 4종 fix + 우측 상단 스킵·종료 아이콘 + ShareCard margin 재발 fix + 러닝 세션 전종 감사)
+**최종 갱신:** 2026-04-25 (ProofTab '부위도감' → '내 등수' 헥사곤 + setDetails FitScreen 전달 fix + fitness-age raw ACSM 분리 + 홈 BW 보강 8종 bwOnly 격리 + 저장소 정리)
 
 이 문서는 "오운잘 앱의 각 화면에 어떤 UI와 기능이 실제로 구현되어 있는지"의 단일 진실 공급원입니다.
 모든 항목은 코드 검증 기반 (`file:line` 인용). 추측 금지. 미검증은 **⚠ 미검증** 마킹.
@@ -118,7 +118,7 @@
 | 탭 | 내용 |
 |---|---|
 | **캘린더** | 월 그리드 (일~토), 날짜별 잔디 색상 5단계 (운동시간 기반), 오늘 표시 링, 세션 多개 시 배지. **중도 종료 표현 (회의 64-M3):** 중도 전용일 = 단일 앰버 색 · 혼합일(완주+중도) = emerald + 느낌표 배지 · 하단 범례 노출 |
-| **부위도감** | 7부위 횡 바그래프 (가슴/등/어깨/하체/팔/코어/유산소), maxCount=8 정규화. **러닝 세션도 유산소 카운트에 집계** (2026-04-20 버그 fix) |
+| **내 등수** (구 '부위도감', 회의 2026-04-25 ①) | **HexagonChart 레이더** (StatusTab 동일 디자인), 6 카테고리: 가슴/등/어깨/하체/코어&팔/체력. 데이터: 전체 history 기반 누적 best bwRatio + 러닝 페이스 percentile. 헤더 부제 "${연령대} ${성별} 100명 중", 종합 등수 텍스트 ("종합 N등"). cardio tentative 회색 틴트 (회의 64-X). **월 네비게이션 무관** (전체 누적 기준). EN: 'My Rank' |
 | **체중변화** | `WeightTrendChart` + "모두 보기" (조건부: weightLog.length > 0) |
 | **티어** | 시즌 그래디언트 카드 (Diamond~Bronze 5티어), 프로그레스 바, 최근 10개 경험치 로그 |
 
@@ -141,7 +141,7 @@
 |---|---|
 | 세션 카드 클릭 | `view → report`, selectedHistory 설정 (returnView: dashboard/list) |
 | 월 네비게이션 | monthOffset ±1 |
-| ProofView 탭 전환 | calendar/bodypart/weight/tier |
+| ProofView 탭 전환 | calendar/bodypart(내부 키 유지 — UI 라벨은 '내 등수')/weight/tier |
 | 좌측 스와이프 | 세션 삭제 (history 제거 + deleteWorkoutHistory + EXP 재계산) |
 | Pull-to-Refresh | refreshData() — 터치 이벤트 감지 |
 
@@ -603,6 +603,45 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 ---
 
 # 🔧 내부 인프라 (유저 미노출)
+
+**ProofTab '부위도감' → '내 등수' 헥사곤** (2026-04-25, 회의 2026-04-25 ①):
+- 기존 7부위 횡 바그래프 (제목 정규식 매칭) 폐기 — '코어' 항상 0 + '그래서 뭐?' 가치 부족.
+- StatusTab(`src/components/report/tabs/StatusTab.tsx`) 의 부위별 퍼센타일 로직 + `HexagonChart` 재사용.
+- ProofTab.tsx — `categoryPercentiles` / `hexAxes` / `computeOverallPercentile` 미러링. `fitnessPercentile.ts` 단일 SSOT.
+- 데이터 소스: 전체 history 누적 best bwRatio + 러닝 페이스 percentile (월 네비 무관).
+- 라벨: KO '부위도감' → '내 등수' / EN 'Body Log' → 'My Rank'. 내부 ProofView key (`bodypart`) 는 그대로 유지.
+
+**setDetails FitScreen 실제 전달 fix** (2026-04-25, 회의 2026-04-25 ②):
+- 버그: MasterPlanPreview 에서 세트별 무게·횟수 편집 (`ex.setDetails[]`) → WorkoutSession 이 단일 `ex.reps/ex.weight` 만 FitScreen 에 넘겨 세트별 차이 미반영. 예: '세트 1 80kg 10회 / 세트 2 85kg 8회' 편집해도 모든 세트 동일 실행.
+- 수정 ([WorkoutSession.tsx](../src/components/workout/WorkoutSession.tsx)):
+  1. `setInfo` prop — `setDetails[currentSet-1]` 우선 소비, 없으면 단일 값 fallback.
+  2. `handleSetComplete` — easy/too_easy/fail 피드백 시 다음 세트(0-indexed=`currentSet`) `setDetails.reps` 도 함께 패치. 이후 세트는 플랜 의도 유지 (피드백 cascade 없음).
+- 호환: setDetails undefined (AI 자동 생성) → 기존 adaptive 루프 그대로. setDetails 존재 (수동 편집) → 세트별 정확 + 다음 세트만 피드백 반영.
+
+**fitness-age raw ACSM 분리 산출** (2026-04-24, 회의 2026-04-24 fitness-age):
+- 대표 지시: 나이 측정은 EASING 적용 안 한 raw ACSM 으로 타이트하게. 화면 표시 percentile (육각형/등수) 는 회의 54 EASING 그대로 유지.
+- [src/utils/fitnessPercentile.ts](../src/utils/fitnessPercentile.ts): `bwRatioToPercentile` 에 `opts.skipEasing` 추가. true 시 raw ACSM threshold.
+- [src/components/report/tabs/StatusTab.tsx](../src/components/report/tabs/StatusTab.tsx): `categoryPercentilesForAge` 신설 (fitness age 계산 전용). 화면 표시 `categoryPercentiles` 는 별도.
+- **cardioOnly amber 경고 블록 제거** — 모든 케이스 일관되게 fitness age 표시. 자기 결함 노출 금지 룰 (`feedback_product_positioning`) 준수.
+- 영향 (30대 남자 75kg 평균 시뮬): 화면 percentile ~62 변화 없음, fitness age 27-28세 → 30세 ±1 (3살 빡세짐).
+
+**홈 BW 보강 8종 bwOnly 분기** (2026-04-24, 회의 64-M4 누수):
+- 버그: 일반 home_training (장비 가정) 에서 "프론 코브라" / "힙 힌지 홀드" 같은 BW 보강 운동이 50%+ 확률로 메인 등장. 클라 3곳(LABELED_EXERCISE_POOLS / bodyIcon / exerciseVideos) 미등록 → 부위 아이콘 "?" + 교체 검색 누락 + 영상 폴백.
+- 서버 [functions/src/workoutEngine.ts](../functions/src/workoutEngine.ts): BW 보강 8종을 `bwOnly === true` 스프레드 분기로 격리 (homePull/homeHinge). 일반 home 은 익숙한 장비 운동만, bwOnly 모드만 다양성.
+- 클라 동기화 (3곳):
+  - [src/constants/exerciseVideos.ts](../src/constants/exerciseVideos.ts) — 8종 YouTube Shorts ID 추가 (대표 큐레이션).
+  - [src/constants/workout.ts](../src/constants/workout.ts) `LABELED_EXERCISE_POOLS` — 후면 어깨 / 등 / 하체 카테고리에 8종 분배.
+  - [src/components/plan/bodyIcon.ts](../src/components/plan/bodyIcon.ts) — GLUTE / POSTERIOR_LEG 매핑 추가.
+
+**운동 풀 자잘한 정리** (2026-04-25):
+- 오버헤드 트라이셉 영상 갱신 + 케이블 OH 풀네임 통일 ([exerciseVideos.ts](../src/constants/exerciseVideos.ts) / [workout.ts](../src/constants/workout.ts)).
+
+**저장소 정리 세션** (2026-04-25, 회의 2026-04-25 저장소 정리):
+- README 재작성 (Next.js 템플릿 보일러플레이트 → 오운잘 프로젝트 소개).
+- 편의 npm 스크립트 4개 추가 (`package.json`).
+- 미사용·중복 의존성 3개 제거 (`package.json`/`package-lock.json`).
+- public/ 미사용 에셋 정리 (-43M).
+- `.planning/codebase/` 스테일 스냅샷 제거 + 완료 문서 archive 이동.
 
 **FitScreen 우측 상단 스킵·종료 2-아이콘** (2026-04-24 PM):
 - 기존 "운동 종료" 텍스트 필을 **아이콘 2개**로 교체: ⏩ 스킵 (이중 chevron) + ⎋ 운동종료 (logout-arrow).
