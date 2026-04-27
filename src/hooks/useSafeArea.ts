@@ -5,13 +5,11 @@ import { useEffect } from "react";
 /**
  * Sets --safe-area-bottom CSS variable on <html>.
  *
- * 회의 2026-04-28: 앱 레이어가 시스템 nav와 "동일선상"에 있어야 함 — 앱이 위로 떠 있는 느낌도,
- * 시스템 nav 뒤로 숨어 가려지는 느낌도 NO. 100dvh는 이미 시스템 nav 위까지만 잡혀있으므로
- * 우리가 extra padding 안 주면 BottomTabs pill이 viewport 하단 = 시스템 nav 바로 위에 flush.
- *
- * - 모바일 (브라우저 / 안드 PWA): 0px → BottomTabs 내부 16px만 남아 시스템 nav와 동일선상
- * - iOS PWA: 12px (홈 인디케이터 회피용 — 인디케이터에 가려지면 동일선상이 아니라 "뒤에 숨음")
- * - PC: 4px (브라우저 윈도우 하단과 약간 여유 — 나답 수준)
+ * 회의 2026-04-28 (재): 브라우저 vs PWA standalone 동작 차이 핵심.
+ * - 모바일 브라우저: viewport(100dvh)가 시스템 nav 위까지만 잡힘 → padding 0이어도 안 가려짐
+ * - 안드 PWA: 풀스크린 모드라 viewport가 nav 뒤까지 확장 → env(safe-area-inset-bottom)으로 회피 필수
+ * - iOS PWA: env이 ~34px로 과해서 12px 고정
+ * - PC: 4px (브라우저 윈도우 하단과 약간 여유)
  */
 export function useSafeArea() {
   useEffect(() => {
@@ -29,12 +27,13 @@ export function useSafeArea() {
         || /iPhone|iPad|iPod/.test(navigator.userAgent);
 
       if (isIOS && isStandalone) {
-        // iOS PWA: 홈 인디케이터 회피 — 그 외엔 인디케이터에 BottomTabs가 가려져 "뒤에 숨음" 됨.
+        // iOS PWA: 홈 인디케이터 회피 — env(~34px)는 과해서 12px 고정.
         document.documentElement.style.setProperty("--safe-area-bottom", "12px");
         return;
       }
 
-      // 모바일 브라우저 + 안드 PWA: 0px — 시스템 nav 바로 위에 붙어 동일선상.
+      // 모바일 (브라우저 + 안드 PWA): PhoneFrame height가 이미 nav 영역 제외(calc(100dvh - env))
+      // 했으므로 추가 padding 0 → BottomTabs가 PhoneFrame 하단 = nav top과 동일선상.
       document.documentElement.style.setProperty("--safe-area-bottom", "0px");
     }
 
