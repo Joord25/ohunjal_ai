@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { FitScreen, FeedbackType } from "./FitScreen";
+import { BeginnerGuideOverlay, type BeginnerOverlayPhase } from "./BeginnerGuideOverlay";
+import { getBeginnerMode, BEGINNER_MODE_EVENT } from "@/utils/beginnerMode";
 import type { RunningStats } from "@/constants/workout";
 import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, LABELED_EXERCISE_POOLS } from "@/constants/workout";
 import { trackEvent } from "@/utils/analytics";
@@ -76,6 +78,15 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     });
   }, []);
   const [showAddExercise, setShowAddExercise] = useState(restoredProgress?.showAddExercise ?? false);
+  const [beginnerEnabled, setBeginnerEnabled] = useState(() => getBeginnerMode() === true);
+  const [dismissedOverlays, setDismissedOverlays] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setBeginnerEnabled((e as CustomEvent<{ enabled: boolean }>).detail.enabled);
+    };
+    window.addEventListener(BEGINNER_MODE_EVENT, handler);
+    return () => window.removeEventListener(BEGINNER_MODE_EVENT, handler);
+  }, []);
   const [addSearch, setAddSearch] = useState("");
   const [pendingExercise, setPendingExercise] = useState<string | null>(null);
   const [addSets, setAddSets] = useState(3);
@@ -97,6 +108,24 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
 
   const currentExercise = exercises[currentExerciseIndex];
   const totalExercises = exercises.length;
+
+  // 초보자 모드 overlay — currentExercise 기반 phase 결정 (한 세션당 phase별 1회 노출)
+  const beginnerOverlayPhase: BeginnerOverlayPhase | null = !beginnerEnabled
+    ? null
+    : currentExercise.type === "warmup"
+      ? "warmup_intro"
+      : currentExercise.name === "벤치프레스"
+        ? "main_equipment"
+        : null;
+  const showBeginnerOverlay =
+    beginnerOverlayPhase !== null && !dismissedOverlays.has(beginnerOverlayPhase);
+  const dismissBeginnerOverlay = (phase: BeginnerOverlayPhase) => {
+    setDismissedOverlays((prev) => {
+      const next = new Set(prev);
+      next.add(phase);
+      return next;
+    });
+  };
 
   // 지난 세션에서 같은 운동의 기록 조회 (회의 52: 유틸 경유)
   const lastSessionRecord = React.useMemo(() => {
@@ -606,6 +635,16 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         onSkipExercise={handleSkipExercise}
       />
       {/* 회의 2026-04-27: WorkoutMusicPlayer 제거 — 외부 YouTube Music 등으로 대체 */}
+
+      {/* 초보자 모드 overlay — warmup 진입 / 벤치프레스 진입 시 1회 노출 (z-[70], abandon modal z-[110]보다 아래) */}
+      {showBeginnerOverlay && beginnerOverlayPhase && (
+        <BeginnerGuideOverlay
+          phase={beginnerOverlayPhase}
+          exerciseName={currentExercise.name}
+          onContinue={() => dismissBeginnerOverlay(beginnerOverlayPhase)}
+          onSkip={() => dismissBeginnerOverlay(beginnerOverlayPhase)}
+        />
+      )}
 
       {/* 회의 64-M3: 중도 종료 확인 팝업 */}
       {showAbandonModal && (
