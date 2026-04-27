@@ -241,7 +241,14 @@ export default function Home() {
     localStorage.setItem("ohunjal_migrated", "1");
   }, []);
 
-  const locale = typeof window !== "undefined" ? (localStorage.getItem("ohunjal_language") || "ko") : "ko";
+  // 회의 2026-04-28: SSR-safe locale. const + localStorage는 hydration mismatch (#418) 발화.
+  // 초기값 "ko" (SSR과 일치) → mount 후 localStorage 읽어 갱신.
+  const [locale, setLocale] = useState<"ko" | "en">("ko");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("ohunjal_language");
+    if (stored === "ko" || stored === "en") setLocale(stored);
+  }, []);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   // 구독 취소 플로우 활성 시 탭바 숨김 (유저 집중 + 리텐션)
   const [cancelFlowActive, setCancelFlowActive] = useState(false);

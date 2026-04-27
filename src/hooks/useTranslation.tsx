@@ -21,10 +21,17 @@ const I18nContext = createContext<I18nContextType>({
 });
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "ko";
-    return (localStorage.getItem("ohunjal_language") as Locale) || "ko";
-  });
+  // 회의 2026-04-28: SSR-safe — 초기값은 항상 "ko" (SSR HTML과 일치). mount 후 localStorage 읽어 갱신.
+  // useState lazy init에서 localStorage 읽으면 React 19에서 hydration mismatch (#418) 발화.
+  const [locale, setLocaleState] = useState<Locale>("ko");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("ohunjal_language") as Locale | null;
+    if (stored === "ko" || stored === "en") {
+      setLocaleState(stored);
+    }
+  }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
