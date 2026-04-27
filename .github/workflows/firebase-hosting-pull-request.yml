@@ -18,6 +18,10 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" >> .env.local
           echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" >> .env.local
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_ENV=${{ secrets.NEXT_PUBLIC_PADDLE_ENV }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=${{ secrets.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_PRICE_MONTHLY=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_ENABLED=${{ secrets.NEXT_PUBLIC_PADDLE_ENABLED }}" >> .env.local
           echo "NEXT_PUBLIC_PORTONE_STORE_ID=${{ secrets.NEXT_PUBLIC_PORTONE_STORE_ID }}" >> .env.local
           echo "NEXT_PUBLIC_PORTONE_CHANNEL_KEY=${{ secrets.NEXT_PUBLIC_PORTONE_CHANNEL_KEY }}" >> .env.local
           echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.NEXT_PUBLIC_GEMINI_API_KEY }}" >> .env.local
