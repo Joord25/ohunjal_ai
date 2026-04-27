@@ -1359,8 +1359,10 @@ export const ChatHome: React.FC<ChatHomeProps> = ({ userName, onSubmit, userProf
           </div>
         )}
 
-        {/* 입력창 — 2단 구조 (회의 60 대표 지시): 위=입력, 아래=도구+전송 */}
-        <div className="px-4 pt-2 pb-3">
+        {/* 입력창 — 2단 구조 (회의 60 대표 지시): 위=입력, 아래=도구+전송.
+            회의 2026-04-28: pb-3 제거 — page-level paddingBottom이 이미 BottomTabs 회피 처리하므로
+            wrapper의 추가 pb-3는 중복 여백이라 입력창과 BottomTabs 사이 gap을 키움. */}
+        <div className="px-4 pt-2">
           <div className="bg-white border border-gray-200 rounded-3xl px-4 pt-3 pb-2 shadow-sm focus-within:border-[#2D6A4F]/50 transition-colors">
             <textarea
               ref={inputRef}
