@@ -63,39 +63,44 @@ export const HomeWorkoutHub: React.FC<HomeWorkoutHubProps> = ({ busy, hasActiveP
   const [intensity, setIntensity] = useState<HomeWorkoutIntensity>("moderate");
 
   return (
-    <div className="h-full w-full bg-white overflow-y-auto relative">
-      <button
-        onClick={onBack}
-        disabled={busy}
-        className="absolute left-4 top-[max(2.5rem,env(safe-area-inset-top))] z-10 p-2 text-gray-500 active:text-[#1B4332] transition-colors disabled:opacity-40"
-        aria-label={t("homeWorkoutHub.back")}
+    <div className="h-full w-full bg-white flex flex-col">
+      {/* 회의 2026-04-28: 상단 CTA 111px — 뒤로가기 + 📋/👤만. 캡션·제목은 콘텐츠 상단으로 내림.
+          (러닝 프로그램과 동일 패턴 — 톤앤매너 통일) */}
+      <div
+        className="shrink-0 h-[111px] flex items-end justify-between px-2 pb-4 border-b border-gray-100 bg-white"
+        style={{ paddingTop: "max(2.5rem, env(safe-area-inset-top))" }}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-
-      {/* 우상단 [📋][👤] — 회의 2026-04-27 와이어프레임 */}
-      <div className="absolute right-4 top-[max(2.5rem,env(safe-area-inset-top))] z-10 flex gap-2">
         <button
-          onClick={onOpenMyPlans}
-          aria-label={t("root.myPlan.aria")}
-          className="relative w-10 h-10 rounded-full border border-gray-100 bg-white flex items-center justify-center active:scale-[0.94] transition-transform text-[#1B4332]"
+          onClick={onBack}
+          disabled={busy}
+          className="p-2 text-gray-500 active:text-[#1B4332] transition-colors disabled:opacity-40 shrink-0"
+          aria-label={t("homeWorkoutHub.back")}
         >
-          {ICON_MY_PLANS}
-          {hasActivePrograms && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#2D6A4F]" />}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
-        <button
-          onClick={onOpenProfile}
-          aria-label={t("root.profile.aria")}
-          className="w-10 h-10 rounded-full border border-gray-100 bg-white flex items-center justify-center text-[#1B4332] active:scale-[0.94] transition-transform"
-        >
-          {ICON_PROFILE}
-        </button>
+        <div className="shrink-0 flex items-center gap-1">
+          <button
+            onClick={onOpenMyPlans}
+            aria-label={t("root.myPlan.aria")}
+            className="relative p-2 text-[#1B4332] active:scale-[0.94] transition-transform"
+          >
+            {ICON_MY_PLANS}
+            {hasActivePrograms && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />}
+          </button>
+          <button
+            onClick={onOpenProfile}
+            aria-label={t("root.profile.aria")}
+            className="p-2 text-[#1B4332] active:scale-[0.94] transition-transform"
+          >
+            {ICON_PROFILE}
+          </button>
+        </div>
       </div>
 
-      <div className="px-6 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10 max-w-md mx-auto">
-        <div className="mb-6 mt-12 pl-2">
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-10 max-w-md mx-auto w-full">
+        <div className="mb-6">
           <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400">{t("homeWorkoutHub.caption")}</p>
           <h1 className="text-3xl font-black text-[#1B4332] mt-1">{t("homeWorkoutHub.title")}</h1>
         </div>

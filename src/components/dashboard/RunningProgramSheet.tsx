@@ -47,6 +47,8 @@ interface RunningProgramSheetProps {
   /** 회의 2026-04-27: 진행 중인 러닝 프로그램 — select 화면 상단에 "이어가기" 카드로 노출 */
   activePrograms?: Array<{ programId: string; programName: string; completed: number; total: number; nextSession: { id: string } | null }>;
   onResumeProgram?: (programId: string, nextSessionId: string) => void;
+  /** 회의 2026-04-28: fullscreen 헤더 우측 슬롯 — RunningHub의 [📋][👤] 아이콘을 헤더에 합쳐 정렬. */
+  headerRight?: React.ReactNode;
 }
 
 // 회의 2026-04-27: 추천 뱃지 정리 — 10k_sub_50 추천 제거, full_sub_3 "경험자" 태그 유지(별도 키로 표시).
@@ -65,7 +67,7 @@ const PROGRAM_META: Array<{
 
 export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
   open, variant = "sheet", onClose, onProgramCreated, isLoggedIn, isPremium, onRequestLogin, onRequestPaywall,
-  activePrograms, onResumeProgram,
+  activePrograms, onResumeProgram, headerRight,
 }) => {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>("select");
@@ -273,25 +275,33 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
     };
     const cur = stepHeader[step];
     return (
-      <div className="h-full w-full bg-white overflow-y-auto">
-        <div className="relative pt-[max(2.5rem,env(safe-area-inset-top))]">
+      <div className="h-full w-full bg-white flex flex-col">
+        {/* 회의 2026-04-28: 상단 CTA — h-[111px] 고정, 뒤로가기 + headerRight(📋/👤) 만 배치.
+            제목/캡션은 콘텐츠 영역 상단으로 내림 (아래 flex-1 div). */}
+        <div
+          className="shrink-0 h-[111px] flex items-end justify-between px-2 pb-4 border-b border-gray-100 bg-white"
+          style={{ paddingTop: "max(2.5rem, env(safe-area-inset-top))" }}
+        >
           <button
             onClick={handleStepBack}
             disabled={step === "loading"}
-            className="absolute left-4 top-[max(2.5rem,env(safe-area-inset-top))] p-2 text-gray-500 active:text-[#1B4332] transition-colors disabled:opacity-40"
+            className="p-2 text-gray-500 active:text-[#1B4332] transition-colors disabled:opacity-40 shrink-0"
             aria-label={t("runningHub.back")}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          {/* 회의 2026-04-27 (5차): 헤더와 본문 사이 충분한 separation (pb-6). */}
-          <div className="px-6 pt-20 pb-6">
+          {headerRight && (
+            <div className="shrink-0 flex items-center gap-1">{headerRight}</div>
+          )}
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 pt-6 pb-10">
+          {/* 회의 2026-04-28: 캡션 + 제목 — 헤더에서 내려와 콘텐츠 상단에 위치 (Step별 자동 갱신). */}
+          <div className="mb-6">
             <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400">{cur.caption}</p>
             <h1 className="text-3xl font-black text-[#1B4332] mt-1">{t(cur.titleKey)}</h1>
           </div>
-        </div>
-        <div className="px-6 pb-10">
           {step === "select" && (
             <StepSelect
               t={t}

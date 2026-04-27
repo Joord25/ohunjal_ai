@@ -48,26 +48,30 @@ export const RunningHub: React.FC<RunningHubProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  // 회의 2026-04-28: 우상단 [📋][👤]를 absolute에서 RunningProgramSheet 헤더 슬롯(headerRight)로 이동.
+  // 헤더 콘텐츠와 정렬 맞아 시각 정돈. 아이콘 보더/배경 제거하고 단순 아이콘 버튼으로 톤 정리.
+  const headerIcons = (
+    <>
+      <button
+        onClick={onOpenMyPlans}
+        aria-label={t("root.myPlan.aria")}
+        className="relative p-2 text-[#1B4332] active:scale-[0.94] transition-transform"
+      >
+        {ICON_MY_PLANS}
+        {hasActivePrograms && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />}
+      </button>
+      <button
+        onClick={onOpenProfile}
+        aria-label={t("root.profile.aria")}
+        className="p-2 text-[#1B4332] active:scale-[0.94] transition-transform"
+      >
+        {ICON_PROFILE}
+      </button>
+    </>
+  );
+
   return (
-    <div className="h-full w-full bg-white overflow-y-auto relative">
-      {/* 우상단 [📋][👤] 오버레이 — 회의 2026-04-27. 좌상단 ←는 RunningProgramSheet의 step-aware 버튼. */}
-      <div className="absolute right-4 top-[max(2.5rem,env(safe-area-inset-top))] z-10 flex gap-2">
-        <button
-          onClick={onOpenMyPlans}
-          aria-label={t("root.myPlan.aria")}
-          className="relative w-10 h-10 rounded-full border border-gray-100 bg-white flex items-center justify-center active:scale-[0.94] transition-transform text-[#1B4332]"
-        >
-          {ICON_MY_PLANS}
-          {hasActivePrograms && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#2D6A4F]" />}
-        </button>
-        <button
-          onClick={onOpenProfile}
-          aria-label={t("root.profile.aria")}
-          className="w-10 h-10 rounded-full border border-gray-100 bg-white flex items-center justify-center text-[#1B4332] active:scale-[0.94] transition-transform"
-        >
-          {ICON_PROFILE}
-        </button>
-      </div>
+    <div className="h-full w-full bg-white">
       <RunningProgramSheet
         open
         variant="fullscreen"
@@ -79,6 +83,7 @@ export const RunningHub: React.FC<RunningHubProps> = ({
         onRequestPaywall={onRequestPaywall}
         activePrograms={activeRunningPrograms}
         onResumeProgram={onResumeProgram}
+        headerRight={headerIcons}
       />
     </div>
   );
