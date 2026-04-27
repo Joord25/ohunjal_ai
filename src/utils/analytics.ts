@@ -53,7 +53,14 @@ type FunnelEvent =
   | "root_my_plans_click"
   | "root_profile_click"
   | "root_onboarding_trigger"
-  | "root_onboarding_complete";
+  | "root_onboarding_complete"
+  | "beginner_mode_modal_show"
+  | "beginner_mode_modal_yes"
+  | "beginner_mode_modal_no"
+  | "beginner_mode_overlay_show"
+  | "beginner_mode_overlay_cta"
+  | "beginner_mode_overlay_skip"
+  | "beginner_mode_toggle_change";
 
 export function trackEvent(event: FunnelEvent, params?: Record<string, string | number | boolean>) {
   try {
