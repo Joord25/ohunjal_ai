@@ -52,10 +52,10 @@
 | # | 결정 | 비고 |
 |---|---|---|
 | 1 | 모드 분기 키: `localStorage.ohunjal_beginner_mode` (`"1" \| "0"`) | Firestore 백업은 Phase 2 |
-| 2 | 옵트인 진입: **온보딩 7스텝 끝난 직후 1회 모달** | "처음 헬스장 가시나요?" 2버튼 (네/아니요). 카드 클릭 진입 흐름 보호 (`pendingRootTarget` 그대로) |
+| 2 | 옵트인 진입: **master_plan_preview "운동 시작" 버튼 클릭 직후 1회 모달** (대표 결정 2026-04-28) | "처음 헬스장 가시나요?" 2버튼 (네/아니요). 모달 닫히면 즉시 workout_session 진입 |
 | 3 | 프로필 탭 토글: MyProfileTab 신규 섹션 "초보자 모드" — UnitToggle 패턴 재사용 | 즉시 ON/OFF |
 | 4 | BeginnerGuideOverlay 컴포넌트: `phase: "warmup_intro" \| "main_equipment"` enum 2개 | Phase 2에서 enum 확장 |
-| 5 | EquipmentFinderCard: 벤치프레스 1장만 (`/public/equipment/bench-press.png`) | 사진 미준비 시 placeholder + "사진 준비 중" 캡션 |
+| 5 | EquipmentFinderCard: 벤치프레스 1장만 (`/public/machine/bench-press.png` — 대표 큐레이션 완료 2026-04-28) | 추가 운동은 Phase 2에서 |
 | 6 | 폼 cue 5줄: SEED-001 박힌 ACSM/NSCA 인용본 그대로 | i18n ko/en 동시 |
 | 7 | 휴식 시간: 컴파운드 90-120초 / fail 시 150-180초 | FitScreen `restTimer` 계산 로직 분기 (`isBeginner && exercise.equipment === "barbell"`) |
 | 8 | 카피 룰 강제: "통증/부상" 부정 단어 X. "헤매지 않게/깔끔하게/정확하게" 긍정만 | `feedback_native_copy_frame` + SEED-001 룰 |
@@ -66,7 +66,7 @@
 
 ## 2. 와이어프레임
 
-### 2.1 옵트인 모달 (온보딩 done 직후)
+### 2.1 옵트인 모달 (master_plan_preview "운동 시작" 직후, 1회만)
 
 ```
 ┌──────────────────────────┐
@@ -84,10 +84,10 @@
 └──────────────────────────┘
 ```
 
-- 진입: `localStorage.ohunjal_onboarding_done === "1"` set 직후 + `localStorage.ohunjal_beginner_mode === undefined`
-- "네" → `localStorage.ohunjal_beginner_mode = "1"` → `pendingRootTarget` 진행
-- "아니요" → `localStorage.ohunjal_beginner_mode = "0"` → `pendingRootTarget` 진행
-- 1회만 노출. 이후 변경은 프로필 탭 토글
+- 진입: master_plan_preview "운동 시작" 클릭 시 `localStorage.ohunjal_beginner_mode === undefined`
+- "네" → `localStorage.ohunjal_beginner_mode = "1"` → workout_session 진입
+- "아니요" → `localStorage.ohunjal_beginner_mode = "0"` → workout_session 진입
+- 1회만 노출 (`localStorage` 값 set 후 재노출 X). 이후 변경은 프로필 탭 토글
 
 ### 2.2 BeginnerGuideOverlay — phase: "warmup_intro" (Warmup 진입)
 
@@ -121,8 +121,8 @@
 │                          │
 │  ┌────────────────────┐  │
 │  │                    │  │
-│  │  [벤치 사진]        │  │  ← /public/equipment/bench-press.png
-│  │                    │  │     (없으면 placeholder + "사진 준비 중")
+│  │  [벤치 사진]        │  │  ← /public/machine/bench-press.png
+│  │                    │  │     (대표 큐레이션 완료)
 │  └────────────────────┘  │
 │                          │
 │  찾는 법:                │
@@ -175,7 +175,7 @@ MyProfileTab 신규 섹션 (기존 UnitToggle 섹션 아래):
 | `src/constants/exerciseEquipment.ts` | 운동 → 기구 메타데이터 (Phase 1: 벤치 1종) | ~30 |
 | `src/constants/formCues.ts` | 운동 → 폼 cue 5줄 (Phase 1: 벤치 1종) | ~40 |
 | `src/utils/beginnerMode.ts` | localStorage helper (`getBeginnerMode` / `setBeginnerMode`) | ~30 |
-| `public/equipment/bench-press.png` | 벤치 사진 (대표 큐레이션 대기) | — |
+| `public/machine/bench-press.png` | 벤치 사진 (대표 큐레이션 완료 2026-04-28, 277KB) | — |
 
 ## 4. 수정 파일
 
@@ -183,8 +183,8 @@ MyProfileTab 신규 섹션 (기존 UnitToggle 섹션 아래):
 |---|---|
 | `src/components/workout/FitScreen.tsx` | (a) BeginnerGuideOverlay 마운트 (warmup/벤치 분기) (b) `restTimer` 계산 분기 (벤치 + isBeginner → 90-120초) |
 | `src/components/workout/WorkoutSession.tsx` | overlayDismissed state (per-exercise) + currentExercise 변경 시 reset |
-| `src/components/layout/Onboarding.tsx` | onComplete 직후 BeginnerModeOptInModal 트리거 (콜백 추가) |
-| `src/app/app/page.tsx` | Onboarding onComplete 콜백에 모달 표시 로직 추가 + BeginnerModeOptInModal 렌더 |
+| `src/components/plan/MasterPlanPreview.tsx` | "운동 시작" 버튼 핸들러 — `localStorage.ohunjal_beginner_mode === undefined` 일 때 모달 트리거 후 워크아웃 진입 |
+| `src/app/app/page.tsx` | BeginnerModeOptInModal 렌더 + 모달 dismiss 콜백 → workout_session 진입 |
 | `src/components/profile/MyProfileTab.tsx` | "초보자 모드" 섹션 추가 (UnitToggle 패턴) |
 | `src/locales/ko.json` + `src/locales/en.json` | 신규 키 ~12개 (모달 / overlay / 폼 cue / 토글 라벨) |
 
@@ -196,7 +196,7 @@ MyProfileTab 신규 섹션 (기존 UnitToggle 섹션 아래):
 |---|---|---|---|
 | 1 | 데이터 계층: `beginnerMode.ts` + `exerciseEquipment.ts` + `formCues.ts` (벤치 1종) + i18n 키 추가 | 신규 3 + locales 2 | unit test (vitest) `beginnerMode.test.ts` |
 | 2 | UI 컴포넌트: BeginnerGuideOverlay + EquipmentFinderCard + BeginnerModeOptInModal | 신규 3 | Storybook 없음 → /app 내 토글 ON 후 수동 진입 |
-| 3 | 통합 1: Onboarding onComplete → 모달 트리거 + page.tsx 렌더 + MyProfileTab 토글 | 수정 3 | E2E: 신규 유저 → 온보딩 완주 → 모달 노출 / 토글 ON↔OFF 반영 |
+| 3 | 통합 1: MasterPlanPreview "운동 시작" 핸들러 → 모달 트리거 + page.tsx 렌더 + MyProfileTab 토글 | 수정 3 | E2E: 플랜 생성 → 운동 시작 클릭 → 모달 노출 (1회만) / 토글 ON↔OFF 반영 |
 | 4 | 통합 2: FitScreen overlay 마운트 (warmup + 벤치 분기) + WorkoutSession overlayDismissed state | 수정 2 | E2E: 벤치 포함 운동 생성 → warmup 카드 → main 카드 → 일반 흐름 |
 | 5 | 휴식 시간 분기: FitScreen `restTimer` 90-120초 (벤치 + isBeginner) + 카피 정합성 점검 + i18n 동시 검증 | 수정 1 | 벤치 세트 완료 → 90-120 카운트다운 / fail → 150-180 |
 | 6 (예비) | 평가자 grep 검증 + 빌드 + lint + 회귀 테스트 + 분리 커밋 정리 | — | `npm run build` + `npm run lint` + `npm run test` 전부 통과 |
@@ -215,8 +215,8 @@ MyProfileTab 신규 섹션 (기존 UnitToggle 섹션 아래):
 
 **Must pass (Phase 1 출시 게이트):**
 
-1. ✅ 신규 유저 온보딩 완주 → BeginnerModeOptInModal 1회 노출 → "네" 선택 시 `localStorage.ohunjal_beginner_mode === "1"`
-2. ✅ "아니요" 또는 모달 dismiss 시 `"0"` 저장. 재방문 시 모달 미노출
+1. ✅ 운동 플랜 생성 → master_plan_preview "운동 시작" 클릭 → BeginnerModeOptInModal 1회 노출 → "네" 선택 시 `localStorage.ohunjal_beginner_mode === "1"` → 모달 dismiss 후 즉시 workout_session 진입
+2. ✅ "아니요" 또는 모달 dismiss 시 `"0"` 저장. 재방문(다음 운동 시작) 시 모달 미노출
 3. ✅ 프로필 탭 → 초보자 모드 토글 ON ↔ OFF 즉시 반영. 새로고침 후 유지
 4. ✅ isBeginner=ON + 벤치 포함 운동 → warmup 운동 진입 시 BeginnerGuideOverlay (warmup_intro) 노출
 5. ✅ isBeginner=ON + 벤치 차례 진입 → EquipmentFinderCard (벤치 사진 + 5줄 안내 + 폼 cue 5줄) 노출
@@ -240,12 +240,12 @@ MyProfileTab 신규 섹션 (기존 UnitToggle 섹션 아래):
 
 | 리스크 | 완화 |
 |---|---|
-| **벤치 사진 부재** | placeholder + "사진 준비 중" 캡션. 사진 추가는 별도 커밋. UI 흐름은 사진 없이도 동작 |
+| **벤치 사진 화질/사이즈** | 277KB PNG (Next.js Image 컴포넌트로 최적화 필요). 1024×1024 권장 가이드와 실측 비교 필요 |
 | **FitScreen 2283라인 추가 분기로 더 비대** | overlay 진입 로직만 추가 (10-20라인). mega-component 분해는 후행 (SEED-001 Notes 참조) |
 | **운동 흐름 보호 깨짐** | overlay는 modal 패턴 (z-index 높지만 view state 변경 X). workout_session view 그대로 유지 |
 | **i18n 누락 (자주 발생)** | Day 1에 키만 먼저 추가하고 Day 2 컴포넌트 작성 시 참조. `feedback_i18n_always` 강제 |
 | **카피 부정 단어 (자주 발생)** | "통증/부상/위험" 검색 grep 으로 PR 전 점검. SEED-001 카피 룰 박힘 |
-| **온보딩 완주 흐름 회귀** | Onboarding.tsx 수정은 onComplete 콜백 한 줄만. STEP_ORDER 변경 X |
+| **운동 시작 흐름 회귀** | MasterPlanPreview "운동 시작" 핸들러에 모달 분기 한 줄만. 기존 workout_session 진입 로직 보존 |
 | **자동 모드 전환 페르소나 시스템 충돌** | Phase 1은 자동 전환 X. personaSystem.ts 건드리지 않음 |
 
 ---
@@ -268,14 +268,12 @@ MyProfileTab 신규 섹션 (기존 UnitToggle 섹션 아래):
 
 ---
 
-## 9. Open Questions (Day 1 진입 전 컨펌)
+## 9. Open Questions (대표 답변 2026-04-28)
 
-1. **벤치 사진** — 대표가 직접 헬스장 가서 1-2장 촬영? 아니면 placeholder로 진행 후 사진 합류?
-2. **옵트인 모달 시점** — 온보딩 done 직후 즉시 (현 plan) vs 첫 카드 클릭 후 ROOT 진입 시점?
-3. **자동 모드 전환** — Phase 1에 단순 버전 (3회 완주 + "쉬움" 50% → 토스트 "일반 모드 어때요?") 포함 vs Phase 3 이월 (현 plan)?
-4. **EquipmentFinderCard 폼 cue 인-운동 toggle** — Phase 1 포함 vs Phase 2 이월 (현 plan)?
-
-> 컨펌 후 Day 1 진입. 미컨펌 시 현 plan 기본값 진행.
+1. ✅ **벤치 사진** — 대표 큐레이션 완료 (`public/machine/bench-press.png`)
+2. ✅ **옵트인 모달 시점** — master_plan_preview "운동 시작" 버튼 직후 (온보딩 직후 X)
+3. ✅ **자동 모드 전환** — Phase 3 이월 (Phase 1 미포함)
+4. ✅ **EquipmentFinderCard 인-운동 폼 cue toggle** — Phase 2 이월 (Phase 1 미포함)
 
 ---
 
