@@ -71,17 +71,7 @@ export const RootHomeCards: React.FC<RootHomeCardsProps> = ({ userName, isLogged
 
   const displayName = userName || t("home.defaultName");
 
-  // 시간대별 인사말 — ChatHome과 동일 (회의 2026-04-27: ROOT 화면 헤더 통일)
-  const greetingMsg = (() => {
-    const hour = new Date().getHours();
-    if (hour < 6) return t("home.greeting.dawn");
-    if (hour < 10) return t("home.greeting.morning");
-    if (hour < 12) return t("home.greeting.preLunch");
-    if (hour < 15) return t("home.greeting.lunch");
-    if (hour < 18) return t("home.greeting.afternoon");
-    if (hour < 21) return t("home.greeting.evening");
-    return t("home.greeting.night");
-  })();
+  // 회의 2026-04-28-γ Phase E QA: 시간대별 인사말이 두 줄로 짤려 시각 부담 → 짧은 고정 인사말로 단순화
 
   const dateStr = (() => {
     const now = new Date();
@@ -130,9 +120,19 @@ export const RootHomeCards: React.FC<RootHomeCardsProps> = ({ userName, isLogged
             </svg>
           </button>
         </div>
-        <h1 className="font-black leading-snug pr-24">
-          <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
-          <span className={`text-[#1B4332] ${greetingMsg.length > 14 ? "text-base" : "text-xl"}`}> {locale === "en" ? "" : "님, "}{greetingMsg}</span>
+        <h1 className="font-black leading-snug pr-24 truncate">
+          {locale === "en" ? (
+            <>
+              <span className="text-[#1B4332] text-xl">Hi, </span>
+              <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
+              <span className="text-[#1B4332] text-xl">!</span>
+            </>
+          ) : (
+            <>
+              <span className={`text-[#2D6A4F] ${displayName.length > 6 ? "text-2xl" : "text-3xl"}`}>{displayName}</span>
+              <span className="text-[#1B4332] text-xl">님, 안녕하세요!</span>
+            </>
+          )}
         </h1>
         <div className="flex items-center justify-between mt-1">
           <p className="text-[12px] font-medium text-gray-400">{dateStr}</p>
