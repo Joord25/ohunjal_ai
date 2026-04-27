@@ -23,7 +23,7 @@ import { MyPlansScreen } from "@/components/dashboard/MyPlansScreen";
 import { RootHomeCards, type RootCardTarget } from "@/components/dashboard/RootHomeCards";
 import { RunningHub } from "@/components/dashboard/RunningHub";
 import { HomeWorkoutHub } from "@/components/dashboard/HomeWorkoutHub";
-import { getActivePrograms, getNextProgramSession, getSavedPlans, type SavedPlan } from "@/utils/savedPlans";
+import { getActivePrograms, getSavedPlans, type SavedPlan } from "@/utils/savedPlans";
 import { markPlanUsed, markSessionCompleted, remoteMarkPlanUsed } from "@/utils/savedPlans";
 import { applyProgramSessionLabel } from "@/utils/programSessionLabels";
 import { Onboarding } from "@/components/layout/Onboarding";
@@ -1074,24 +1074,6 @@ export default function Home() {
             onBack={() => setView("root_home")}
             onOpenMyPlans={() => { setMyPlansReturnTo("running_hub"); setView("my_plans"); }}
             onOpenProfile={() => { setActiveTab("my"); setView("home"); }}
-            onStartFirstSession={(programId) => {
-              // 생성된 프로그램의 다음 세션(첫 세션)을 master_plan_preview로 진입
-              try {
-                const next = getNextProgramSession(programId);
-                if (next) {
-                  setActiveSavedPlanId(next.id);
-                  setCurrentWorkoutSession(next.sessionData);
-                  setCurrentPlanSource("program");
-                  // 회의 2026-04-27 (5차): master_plan_preview 뒤로가기 시 RunningHub로 복귀
-                  setWorkoutReturnTo("running_hub");
-                  setView("master_plan_preview");
-                  return;
-                }
-              } catch (e) {
-                console.error("getNextProgramSession failed", e);
-              }
-              setView("my_plans");
-            }}
             onRequestLogin={() => {
               setLoginModalReason("generic");
               setShowLoginModal(true);

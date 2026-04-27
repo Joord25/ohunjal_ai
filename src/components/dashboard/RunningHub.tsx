@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { RunningProgramSheet } from "./RunningProgramSheet";
 
@@ -13,7 +13,6 @@ interface RunningHubProps {
   onBack: () => void;
   onOpenMyPlans: () => void;
   onOpenProfile: () => void;
-  onStartFirstSession: (programId: string) => void;
   onResumeProgram: (programId: string, nextSessionId: string) => void;
   onRequestLogin: () => void;
   onRequestPaywall: () => void;
@@ -31,15 +30,9 @@ const ICON_PROFILE = (
   </svg>
 );
 
-interface CompletionInfo {
-  programId: string;
-  programName: string;
-  firstSessionTitle: string;
-}
-
 /**
  * 회의 2026-04-27: ROOT 카드 → 러닝 진입판 풀스크린 화면.
- * RunningProgramSheet variant="fullscreen" 호출 + 생성 완료 시 자체 완료 화면 표시.
+ * 회의 2026-04-28: 프로그램 생성 완료 시 자체 완료 화면 폐기 → 곧바로 onOpenMyPlans 호출하여 내플랜으로 직행.
  */
 export const RunningHub: React.FC<RunningHubProps> = ({
   isLoggedIn,
@@ -49,56 +42,11 @@ export const RunningHub: React.FC<RunningHubProps> = ({
   onBack,
   onOpenMyPlans,
   onOpenProfile,
-  onStartFirstSession,
   onResumeProgram,
   onRequestLogin,
   onRequestPaywall,
 }) => {
   const { t } = useTranslation();
-  const [completion, setCompletion] = useState<CompletionInfo | null>(null);
-
-  if (completion) {
-    // Kenko 완료 화면 — 회색 체크 + 프로그램명 + 코치 3줄 + 2버튼
-    const coachLines = [
-      t("running_program.coach.intro_line1").replace("{programName}", completion.programName),
-      t("running_program.coach.intro_line2").replace("{sessionTitle}", completion.firstSessionTitle),
-      t("running_program.coach.intro_line3"),
-    ];
-    return (
-      <div className="h-full w-full bg-white overflow-y-auto">
-        <div className="px-6 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10 max-w-md mx-auto flex flex-col h-full">
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-6">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-[#2D6A4F]">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400 mb-2">{t("runningHub.completion.label")}</p>
-            <p className="text-2xl font-black text-[#1B4332] mb-6">{completion.programName}</p>
-            <div className="flex flex-col gap-3 px-2 max-w-sm">
-              {coachLines.map((line, i) => (
-                <p key={i} className="text-[13px] text-gray-600 leading-relaxed">{line}</p>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3 mt-8">
-            <button
-              onClick={onOpenMyPlans}
-              className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-[#1B4332] text-[13px] font-black active:scale-[0.98] transition-transform"
-            >
-              {t("runningHub.completion.viewPlans")}
-            </button>
-            <button
-              onClick={() => onStartFirstSession(completion.programId)}
-              className="flex-1 py-3 rounded-2xl bg-[#1B4332] text-white text-[13px] font-black active:scale-[0.98] transition-transform"
-            >
-              {t("runningHub.completion.startToday")}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full w-full bg-white overflow-y-auto relative">
@@ -124,7 +72,7 @@ export const RunningHub: React.FC<RunningHubProps> = ({
         open
         variant="fullscreen"
         onClose={onBack}
-        onProgramCreated={(info) => setCompletion(info)}
+        onProgramCreated={() => onOpenMyPlans()}
         isLoggedIn={isLoggedIn}
         isPremium={isPremium}
         onRequestLogin={onRequestLogin}

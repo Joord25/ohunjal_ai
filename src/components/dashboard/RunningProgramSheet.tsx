@@ -231,12 +231,14 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
         total_sessions: sessions.length,
       });
 
+      // 회의 2026-04-28: onClose() 호출 제거. 부모(RunningHub)가 onProgramCreated 정보로
+      // 완료 화면을 띄우는데, 직후 onClose가 부모를 unmount → root_home으로 빠지는 버그.
+      // 닫기/이동 책임은 부모(완료 화면 버튼)에게 위임.
       onProgramCreated({
         programId: localProgramId,
         programName: sessions[0]?.programName ?? "Running Program",
         firstSessionTitle: sessions[0]?.sessionData.title ?? "첫 세션",
       });
-      onClose();
     } catch (err) {
       trackEvent("running_program_create_failed", {
         program: selectedProgram ?? "unknown",
