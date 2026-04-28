@@ -80,7 +80,10 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   }, []);
   const [showAddExercise, setShowAddExercise] = useState(restoredProgress?.showAddExercise ?? false);
   const [beginnerEnabled, setBeginnerEnabled] = useState(() => getBeginnerMode() === true);
-  const [dismissedOverlays, setDismissedOverlays] = useState<Set<string>>(() => new Set());
+  // 회의 ζ Q4: dismissedOverlays state 제거 (매번 노출 — "도움 필요 선택자에게 친절").
+  // 대신 currentSequenceStep 으로 한 운동 안에서 phase 시퀀스 진행 (warmup_intro → tutorial_video_warmup 등).
+  // currentExerciseIndex 변경 시 reset → 다음 운동에서 새 sequence 시작.
+  const [overlaySequenceStep, setOverlaySequenceStep] = useState(0);
   useEffect(() => {
     const handler = (e: Event) => {
       setBeginnerEnabled((e as CustomEvent<{ enabled: boolean }>).detail.enabled);
@@ -110,23 +113,26 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   const currentExercise = exercises[currentExerciseIndex];
   const totalExercises = exercises.length;
 
-  // 초보자 모드 overlay — currentExercise 기반 phase 결정 (한 세션당 phase별 1회 노출).
-  // Phase 1: 벤치 프레스 변형 7종 매칭 (isBeginnerSupportedExercise — 실제 운동 풀 이름이 "바벨 벤치 프레스 (Barbell Bench Press)" 같은 형식이라 부분 매칭)
-  const beginnerOverlayPhase: BeginnerOverlayPhase | null = !beginnerEnabled
-    ? null
+  // 회의 ζ Phase 1.5: overlay phase sequence — 운동 진입 시 순차 노출.
+  // - warmup 운동: warmup_intro → tutorial_video_warmup → 일반 FitScreen
+  // - 바벨 벤치 프레스 (Barbell Bench Press) 정확 매칭: main_equipment → tutorial_video_main → 일반 FitScreen
+  // - 기타 운동: overlay 0 (일반 흐름)
+  const beginnerOverlaySequence: BeginnerOverlayPhase[] = !beginnerEnabled
+    ? []
     : currentExercise.type === "warmup"
-      ? "warmup_intro"
+      ? ["warmup_intro", "tutorial_video_warmup"]
       : isBeginnerSupportedExercise(currentExercise.name)
-        ? "main_equipment"
-        : null;
-  const showBeginnerOverlay =
-    beginnerOverlayPhase !== null && !dismissedOverlays.has(beginnerOverlayPhase);
-  const dismissBeginnerOverlay = (phase: BeginnerOverlayPhase) => {
-    setDismissedOverlays((prev) => {
-      const next = new Set(prev);
-      next.add(phase);
-      return next;
-    });
+        ? ["main_equipment", "tutorial_video_main"]
+        : [];
+  const beginnerOverlayPhase: BeginnerOverlayPhase | null =
+    beginnerOverlaySequence[overlaySequenceStep] ?? null;
+  const showBeginnerOverlay = beginnerOverlayPhase !== null;
+  // 운동 변경 시 sequence reset (Q4: 매번 노출). currentExerciseIndex 의존
+  useEffect(() => {
+    setOverlaySequenceStep(0);
+  }, [currentExerciseIndex]);
+  const advanceBeginnerOverlay = () => {
+    setOverlaySequenceStep((prev) => prev + 1);
   };
 
   // 지난 세션에서 같은 운동의 기록 조회 (회의 52: 유틸 경유)
@@ -643,13 +649,14 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       />
       {/* 회의 2026-04-27: WorkoutMusicPlayer 제거 — 외부 YouTube Music 등으로 대체 */}
 
-      {/* 초보자 모드 overlay — warmup 진입 / 벤치프레스 진입 시 1회 노출 (z-[70], abandon modal z-[110]보다 아래) */}
+      {/* 초보자 모드 overlay sequence — 운동 진입 시 순차 노출 (warmup_intro → tutorial_video_warmup / main_equipment → tutorial_video_main).
+          Q4: 매번 노출 (dismissedOverlays 제거). 한 phase만 dismiss → 다음 phase 자동 진행. 마지막 phase 끝나면 일반 FitScreen */}
       {showBeginnerOverlay && beginnerOverlayPhase && (
         <BeginnerGuideOverlay
           phase={beginnerOverlayPhase}
           exerciseName={currentExercise.name}
-          onContinue={() => dismissBeginnerOverlay(beginnerOverlayPhase)}
-          onSkip={() => dismissBeginnerOverlay(beginnerOverlayPhase)}
+          onContinue={advanceBeginnerOverlay}
+          onSkip={advanceBeginnerOverlay}
         />
       )}
 
