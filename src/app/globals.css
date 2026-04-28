@@ -23,6 +23,11 @@
 :root {
   --background: #FAFBF9;
   --foreground: #1B4332;
+  /* 회의 ζ-3 (2026-04-28): --safe-area-bottom 의 CSS 기본값 = env() 직접 사용.
+     useSafeArea 훅이 mount 시점에 setProperty 로 override 가능 (iOS PWA 12px 등).
+     이 기본값이 있어 viewport dynamic 변동 시 (Android Chrome edge-to-edge 모드 등)
+     CSS 차원에서 자동 추적 — 이전엔 변수 정의 X 라 0px fallback 만 적용돼 시스템 nav 영역 침범 발생 */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 body {
