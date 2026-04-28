@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getEquipmentInfo, getEquipmentFindGuide, getEquipmentUseGuide } from "@/constants/exerciseEquipment";
 import { getFormCues, getFormCueSource } from "@/constants/formCues";
@@ -14,6 +14,60 @@ interface EquipmentFinderCardProps {
   exerciseName: string;
   mode: EquipmentCardMode;
 }
+
+/** 회의 2026-04-28: 기구 사진 캐러셀 — 단일 이미지면 그대로, 여러 장이면 슬라이드(점 indicator + 좌우 버튼). */
+const EquipmentImageCarousel: React.FC<{ imagePath: string | string[]; alt: string }> = ({ imagePath, alt }) => {
+  const images = Array.isArray(imagePath) ? imagePath : [imagePath];
+  const [idx, setIdx] = useState(0);
+  const isMulti = images.length > 1;
+
+  return (
+    <div className="relative">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={images[idx]}
+        alt={alt}
+        loading="eager"
+        className="w-full aspect-square object-contain rounded-2xl bg-gray-50 border border-gray-100"
+      />
+      {isMulti && (
+        <>
+          <button
+            type="button"
+            onClick={() => setIdx((i) => (i - 1 + images.length) % images.length)}
+            aria-label="prev image"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIdx((i) => (i + 1) % images.length)}
+            aria-label="next image"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setIdx(i)}
+                aria-label={`image ${i + 1}`}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${i === idx ? "bg-white w-4" : "bg-white/60"}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export const EquipmentFinderCard: React.FC<EquipmentFinderCardProps> = ({ exerciseName, mode }) => {
   const { t, locale } = useTranslation();
@@ -32,13 +86,7 @@ export const EquipmentFinderCard: React.FC<EquipmentFinderCardProps> = ({ exerci
         </div>
 
         {equipment && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={equipment.imagePath}
-            alt={displayName}
-            loading="eager"
-            className="w-full aspect-square object-contain rounded-2xl bg-gray-50 border border-gray-100"
-          />
+          <EquipmentImageCarousel imagePath={equipment.imagePath} alt={displayName} />
         )}
 
         {findGuide.length > 0 && (

@@ -1,7 +1,8 @@
 import type { Locale } from "@/hooks/useTranslation";
 
 export interface EquipmentInfo {
-  imagePath: string;
+  /** 단일 이미지 또는 다수 이미지(슬라이드 / 변형 보여주기 — 예: 스쿼트 랙 종류 3종). */
+  imagePath: string | string[];
   /** Phase 1.5: find = 위치/외형 식별 (헬스장 안에서 "어디 있고 어떻게 생겼는지"). 안전 셋업 정보 포함 X */
   findGuide: { ko: string[]; en: string[] };
   /** Phase 1.5: use = 안전 셋업 (안전바·핀·플레이트·콜라). 폼 cue 와 별개 — cue 는 formCues.ts */
@@ -138,7 +139,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   // ── 다리 (LEGS - Main Compound) ──
   // ══════════════════════════════════
   "바벨 백 스쿼트 (Barbell Back Squat)": {
-    imagePath: "/machine/squat-rack.png",
+    imagePath: ["/machine/squat-rack1.png", "/machine/squat-rack2.png", "/machine/squat-rack3.png"],
     findGuide: {
       ko: [
         "양옆에 기둥이 솟아있고 바벨이 위에 가로로 걸쳐진 큰 프레임이에요",
@@ -174,7 +175,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "컨벤셔널 데드리프트 (Conventional Deadlift)": {
-    imagePath: "/machine/deadlift-platform.png",
+    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
     findGuide: {
       ko: [
         "보통 데드리프트 전용 플랫폼이나 자유 웨이트존 바닥에서 진행해요",
@@ -249,7 +250,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   // ── 어깨 (PUSH - Overhead) ──
   // ══════════════════════════════════
   "오버헤드 프레스 (Overhead Press)": {
-    imagePath: "/machine/squat-rack.png",
+    imagePath: ["/machine/squat-rack1.png", "/machine/squat-rack2.png", "/machine/squat-rack3.png"],
     findGuide: {
       ko: [
         "스쿼트 랙(파워 랙)을 그대로 사용해요 — 별도 기구 아님",
@@ -360,7 +361,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "바벨 로우 (Barbell Row)": {
-    imagePath: "/machine/deadlift-platform.png",
+    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
     findGuide: {
       ko: [
         "데드리프트와 같은 자유 웨이트존이나 플랫폼에서 진행해요",
@@ -435,7 +436,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   // ── 팔 (CABLE - Accessory) ──
   // ══════════════════════════════════
   "케이블 오버헤드 트라이셉 익스텐션 (Cable Overhead Tricep Extension)": {
-    imagePath: "/machine/cable-tricep.png",
+    imagePath: "/machine/cable-machine.png",
     findGuide: {
       ko: [
         "기둥 양쪽에 케이블이 달린 큰 머신이에요 (케이블 크로스오버라고도 불러요)",
