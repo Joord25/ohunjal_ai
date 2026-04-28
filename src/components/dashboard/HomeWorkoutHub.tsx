@@ -64,11 +64,11 @@ export const HomeWorkoutHub: React.FC<HomeWorkoutHubProps> = ({ busy, hasActiveP
 
   return (
     <div className="h-full w-full bg-white flex flex-col">
-      {/* 회의 2026-04-28: 상단 CTA h-[91px] — 뒤로가기 + 📋/👤. 캡션·제목은 콘텐츠 상단.
+      {/* 회의 2026-04-28: 상단 CTA h-[70px] (111→91→70 단계적 축소). 뒤로가기 + 📋/👤만.
           (러닝 프로그램과 동일 패턴 — 톤앤매너 통일) */}
       <div
-        className="shrink-0 h-[91px] flex items-end justify-between px-2 pb-4 border-b border-gray-100 bg-white"
-        style={{ paddingTop: "max(2.5rem, env(safe-area-inset-top))" }}
+        className="shrink-0 h-[70px] flex items-end justify-between px-2 pb-[15px] border-b border-gray-100 bg-white"
+        style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
         <button
           onClick={onBack}
