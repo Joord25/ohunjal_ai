@@ -16,6 +16,9 @@ export interface EquipmentInfo {
  * 같은 카테고리 코멘트 아래에 entry 추가. 비슷한 운동(예: 덤벨 벤치/덤벨 플라이)은
  * 같은 평벤치를 쓰니 imagePath 공유 가능.
  *
+ * 회의 2026-04-29: 케이블 운동 11종 batch 추가. 케이블 머신은 한 머신으로 다양한 운동 가능 →
+ * imagePath 는 모두 cable-machine.png 공유, useGuide·formCues 만 운동별 차이.
+ *
  * 신규 entry 추가 시:
  *  1) workout.ts 에 정확 일치하는 운동명 키
  *  2) imagePath 는 /public/machine/<slug>.png (없으면 새로 추가)
@@ -23,6 +26,25 @@ export interface EquipmentInfo {
  *  4) use = 5 bullets (안전 셋업, 폼 cue 와 분리)
  *  5) 한/영 동시 작성
  */
+
+// 케이블 머신 운동 공통 findGuide — 한 머신으로 다양한 운동 (트라이셉/이두/플라이/로우 등)
+const CABLE_MACHINE_FIND = {
+  ko: [
+    "기둥 양쪽에 케이블이 달린 큰 머신이에요 (케이블 크로스오버라고도 불러요)",
+    "케이블 끝 도르래(풀리)를 위/아래로 위치 변경 가능",
+    "다양한 손잡이(로프, 가로바, V바 등)를 케이블에 끼워서 사용",
+    "옆에 핸들들이 정리된 거치대가 있어요",
+    "단일 머신과 다르게 — 한 머신에서 다양한 운동 가능 (트라이셉/이두/플라이/풀오버)",
+  ],
+  en: [
+    "A large machine with cables on both sides of vertical posts (also called Cable Crossover)",
+    "Pulley position can be moved up or down",
+    "Various handles (rope, straight bar, V-bar, etc.) attach to the cable",
+    "A handle storage rack nearby",
+    "Unlike single-purpose machines — one machine for many exercises (triceps, biceps, fly, pullover)",
+  ],
+};
+
 export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   // ══════════════════════════════════
   // ── 가슴 (PUSH - Main Compound) ──
@@ -131,6 +153,49 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
         "Press your back fully against the backrest (neck and shoulders stable)",
         "Plant feet firmly — foot position matters more on incline",
         "Bringing dumbbells to upper-chest is tricky on first lay-down — start lighter",
+      ],
+    },
+  },
+
+  // ── 가슴 (PUSH - Cable Accessory) ──
+  "케이블 체스트 프레스 (Cable Chest Press)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "양쪽 풀리 위치 — 가슴 높이(중간)로 맞추기",
+        "손잡이 — D핸들(한 손씩) 양손에 걸어요",
+        "케이블 사이 가운데에 한 발 앞으로 나와 서기",
+        "가슴 옆에서 양손을 앞으로 모으듯 밀기",
+        "처음이면 가벼운 무게부터 — 자유 동작이라 흔들림 익숙해져야 안전",
+      ],
+      en: [
+        "Set both pulleys at chest level (mid-height)",
+        "Handles — one D-handle in each hand",
+        "Stand between cables with one foot forward",
+        "Press the handles forward and inward together (bringing hands together)",
+        "Start light — free motion takes practice for stability",
+      ],
+    },
+  },
+
+  "케이블 크로스오버 (Cable Crossover)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "양쪽 풀리 위치 — 가장 높은 위치(머리 위)로 맞추기",
+        "손잡이 — 양쪽 D핸들",
+        "케이블 사이에 서서 한 발 앞으로 — 약간 앞으로 기울기",
+        "팔꿈치 살짝 굽힌 상태에서 양손을 가슴 앞으로 모으기 (X자 동작 가능)",
+        "처음이면 가벼운 무게로 — 마지막에 가슴 가운데 짜는 느낌이 핵심",
+      ],
+      en: [
+        "Set both pulleys at the highest position (above head)",
+        "Handles — D-handle on each side",
+        "Stand between cables with one foot forward, slightly leaning forward",
+        "With elbows softly bent, bring hands together in front of the chest (can cross at the bottom)",
+        "Start light — the squeeze in the chest center at the end is the key feel",
       ],
     },
   },
@@ -246,6 +311,28 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
     },
   },
 
+  // ── 다리 (LEGS - Cable Accessory) ──
+  "케이블 풀 스루 (Cable Pull-Through)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 낮은 위치(발목 높이)로 맞추기",
+        "손잡이 — 로프(이중 끈) — 양손으로 잡고 다리 사이로 통과",
+        "케이블 등지고 서서 — 다리 사이로 손잡이를 잡고 두 발자국 앞으로",
+        "발 — 어깨너비 살짝 넓게, 발끝 약간 바깥",
+        "엉덩이 뒤로 빼는 \"힙 힌지\" 동작 — 무릎은 살짝만 굽혀요",
+      ],
+      en: [
+        "Pulley — set at the lowest position (ankle height)",
+        "Handle — rope (double strap), held with both hands passing between the legs",
+        "Stand facing away from the cable — grab the rope between your legs and step two paces forward",
+        "Feet — slightly wider than shoulders, toes slightly out",
+        "Hinge at the hips — knees only soft, hip-hinge dominant movement",
+      ],
+    },
+  },
+
   // ══════════════════════════════════
   // ── 어깨 (PUSH - Overhead) ──
   // ══════════════════════════════════
@@ -281,6 +368,28 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
         "Lock plates with collars (shaking overhead is dangerous)",
         "Grip width — slightly wider than shoulders, wrists straight",
         "Step one pace back from the rack before starting (head bumps the rack otherwise)",
+      ],
+    },
+  },
+
+  // ── 어깨 (Cable Accessory) ──
+  "케이블 레터럴 레이즈 (Cable Lateral Raises)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 낮은 위치(발목 높이)",
+        "손잡이 — D핸들(한 손) — 한 팔씩 진행",
+        "운동 팔 반대쪽으로 케이블 옆에 서기 (예: 오른팔 운동 시 왼쪽 어깨가 케이블 쪽)",
+        "운동 팔 손잡이는 반대 손에서 시작 — 몸 앞 가로질러 잡고 옆으로 들어올리기",
+        "처음이면 매우 가벼운 무게부터 — 어깨는 작은 근육이라 무리 쉬워요",
+      ],
+      en: [
+        "Pulley — set at the lowest position (ankle height)",
+        "Handle — D-handle (single) — train one arm at a time",
+        "Stand alongside the cable on the opposite side from the working arm (e.g., right arm = left shoulder near cable)",
+        "Grab the handle across your body and raise it out to the side",
+        "Start very light — shoulders are small muscles, easy to overload",
       ],
     },
   },
@@ -432,27 +541,91 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
     },
   },
 
+  // ── 등 (PULL - Cable Accessory) ──
+  "시티드 로우 (Seated Cable Row)": {
+    imagePath: "/machine/seated-cable-row.png",
+    findGuide: {
+      ko: [
+        "앉아서 손잡이를 몸쪽으로 당기는 머신이에요",
+        "낮은 위치에 케이블이 있고, 발판 위에 발을 대고 앉아요",
+        "보통 V자 또는 가로형 손잡이가 케이블에 달려있어요",
+        "옆에 무게 핀(셀렉터)이 있어 무게를 핀으로 조절",
+        "케이블 머신이지만 로우 전용 — 머신 모양이 시티드 셋업으로 고정",
+      ],
+      en: [
+        "A machine where you sit and pull a handle toward your body",
+        "Low cable position, with footrests where you place your feet",
+        "Usually has a V-handle or straight bar attached to the cable",
+        "Pin selector on the side for weight adjustment",
+        "It's a cable machine but dedicated to row — fixed in seated setup",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "손잡이 종류 확인 — V바, 가로바, 클로즈 그립 핸들 중 본인 운동에 맞게",
+        "발 위치 — 발판 가운데, 무릎 살짝 굽힌 채 안정",
+        "무게 핀 정확히 끝까지 꽂기",
+        "허리 곧게 — 너무 뒤로 누워 당기면 허리 다쳐요",
+        "처음이면 가벼운 무게부터 — 케이블 저항이 일정해서 느낌이 다름",
+      ],
+      en: [
+        "Choose handle — V-bar, straight bar, or close-grip — depending on the workout",
+        "Foot position — center of platform, knees slightly bent and stable",
+        "Insert weight pin all the way",
+        "Keep back straight — leaning too far back hurts the lower back",
+        "If new, start light — cable resistance is constant and feels different",
+      ],
+    },
+  },
+
+  "케이블 로우 (Cable Row)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 낮은 위치(발목 높이)",
+        "손잡이 — V바, 로프, D핸들 등 — 본인 편한 핸들",
+        "케이블 앞에서 무릎 살짝 굽힌 채 발을 단단히 고정 — 발판이 없으면 미끄러짐 주의",
+        "허리는 곧게 — 시티드 로우와 동일하게 등이 둥글면 허리 부담",
+        "처음이면 시티드 케이블 로우(고정 머신)부터 익히고 진행 추천",
+      ],
+      en: [
+        "Pulley — set at the lowest position (ankle height)",
+        "Handle — V-bar, rope, D-handle, etc. — pick what's comfortable",
+        "Stand in front of the cable with knees slightly bent and feet planted firmly",
+        "Keep the back straight — rounding causes lower-back strain (same as seated row)",
+        "If new, learn on a fixed Seated Cable Row machine first",
+      ],
+    },
+  },
+
+  "케이블 페이스 풀 (Cable Face Pulls)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 얼굴 높이 또는 살짝 위 (어깨~머리 사이)",
+        "손잡이 — 로프(이중 끈) — 양 끝을 양손으로 잡기 (엄지가 끝쪽)",
+        "케이블 앞에 서서 한 발 앞으로 — 약간 뒤로 기댄 자세",
+        "당길 때 양손이 얼굴 양옆으로 가도록 — 코·관자놀이 라인",
+        "후면 어깨/회전근개 운동이라 가벼운 무게부터 — 어깨 다치기 쉬움",
+      ],
+      en: [
+        "Pulley — at face height or slightly above (between shoulder and head)",
+        "Handle — rope (double strap), with thumbs at the ends",
+        "Stand in front of the cable with one foot forward, slightly leaning back",
+        "Pull until your hands flank your face (along the temple line)",
+        "Targets rear delts / rotator cuff — start light, easy to strain shoulders",
+      ],
+    },
+  },
+
   // ══════════════════════════════════
   // ── 팔 (CABLE - Accessory) ──
   // ══════════════════════════════════
   "케이블 오버헤드 트라이셉 익스텐션 (Cable Overhead Tricep Extension)": {
     imagePath: "/machine/cable-machine.png",
-    findGuide: {
-      ko: [
-        "기둥 양쪽에 케이블이 달린 큰 머신이에요 (케이블 크로스오버라고도 불러요)",
-        "케이블 끝 도르래(풀리)를 위/아래로 위치 변경 가능",
-        "다양한 손잡이(로프, 가로바, V바 등)를 케이블에 끼워서 사용",
-        "옆에 핸들들이 정리된 거치대가 있어요",
-        "단일 머신과 다르게 — 한 머신에서 다양한 운동 가능 (트라이셉/이두/플라이/풀오버)",
-      ],
-      en: [
-        "A large machine with cables on both sides of vertical posts (also called Cable Crossover)",
-        "Pulley position can be moved up or down",
-        "Various handles (rope, straight bar, V-bar, etc.) attach to the cable",
-        "A handle storage rack nearby",
-        "Unlike single-purpose machines — one machine for many exercises (triceps, biceps, fly, pullover)",
-      ],
-    },
+    findGuide: CABLE_MACHINE_FIND,
     useGuide: {
       ko: [
         "풀리(도르래) 위치 — 가장 높은 위치로 설정 (오버헤드 운동이라)",
@@ -467,6 +640,114 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
         "Insert weight pin all the way",
         "Stand facing away from the cable, lift the handle overhead to start",
         "If new, start light — get used to shoulder stability first for safety",
+      ],
+    },
+  },
+
+  "케이블 푸쉬 다운 (Cable Pushdown)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 높은 위치(머리 위)",
+        "손잡이 — 로프 또는 가로바(스트레이트 바)",
+        "케이블 앞에 마주 서기 — 한 발 살짝 앞 (균형용)",
+        "팔꿈치를 옆구리에 고정 — 어깨 움직이지 않게",
+        "팔꿈치만 펴서 아래로 누르기 — 어깨로 미는 보상 동작 X",
+      ],
+      en: [
+        "Pulley — at the highest position (above head)",
+        "Handle — rope or straight bar",
+        "Stand facing the cable, one foot slightly forward for balance",
+        "Lock elbows at your sides — shoulders don't move",
+        "Only the elbows extend, pushing down — don't let shoulders push (compensation)",
+      ],
+    },
+  },
+
+  "케이블 바이셉 컬 (Cable Bicep Curl)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 낮은 위치(발목 높이)",
+        "손잡이 — 가로바(스트레이트 바) 또는 EZ바",
+        "케이블 앞에 마주 서기 — 어깨너비",
+        "팔꿈치 옆구리에 고정 — 컬 동작에서 절대 앞뒤로 움직이지 않게",
+        "처음이면 가벼운 무게부터 — 케이블은 끝까지 저항이 있어 덤벨보다 어려워요",
+      ],
+      en: [
+        "Pulley — at the lowest position (ankle height)",
+        "Handle — straight bar or EZ-bar",
+        "Stand facing the cable, shoulder-width",
+        "Lock elbows at your sides — never let them swing forward/back during the curl",
+        "Start light — cable resistance is constant through the range, harder than dumbbells",
+      ],
+    },
+  },
+
+  "오버헤드 케이블 바이셉 컬 (Overhead Cable Bicep Curl)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "양쪽 풀리 위치 — 가장 높은 위치(머리 위) 양쪽 다",
+        "손잡이 — 양쪽 D핸들",
+        "케이블 사이 가운데에 서서 양손 손잡이 — 양팔을 머리 옆으로 일자 펼치기 (T자세)",
+        "팔꿈치 위치 고정 — 머리 옆 라인 유지, 절대 떨어뜨리지 않게",
+        "양손을 머리 쪽으로 당겨오는 컬 — 이두 정점 자극이 핵심",
+      ],
+      en: [
+        "Both pulleys — at the highest position (above head) on each side",
+        "Handles — D-handle in each hand",
+        "Stand in the center, arms extended out wide (T-position) holding both handles",
+        "Lock elbows at head-level line — never let them drop",
+        "Curl hands toward the head — key feel is biceps peak contraction",
+      ],
+    },
+  },
+
+  // ══════════════════════════════════
+  // ── 코어 (CABLE - Accessory) ──
+  // ══════════════════════════════════
+  "케이블 우드찹 (Cable Woodchop)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 높은 위치(머리 위) — 한쪽만",
+        "손잡이 — 로프 또는 D핸들",
+        "운동 측면 반대쪽으로 케이블 옆에 서기 (예: 오른쪽으로 내릴 때 왼쪽 어깨 케이블 쪽)",
+        "양손으로 손잡이를 잡고 — 대각선으로 무릎 바깥쪽까지 회전하며 당겨내기",
+        "팔이 아닌 코어가 일하는 운동 — 회전축은 척추, 가벼운 무게부터",
+      ],
+      en: [
+        "Pulley — at the highest position (above head), one side only",
+        "Handle — rope or D-handle",
+        "Stand alongside the cable on the opposite side from where you'll chop down",
+        "Hold the handle with both hands and rotate diagonally down to outside the opposite knee",
+        "Core does the work — not the arms; rotation is at the spine, start light",
+      ],
+    },
+  },
+
+  "케이블 크런치 (Cable Crunch)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: CABLE_MACHINE_FIND,
+    useGuide: {
+      ko: [
+        "풀리 위치 — 가장 높은 위치(머리 위)",
+        "손잡이 — 로프(이중 끈) — 양손으로 잡아 머리 양옆에 가져옴",
+        "케이블 앞에 무릎 꿇고 앉아 — 손은 머리 옆에 고정",
+        "엉덩이는 그대로 — 척추(복근)만 둥글게 말리는 동작",
+        "팔로 끌어오지 않게 — 복근이 짜이는 느낌이 핵심",
+      ],
+      en: [
+        "Pulley — at the highest position (above head)",
+        "Handle — rope (double strap), held with both hands beside the head",
+        "Kneel in front of the cable, hands locked at the sides of the head",
+        "Hips stay put — only the spine (abs) curls forward",
+        "Don't pull with the arms — the abs squeezing is the key feel",
       ],
     },
   },

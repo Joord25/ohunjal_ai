@@ -270,6 +270,261 @@ export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
       ],
     },
   },
+
+  "케이블 푸쉬 다운 (Cable Pushdown)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "팔꿈치를 옆구리에 \"붙여\" 고정 — 절대 앞뒤로 안 움직이게",
+        "내릴 때 손등이 위로 — 손목 곧게 유지",
+        "올릴 때(시작자세 복귀) 팔꿈치 90도 정도까지만 — 너무 위로 가면 휴식 됨",
+        "어깨 으쓱하지 않게 — 어깨가 일하면 트라이셉 자극 감소",
+        "마지막에 팔 완전히 펴고 \"짜내는\" 1초",
+      ],
+      en: [
+        "Glue elbows to your sides — never let them swing forward/back",
+        "On the way down, knuckles face up — keep wrists straight",
+        "On return, only go to ~90° — going higher means resting",
+        "Don't shrug — shoulders working dilutes triceps stimulus",
+        "1-second squeeze at full extension at the bottom",
+      ],
+    },
+  },
+
+  "케이블 바이셉 컬 (Cable Bicep Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "팔꿈치 옆구리 고정 — 컬 동작에서 절대 앞으로 나가지 않게",
+        "올릴 때 손목 곧게 — 손목으로 끌어당기면 손목 다침",
+        "내릴 때도 천천히 — 케이블은 끝까지 저항이라 \"내려놓기\" 가 핵심 자극",
+        "어깨 으쓱하지 않게 — 어깨가 보상 동작 들어오면 효과 감소",
+        "복근 수축 유지 — 몸통이 뒤로 흔들리면 \"치팅\"",
+      ],
+      en: [
+        "Lock elbows at the sides — never swing them forward during the curl",
+        "Keep wrists straight on the way up — pulling with wrists invites wrist injury",
+        "Lower slowly — cable resists all the way; the negative is key",
+        "Don't shrug — shoulders compensating reduces effect",
+        "Maintain core tension — torso rocking back is \"cheating\"",
+      ],
+    },
+  },
+
+  "오버헤드 케이블 바이셉 컬 (Overhead Cable Bicep Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "팔을 머리 옆 라인(T자세)으로 펼친 위치 유지 — 팔꿈치 절대 떨어지지 않게",
+        "양손을 머리 쪽으로 당기는 컬 동작 — 양 이두가 정점에서 \"꽃봉오리\" 모양",
+        "팔꿈치 위치는 고정, 손목은 자연스럽게 회전",
+        "내릴 때(되돌리기) 천천히 — 정점 다음 1-2초 컨트롤",
+        "처음이면 가벼운 무게 — 어깨가 무거우면 팔이 떨어져요",
+      ],
+      en: [
+        "Keep arms in T-position with elbows at head-level — never let them drop",
+        "Curl both hands toward the head — biceps form a \"flexed\" shape at the peak",
+        "Elbow position fixed, wrists rotate naturally",
+        "Slow on the way back — control 1-2 seconds after peak",
+        "Start light — heavy weight makes the elbows drop",
+      ],
+    },
+  },
+
+  // ══════════════════════════════════
+  // ── 가슴 (PUSH - Cable Accessory) ──
+  // ══════════════════════════════════
+  "케이블 체스트 프레스 (Cable Chest Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "양손이 가슴 옆에서 시작 — 팔꿈치 약 45도 (어깨 보호)",
+        "밀 때 양손이 앞으로 모이듯 — 가슴 앞에서 살짝 만나는 느낌",
+        "복근에 힘 + 한 발 앞으로 (자세 안정성)",
+        "내릴 때(되돌리기) 천천히 — 케이블이 끝까지 당기는 걸 받아주기",
+        "어깨가 앞으로 꺾이지 않게 — 가슴이 짜내지는 자극 위주로",
+      ],
+      en: [
+        "Hands start beside the chest, elbows ~45° (shoulder protection)",
+        "Press handles forward AND inward — they meet softly in front of the chest",
+        "Brace the core, one foot forward for stability",
+        "Slow on return — let the cable pull back through the full range",
+        "Don't roll the shoulders forward — focus on the chest squeeze",
+      ],
+    },
+  },
+
+  "케이블 크로스오버 (Cable Crossover)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "팔꿈치 살짝 굽힌 채 고정 — 컬 동작 X, 곧은 호 그리듯 움직여요",
+        "양손을 가슴 앞으로 모으기 — 마지막에 \"X자\" 교차 가능 (가슴 안쪽 자극)",
+        "한 발 앞으로 + 살짝 앞으로 기울기 — 가슴 위쪽 자극",
+        "내릴 때 천천히 — 양팔 옆으로 벌어지는 동작도 통제",
+        "복근에 힘 — 허리가 흔들리면 가슴 자극 분산",
+      ],
+      en: [
+        "Lock elbows softly bent — no curling motion, sweep in a clean arc",
+        "Bring hands together in front of the chest — can cross at the bottom for inner-chest squeeze",
+        "One foot forward, slight lean forward — emphasizes upper chest",
+        "Slow on the way back — control as the arms separate to the sides",
+        "Brace the core — torso wobble dilutes chest stimulus",
+      ],
+    },
+  },
+
+  // ══════════════════════════════════
+  // ── 다리 (LEGS - Cable Accessory) ──
+  // ══════════════════════════════════
+  "케이블 풀 스루 (Cable Pull-Through)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "엉덩이를 뒤로 빼는 \"힙 힌지\" 동작 — 무릎은 살짝만 굽히기",
+        "허리 곧게 유지 — 등이 둥글면 허리 다침",
+        "올라올 때 엉덩이를 앞으로 차내듯 — 골반 으로 미는 느낌",
+        "정점에서 엉덩이 \"짜내기\" 1초 — 절대 허리로 꺾어 더 가지 않기",
+        "처음이면 가벼운 무게 — 힙 힌지 패턴 익히기 우선",
+      ],
+      en: [
+        "Hinge at the hips — knees only soft, push hips back",
+        "Keep the back straight — rounding hurts the lower back",
+        "Drive up by pushing the hips forward — pelvis pushes the rope through",
+        "1-second glute squeeze at the top — never hyperextend the lower back",
+        "Start light — learn the hip-hinge pattern first",
+      ],
+    },
+  },
+
+  // ══════════════════════════════════
+  // ── 어깨 (Cable Accessory) ──
+  // ══════════════════════════════════
+  "케이블 레터럴 레이즈 (Cable Lateral Raises)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "팔꿈치 살짝 굽힌 채 고정 — 컬처럼 굽혔다 펴지 않게",
+        "올릴 때 손이 어깨 높이까지만 — 더 올리면 승모근 자극",
+        "팔꿈치가 손보다 살짝 위로 — 새끼손가락이 살짝 위 향하는 느낌",
+        "내릴 때도 천천히 — 케이블 저항 끝까지 받기",
+        "처음이면 매우 가벼운 무게 — 어깨는 작은 근육이라 부상 위험",
+      ],
+      en: [
+        "Lock the elbow softly bent — no curling motion",
+        "Raise only to shoulder height — higher engages the traps",
+        "Elbow leads slightly above the hand — pinky tilted slightly up",
+        "Lower slowly — let the cable resist through the full range",
+        "Start very light — shoulders are small muscles, easy to injure",
+      ],
+    },
+  },
+
+  // ══════════════════════════════════
+  // ── 등 (PULL - Cable Accessory) ──
+  // ══════════════════════════════════
+  "시티드 로우 (Seated Cable Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "허리는 곧게 — 너무 뒤로 누워서 당기면 등이 아닌 허리가 일해요",
+        "발 위치 — 발판 가운데, 무릎 살짝 굽힘",
+        "당길 때 손잡이를 배꼽 쪽으로 — 어깨를 뒤로 살짝 모으는 느낌",
+        "팔꿈치를 몸통 가까이 — 너무 벌어지면 어깨 운동이 됨",
+        "내릴 때도 천천히 — 케이블 저항을 끝까지 받아주기",
+      ],
+      en: [
+        "Keep the back straight — leaning too far back makes the lower back work, not the upper back",
+        "Foot position — center of platform, knees slightly bent",
+        "Pull the handle to the belly button — squeeze the shoulder blades slightly back",
+        "Keep elbows close to the torso — flaring out shifts to shoulders",
+        "Release slowly — let the cable resist all the way",
+      ],
+    },
+  },
+
+  "케이블 로우 (Cable Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "허리 곧게 + 약간 앞으로 기울인 자세 (시티드처럼) — 등이 둥글지 않게",
+        "당길 때 손잡이를 명치/배꼽 사이로 — 등 가운데 짜내기",
+        "팔꿈치를 몸통 가까이 — 어깨 으쓱 X",
+        "내릴 때도 천천히 — 케이블 저항 끝까지 받아주기",
+        "처음이면 시티드 케이블 로우(고정 머신)부터 익히고 진행 추천",
+      ],
+      en: [
+        "Keep the back straight, slightly leaning forward (similar to seated) — never round",
+        "Pull the handle to between sternum and belly button — squeeze mid-back",
+        "Keep elbows close to the torso — no shrugging",
+        "Slow release — let the cable resist all the way",
+        "If new, learn on a fixed Seated Cable Row machine first",
+      ],
+    },
+  },
+
+  "케이블 페이스 풀 (Cable Face Pulls)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "당길 때 양손이 얼굴 양옆으로 (코·관자놀이 라인) — 가슴 쪽으로 당기면 다른 운동",
+        "팔꿈치는 어깨와 같은 높이 또는 살짝 위 — 처지면 효과 감소",
+        "마지막에 어깨를 뒤로 살짝 모으기 — 후면 어깨/회전근개 짜이는 느낌",
+        "허리가 뒤로 꺾이지 않게 — 코어 brace",
+        "가벼운 무게 + 천천히 — 어깨 안정 운동이라 컨트롤이 핵심",
+      ],
+      en: [
+        "Pull until hands flank the face (along temple line) — pulling to chest is a different exercise",
+        "Elbows at or slightly above shoulder height — drooping reduces effect",
+        "At the end, squeeze the shoulders slightly back — feel the rear delts/rotator cuff",
+        "Don't lean back — brace the core",
+        "Light weight + slow — control is the key for this stability exercise",
+      ],
+    },
+  },
+
+  // ══════════════════════════════════
+  // ── 코어 (CABLE - Accessory) ──
+  // ══════════════════════════════════
+  "케이블 우드찹 (Cable Woodchop)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "회전축은 척추(허리) — 무릎이나 골반으로 회전하지 않게",
+        "팔은 거의 곧게 펴진 상태 유지 — 팔로 끌어오는 게 아님",
+        "내려올 때 무릎 바깥쪽까지 대각선 — 시선도 손 따라가기",
+        "복근/사선근(옆구리)이 일하는 느낌 — 가슴이나 어깨가 아닌 코어",
+        "처음이면 가벼운 무게 — 회전 패턴 통제 후 무게 증가",
+      ],
+      en: [
+        "Rotation axis is the spine — don't twist the knees or hips",
+        "Arms stay nearly straight — don't pull with the arms",
+        "Diagonal down to the outside of the opposite knee — eyes follow the hands",
+        "Feel the abs/obliques work — not the chest or shoulders",
+        "Start light — master rotation control before adding weight",
+      ],
+    },
+  },
+
+  "케이블 크런치 (Cable Crunch)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "엉덩이는 그대로 — 척추(복근)만 둥글게 말리는 \"크런치\"",
+        "손은 머리 옆에 고정 — 팔로 끌어오면 팔 운동이 됨",
+        "내려갈 때 가슴이 무릎 쪽으로 가까워지듯 — 복근 짜이는 느낌",
+        "올라올 때(되돌리기) 천천히 — 케이블 저항을 끝까지 받기",
+        "허리가 펴진 채로 굽히지 않게 — 척추가 아닌 고관절로 굽으면 효과 X",
+      ],
+      en: [
+        "Hips stay put — only the spine (abs) curls forward",
+        "Hands locked at the sides of the head — pulling with arms makes it an arm exercise",
+        "Bring chest toward the knees — feel the abs squeeze",
+        "Slow on return — let the cable resist all the way",
+        "Curl the spine, not the hips — bending at the hip joint defeats the purpose",
+      ],
+    },
+  },
 };
 
 export function getFormCues(exerciseName: string, locale: Locale): string[] {
