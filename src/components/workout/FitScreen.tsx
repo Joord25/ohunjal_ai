@@ -98,9 +98,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
   const closeSwap = () => { setShowSwapMenu(false); setSwapSearch(""); setSwapFilter(null); };
   const isStrengthType = exercise.type === "strength" || exercise.type === "core";
+  // 회의 2026-04-28: 맨몸 운동 정규식 보강 — 슈퍼맨/데드버그/버드독/글루트브릿지 등 누락 보충.
+  // 중량 변형(웨이티드 푸쉬업, 중량 풀업 등)은 exception 으로 제외.
   const isBodyweight = !exercise.weight || exercise.weight === "Bodyweight"
     || /맨몸|체중|bodyweight/i.test(exercise.weight)
-    || (/푸쉬업|푸시업|push[\s-]?up|pull[\s-]?up|풀업|친업|chin[\s-]?up|턱걸이|딥스|dip|plank|플랭크|버피|burpee|크런치|crunch|레그레이즈|leg raise|마운틴\s?클라이머|mountain\s?climber|점프|jump/i.test(exercise.name) && !/중량|weighted|웨이티드/i.test(exercise.name));
+    || (/푸쉬업|푸시업|push[\s-]?up|pull[\s-]?up|풀업|친업|chin[\s-]?up|턱걸이|딥스|dip|plank|플랭크|버피|burpee|크런치|crunch|레그[\s-]?레이즈|leg[\s-]?raise|마운틴\s?클라이머|mountain\s?climber|점프|jump|슈퍼맨|superman|데드[\s-]?버그|dead[\s-]?bug|deadbug|버드[\s-]?독|bird[\s-]?dog|글루트[\s-]?브릿지|glute[\s-]?bridge|힙[\s-]?브릿지|hip[\s-]?bridge|클램쉘|clamshell|베어[\s-]?크롤|bear[\s-]?crawl|인버티드|inverted|행잉|hanging|V[-\s]?업|V[-\s]?up|브이[\s-]?업|시저|scissor|플러터|flutter|토[\s-]?터치|toe[\s-]?touch|TRX|trx|바이시클|bicycle|오블리크|oblique|점핑[\s-]?잭|jumping[\s-]?jack|jacks|스케이터|skater|하이니즈|high[\s-]?knees|섀도|shadow|폼롤러|foam[\s-]?roller|스트레칭|stretch|가동성|mobility|코브라|cobra|마칭|marching|니[\s-]?푸쉬업|knee[\s-]?push/i.test(exercise.name) && !/중량|weighted|웨이티드/i.test(exercise.name));
   const hasWeight = isStrengthType && !isBodyweight;
 
   // 장비 타입 감지 (운동 이름 키워드 기반)
