@@ -82,12 +82,13 @@ export const BeginnerGuideOverlay: React.FC<BeginnerGuideOverlayProps> = ({
               </h2>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {/* 회의 2026-04-28: PC에서 너무 큼 → max-w-[280px] 가운데 정렬, 카드 크기로 컴팩트. */}
+            {/* 회의 2026-04-28: 오버레이 자체가 max-w-[415px] 컬럼으로 가둬졌으니 max-w 제약 제거 →
+                컬럼 폭 그대로(모바일 풀폭 / PC ~415px) 사용해 충분한 시각 임팩트. */}
             <img
               src="/warmup/stretching-zone.jpg"
               alt={t("beginner_mode.warmup.title")}
               loading="eager"
-              className="w-full max-w-[280px] mx-auto aspect-[4/3] object-cover rounded-2xl bg-gray-50 border border-gray-100"
+              className="w-full aspect-[4/3] object-cover rounded-2xl bg-gray-50 border border-gray-100"
             />
 
             <ol className="flex flex-col gap-3 text-[14px] leading-relaxed text-gray-700">
