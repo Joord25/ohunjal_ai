@@ -829,6 +829,510 @@ export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
       ],
     },
   },
+
+  // ══════════════════════════════════
+  // ── BATCH 2 (회의 2026-04-29): 머신/케틀벨/TRX/풀업 변형 25종 ──
+  // ══════════════════════════════════
+
+  "체스트 프레스 머신 (Chest Press Machine)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "좌석 높이 — 손잡이 가슴 중앙",
+        "등 등받이 \"고정\" + 어깨 으쓱 X",
+        "팔꿈치 약 45도 — 어깨 보호",
+        "끝까지 펴지 말고 잠그지 않기",
+        "내릴 때 천천히 — 정점 1초",
+      ],
+      en: [
+        "Seat height — handles at mid-chest",
+        "Back glued to backrest + no shrugging",
+        "Elbows ~45° — shoulder protection",
+        "Don't fully lock the elbows",
+        "Lower slowly + 1-second peak",
+      ],
+    },
+  },
+
+  "펙덱 플라이 (Pec Deck Fly)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "팔꿈치 살짝 굽혀서 고정 — 컬 동작 X",
+        "양 팔/팔꿈치 가운데로 호 그리며 모으기",
+        "정점에서 1초 가슴 안쪽 짜내기",
+        "어깨 으쓱하지 않게",
+        "내릴 때 가슴 늘어남 끝까지",
+      ],
+      en: [
+        "Lock elbows softly bent — no curling motion",
+        "Arms/elbows sweep to the center in an arc",
+        "1-second inner-chest squeeze at the center",
+        "Don't shrug",
+        "Full chest stretch on the way back",
+      ],
+    },
+  },
+
+  "레그 익스텐션 (Leg Extension)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "무릎이 머신 회전축과 같은 선",
+        "엉덩이 좌석에 단단히 — 들리지 않게",
+        "올릴 때 무릎 끝까지 펴지 말기 (마지막 5도 남기기)",
+        "정점 1초 — 대퇴사두 짜내기",
+        "내릴 때 천천히 — 떨어뜨리듯 X",
+      ],
+      en: [
+        "Knees aligned with machine pivot axis",
+        "Hips planted on the seat — don't lift",
+        "Don't fully lock the knees (leave last 5°)",
+        "1-second peak — quad squeeze",
+        "Lower slowly — no dropping",
+      ],
+    },
+  },
+
+  "레그 컬 (Leg Curl)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "패드 — 발목 뒤(아킬레스 살짝 위)",
+        "엎드린 형태면 엉덩이 들리지 않게",
+        "당길 때 햄스트링 \"짜이는\" 느낌",
+        "끝까지 굽히고 정점 1초",
+        "내릴 때 천천히",
+      ],
+      en: [
+        "Pad behind the ankle (just above the Achilles)",
+        "On prone version, don't lift the hips",
+        "Feel the hamstrings \"squeeze\" on the curl",
+        "Full flexion + 1-second peak",
+        "Lower slowly",
+      ],
+    },
+  },
+
+  "핵 스쿼트 (Hack Squat)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "어깨 패드 단단히 + 발 어깨너비",
+        "발끝 약 15도 바깥, 무릎이 발끝 방향",
+        "허벅지 평행 또는 살짝 더 깊게",
+        "올릴 때 무릎 완전히 펴지 말기",
+        "허리는 등받이에 \"붙여\" 고정",
+      ],
+      en: [
+        "Shoulders firmly under the yoke + feet shoulder-width",
+        "Toes ~15° out, knees track in line with toes",
+        "Thighs parallel or slightly deeper",
+        "Don't fully lock the knees at the top",
+        "Lower back \"glued\" to backrest",
+      ],
+    },
+  },
+
+  "힙 어덕션 머신 (Hip Adduction Machine)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "패드 — 무릎 안쪽에 닿게",
+        "엉덩이 좌석/등 등받이 단단히",
+        "양 무릎 천천히 모으기 — 반동 X",
+        "정점 1초 \"짜내기\"",
+        "처음이면 가벼운 무게 — 사타구니 부담",
+      ],
+      en: [
+        "Pads on the inside of the knees",
+        "Hips on seat + back on backrest firmly",
+        "Squeeze knees together slowly — no momentum",
+        "1-second center squeeze",
+        "Start light — groin strain risk",
+      ],
+    },
+  },
+
+  "힙 어브덕션 머신 (Hip Abduction Machine)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "패드 — 무릎 바깥에 닿게",
+        "엉덩이/등 단단히 고정",
+        "양 무릎 천천히 벌리기 — 반동 X",
+        "정점 1초 \"짜내기\" — 엉덩이 옆 자극",
+        "좌석에서 들썩이지 않게",
+      ],
+      en: [
+        "Pads on the outside of the knees",
+        "Hips/back firmly anchored",
+        "Open knees outward slowly — no momentum",
+        "1-second top squeeze — feel the outer hip",
+        "Don't bounce on the seat",
+      ],
+    },
+  },
+
+  "백익스텐션 머신 (Back Extension Machine)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "패드 — 골반 위 허벅지 윗부분 (배 압박 X)",
+        "엉덩이로 hinge — 허리 둥글지 않게",
+        "올라올 때 척추 직선까지만 — 뒤로 꺾지 않기",
+        "처음이면 맨몸 — 무게 들면 부담",
+        "내릴 때 천천히",
+      ],
+      en: [
+        "Pad at upper thighs / hip crease (not pressing the belly)",
+        "Hinge at the hips — back stays flat",
+        "Rise only to a straight line — don't hyperextend",
+        "Start with bodyweight — adding weight stresses the back",
+        "Lower slowly",
+      ],
+    },
+  },
+
+  "인버티드 로우 (Inverted Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "몸 곧게 — 머리부터 발끝까지 일직선",
+        "그립 어깨너비 살짝 넓게, 오버그립",
+        "당길 때 가슴이 봉으로 — 어깨 뒤로",
+        "복근 brace + 엉덩이 처지지 않게",
+        "발 위치로 강도 조절 — 멀수록 어려움",
+      ],
+      en: [
+        "Body straight — head to feet in one line",
+        "Grip slightly wider than shoulders, overhand",
+        "Pull until chest meets the bar — squeeze shoulders back",
+        "Brace the core + hips don't sag",
+        "Feet farther = harder",
+      ],
+    },
+  },
+
+  "어시스티드 풀업 (Assisted Pull-ups)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "그립 — 어깨너비 살짝 넓게, 오버그립",
+        "어깨 \"고정\" 후 당기기",
+        "당길 때 가슴이 봉으로",
+        "내릴 때도 천천히 — 케이블 같은 일정 저항",
+        "어시스트 무게 점진적 감소",
+      ],
+      en: [
+        "Grip — slightly wider than shoulders, overhand",
+        "Pack the shoulders before pulling",
+        "Pull until chest meets the bar",
+        "Lower slowly — constant resistance",
+        "Reduce assist over time",
+      ],
+    },
+  },
+
+  "친업 (Chin-ups)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "그립 — 어깨너비, 언더그립 (손바닥 본인 쪽)",
+        "어깨 \"고정\" 후 당기기",
+        "턱이 봉을 살짝 지나가는 느낌",
+        "이두 활약 — 풀업보다 살짝 쉬워요",
+        "내릴 때도 천천히",
+      ],
+      en: [
+        "Grip — shoulder-width, underhand (palms toward you)",
+        "Pack the shoulders before pulling",
+        "Chin passes slightly above the bar",
+        "More biceps — slightly easier than pull-ups",
+        "Lower slowly",
+      ],
+    },
+  },
+
+  "중량 풀업 (Weighted Pull-ups)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "맨몸 풀업 5~10개 안정 후 진입",
+        "벨트/조끼 단단히 — 흔들림 위험",
+        "처음 무게 가볍게 (2.5~5kg)",
+        "맨몸과 동일 폼 — 무게가 폼 깨면 줄이기",
+        "내릴 때 더 천천히 — 어깨/팔꿈치 부담 ↑",
+      ],
+      en: [
+        "Progress here only after 5-10 strict bodyweight pull-ups",
+        "Belt/vest secured firmly — swaying is risky",
+        "Start light (2.5-5 kg)",
+        "Same form as bodyweight — reduce if form breaks",
+        "Lower more slowly — extra stress on shoulders/elbows",
+      ],
+    },
+  },
+
+  "케틀벨 스윙 (Kettlebell Swing)": {
+    source: "Pavel Tsatsouline, Hardstyle Kettlebell + NSCA Essentials",
+    cues: {
+      ko: [
+        "엉덩이로 폭발적으로 차내기 — 팔로 들지 X",
+        "스윙 정점 어깨 높이까지만 — 더 높으면 허리 부담",
+        "허리 곧게 + 엉덩이 뒤로 hinge — 무릎 살짝만",
+        "케틀벨 다리 사이로 통과할 때 정강이 가깝게",
+        "정점에서 \"짜내기\" — 엉덩이/코어/대둔근 동시 수축",
+      ],
+      en: [
+        "Drive the hips explosively — don't lift with arms",
+        "Peak at shoulder height — higher stresses the back",
+        "Back straight + hips hinged — only soft knees",
+        "Kettlebell passes close to the shins between legs",
+        "At the top: squeeze hips/core/glutes together",
+      ],
+    },
+  },
+
+  "케틀벨 고블릿 스쿼트 (Kettlebell Goblet Squat)": {
+    source: "Dan John, Goblet Squat + NSCA Essentials",
+    cues: {
+      ko: [
+        "케틀벨을 가슴 앞 \"잔\" 자세 — 손잡이 양쪽 \"뿔\" 잡기",
+        "발 어깨너비 살짝 넓게, 발끝 약 15도 바깥",
+        "허벅지 평행까지, 무릎 발끝 방향",
+        "상체 거의 수직 — 무게가 앞이라 자연스럽게 곧음",
+        "팔꿈치가 무릎 안쪽 닿는 느낌까지 깊이 OK",
+      ],
+      en: [
+        "Hold kettlebell at chest by the \"horns\" (goblet position)",
+        "Feet slightly wider than shoulders, toes ~15° out",
+        "Squat to thighs parallel, knees track over toes",
+        "Torso nearly vertical — front-load keeps it upright",
+        "Elbows touching insides of knees is OK if mobility allows",
+      ],
+    },
+  },
+
+  "케틀벨 데드리프트 (Kettlebell Deadlift)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "케틀벨 발 사이 중앙",
+        "허리 곧게 + 엉덩이 뒤로 — 정강이 거의 수직",
+        "다리로 바닥 미는 느낌으로 일어남",
+        "올라온 정점에서 엉덩이 짜내기 — 1초",
+        "내릴 때도 동일 폼 — 둥글지 않게",
+      ],
+      en: [
+        "Kettlebell centered between feet",
+        "Back straight + hips back — shins nearly vertical",
+        "Drive up by pushing the floor with the legs",
+        "Glute squeeze at the top — 1 second",
+        "Lower with same form — don't round",
+      ],
+    },
+  },
+
+  "케틀벨 로우 (Kettlebell Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치/무릎 받침 — 한 손/한 무릎",
+        "허리 곧게 + 등 평행",
+        "당길 때 팔꿈치를 천장 쪽으로",
+        "정점 1초 등 짜내기",
+        "처음이면 가벼운 케틀벨",
+      ],
+      en: [
+        "Bench/knee support — one hand and one knee",
+        "Back straight + parallel to floor",
+        "Pull elbow toward the ceiling",
+        "1-second back squeeze at the top",
+        "Start light",
+      ],
+    },
+  },
+
+  "케틀벨 오버헤드 프레스 (Kettlebell Overhead Press)": {
+    source: "Pavel Tsatsouline + NSCA Essentials",
+    cues: {
+      ko: [
+        "랙 포지션 — 손목 직각, 손바닥 안쪽",
+        "올릴 때 손목 자연스럽게 회전 (외전) — 정점 손바닥 앞",
+        "팔꿈치 잠그고 머리 위 정렬",
+        "발 어깨너비, 코어 brace — 허리 꺾이지 않게",
+        "한쪽씩 — 좌우 균형",
+      ],
+      en: [
+        "Rack position — wrists straight, palm in",
+        "Rotate the wrist on the way up — palm faces forward at the top",
+        "Lock elbow + bar overhead aligned",
+        "Feet shoulder-width, core braced — no back arch",
+        "One arm at a time — balance",
+      ],
+    },
+  },
+
+  "더블 케틀벨 프론트 스쿼트 (Double Kettlebell Front Squat)": {
+    source: "Pavel Tsatsouline + NSCA Essentials",
+    cues: {
+      ko: [
+        "양 케틀벨 랙 포지션 — 손잡이 어깨 앞",
+        "팔꿈치 살짝 들어 \"선반\"",
+        "내려갈 때 상체 수직 유지 — 프론트 스쿼트와 동일",
+        "허벅지 평행 또는 살짝 더 깊게",
+        "올라올 때 엉덩이/다리 동시 펴짐",
+      ],
+      en: [
+        "Both kettlebells in rack — handles at shoulder front",
+        "Elbows slightly raised for \"shelf\"",
+        "Torso vertical on the descent — same as Front Squat",
+        "Thighs parallel or slightly deeper",
+        "Hips/legs extend together on the way up",
+      ],
+    },
+  },
+
+  "TRX 로우 (TRX Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "몸 곧게 — 머리부터 발끝까지 일직선",
+        "그립 중립 (손바닥 마주 보기)",
+        "당길 때 어깨 뒤로 모으기 — 등이 일하도록",
+        "엉덩이/허리 처지지 않게 brace",
+        "발 위치로 강도 조절 — 멀수록 쉬움",
+      ],
+      en: [
+        "Body straight — head to feet in one line",
+        "Neutral grip (palms facing each other)",
+        "Pull and squeeze shoulders back — let the back work",
+        "Brace hips/back — no sag",
+        "Foot position controls intensity — farther = easier",
+      ],
+    },
+  },
+
+  "TRX 바이셉스 컬 (TRX Biceps Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "그립 언더 (손바닥 본인 쪽)",
+        "팔꿈치 어깨 앞 \"고정\" — 절대 떨어뜨리지 않게",
+        "당길 때 손이 머리 쪽으로",
+        "정점 1초 + 천천히 내림",
+        "발 멀수록 쉬움",
+      ],
+      en: [
+        "Underhand grip (palms facing you)",
+        "Lock elbows at shoulder front — never drop",
+        "Pull hands toward the head",
+        "1-second peak + slow descent",
+        "Feet farther = easier",
+      ],
+    },
+  },
+
+  "행잉 레그 레이즈 (Hanging Leg Raise)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "그립 어깨너비 + 어깨 \"고정\"",
+        "다리 들어올릴 때 골반 살짝 말기 — 복근 짜내는 느낌",
+        "정점 — 다리가 가슴 옆/봉 높이",
+        "내릴 때 천천히 — 흔들리지 않게",
+        "처음이면 행잉 니 레이즈부터",
+      ],
+      en: [
+        "Grip shoulder-width + pack the shoulders",
+        "Tuck the pelvis slightly on the lift — feel the abs squeeze",
+        "Peak — legs at chest level / bar height",
+        "Lower slowly — no swinging",
+        "Start with Knee Raise",
+      ],
+    },
+  },
+
+  "행잉 니 레이즈 (Hanging Knee Raise)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "그립 어깨너비 + 어깨 \"고정\"",
+        "무릎을 가슴 쪽으로 — 골반 살짝 말기",
+        "정점 1초",
+        "내릴 때 천천히 — 흔들림 X",
+        "행잉 레그 레이즈 입문 변형",
+      ],
+      en: [
+        "Grip shoulder-width + pack the shoulders",
+        "Knees toward the chest — slight pelvic tuck",
+        "1-second peak",
+        "Lower slowly — no swinging",
+        "Beginner variation of Hanging Leg Raise",
+      ],
+    },
+  },
+
+  "스탠딩 카프 레이즈 (Standing Calf Raises)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "발끝 받침대 위, 뒤꿈치 자유롭게 깊이 내림",
+        "올릴 때 발끝 끝까지 — 정점 1초",
+        "내릴 때 천천히 — 종아리 늘어남 끝까지",
+        "어깨 패드는 어깨로 받음 (목 X)",
+        "무릎은 펴진 상태 (시티드와 차이)",
+      ],
+      en: [
+        "Toes on the platform, heels drop deep",
+        "Rise to the toes + 1-second peak",
+        "Lower slowly — full calf stretch",
+        "Shoulder pads on shoulders (not the neck)",
+        "Knees stay extended (vs. seated)",
+      ],
+    },
+  },
+
+  "시티드 카프 레이즈 (Seated Calf Raises)": {
+    source: "ACSM Guidelines 11th ch.7",
+    cues: {
+      ko: [
+        "패드 — 무릎 바로 위",
+        "발끝 받침대, 뒤꿈치 자유",
+        "올릴 때 발끝 끝까지 + 정점 1초",
+        "내릴 때 천천히 — 솔레우스 늘어남",
+        "솔레우스 작은 근육 — 무리하지 말기",
+      ],
+      en: [
+        "Pad directly over the knees",
+        "Toes on platform, heels free",
+        "Rise to the toes + 1-second peak",
+        "Lower slowly — soleus stretch",
+        "Soleus is small — don't overload",
+      ],
+    },
+  },
+
+  "동키 카프 레이즈 (Donkey Calf Raises)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "허리 굽힌 자세 + 등 곧게",
+        "발끝 끝까지 + 정점 1초",
+        "내릴 때 천천히 — 종아리 늘어남 충분히",
+        "허리 둥글면 멈춤 — 부담",
+        "전용 머신 없으면 다른 카프 변형으로 대체",
+      ],
+      en: [
+        "Bent-over posture + back straight",
+        "Rise to the toes + 1-second peak",
+        "Lower slowly — full calf stretch",
+        "Stop if back rounds — strain risk",
+        "Substitute another calf variation if no machine",
+      ],
+    },
+  },
 };
 
 export function getFormCues(exerciseName: string, locale: Locale): string[] {

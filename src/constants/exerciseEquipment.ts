@@ -1302,6 +1302,916 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
       ],
     },
   },
+
+  // ══════════════════════════════════
+  // ── BATCH 2 (회의 2026-04-29): 머신/케틀벨/TRX/풀업 변형 25종 추가 ──
+  // ══════════════════════════════════
+
+  // ── 가슴 (MACHINE) ──
+  "체스트 프레스 머신 (Chest Press Machine)": {
+    imagePath: "/machine/bench-press.png",
+    findGuide: {
+      ko: [
+        "앉아서 손잡이를 앞으로 미는 셀렉터라이즈 머신",
+        "양옆 손잡이 위치 조절 가능 (그립 너비)",
+        "옆에 무게 핀(셀렉터)으로 빠르게 무게 변경",
+        "벤치 프레스와 다르게 — 머신이 궤도 고정해줘 초보 안전",
+        "보통 가슴 운동 머신 영역에 펙덱과 함께 배치",
+      ],
+      en: [
+        "A selectorized machine where you sit and push handles forward",
+        "Handles adjustable for grip width",
+        "Pin selector on the side for quick weight changes",
+        "Unlike Bench Press — fixed path, beginner-friendly",
+        "Usually grouped with chest machines (next to Pec Deck)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "좌석 높이 — 손잡이가 가슴 중앙 옆에 오도록 조절",
+        "발 바닥 단단히 + 등 등받이에 \"붙여\" 고정",
+        "무게 핀 정확히 끝까지",
+        "그립 너비 — 너무 넓으면 어깨, 좁으면 트라이셉",
+        "처음이면 가벼운 무게 + 좌석 위치 잡기 우선",
+      ],
+      en: [
+        "Seat height — handles aligned at mid-chest level",
+        "Feet planted firmly, back \"glued\" to backrest",
+        "Insert weight pin all the way",
+        "Grip width — too wide = shoulders, too narrow = triceps",
+        "Start light + dial in seat position first",
+      ],
+    },
+  },
+
+  "펙덱 플라이 (Pec Deck Fly)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: {
+      ko: [
+        "앉아서 양손/팔꿈치를 앞으로 모으는 플라이 전용 머신",
+        "양옆에 패드(또는 손잡이) — 팔꿈치를 댈 수 있어요",
+        "셀렉터 핀으로 무게 조절",
+        "체스트 프레스 머신과 다르게 — 미는 게 아니라 호 그리며 모으기",
+        "가슴 안쪽 자극 집중 머신",
+      ],
+      en: [
+        "A dedicated fly machine where you sit and bring arms together",
+        "Side pads or handles for elbow placement",
+        "Pin selector for weight",
+        "Unlike Chest Press Machine — sweeping arc, not pressing",
+        "Targets inner-chest squeeze",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "좌석 높이 — 팔꿈치/손잡이가 어깨 높이",
+        "등 등받이에 단단히 고정",
+        "팔꿈치 패드형이면 살짝 굽힘 / 손잡이형이면 팔꿈치 살짝 굽힘 고정",
+        "양손/팔꿈치를 가운데로 모으는 호 동작 — 직선으로 미는 게 아님",
+        "정점에서 1초 가슴 짜내기",
+      ],
+      en: [
+        "Seat height — elbows/handles at shoulder level",
+        "Back firmly on the backrest",
+        "Elbow-pad style: soft bend at elbow / handle style: lock elbow softly bent",
+        "Sweeping arc to bring arms together — not a straight push",
+        "1-second squeeze at the center",
+      ],
+    },
+  },
+
+  // ── 다리 (MACHINE) ──
+  "레그 익스텐션 (Leg Extension)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "앉아서 발목 패드를 앞으로 차올리는 머신",
+        "발목 앞에 롤러 패드, 셀렉터 핀으로 무게 조절",
+        "허벅지 앞면(대퇴사두) 격리 머신",
+        "보통 레그 컬과 함께 배치 (앞·뒤 짝)",
+        "스쿼트와 다르게 — 무릎 관절만 움직이는 단관절 운동",
+      ],
+      en: [
+        "A machine where you sit and extend your knees forward against a pad",
+        "Ankle roller in front, pin selector for weight",
+        "Isolates the quadriceps",
+        "Usually paired with Leg Curl (quad/hamstring pair)",
+        "Unlike Squat — single-joint (knee only)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "좌석 깊이 조절 — 무릎이 머신 회전축과 같은 선에 위치",
+        "발목 롤러 — 발등 살짝 위에 닿게",
+        "엉덩이 좌석에 단단히 — 들리지 않게",
+        "올릴 때 무릎 끝까지 펴지 말기 (잠그지 않기) — 마지막 5도 남기기",
+        "내릴 때 천천히 — 떨어뜨리듯 X",
+      ],
+      en: [
+        "Seat depth — knees aligned with the machine's pivot axis",
+        "Ankle roller — just above the top of the foot",
+        "Hips planted on the seat — don't let them lift",
+        "Don't fully lock knees at the top — leave the last 5°",
+        "Lower slowly — no dropping",
+      ],
+    },
+  },
+
+  "레그 컬 (Leg Curl)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "엎드리거나 앉아서 발목으로 패드를 뒤로/아래로 당기는 머신",
+        "엎드린 형태(라잉) 또는 앉은 형태(시티드) 두 종류",
+        "허벅지 뒷면(햄스트링) 격리 머신",
+        "보통 레그 익스텐션 옆 (앞·뒤 짝)",
+        "데드리프트와 다르게 — 무릎 관절만 굽히는 단관절 운동",
+      ],
+      en: [
+        "A machine where you curl your ankles back/down against a pad (lying or seated)",
+        "Two types: prone (lying) or seated",
+        "Isolates the hamstrings",
+        "Usually next to Leg Extension (quad/hamstring pair)",
+        "Unlike Deadlift — single-joint (knee only)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 위치 — 발목 뒤(아킬레스 살짝 위)에 닿게",
+        "엎드린 형태면 엉덩이 살짝 들리지 않게 — 허리 둥글면 멈춤",
+        "당길 때 햄스트링 \"짜이는\" 느낌 — 엉덩이로 들지 않게",
+        "끝까지 굽히고 1초 정점",
+        "내릴 때 천천히 — 떨어뜨리듯 X",
+      ],
+      en: [
+        "Pad position — behind the ankle (just above the Achilles)",
+        "On prone version, don't lift the hips — stop if back rounds",
+        "Feel the hamstrings \"squeeze\" on the curl — don't drive with hips",
+        "Full flexion + 1-second peak",
+        "Lower slowly — no dropping",
+      ],
+    },
+  },
+
+  "핵 스쿼트 (Hack Squat)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "비스듬한 등받이에 어깨를 대고 발판에 발을 올려 미는 머신",
+        "레그 프레스와 비슷하지만 — 등이 직립에 가까워 자세가 \"스쿼트\" 같음",
+        "양옆 또는 위쪽에 안전 핸들",
+        "플레이트로 무게 추가",
+        "스쿼트 랙과 다르게 — 등이 패드에 받쳐져 균형 부담 X",
+      ],
+      en: [
+        "A machine where you lean back on a pad with shoulders against a yoke and push the platform",
+        "Similar to Leg Press, but more upright — feels like a squat",
+        "Safety handles on the sides or top",
+        "Plates load on the bar/sled",
+        "Unlike a squat rack — back is supported, no balance demand",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "어깨 패드(요크) 단단히 고정 — 들썩이지 않게",
+        "발 위치 — 발판 가운데 어깨너비, 발끝 약 15도 바깥",
+        "안전 핸들 위치 익히기 — 시작/종료 잠금 해제용",
+        "양쪽 플레이트 균형",
+        "처음이면 빈 머신 — 머신 자체 무게가 무거움",
+      ],
+      en: [
+        "Shoulder yoke pressed firmly — no shifting",
+        "Foot position — center of platform, shoulder-width, toes ~15° out",
+        "Know the safety handles — for start/end locking",
+        "Equal plate weight",
+        "Start with empty if new — the machine itself is heavy",
+      ],
+    },
+  },
+
+  "힙 어덕션 머신 (Hip Adduction Machine)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "앉아서 양 무릎 안쪽 패드를 모으는 머신 (다리 모으기)",
+        "셀렉터 핀으로 무게 조절",
+        "보통 힙 어브덕션과 같은 머신 또는 옆에 배치 (반대 동작 짝)",
+        "내전근(허벅지 안쪽) 격리 머신",
+        "스쿼트와 다르게 — 단관절·격리 운동",
+      ],
+      en: [
+        "A seated machine where you squeeze your inner thighs together (adduction)",
+        "Pin selector for weight",
+        "Usually the same machine as Hip Abduction or right next to it (paired movements)",
+        "Isolates the adductors (inner thigh)",
+        "Unlike Squat — single-joint isolation",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 위치 조절 — 무릎 안쪽에 닿게 (좌우 같이)",
+        "엉덩이 좌석에 단단히 + 등받이에 등 \"고정\"",
+        "양 무릎을 안쪽으로 모으듯 천천히",
+        "정점에서 1초 \"짜내기\"",
+        "처음이면 가벼운 무게 + 너무 넓게 시작하지 말기 (사타구니 부담)",
+      ],
+      en: [
+        "Adjust pads to touch the inside of the knees (symmetric)",
+        "Hips firmly on the seat + back glued to backrest",
+        "Squeeze knees together slowly",
+        "1-second squeeze at the center",
+        "Start light + don't open too wide initially (groin strain risk)",
+      ],
+    },
+  },
+
+  "힙 어브덕션 머신 (Hip Abduction Machine)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "앉아서 양 무릎 바깥 패드를 벌리는 머신 (다리 벌리기)",
+        "셀렉터 핀으로 무게 조절",
+        "어덕션 머신과 같은 머신 또는 옆에 배치",
+        "외전근/중둔근(엉덩이 옆) 격리 머신",
+        "스쿼트와 다르게 — 단관절·격리 운동",
+      ],
+      en: [
+        "A seated machine where you push your knees outward (abduction)",
+        "Pin selector for weight",
+        "Same machine as Hip Adduction or right next to it",
+        "Isolates the abductors / glute medius (outer hip)",
+        "Unlike Squat — single-joint isolation",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 위치 조절 — 무릎 바깥쪽에 닿게",
+        "엉덩이 좌석 + 등 등받이 단단히",
+        "양 무릎을 바깥쪽으로 벌리듯 천천히",
+        "정점에서 1초 \"짜내기\"",
+        "처음이면 가벼운 무게 — 좌석에서 들썩이지 않게",
+      ],
+      en: [
+        "Adjust pads to touch the outside of the knees",
+        "Hips on seat + back on backrest firmly",
+        "Push knees outward slowly",
+        "1-second squeeze at the top",
+        "Start light — don't bounce on the seat",
+      ],
+    },
+  },
+
+  "백익스텐션 머신 (Back Extension Machine)": {
+    imagePath: "/machine/bench-press.png",
+    findGuide: {
+      ko: [
+        "허리 위쪽이 패드, 발목 아래가 롤러로 고정된 머신 (45도 또는 90도)",
+        "허리 폄(extension) 동작용 — 후면 사슬(허리/엉덩이/햄스트링)",
+        "보통 코어 운동 영역에 배치",
+        "데드리프트와 다르게 — 등 각도 변화로 자극, 무게 부담 적음",
+        "Hyperextension 또는 Roman Chair라고도 불러요",
+      ],
+      en: [
+        "A machine with a hip/thigh pad and ankle roller (45° or 90°)",
+        "For back extension — posterior chain (low back / glutes / hamstrings)",
+        "Usually placed in the core area",
+        "Unlike Deadlift — extension via angle change, less spinal load",
+        "Also called Hyperextension or Roman Chair",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 높이 조절 — 골반 위 허벅지 윗부분에 닿게 (배 압박 X)",
+        "발목 롤러 단단히 고정",
+        "엉덩이가 패드 위에서 자유롭게 굽힘 (\"hinge\")",
+        "올라올 때 허리가 뒤로 꺾이지 않게 — 직선까지만",
+        "처음이면 맨몸으로 폼부터 — 무게 들고 하면 부담 큼",
+      ],
+      en: [
+        "Pad height — at the upper thighs / hip crease (not pressing the belly)",
+        "Ankle rollers firmly locked",
+        "Hips hinge freely over the pad",
+        "Don't hyperextend at the top — stop at the straight line",
+        "Start with bodyweight — adding weight too early stresses the back",
+      ],
+    },
+  },
+
+  // ── 등 (MACHINE/BW) ──
+  "인버티드 로우 (Inverted Row)": {
+    imagePath: "/machine/squat-rack1.png",
+    findGuide: {
+      ko: [
+        "스쿼트 랙 / 스미스 머신 / 바벨 거치대에 바벨/봉을 가슴 높이로 설정",
+        "TRX 스트랩으로도 가능 (TRX 로우와 거의 같음)",
+        "맨몸 또는 발 받침으로 강도 조절",
+        "풀업의 \"수평 버전\" — 등 후면 자극",
+        "풀업 못 하는 초보자에게 좋은 단계 (보조 풀업과 함께)",
+      ],
+      en: [
+        "Set a bar in a squat rack / Smith machine / barbell rack at chest height",
+        "TRX straps work too (similar to TRX Row)",
+        "Bodyweight or foot support to adjust intensity",
+        "\"Horizontal pull-up\" — targets posterior back",
+        "Great progression for beginners who can't do pull-ups (along with Assisted Pull-ups)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "바벨 높이 — 누워서 팔 펴면 봉이 손에 닿는 높이",
+        "그립 — 어깨너비 살짝 넓게, 오버그립",
+        "몸을 곧게 — 머리부터 발끝까지 일직선 유지",
+        "당길 때 가슴이 봉으로 — 어깨를 뒤로 모으는 느낌",
+        "발 받침 추가하면 더 어려워짐 — 처음이면 발 바닥에",
+      ],
+      en: [
+        "Bar height — bar should touch your hand when lying with arms extended",
+        "Grip — slightly wider than shoulders, overhand",
+        "Body straight — head to feet in one line",
+        "Pull until chest meets the bar — squeeze shoulders back",
+        "Elevating the feet makes it harder — start with feet on the floor",
+      ],
+    },
+  },
+
+  "어시스티드 풀업 (Assisted Pull-ups)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "카운터웨이트로 체중 일부를 빼주는 어시스트 머신",
+        "패드(무릎/발판) 위에 무릎 또는 발을 올림",
+        "셀렉터 핀이 \"빼주는\" 무게 — 클수록 더 쉬워짐",
+        "풀업과 다르게 — 머신이 도와줘 초보 진입 가능",
+        "밴드 어시스트(밴드를 봉에 걸어 발 받침)도 가능",
+      ],
+      en: [
+        "An assist machine that counterweights part of your bodyweight",
+        "Place knees or feet on the pad/platform",
+        "Pin selector controls assistance — more weight = easier",
+        "Unlike Pull-ups — machine helps, beginner-friendly",
+        "Band assistance also possible (band looped on bar, foot in band)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "무릎/발 패드 단단히 — 떨어뜨리지 않게",
+        "셀렉터 핀 위치 — 처음이면 \"빼는 무게\" 크게 시작",
+        "그립 — 어깨너비보다 살짝 넓게 (오버그립)",
+        "어깨 \"고정\" 후 당기기 — 풀업과 동일 폼",
+        "어시스트 무게 점진적 감소 → 자력 풀업으로 진행",
+      ],
+      en: [
+        "Knees/feet firmly on the pad — don't fall off",
+        "Pin position — start with high assist (more counterweight)",
+        "Grip — slightly wider than shoulders (overhand)",
+        "Pack the shoulders before pulling — same form as Pull-up",
+        "Reduce assist over time → graduate to bodyweight pull-up",
+      ],
+    },
+  },
+
+  "친업 (Chin-ups)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "풀업 봉을 그대로 사용 — 그립만 다름",
+        "친업 = 언더그립 (손바닥이 본인 쪽), 풀업 = 오버그립",
+        "이두 동원이 더 큼 — 풀업보다 살짝 쉬워요",
+        "보조 풀업 머신/밴드도 동일하게 적용 가능",
+        "맨몸 풀업 못 하면 친업부터 시도 추천",
+      ],
+      en: [
+        "Same bar as Pull-up — only the grip differs",
+        "Chin-up = underhand (palms facing you), Pull-up = overhand",
+        "More biceps involvement — slightly easier than pull-ups",
+        "Assisted machine/band works the same way",
+        "If pull-up is too hard, start with chin-ups",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "그립 — 어깨너비, 손바닥이 본인 쪽 (언더그립)",
+        "어깨 \"고정\" 후 당기기 — 어깨 다치지 않게",
+        "당길 때 턱이 봉을 살짝 지나가는 느낌",
+        "내릴 때도 천천히 — 떨어지듯 내리면 팔꿈치 부담",
+        "처음이면 보조 머신/밴드부터 — 한 개도 무리 X",
+      ],
+      en: [
+        "Grip — shoulder-width, palms facing you (underhand)",
+        "Pack the shoulders before pulling — protect them",
+        "Pull until the chin passes slightly above the bar",
+        "Lower slowly — falling stresses elbows",
+        "Start with assisted machine/band — even one rep isn't required",
+      ],
+    },
+  },
+
+  "중량 풀업 (Weighted Pull-ups)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "풀업 봉 + 디핑 벨트(허리에 두르고 플레이트 매달기)",
+        "디핑 벨트 없으면 덤벨을 발 사이로 잡거나 조끼 사용",
+        "맨몸 풀업 5~10개 안정적으로 가능한 후 진입",
+        "풀업과 동일 그립 (오버그립)",
+        "벨트 + 플레이트 셋업이 가장 안정적",
+      ],
+      en: [
+        "Pull-up bar + dipping belt (chain around waist, plate hangs)",
+        "No belt? Hold dumbbell between feet or wear weighted vest",
+        "Progress here only after 5-10 strict bodyweight pull-ups",
+        "Same grip as Pull-up (overhand)",
+        "Belt + plate setup is most stable",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "디핑 벨트를 허리에 단단히 — 너무 헐렁하면 흔들림 위험",
+        "플레이트 콜라/카라비너로 고정",
+        "처음이면 가벼운 플레이트(2.5~5kg)부터",
+        "맨몸 풀업과 동일 폼 — 무게가 폼 깨면 보조 줄이기",
+        "내릴 때 더 천천히 — 무게 있어 어깨/팔꿈치 부담 큼",
+      ],
+      en: [
+        "Belt secured firmly — too loose risks swinging",
+        "Lock the plate with a collar/carabiner",
+        "Start light (2.5-5 kg) when adding weight",
+        "Same form as bodyweight — drop weight if form breaks",
+        "Lower more slowly — weight stresses shoulders/elbows",
+      ],
+    },
+  },
+
+  // ── 케틀벨 (KETTLEBELL) ──
+  "케틀벨 스윙 (Kettlebell Swing)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 + 빈 공간 (앞으로 1m 이상)",
+        "보통 자유 웨이트존이나 케틀벨 거치대 옆",
+        "양손 또는 한 손 변형 (양손이 표준)",
+        "데드리프트와 다르게 — 폭발적 \"hip hinge\" 동작",
+        "초보자도 쉽게 시작 가능 (단, 폼이 매우 중요)",
+      ],
+      en: [
+        "One kettlebell + clear space (1m+ in front)",
+        "Free-weight area or near the kettlebell rack",
+        "Two-handed or one-handed variations (two-handed is standard)",
+        "Unlike Deadlift — explosive hip-hinge movement",
+        "Beginner-friendly to start, but form is critical",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 위치 — 발 앞 약 30cm",
+        "발 — 어깨너비 살짝 넓게, 발끝 약간 바깥",
+        "허리 곧게 + 엉덩이 뒤로 — 무릎 살짝만 굽힘",
+        "엉덩이로 \"차내듯\" 폭발적으로 앞으로 (어깨 높이까지만)",
+        "팔로 들지 않게 — 케틀벨은 자연스럽게 떠올라야",
+      ],
+      en: [
+        "Kettlebell — about 30 cm in front of your feet",
+        "Feet — slightly wider than shoulders, toes slightly out",
+        "Back straight, hips hinged back — only soft knee bend",
+        "Drive the hips forward explosively (kettlebell rises to shoulder height max)",
+        "Don't lift with arms — the kettlebell should float up",
+      ],
+    },
+  },
+
+  "케틀벨 고블릿 스쿼트 (Kettlebell Goblet Squat)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개를 가슴 앞에 들고 스쿼트",
+        "별도 거치대 X — 스쿼트 랙 불필요",
+        "케틀벨 거치대 옆에 넓은 공간 추천",
+        "백 스쿼트와 다르게 — 무게가 앞쪽이라 코어 더 일함",
+        "초보자가 스쿼트 폼 익히기에 가장 좋은 변형",
+      ],
+      en: [
+        "Hold one kettlebell at chest level and squat",
+        "No rack needed",
+        "Open space near the kettlebell rack",
+        "Unlike Back Squat — front-loaded, more core demand",
+        "Best beginner squat variation for learning form",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 — 손잡이 양쪽 \"뿔\"을 양손으로 잡고 가슴 앞 (잔 모양처럼)",
+        "발 — 어깨너비 살짝 넓게, 발끝 약 15도 바깥",
+        "내려갈 때 무릎이 발끝 방향, 허벅지 평행까지",
+        "상체 거의 수직 — 무게가 앞이라 자연스럽게 곧음",
+        "처음이면 가벼운 케틀벨로 폼부터",
+      ],
+      en: [
+        "Hold the kettlebell by the \"horns\" with both hands at chest (like a goblet)",
+        "Feet — slightly wider than shoulders, toes ~15° out",
+        "Knees track in line with toes, thighs parallel",
+        "Torso nearly vertical — front-load keeps it upright",
+        "Start with a light kettlebell to drill form",
+      ],
+    },
+  },
+
+  "케틀벨 데드리프트 (Kettlebell Deadlift)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 (또는 2개) — 양 발 사이",
+        "케틀벨 거치대 옆 또는 자유 공간",
+        "바벨 데드리프트의 \"입문\" 버전 — 폼 익히기 좋음",
+        "한 손 / 양손 / 더블 케틀벨 변형",
+        "컨벤셔널 데드리프트와 동일한 hip hinge 패턴",
+      ],
+      en: [
+        "One (or two) kettlebell — between your feet",
+        "Near the kettlebell rack or open space",
+        "\"Entry-level\" version of barbell deadlift — great for learning form",
+        "One-handed / two-handed / double-kettlebell variants",
+        "Same hip-hinge pattern as conventional deadlift",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 — 발 중앙 사이",
+        "발 — 어깨너비, 발끝 약간 바깥",
+        "허리 곧게 + 엉덩이 뒤로 — 정강이 거의 수직",
+        "올라올 때 다리로 바닥 미는 느낌",
+        "처음이면 가벼운 케틀벨로 hip hinge 익히기",
+      ],
+      en: [
+        "Kettlebell — between the midfeet",
+        "Feet shoulder-width, toes slightly out",
+        "Back straight, hips hinged back — shins nearly vertical",
+        "Drive up by pushing the floor with the legs",
+        "Start light to drill the hip-hinge",
+      ],
+    },
+  },
+
+  "케틀벨 로우 (Kettlebell Row)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 — 한 손 로우 형태가 표준",
+        "벤치 또는 무릎 위에 한 손 받침 (덤벨 로우와 비슷)",
+        "케틀벨 거치대 가까이",
+        "덤벨 로우와 다르게 — 손잡이가 위쪽이라 자연스러운 그립",
+        "더블 케틀벨로 양손 동시 변형도 가능",
+      ],
+      en: [
+        "One kettlebell — single-arm row is standard",
+        "One hand on a bench or knee for support (like dumbbell row)",
+        "Near the kettlebell rack",
+        "Unlike Dumbbell Row — handle on top gives natural grip",
+        "Double-kettlebell version possible (two-arm)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치 받침 — 한 손/한 무릎",
+        "허리 곧게 — 등 바닥과 거의 평행",
+        "당길 때 팔꿈치를 천장 쪽으로",
+        "정점에서 1초 등 짜내기",
+        "처음이면 가벼운 케틀벨",
+      ],
+      en: [
+        "Bench support — one hand and one knee",
+        "Back straight — nearly parallel to the floor",
+        "Pull the elbow toward the ceiling",
+        "1-second back squeeze at the top",
+        "Start light",
+      ],
+    },
+  },
+
+  "케틀벨 오버헤드 프레스 (Kettlebell Overhead Press)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 — 한 손 프레스 표준 (또는 양손 더블)",
+        "별도 머신 불필요 — 자유 공간",
+        "오버헤드 프레스와 다르게 — 케틀벨 손잡이 회전 자유로워 어깨 자연 궤도",
+        "한쪽씩 진행 — 좌우 균형 + 코어 자극",
+        "케틀벨 거치대 옆에서",
+      ],
+      en: [
+        "One kettlebell — single-arm press is standard (or double)",
+        "No machine needed — open space",
+        "Unlike Overhead Press — kettlebell rotates freely, allowing the shoulder's natural arc",
+        "One arm at a time — balance + core demand",
+        "Near the kettlebell rack",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 \"랙 포지션\" — 어깨 앞, 손잡이 약간 회전 (손바닥 안쪽)",
+        "발 어깨너비, 코어 brace",
+        "올릴 때 손목 자연스럽게 회전 — 정점에서 손바닥 앞쪽",
+        "팔꿈치 잠그고 머리 위 정렬",
+        "처음이면 가벼운 무게 + 한쪽씩",
+      ],
+      en: [
+        "Kettlebell \"rack position\" — at the front of the shoulder, handle rotated (palm in)",
+        "Feet shoulder-width, brace the core",
+        "Rotate the wrist on the way up — palm faces forward at the top",
+        "Lock elbow + bar overhead aligned",
+        "Start light + one arm at a time",
+      ],
+    },
+  },
+
+  "더블 케틀벨 프론트 스쿼트 (Double Kettlebell Front Squat)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 2개 — 양 어깨 앞 \"랙 포지션\"",
+        "스쿼트 랙 불필요 — 자유 공간",
+        "고블릿 스쿼트의 발전형 — 무게 더 무겁게 가능",
+        "프론트 스쿼트(바벨)와 다르게 — 그립이 자유로워 손목 부담 적음",
+        "케틀벨 2개 거치대 옆에서 진행",
+      ],
+      en: [
+        "Two kettlebells — at the front of each shoulder (\"rack position\")",
+        "No squat rack — open space",
+        "Progression from Goblet Squat — heavier loading possible",
+        "Unlike Front Squat (barbell) — free grip, less wrist strain",
+        "Near the kettlebell rack",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "양 케틀벨 \"랙 포지션\" — 손목 직각, 손잡이 어깨 앞",
+        "팔꿈치 위치 — 살짝 들어 안정적인 \"선반\"",
+        "발 — 어깨너비 살짝 넓게, 발끝 약 15도 바깥",
+        "내려갈 때 상체 수직 유지 — 프론트 스쿼트와 동일",
+        "처음이면 가벼운 케틀벨 한 쌍",
+      ],
+      en: [
+        "Both kettlebells in rack position — wrists straight, handles at shoulder front",
+        "Elbows slightly raised for a stable \"shelf\"",
+        "Feet — slightly wider than shoulders, toes ~15° out",
+        "Keep torso vertical on the descent — same as Front Squat",
+        "Start with a light pair",
+      ],
+    },
+  },
+
+  // ── TRX/매달리기 ──
+  "TRX 로우 (TRX Row)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "천장이나 봉에 매달린 TRX 스트랩 (Y자 모양)",
+        "두 손잡이를 양손에 잡고 누운 자세에서 당김",
+        "맨몸 운동 — 발 위치로 강도 조절 (가까울수록 어려움)",
+        "인버티드 로우와 비슷 — 다만 그립이 \"중립\"이라 어깨 친화적",
+        "주변 충분한 공간 필요 (몸 길이 + α)",
+      ],
+      en: [
+        "TRX straps hanging from a bar or ceiling (Y-shape)",
+        "Grip both handles, body angled back — pull yourself up",
+        "Bodyweight only — foot position controls difficulty (closer = harder)",
+        "Similar to Inverted Row — but neutral grip is more shoulder-friendly",
+        "Need clear space (body length + extra)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "스트랩 길이 — 누웠을 때 손잡이가 가슴 옆 정도",
+        "그립 — 양손 중립 (손바닥 마주 보기)",
+        "몸을 곧게 — 머리부터 발끝까지 일직선",
+        "당길 때 어깨를 뒤로 모으기 — 등이 일하도록",
+        "발 위치로 강도 조절 — 처음이면 발 멀리 (쉬움)",
+      ],
+      en: [
+        "Strap length — handles at chest-side when lying back",
+        "Grip — neutral (palms facing each other)",
+        "Body straight — head to feet in one line",
+        "Pull and squeeze the shoulders back — let the back work",
+        "Foot position controls difficulty — start with feet farther out (easier)",
+      ],
+    },
+  },
+
+  "TRX 바이셉스 컬 (TRX Biceps Curl)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "TRX 스트랩 사용 — 로우와 동일 셋업",
+        "그립만 다름 — 언더그립(손바닥이 본인 쪽)으로 컬",
+        "맨몸 컬 변형 — 발 위치로 강도 조절",
+        "덤벨 컬과 다르게 — 정점에서 케이블 같은 일정 저항",
+        "초보자에게 좋은 컬 입문",
+      ],
+      en: [
+        "TRX straps — same setup as TRX Row",
+        "Underhand grip (palms facing you) for the curl",
+        "Bodyweight curl variation — foot position controls difficulty",
+        "Unlike Dumbbell Curl — constant resistance like a cable",
+        "Beginner-friendly curl entry",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "스트랩 길이 — 팔 펼쳤을 때 손잡이가 가슴 옆",
+        "그립 — 언더그립",
+        "팔꿈치 \"고정\" 위치 — 어깨 앞쪽, 절대 떨어뜨리지 않게",
+        "당길 때 손이 머리 쪽으로 — 컬 동작",
+        "발 위치로 강도 조절 — 처음이면 발 멀리",
+      ],
+      en: [
+        "Strap length — handles at chest-side when arms extended",
+        "Grip — underhand (palms facing you)",
+        "Lock elbows in place — at the front of the shoulders, never drop",
+        "Pull hands toward the head — curling motion",
+        "Foot position controls difficulty — start with feet farther out",
+      ],
+    },
+  },
+
+  "행잉 레그 레이즈 (Hanging Leg Raise)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "풀업 봉에 매달려 다리 들어올리는 운동",
+        "별도 머신 X — 풀업 봉과 동일 시설",
+        "캡틴스 체어(Captain's Chair, 팔꿈치 받침대)도 가능 — 더 쉬움",
+        "코어(복근) 운동의 결정판 — 스트레이트 레그 = 가장 어려움",
+        "행잉 니 레이즈가 입문 변형",
+      ],
+      en: [
+        "Hang from a pull-up bar and raise the legs",
+        "No extra equipment — same as pull-up bar",
+        "Captain's Chair (forearm rests) also works — easier version",
+        "Top-tier core exercise — straight legs = hardest",
+        "Hanging Knee Raise is the beginner variation",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "그립 — 어깨너비, 오버그립",
+        "어깨 \"고정\" — 매달릴 때 어깨 으쓱 X",
+        "다리 들어올릴 때 골반이 살짝 말림 — 복근 짜내는 느낌",
+        "내릴 때도 천천히 — 흔들림 통제",
+        "처음이면 행잉 니 레이즈부터",
+      ],
+      en: [
+        "Grip — shoulder-width, overhand",
+        "Pack the shoulders — no shrugging when hanging",
+        "On the lift, the pelvis tucks slightly — feel the abs squeeze",
+        "Lower slowly — control any swinging",
+        "Start with Hanging Knee Raise",
+      ],
+    },
+  },
+
+  "행잉 니 레이즈 (Hanging Knee Raise)": {
+    imagePath: "/machine/pull-up-bar.png",
+    findGuide: {
+      ko: [
+        "풀업 봉에 매달려 무릎을 가슴 쪽으로 올림",
+        "행잉 레그 레이즈의 입문 변형 — 무릎 굽혀서 가벼움",
+        "캡틴스 체어로도 가능 — 더 쉬움",
+        "코어/복근 입문 운동",
+        "팔과 어깨도 같이 운동되는 효과",
+      ],
+      en: [
+        "Hang from a pull-up bar and raise the knees toward the chest",
+        "Beginner version of Hanging Leg Raise — bent knees = lighter",
+        "Captain's Chair works too — even easier",
+        "Beginner-level core/abs exercise",
+        "Also works the arms and shoulders as a side effect",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "그립 — 어깨너비, 오버그립",
+        "어깨 \"고정\" 후 매달리기",
+        "무릎을 가슴 쪽으로 올리며 골반 살짝 말기",
+        "정점 1초, 내릴 때 천천히 — 흔들리지 않게",
+        "행잉 니 레이즈 → 행잉 레그 레이즈 → 토스 투 바 순서로 진행",
+      ],
+      en: [
+        "Grip — shoulder-width, overhand",
+        "Pack the shoulders before hanging",
+        "Raise knees toward the chest, slight pelvic tuck",
+        "1-second peak + slow lower — control swinging",
+        "Progression: Knee Raise → Leg Raise → Toes-to-Bar",
+      ],
+    },
+  },
+
+  // ── 종아리 (CALF MACHINES) ──
+  "스탠딩 카프 레이즈 (Standing Calf Raises)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "어깨 패드가 있는 머신에서 발끝으로 \"까치발\" 동작",
+        "스미스 머신/덤벨/케틀벨로도 변형 가능",
+        "발끝이 받침대(또는 발판) 위에, 뒤꿈치 자유롭게 내려가게",
+        "종아리 격리 운동",
+        "보통 종아리 운동 머신 영역에 배치",
+      ],
+      en: [
+        "A machine with shoulder pads where you raise onto your toes",
+        "Variations with Smith machine, dumbbells, or kettlebells",
+        "Toes on a platform, heels free to drop below",
+        "Isolates the calves",
+        "Usually grouped with calf machines",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "어깨 패드 단단히 — 머리/목으로 받지 않게",
+        "발끝 받침대 위 — 뒤꿈치 가능한 한 깊이 내림",
+        "올릴 때 발끝까지 — 정점에서 1초 짜내기",
+        "내릴 때 천천히 — 종아리 늘어남 끝까지",
+        "처음이면 가벼운 무게 — 가동범위 익히기 우선",
+      ],
+      en: [
+        "Shoulder pads firmly — not on the head/neck",
+        "Toes on the platform — heels drop as deep as possible",
+        "Rise to the tips of the toes — 1-second squeeze at the top",
+        "Lower slowly — full calf stretch at the bottom",
+        "Start light — drill the range first",
+      ],
+    },
+  },
+
+  "시티드 카프 레이즈 (Seated Calf Raises)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "앉아서 무릎 위 패드를 올리는 머신",
+        "스탠딩과 다르게 — 무릎이 굽혀 \"솔레우스(가자미근)\" 자극",
+        "발끝이 받침대 위, 무릎 위에 패드",
+        "종아리 운동 머신 영역에 배치",
+        "스탠딩 + 시티드 둘 다 하면 종아리 전체 자극",
+      ],
+      en: [
+        "A seated machine where you raise a pad sitting over the knees",
+        "Unlike Standing — knees bent target the soleus",
+        "Toes on the platform, pad over the knees",
+        "Grouped with calf machines",
+        "Standing + Seated together hits the full calf",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 위치 — 무릎 바로 위 (대퇴 X)",
+        "발끝 받침대 — 뒤꿈치 자유롭게 내려가게",
+        "올릴 때 발끝 끝까지",
+        "정점 1초 + 내릴 때 천천히",
+        "솔레우스는 작은 근육이라 무리하지 말기",
+      ],
+      en: [
+        "Pad position — directly over the knees (not the thighs)",
+        "Toes on the platform — heels drop freely",
+        "Rise to the tips of the toes",
+        "1-second peak + slow descent",
+        "Soleus is a small muscle — don't overload",
+      ],
+    },
+  },
+
+  "동키 카프 레이즈 (Donkey Calf Raises)": {
+    imagePath: "/machine/leg-press.png",
+    findGuide: {
+      ko: [
+        "허리 굽힌 자세 + 등 위에 무게(또는 머신)",
+        "전용 머신 또는 다른 사람이 등에 무게로 앉기 (\"동키\" 이름의 유래)",
+        "스탠딩과 다르게 — 허리 굽힘이 종아리 늘어남 강조",
+        "무게 머신이 없으면 레그 프레스 머신 응용 가능",
+        "보통 시설 흔치 않아 변형으로 진행",
+      ],
+      en: [
+        "Bent-over posture with weight on the back (or machine)",
+        "Dedicated machine or someone sitting on your back (origin of \"donkey\")",
+        "Unlike Standing — bent posture emphasizes the calf stretch",
+        "If no machine, use Leg Press as a substitute",
+        "Equipment is rare in many gyms — often substituted",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "전용 머신: 허리 굽혀 패드를 등 위에 올림 — 발끝 받침대 위",
+        "허리 곧게 — 둥글면 부담",
+        "발끝 끝까지 올림 + 정점 1초",
+        "내릴 때 천천히 — 종아리 늘어남 충분히",
+        "전용 머신 없는 경우 다른 카프 변형으로 대체 가능",
+      ],
+      en: [
+        "Dedicated machine: bend forward, pad rests on the back, toes on the platform",
+        "Back straight — rounding strains it",
+        "Rise to the tips of the toes + 1-second peak",
+        "Lower slowly — full calf stretch",
+        "Substitute with another calf variation if machine isn't available",
+      ],
+    },
+  },
 };
 
 export function getEquipmentInfo(exerciseName: string): EquipmentInfo | undefined {
