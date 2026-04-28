@@ -366,7 +366,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       setIsResting(false);
       return;
     }
-    
+
     if (currentSet > 1) {
       setCurrentSet((prev) => prev - 1);
       // 마지막 로그 제거 (중복 방지)
@@ -374,11 +374,22 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
       if (exLogs.length > 0) {
         setLogs({ ...logs, [currentExerciseIndex]: exLogs.slice(0, -1) });
       }
-    } else if (currentExerciseIndex > 0) {
+      return;
+    }
+
+    // 회의 2026-04-28: 초보자 overlay sequence 가 끝까지 진행됐다면(step >= length) 마지막 overlay 재노출.
+    // FitScreen 무게설정 → 뒤로가기 → 사용법 → 뒤로가기 → 기구찾기 흐름 보장.
+    // 사용처: sequence 캐시 그대로(useMemo 미변), step 만 length-1 로 이동해 phase 재현.
+    if (overlaySequenceStep >= beginnerOverlaySequence.length && beginnerOverlaySequence.length > 0) {
+      setOverlaySequenceStep(beginnerOverlaySequence.length - 1);
+      return;
+    }
+
+    if (currentExerciseIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
       // We need to know how many sets the previous exercise had to go to the last set
       // But simplifying: Go to start of previous exercise
-      setCurrentSet(1); 
+      setCurrentSet(1);
     } else {
       onBack();
     }

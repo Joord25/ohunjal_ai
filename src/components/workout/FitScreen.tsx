@@ -2107,14 +2107,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </p>
             </div>
 
-            {/* 회의 ζ Q3 (B 분기): 초보자 모드 휴식 추천 + freedom hint 1줄 (일반 모드 회귀 X) */}
+            {/* 회의 2026-04-28: ACSM 권장 X초 제거 — localRestSec(실시간 카운트다운)을 표시해
+                매초 줄어들어 "권장값"으로 인식 불가. 자유 hint만 유지. */}
             {beginnerEnabled && (
-              <div className="mb-2 px-1 flex items-center justify-between text-[11px]">
-                <span className="font-bold text-[#2D6A4F]">
-                  {t("beginner_mode.rest.recommended").replace("{sec}", String(localRestSec || 90))}
-                </span>
-                <span className="text-gray-400">{t("beginner_mode.rest.freedom_hint")}</span>
-              </div>
+              <p className="mb-2 px-1 text-[11px] text-gray-400 text-right">
+                {t("beginner_mode.rest.freedom_hint")}
+              </p>
             )}
 
             {/* 3. REST 카드 — 한 줄 레이아웃 (REST · -15s · 타이머 · +15s · 휴식 종료) */}
