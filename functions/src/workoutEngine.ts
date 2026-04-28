@@ -449,7 +449,7 @@ const LEG_EXERCISES = {
     "글루트 브릿지 (Glute Bridge)",
     "케이블 풀 스루 (Cable Pull-Through)",
     "레그 컬 (Leg Curl)",
-    "힙 어덕션 머신 (Hip Abduction Machine)",
+    "힙 어덕션 머신 (Hip Adduction Machine)",
   ],
   calf: [
     "스탠딩 카프 레이즈 (Standing Calf Raises)",

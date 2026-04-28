@@ -36,6 +36,10 @@ const GLUTE: Set<string> = new Set([
 const ADDUCTOR: Set<string> = new Set([
   // 힙 어덕션 머신 — 대퇴 내전근 주도
   "힙 어덕션 머신 (Hip Adduction Machine)",
+  // 회의 2026-04-28: 엔진 typo 호환 — workoutEngine.ts 라인 452에 한국어-영문 불일치
+  // ("Hip Abduction Machine" — 영문이 abduction으로 잘못됨) 키로 저장된 기존 plan 즉시 fix.
+  // 엔진은 별도 수정했지만 기존 SavedPlan에 박힌 typo 이름은 그대로라 양쪽 키 모두 등록.
+  "힙 어덕션 머신 (Hip Abduction Machine)",
 ]);
 
 const CALF: Set<string> = new Set([
