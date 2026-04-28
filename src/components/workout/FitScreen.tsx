@@ -13,6 +13,7 @@ import { useGpsTracker } from "@/hooks/useGpsTracker";
 import { useAlarmSynthesizer } from "@/hooks/useAlarmSynthesizer";
 import { formatPace, formatRunDistanceKm, detectRunExerciseMode, detectExerciseRunningType, getRunningTypeShareLabel } from "@/utils/runningFormat";
 import { deriveIntervalSpec, estimateSprintSec } from "@/utils/intervalSpec";
+import { isHoldExercise } from "@/utils/holdExercise";
 import { GpsPermissionDialog } from "./GpsPermissionDialog";
 import { computeRunningStats } from "@/utils/runningStats";
 
@@ -271,7 +272,10 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // 첫 mount 의 false 발화는 noop 처리하여 음악 의도치 않은 pause 방지.
   const firstIsPlayingChangeRef = useRef(true);
 
-  const isTimerMode = exercise.type === 'cardio' || exercise.type === 'warmup' || exercise.type === 'mobility';
+  // 회의 2026-04-28: 정적 홀드 운동(플랭크/사이드 플랭크/할로우 홀드 등)은 타이머 모드.
+  // 플랜 미리보기와 동일 SSOT(@/utils/holdExercise)를 써서 "X초 유지" 운동이 양쪽에서 일관되게 노출됨.
+  const isStaticHold = isHoldExercise(exercise.name, exercise.count);
+  const isTimerMode = exercise.type === 'cardio' || exercise.type === 'warmup' || exercise.type === 'mobility' || isStaticHold;
 
   // Determine if it's a distance-based measurement (LSD, km, etc.)
   const isDistanceMode = exercise.name.includes("LSD") || exercise.count.includes("km") || exercise.count.includes("Distance");
@@ -757,12 +761,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         return 0;
     }
 
-    // "N초" / "N sec" / "N-M초" — 시간 단위 바로 앞 숫자 우선 매칭
-    const secMatch = countStr.match(/(\d+)(?:-\d+)?\s*(?:초|sec)/i);
-    if (secMatch) return parseInt(secMatch[1]) || 60;
+    // "N초" / "N sec" / "N-M초" — 범위면 상한값 우선 (플랜 미리보기와 동일, hold 운동 목표 일치).
+    const secMatch = countStr.match(/(\d+)(?:-(\d+))?\s*(?:초|sec)/i);
+    if (secMatch) return parseInt(secMatch[2] || secMatch[1]) || 60;
 
-    const minMatch = countStr.match(/(\d+)(?:-\d+)?\s*(?:분|min)/i);
-    if (minMatch) return (parseInt(minMatch[1]) || 1) * 60;
+    const minMatch = countStr.match(/(\d+)(?:-(\d+))?\s*(?:분|min)/i);
+    if (minMatch) return (parseInt(minMatch[2] || minMatch[1]) || 1) * 60;
 
     const match = countStr.match(/(\d+)/);
     const val = match ? parseInt(match[1]) : 0;

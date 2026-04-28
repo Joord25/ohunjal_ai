@@ -16,6 +16,7 @@ import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getExerciseName } from "@/utils/exerciseName";
 import { updateActiveSession } from "@/utils/activeSessionPersistence";
+import { isHoldExercise } from "@/utils/holdExercise";
 // 회의 2026-04-27: 음악 기능 제거 — musicPreference / CURATED_PLAYLISTS import 삭제
 
 interface MasterPlanPreviewProps {
@@ -115,15 +116,8 @@ function detectRunningVariant(exercises: ExerciseStep[]): RunningVariant | null 
   return null;
 }
 
-/** 플랭크·사이드 플랭크·할로우 홀드 등 정적 홀드 운동 판정 (reps를 초 단위로 저장) */
-function isHoldExercise(name: string, originalCount?: string): boolean {
-  if (/플랭크|plank|할로우|hollow\s?hold|사이드\s?플랭크|side\s?plank/i.test(name)) return true;
-  // 원본 count가 "초 유지" 패턴이면 홀드로 간주
-  if (originalCount && /\d+\s*초\s*유지|\d+\s*sec\s*hold/i.test(originalCount)) return true;
-  return false;
-}
-
-/** Rebuild count string from sets/reps to ensure consistency */
+/** Rebuild count string from sets/reps to ensure consistency.
+ *  isHoldExercise 는 src/utils/holdExercise 에서 import (FitScreen과 SSOT 공유). */
 function rebuildCount(ex: ExerciseStep, t?: (key: string, vars?: Record<string, string>) => string, locale?: string): string {
   // 첫 set의 reps(시간값) 우선 사용, 없으면 count 추출 또는 ex.reps fallback
   const firstSetTime = (unitMatch: RegExpMatchArray | null): number | null => {
