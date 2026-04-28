@@ -122,7 +122,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     : currentExercise.type === "warmup"
       ? ["warmup_intro", "tutorial_video_warmup"]
       : isBeginnerSupportedExercise(currentExercise.name)
-        ? ["main_equipment", "tutorial_video_main"]
+        ? ["equipment_find", "equipment_use", "tutorial_video_main"]
         : [];
   const beginnerOverlayPhase: BeginnerOverlayPhase | null =
     beginnerOverlaySequence[overlaySequenceStep] ?? null;

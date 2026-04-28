@@ -6,7 +6,12 @@ import { trackEvent } from "@/utils/analytics";
 import { EquipmentFinderCard } from "./EquipmentFinderCard";
 import { TutorialVideoCard } from "./TutorialVideoCard";
 
-export type BeginnerOverlayPhase = "warmup_intro" | "main_equipment" | "tutorial_video_warmup" | "tutorial_video_main";
+export type BeginnerOverlayPhase =
+  | "warmup_intro"
+  | "tutorial_video_warmup"
+  | "equipment_find"
+  | "equipment_use"
+  | "tutorial_video_main";
 
 interface BeginnerGuideOverlayProps {
   phase: BeginnerOverlayPhase;
@@ -93,8 +98,11 @@ export const BeginnerGuideOverlay: React.FC<BeginnerGuideOverlayProps> = ({
           </div>
         )}
 
-        {phase === "main_equipment" && (
-          <EquipmentFinderCard exerciseName={exerciseName} />
+        {(phase === "equipment_find" || phase === "equipment_use") && (
+          <EquipmentFinderCard
+            exerciseName={exerciseName}
+            mode={phase === "equipment_find" ? "find" : "use"}
+          />
         )}
 
         {(phase === "tutorial_video_warmup" || phase === "tutorial_video_main") && (
@@ -113,9 +121,11 @@ export const BeginnerGuideOverlay: React.FC<BeginnerGuideOverlayProps> = ({
         >
           {phase === "warmup_intro"
             ? t("beginner_mode.warmup.cta")
-            : phase === "main_equipment"
-              ? t("beginner_mode.equipment.cta")
-              : t("beginner_mode.tutorial.cta_done")}
+            : phase === "equipment_find"
+              ? t("beginner_mode.equipment.find.cta")
+              : phase === "equipment_use"
+                ? t("beginner_mode.equipment.use.cta")
+                : t("beginner_mode.tutorial.cta_done")}
         </button>
       </footer>
     </div>
