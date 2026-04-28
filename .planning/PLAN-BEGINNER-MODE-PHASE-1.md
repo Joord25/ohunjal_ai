@@ -1,8 +1,8 @@
-# PLAN-BEGINNER-MODE-PHASE-1 — 초보자 모드 MVP Phase 1 (벤치프레스 1종)
+# PLAN-BEGINNER-MODE-PHASE-1 — 초보자 모드 MVP Phase 1 (바벨 벤치 프레스 (Barbell Bench Press) 1종)
 
 **작성일**: 2026-04-28
 **Seed**: [SEED-001](seeds/SEED-001-beginner-mode.md) Phase 1 부분 distill
-**범위**: 벤치프레스 1종 + Warmup 1단계 + Main 1단계 + 안전 보완 1·2 (휴식 90-120초 / 폼 cue 5줄)
+**범위**: 바벨 벤치 프레스 (Barbell Bench Press) 1종 + Warmup 1단계 + Main 1단계 + 안전 보완 1·2 (휴식 90-120초 / 폼 cue 5줄)
 **기간**: 1주 (5-6일 코드)
 **검증 지표**: 완주율 ≥60% / 기구 찾기 CTA 클릭률 ≥60%
 **컨벤션**: PLAN-ROOT-HOME-CARDS.md 패턴 따름 (GSD ROADMAP 미채용)
@@ -55,11 +55,11 @@
 | 2 | 옵트인 진입: **master_plan_preview "운동 시작" 버튼 클릭 직후 1회 모달** (대표 결정 2026-04-28) | "처음 헬스장 가시나요?" 2버튼 (네/아니요). 모달 닫히면 즉시 workout_session 진입 |
 | 3 | 프로필 탭 토글: MyProfileTab 신규 섹션 "초보자 모드" — UnitToggle 패턴 재사용 | 즉시 ON/OFF |
 | 4 | BeginnerGuideOverlay 컴포넌트: `phase: "warmup_intro" \| "main_equipment"` enum 2개 | Phase 2에서 enum 확장 |
-| 5 | EquipmentFinderCard: 벤치프레스 1장만 (`/public/machine/bench-press.png` — 대표 큐레이션 완료 2026-04-28) | 추가 운동은 Phase 2에서 |
+| 5 | EquipmentFinderCard: 바벨 벤치 프레스 (Barbell Bench Press) 1장만 (`/public/machine/bench-press.png` — 대표 큐레이션 완료 2026-04-28) | 추가 운동은 Phase 2에서 |
 | 6 | 폼 cue 5줄: SEED-001 박힌 ACSM/NSCA 인용본 그대로 | i18n ko/en 동시 |
 | 7 | 휴식 시간: 컴파운드 90-120초 / fail 시 150-180초 | FitScreen `restTimer` 계산 로직 분기 (`isBeginner && exercise.equipment === "barbell"`) |
 | 8 | 카피 룰 강제: "통증/부상" 부정 단어 X. "헤매지 않게/깔끔하게/정확하게" 긍정만 | `feedback_native_copy_frame` + SEED-001 룰 |
-| 9 | 진입 조건: `isBeginner === true && currentExercise.name === "벤치프레스"` | Phase 1은 벤치만. 나머지 운동은 일반 모드로 폴백 |
+| 9 | 진입 조건: `isBeginner === true && currentExercise.name === "바벨 벤치 프레스 (Barbell Bench Press)"` | Phase 1은 벤치만. 나머지 운동은 일반 모드로 폴백 |
 | 10 | i18n 카피 신규: KO/EN 동시 ~12개 (모달 2 + 폼 cue 5 + 기구 카드 5) | `feedback_i18n_always` |
 
 ---
@@ -117,7 +117,7 @@
 ```
 ┌──────────────────────────┐
 │  EQUIPMENT               │
-│  벤치프레스               │  ← 운동명
+│  바벨 벤치 프레스 (Barbell Bench Press)               │  ← 운동명
 │                          │
 │  ┌────────────────────┐  │
 │  │                    │  │
@@ -145,7 +145,7 @@
 └──────────────────────────┘
 ```
 
-- 진입 트리거: `isBeginner && currentExercise.name === "벤치프레스" && !overlayDismissed[index]`
+- 진입 트리거: `isBeginner && currentExercise.name === "바벨 벤치 프레스 (Barbell Bench Press)" && !overlayDismissed[index]`
 - 폼 cue는 운동 진행 중 화면에서도 작은 toggle ("폼 cue 보기")로 재호출 가능 — Phase 1은 단순화: overlay 1회만, 운동 화면 내 toggle은 Phase 2
 
 ### 2.4 프로필 탭 토글
