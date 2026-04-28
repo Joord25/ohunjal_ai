@@ -162,6 +162,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // 회의: 피드백은 선택만 저장하고 "휴식 종료" 버튼 클릭 시 실제 제출 (Flow B)
   const [selectedFeedback, setSelectedFeedback] = useState<{ type: FeedbackType; reps: number } | null>(null);
   const [localRestSec, setLocalRestSec] = useState(0);
+  // 회의 2026-04-29: ACSM 권장 휴식 — 진입 시 1회 계산 후 고정 (카운트다운/±15s 영향 X).
+  // localRestSec과 분리해 항상 원본 권장값을 표시.
+  const [recommendedRestSec, setRecommendedRestSec] = useState(0);
   const [timerCompleted, setTimerCompleted] = useState(false);
   const [showRepsEdit, setShowRepsEdit] = useState(false);
   const [adjustedReps, setAdjustedReps] = useState(setInfo.targetReps);
@@ -942,6 +945,8 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     setView("feedback");
     setSelectedFeedback(null);
     setLocalRestSec(restByType);
+    // 회의 2026-04-29: ACSM 권장값 고정 저장 — 카운트다운/±15s 영향 X.
+    setRecommendedRestSec(restByType);
   };
 
   const actualWeight = hasWeight ? selectedWeight : undefined;
@@ -2113,12 +2118,15 @@ export const FitScreen: React.FC<FitScreenProps> = ({
               </p>
             </div>
 
-            {/* 회의 2026-04-28: ACSM 권장 X초 제거 — localRestSec(실시간 카운트다운)을 표시해
-                매초 줄어들어 "권장값"으로 인식 불가. 자유 hint만 유지. */}
+            {/* 회의 2026-04-29: ACSM 권장 표시 부활 — recommendedRestSec(고정값) 사용해
+                localRestSec(카운트다운/±15s)과 분리. 권장값은 항상 원본 ACSM 값 표시. */}
             {beginnerEnabled && (
-              <p className="mb-2 px-1 text-[11px] text-gray-400 text-right">
-                {t("beginner_mode.rest.freedom_hint")}
-              </p>
+              <div className="mb-2 px-1 flex items-center justify-between text-[11px]">
+                <span className="font-bold text-[#2D6A4F]">
+                  {t("beginner_mode.rest.recommended").replace("{sec}", String(recommendedRestSec || 90))}
+                </span>
+                <span className="text-gray-400">{t("beginner_mode.rest.freedom_hint")}</span>
+              </div>
             )}
 
             {/* 3. REST 카드 — 한 줄 레이아웃 (REST · -15s · 타이머 · +15s · 휴식 종료) */}
