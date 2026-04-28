@@ -1333,6 +1333,510 @@ export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
       ],
     },
   },
+
+  // ══════════════════════════════════
+  // ── BATCH 3 (회의 2026-04-29): 잡다 25종 ──
+  // ══════════════════════════════════
+
+  "바벨 컬 (Barbell Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "그립 어깨너비, 언더그립",
+        "팔꿈치 옆구리 \"고정\"",
+        "올릴 때 손목 직각",
+        "내릴 때 천천히",
+        "EZ바면 손목 부담 ↓",
+      ],
+      en: [
+        "Grip shoulder-width, underhand",
+        "Glue elbows to sides",
+        "Wrists straight on the way up",
+        "Lower slowly",
+        "EZ bar reduces wrist strain",
+      ],
+    },
+  },
+
+  "바벨 슈러그 (Barbell Shrug)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "그립 어깨너비, 오버그립",
+        "팔 곧게 — 컬 X",
+        "어깨를 귀로 \"으쓱\" — 회전 X",
+        "정점 1초 + 천천히",
+        "가벼운 무게부터",
+      ],
+      en: [
+        "Grip shoulder-width, overhand",
+        "Arms straight — no curling",
+        "Shrug to ears — no rolling",
+        "1-second peak + slow",
+        "Start light",
+      ],
+    },
+  },
+
+  "랙 풀 (Rack Pull)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "핀 높이 — 무릎/허벅지",
+        "허리 곧게 + 가슴 들고",
+        "그립 어깨너비, 오버그립",
+        "다리로 미는 느낌",
+        "내릴 때 핀 위 \"리셋\"",
+      ],
+      en: [
+        "Pin at knee/thigh",
+        "Back straight + chest up",
+        "Grip shoulder-width, overhand",
+        "Drive with the legs",
+        "Reset on pins between reps",
+      ],
+    },
+  },
+
+  "바벨 힙 쓰러스트 (Barbell Hip Thrust)": {
+    source: "Bret Contreras + NSCA Essentials",
+    cues: {
+      ko: [
+        "어깨갈비뼈 벤치 끝",
+        "발 어깨너비, 엉덩이 가까이",
+        "올릴 때 엉덩이 짜내기 + 정점 1초",
+        "허리 꺾이지 않게 — 갈비뼈 닫음",
+        "패드 사용 — 골반 통증 방지",
+      ],
+      en: [
+        "Shoulder blades on bench edge",
+        "Feet shoulder-width, close to hips",
+        "Squeeze glutes + 1-second peak",
+        "Don't hyperextend — ribs softly tucked",
+        "Use a pad to protect the hips",
+      ],
+    },
+  },
+
+  "트랩바 데드리프트 (Trap Bar Deadlift)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "트랩바 가운데 서기 — 손잡이 골반 라인",
+        "허리 곧게 + 가슴 들고 — 컨벤셔널보다 직립",
+        "그립 양 손잡이 단단히 (중립)",
+        "다리로 바닥 미는 느낌",
+        "정점 직립 + 엉덩이 짜내기",
+      ],
+      en: [
+        "Stand inside the bar — handles at hip line",
+        "Back straight + chest up — more upright than conventional",
+        "Grip both handles firmly (neutral)",
+        "Drive with legs",
+        "Stand tall + glute squeeze at the top",
+      ],
+    },
+  },
+
+  "헤머 벤치 프레스 (Hammer Bench Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "좌석 — 손잡이 가슴 중앙",
+        "등 등받이 \"붙여\"",
+        "팔꿈치 약 45도 — 어깨 보호",
+        "끝까지 펴지 말고",
+        "좌우 균형 신경 (독립 동작)",
+      ],
+      en: [
+        "Seat — handles at mid-chest",
+        "Back glued to backrest",
+        "Elbows ~45° — shoulder protection",
+        "Don't fully lock at top",
+        "Mind left/right balance (independent arms)",
+      ],
+    },
+  },
+
+  "업라이트 로우 (Upright Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "그립 어깨너비 — 좁으면 어깨 부담",
+        "팔꿈치를 위로 끌기 — 손목으로 끌지 X",
+        "바벨 가슴~턱까지만",
+        "정점 1초 + 천천히",
+        "어깨 충돌 위험 — 가벼운 무게",
+      ],
+      en: [
+        "Grip shoulder-width — narrower stresses shoulders",
+        "Drive elbows up — don't pull with wrists",
+        "Bar to chest/chin only",
+        "1-second peak + slow",
+        "Impingement risk — start light",
+      ],
+    },
+  },
+
+  "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)": {
+    source: "Starting Strength + NSCA Essentials",
+    cues: {
+      ko: [
+        "덤벨 좌우 같이",
+        "직립 시작 — 다리 살짝만 굽힘",
+        "엉덩이 뒤로 hinge",
+        "햄스트링 늘어남까지",
+        "정점 엉덩이 짜내기",
+      ],
+      en: [
+        "Match weight on both sides",
+        "Start standing — soft knees",
+        "Hinge at the hips",
+        "Stop at hamstring stretch",
+        "Glute squeeze at the top",
+      ],
+    },
+  },
+
+  "덤벨 와이드 스쿼트 (Dumbbell Wide Squat)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "발 1.5~2배 어깨너비, 발끝 30-45도 바깥",
+        "무릎이 발끝 방향",
+        "허벅지 평행, 상체 거의 수직",
+        "내전근/엉덩이 자극",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Feet 1.5-2× shoulder width, toes 30-45° out",
+        "Knees track over toes",
+        "Thighs parallel, torso vertical",
+        "Adductor/glute focus",
+        "Start light",
+      ],
+    },
+  },
+
+  "덤벨 쓰러스터 (Dumbbell Thruster)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "시작 — 덤벨 어깨 옆 \"랙\"",
+        "스쿼트 + 일어나며 동시에 프레스",
+        "스쿼트 추진력으로 프레스 보조",
+        "정점 — 머리 위 + 직립",
+        "처음이면 분리 동작부터",
+      ],
+      en: [
+        "Start — dumbbells at shoulders (rack)",
+        "Squat + press in one fluid motion",
+        "Use squat drive to assist press",
+        "Top — overhead + standing",
+        "Drill components separately first",
+      ],
+    },
+  },
+
+  "덤벨 플로어 프레스 (Dumbbell Floor Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "바닥 누워 — 무릎 자세 자유",
+        "덤벨 좌우 같이",
+        "팔꿈치 바닥 닿으면 멈춤",
+        "올릴 때 가슴 짜내기",
+        "어깨 부상자 친화적",
+      ],
+      en: [
+        "Lie on floor — knees free",
+        "Match weight",
+        "Stop when elbows hit the floor",
+        "Squeeze chest on the way up",
+        "Shoulder-friendly variation",
+      ],
+    },
+  },
+
+  "덤벨 힙 쓰러스트 (Dumbbell Hip Thrust)": {
+    source: "Bret Contreras + NSCA Essentials",
+    cues: {
+      ko: [
+        "어깨갈비뼈 벤치 끝",
+        "덤벨 골반 위 + 패드",
+        "발 어깨너비, 엉덩이 가까이",
+        "엉덩이 짜내기 + 정점 1초",
+        "허리 꺾이지 않게",
+      ],
+      en: [
+        "Shoulder blades on bench edge",
+        "Dumbbell on hips + pad",
+        "Feet shoulder-width, close to hips",
+        "Squeeze glutes + 1-second peak",
+        "Don't hyperextend the back",
+      ],
+    },
+  },
+
+  "덤벨 프리쳐 컬 (Dumbbell Preacher Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "패드 높이 — 겨드랑이 패드 끝",
+        "팔꿈치 단단히 — 떨어지지 않게",
+        "한 손씩, 좌우 균형",
+        "내릴 때 완전히 펴지 않게",
+        "정점 1초 짜내기",
+      ],
+      en: [
+        "Pad — armpit catches the top",
+        "Elbow firm — never lift off",
+        "One arm at a time",
+        "Don't fully extend at the bottom",
+        "1-second peak squeeze",
+      ],
+    },
+  },
+
+  "아놀드 프레스 (Arnold Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "시작 — 손바닥 본인 쪽",
+        "올리며 손목 회전 — 정점 손바닥 앞",
+        "팔꿈치 자연스럽게 옆으로",
+        "정점 잠금 + 회전하며 내림",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Start — palms toward you",
+        "Rotate as you press — palms forward at top",
+        "Elbows naturally flare out",
+        "Lock at top + rotate back down",
+        "Start light",
+      ],
+    },
+  },
+
+  "워킹 런지 (Walking Lunges)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "한 발 크게 앞 — 무릎 90도",
+        "뒷 무릎 바닥 직전",
+        "다음 걸음으로 — 제자리 X",
+        "상체 곧게 + 코어 brace",
+        "처음이면 맨몸 + 짧은 거리",
+      ],
+      en: [
+        "Step forward — knee at 90°",
+        "Back knee just above floor",
+        "Step into next — don't return",
+        "Torso upright + brace core",
+        "Bodyweight + short distance first",
+      ],
+    },
+  },
+
+  "고블렛 스쿼트 (Goblet Squat)": {
+    source: "Dan John, Goblet Squat",
+    cues: {
+      ko: [
+        "양손으로 가슴 앞 잡기",
+        "발 어깨너비 살짝 넓게, 발끝 약 15도 바깥",
+        "허벅지 평행, 무릎 발끝 방향",
+        "상체 거의 수직",
+        "팔꿈치가 무릎 안쪽 닿을 정도까지 OK",
+      ],
+      en: [
+        "Hold at chest with both hands",
+        "Feet slightly wider than shoulders, toes ~15° out",
+        "Thighs parallel, knees track over toes",
+        "Torso nearly vertical",
+        "Elbows touching insides of knees is OK",
+      ],
+    },
+  },
+
+  "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치 거리 — 무릎이 발끝 안 넘게",
+        "뒷발 — 발등 또는 발끝 받침",
+        "내려갈 때 상체 거의 수직",
+        "앞다리로 일어남",
+        "처음이면 맨몸",
+      ],
+      en: [
+        "Bench distance — knee shouldn't pass the toe",
+        "Back foot — top-of-foot or toe-down",
+        "Torso nearly vertical on the descent",
+        "Drive up with front leg",
+        "Start with bodyweight",
+      ],
+    },
+  },
+
+  "리버스 런지 (Reverse Lunges)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "한 발 크게 뒤로 — 뒷 무릎 바닥 직전",
+        "앞다리 90도",
+        "상체 곧게",
+        "앞다리로 일어나 시작 자세",
+        "포워드 런지보다 무릎 부담 ↓",
+      ],
+      en: [
+        "Step back — back knee just above floor",
+        "Front knee ~90°",
+        "Torso upright",
+        "Drive up with front leg",
+        "Less knee load than forward lunges",
+      ],
+    },
+  },
+
+  "스텝업 (Step-Up)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치 높이 — 무릎 약 90도",
+        "발 전체 벤치 위에",
+        "앞 다리로 \"밀어올리기\"",
+        "내려올 때 천천히",
+        "처음이면 낮은 박스 + 맨몸",
+      ],
+      en: [
+        "Bench height — gives ~90° at knee",
+        "Full foot on the bench",
+        "Push up with front leg",
+        "Step down slowly",
+        "Low box + bodyweight first",
+      ],
+    },
+  },
+
+  "케틀벨 워킹 런지 (Kettlebell Walking Lunge)": {
+    source: "Pavel Tsatsouline + NSCA Essentials",
+    cues: {
+      ko: [
+        "케틀벨 어깨 앞 랙 포지션",
+        "한 발 크게 앞 — 무릎 90도",
+        "뒷 무릎 바닥 직전",
+        "다음 걸음으로",
+        "코어 brace — 케틀벨 흔들리지 않게",
+      ],
+      en: [
+        "Kettlebell at the shoulder (rack)",
+        "Step forward — knee at 90°",
+        "Back knee just above floor",
+        "Step into next rep",
+        "Brace the core — kettlebell stays put",
+      ],
+    },
+  },
+
+  "싱글 레그 케틀벨 RDL (Single-Leg Kettlebell RDL)": {
+    source: "Pavel Tsatsouline + NSCA Essentials",
+    cues: {
+      ko: [
+        "케틀벨 — 운동 다리 반대 손",
+        "한 다리 살짝 굽힘 + hinge",
+        "뒷다리 천장으로 + 등 곧게",
+        "햄스트링 늘어남까지",
+        "올라올 때 엉덩이 짜내기",
+      ],
+      en: [
+        "Hold kettlebell on opposite-side hand",
+        "Slight bend in working knee + hinge",
+        "Back leg extends + back straight",
+        "Lower until hamstring stretch",
+        "Glute squeeze on the way up",
+      ],
+    },
+  },
+
+  "케틀벨 플로어 프레스 (Kettlebell Floor Press)": {
+    source: "Pavel Tsatsouline + NSCA Essentials",
+    cues: {
+      ko: [
+        "바닥 누워 — 편한 다리",
+        "케틀벨 랙 — 손바닥 안쪽",
+        "팔꿈치 바닥 닿으면 멈춤",
+        "올릴 때 손목 회전 — 정점 손바닥 앞",
+        "한쪽씩 — 코어 자극",
+      ],
+      en: [
+        "Lie on floor — comfortable legs",
+        "Rack position — palm in",
+        "Stop when elbow hits the floor",
+        "Rotate wrist on the way up — palm forward at top",
+        "One arm — extra core demand",
+      ],
+    },
+  },
+
+  "케틀벨 윈드밀 (Kettlebell Windmill)": {
+    source: "Pavel Tsatsouline",
+    cues: {
+      ko: [
+        "케틀벨 머리 위 직선 (락아웃)",
+        "케틀벨 쪽 발 약 45도 바깥",
+        "케틀벨에서 시선 떼지 말기",
+        "허리로 옆 굽혀 반대 손 바닥 쪽",
+        "처음이면 가벼운 + 짧은 가동범위",
+      ],
+      en: [
+        "Lock kettlebell overhead in straight arm",
+        "Foot under kettlebell turned ~45° out",
+        "Eyes on kettlebell at all times",
+        "Side-bend at the waist, opposite hand toward floor",
+        "Start light + short range",
+      ],
+    },
+  },
+
+  "원 암 랫 풀다운 (One Arm Lat Pulldown)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "허벅지 패드 + 무게 핀 끝까지",
+        "D핸들 그립",
+        "당길 때 손이 어깨 옆으로",
+        "반대 손 자유 (좌석 받침)",
+        "한쪽 끝나면 반대 같은 횟수",
+      ],
+      en: [
+        "Thigh pad + pin all the way",
+        "D-handle grip",
+        "Pull to shoulder side",
+        "Other hand free (resting on seat)",
+        "Switch sides for equal reps",
+      ],
+    },
+  },
+
+  "하이로우 머신 (High Row Machine)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "좌석 — 손잡이 가슴 위쪽",
+        "체스트 패드에 가슴 단단히",
+        "팔꿈치 뒤로 — 등 가운데 짜내기",
+        "어깨 으쓱 X",
+        "양손 또는 한쪽씩",
+      ],
+      en: [
+        "Seat — handles at upper-chest",
+        "Chest firmly on the pad",
+        "Pull elbows back — squeeze mid-back",
+        "No shrugging",
+        "Both arms or one side",
+      ],
+    },
+  },
 };
 
 export function getFormCues(exerciseName: string, locale: Locale): string[] {

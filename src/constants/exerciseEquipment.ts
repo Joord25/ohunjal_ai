@@ -2212,6 +2212,910 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
       ],
     },
   },
+
+  // ══════════════════════════════════
+  // ── BATCH 3 (회의 2026-04-29): 바벨/덤벨/케틀벨/머신 잡다 25종 ──
+  // ══════════════════════════════════
+
+  "바벨 컬 (Barbell Curl)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "올림픽 바벨 또는 EZ바 — 자유 웨이트존",
+        "별도 거치대 X — 바닥/랙에서 들고 시작",
+        "덤벨 컬과 다르게 — 양손 동시, 회전 X",
+        "보통 거울 앞에서 진행",
+        "EZ바면 손목 부담 ↓ (각진 그립)",
+      ],
+      en: [
+        "Olympic bar or EZ bar — free-weight area",
+        "No rack — pick up from floor/rack",
+        "Unlike Dumbbell Curl — both hands together, no rotation",
+        "Usually done in front of a mirror",
+        "EZ bar reduces wrist strain (angled grip)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "그립 너비 — 어깨너비, 언더그립",
+        "팔꿈치 옆구리 \"붙여\" 고정",
+        "올릴 때 손목 직각 — 손목으로 끌면 다침",
+        "내릴 때 천천히 — 컨트롤 핵심",
+        "처음이면 EZ바 추천",
+      ],
+      en: [
+        "Grip — shoulder-width, underhand",
+        "Glue elbows to the sides",
+        "Wrists straight on the way up",
+        "Lower slowly — control is key",
+        "EZ bar recommended for beginners",
+      ],
+    },
+  },
+
+  "바벨 슈러그 (Barbell Shrug)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "바벨 또는 덤벨 (바벨이 표준)",
+        "자유 웨이트존에서 직립",
+        "랙에서 들고 시작",
+        "승모근 격리 — 어깨 으쓱 동작",
+        "별도 머신 X",
+      ],
+      en: [
+        "Barbell or dumbbells (barbell is standard)",
+        "Standing in the free-weight area",
+        "Lift from a rack",
+        "Isolates traps — shoulder shrug motion",
+        "No specific machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "그립 — 어깨너비, 오버그립",
+        "팔은 곧게 — 컬처럼 굽히지 않게",
+        "어깨를 귀 쪽으로 \"으쓱\" — 회전 X",
+        "정점 1초 + 천천히 내림",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Grip — shoulder-width, overhand",
+        "Arms straight — no curling",
+        "Shrug straight up to the ears — no rolling",
+        "1-second peak + slow descent",
+        "Start light",
+      ],
+    },
+  },
+
+  "랙 풀 (Rack Pull)": {
+    imagePath: ["/machine/squat-rack1.png", "/machine/squat-rack2.png", "/machine/squat-rack3.png"],
+    findGuide: {
+      ko: [
+        "스쿼트 랙(파워 랙) — 핀 위에 바벨 올려두고 시작",
+        "데드리프트의 부분 가동 변형",
+        "올림픽 바벨 + 플레이트",
+        "데드리프트와 다르게 — 시작 위치 높아 등 위쪽 자극",
+        "허리 약하면 데드리프트 대안",
+      ],
+      en: [
+        "Power rack — bar on the pins to start",
+        "Partial-range deadlift variant",
+        "Olympic bar + plates",
+        "Unlike Deadlift — higher start, more upper-back stimulus",
+        "Good deadlift alternative for weak low backs",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "핀 높이 — 무릎 또는 허벅지 위",
+        "양쪽 플레이트 + 콜라",
+        "허리 곧게 + 가슴 들고 시작",
+        "내려놓을 때 핀 위에 \"리셋\"",
+        "그립 — 어깨너비, 오버그립",
+      ],
+      en: [
+        "Pin height — knee or thigh level",
+        "Equal plates + collars",
+        "Back straight + chest up at the start",
+        "\"Reset\" on the pins between reps",
+        "Grip — shoulder-width, overhand",
+      ],
+    },
+  },
+
+  "바벨 힙 쓰러스트 (Barbell Hip Thrust)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "평벤치 + 바벨 + 플레이트 + 패드(권장)",
+        "벤치에 어깨 받치고 바닥에 엉덩이",
+        "바벨이 골반 위에 올라감",
+        "엉덩이 운동 끝판",
+        "데드리프트와 다르게 — 등 부담 적고 엉덩이 직격",
+      ],
+      en: [
+        "Flat bench + bar + plates + pad (recommended)",
+        "Shoulders on bench, hips on the floor",
+        "Bar rests on the hips",
+        "Top glute isolation",
+        "Unlike Deadlift — minimal back load",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치 위치 — 어깨갈비뼈가 벤치 끝",
+        "바벨 골반 위 + 패드",
+        "발 — 엉덩이 가까이, 어깨너비",
+        "올릴 때 엉덩이 \"짜내기\" + 정점 1초",
+        "허리 뒤로 꺾이지 않게",
+      ],
+      en: [
+        "Bench position — shoulder blades on the edge",
+        "Bar on hips + pad",
+        "Feet — close to hips, shoulder-width",
+        "Squeeze glutes at the top + 1-second peak",
+        "Don't hyperextend the back",
+      ],
+    },
+  },
+
+  "트랩바 데드리프트 (Trap Bar Deadlift)": {
+    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
+    findGuide: {
+      ko: [
+        "트랩바(육각형) + 플레이트",
+        "바벨이 \"갇혀\" 있고 손잡이가 양옆에",
+        "데드리프트와 스쿼트 중간 — 자세 더 직립",
+        "초보자 친화적",
+        "트랩바 보유 헬스장이 한정적",
+      ],
+      en: [
+        "Trap bar (hexagonal) + plates",
+        "Stand inside the bar with handles on both sides",
+        "Hybrid of deadlift and squat — more upright",
+        "Beginner-friendly",
+        "Not all gyms have a trap bar",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "트랩바 가운데 서기",
+        "양쪽 플레이트 + 콜라",
+        "그립 — 양 손잡이 단단히 (중립)",
+        "허리 곧게 + 가슴 들고",
+        "다리로 바닥 미는 느낌",
+      ],
+      en: [
+        "Stand inside the bar",
+        "Equal plates + collars",
+        "Grip both handles firmly (neutral)",
+        "Back straight + chest up",
+        "Drive up by pushing the floor with the legs",
+      ],
+    },
+  },
+
+  "헤머 벤치 프레스 (Hammer Bench Press)": {
+    imagePath: "/machine/bench-press.png",
+    findGuide: {
+      ko: [
+        "헤머 스트렝스 브랜드 가슴 머신",
+        "양옆 무게 봉 분리 — 좌우 독립 동작",
+        "체스트 프레스 머신과 비슷 — 한쪽씩 자유",
+        "보통 가슴 머신 영역",
+        "플레이트로 무게 추가",
+      ],
+      en: [
+        "Hammer Strength chest press",
+        "Independent loading arms",
+        "Similar to Chest Press Machine — independent sides",
+        "Usually in the chest-machine area",
+        "Plates load directly",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "좌석 높이 — 손잡이 가슴 중앙",
+        "양쪽 무게 같이",
+        "등 등받이 \"붙여\" 고정",
+        "한쪽씩 또는 양쪽 동시",
+        "처음이면 좌우 균형 익히기",
+      ],
+      en: [
+        "Seat height — handles at mid-chest",
+        "Equal weight on both sides",
+        "Back glued to backrest",
+        "Train one or both sides",
+        "Start by drilling left/right balance",
+      ],
+    },
+  },
+
+  "업라이트 로우 (Upright Row)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "바벨, EZ바, 덤벨, 케이블 가능",
+        "직립 + 바벨을 턱 쪽으로",
+        "별도 머신 X",
+        "어깨/승모근 운동",
+        "그립 너비로 자극 부위 변경",
+      ],
+      en: [
+        "Barbell, EZ bar, dumbbells, cable",
+        "Standing + pull bar to the chin",
+        "No specific machine",
+        "Shoulder/trap exercise",
+        "Grip width changes target muscle",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "그립 — 어깨너비",
+        "팔꿈치를 위로 끌어올림",
+        "바벨이 가슴~턱까지만 — 더 위는 어깨 충돌 위험",
+        "정점 1초 + 천천히",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Grip — shoulder-width",
+        "Drive elbows up",
+        "Bar travels to chest/chin only — higher risks impingement",
+        "1-second peak + slow descent",
+        "Start light",
+      ],
+    },
+  },
+
+  "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 1쌍 — 자유 웨이트존",
+        "직립 시작 (랙에서 들고)",
+        "바벨 RDL과 동일 패턴",
+        "RDL 입문에 추천 (가벼운 부담)",
+        "중량은 바벨 RDL이 더 높음",
+      ],
+      en: [
+        "A pair of dumbbells",
+        "Lift from rack to standing start",
+        "Same pattern as Barbell RDL",
+        "Great for learning RDL form",
+        "Heavier loading is easier with barbell",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "덤벨 좌우 같이",
+        "직립 시작 — 다리 살짝만 굽힘",
+        "엉덩이 뒤로 hinge — 다리 앞면 따라",
+        "햄스트링 늘어남까지만",
+        "정점 엉덩이 짜내기",
+      ],
+      en: [
+        "Match weight on both sides",
+        "Start standing — soft knees",
+        "Hinge at the hips — dumbbells slide down legs",
+        "Stop at hamstring stretch",
+        "Glute squeeze at the top",
+      ],
+    },
+  },
+
+  "덤벨 와이드 스쿼트 (Dumbbell Wide Squat)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 1개 (양손) 또는 2개",
+        "발 매우 넓게, 발끝 바깥",
+        "내전근/엉덩이 자극 강조",
+        "고블릿 변형 — 더 넓은 스탠스",
+        "케틀벨 와이드와 동일",
+      ],
+      en: [
+        "One dumbbell (both hands) or two",
+        "Wide stance, toes out",
+        "Targets adductors/glutes",
+        "Goblet variant — wider stance",
+        "Same as Kettlebell Wide Squat",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "덤벨 위치 — 가슴 앞 또는 양옆",
+        "발 1.5~2배 어깨너비",
+        "무릎이 발끝 방향",
+        "허벅지 평행, 상체 거의 수직",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Dumbbell at chest or hanging",
+        "Feet 1.5-2× shoulder width",
+        "Knees track over toes",
+        "Thighs parallel, torso vertical",
+        "Start light",
+      ],
+    },
+  },
+
+  "덤벨 쓰러스터 (Dumbbell Thruster)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 1쌍",
+        "스쿼트 + 오버헤드 프레스 결합 (CrossFit 인기)",
+        "별도 머신 X",
+        "전신 운동",
+        "케틀벨 가능",
+      ],
+      en: [
+        "A pair of dumbbells",
+        "Squat + overhead press combined (popular in CrossFit)",
+        "No specific machine",
+        "Full-body",
+        "Kettlebell version exists",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "시작 — 덤벨 어깨 옆 \"랙 포지션\"",
+        "스쿼트 → 일어나며 동시에 머리 위 프레스",
+        "스쿼트 추진력으로 프레스 보조",
+        "정점 — 머리 위 + 다리 직립",
+        "처음이면 분리 동작부터",
+      ],
+      en: [
+        "Start — dumbbells at shoulders (rack position)",
+        "Squat → stand + press overhead in one motion",
+        "Use squat drive to assist the press",
+        "Top — overhead + standing simultaneously",
+        "Start by drilling components separately",
+      ],
+    },
+  },
+
+  "덤벨 플로어 프레스 (Dumbbell Floor Press)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 1쌍 — 바닥에 누워 (벤치 X)",
+        "벤치 부족/어깨 부상자 대안",
+        "벤치 프레스와 다르게 — 가동범위 짧음",
+        "어깨 친화적",
+        "케틀벨 가능",
+      ],
+      en: [
+        "A pair of dumbbells — lying on floor (no bench)",
+        "Alternative when no bench / shoulder issue",
+        "Unlike Bench Press — shorter range",
+        "Shoulder-friendly",
+        "Kettlebell version exists",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "바닥에 누워 — 무릎 굽힘 또는 펴짐",
+        "덤벨 좌우 같이",
+        "팔꿈치 바닥 닿으면 멈춤",
+        "올릴 때 가슴 짜내기",
+        "벤치와 같은 무게로 시작 가능",
+      ],
+      en: [
+        "Lie on the floor — knees bent or straight",
+        "Match weight on both sides",
+        "Stop when elbows hit the floor",
+        "Squeeze chest on the way up",
+        "Can start with bench-press weight",
+      ],
+    },
+  },
+
+  "덤벨 힙 쓰러스트 (Dumbbell Hip Thrust)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "평벤치 + 덤벨 1개 (골반 위)",
+        "바벨 힙 쓰러스트 가벼운 버전",
+        "패드 권장",
+        "엉덩이 격리",
+        "초보자 진입 좋음",
+      ],
+      en: [
+        "Flat bench + one dumbbell (on hips)",
+        "Lighter version of Barbell Hip Thrust",
+        "Pad recommended",
+        "Glute isolation",
+        "Good entry point",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "어깨갈비뼈 벤치 끝",
+        "덤벨 골반 위 + 패드",
+        "발 어깨너비, 엉덩이 가까이",
+        "올릴 때 엉덩이 짜내기 + 정점 1초",
+        "허리 꺾이지 않게",
+      ],
+      en: [
+        "Shoulder blades on bench edge",
+        "Dumbbell on hips + pad",
+        "Feet shoulder-width, close to hips",
+        "Squeeze glutes + 1-second peak",
+        "Don't hyperextend the back",
+      ],
+    },
+  },
+
+  "덤벨 프리쳐 컬 (Dumbbell Preacher Curl)": {
+    imagePath: "/machine/incline-bench.png",
+    findGuide: {
+      ko: [
+        "프리처 벤치 + 덤벨 1개 (한 손씩)",
+        "팔꿈치 패드에 \"고정\"해 격리",
+        "스탠딩 컬과 다르게 — 보상 동작 불가",
+        "이두 정확 자극",
+        "한 손씩 강조",
+      ],
+      en: [
+        "Preacher bench + one dumbbell (single arm)",
+        "Elbow locked on the pad",
+        "Unlike standing curl — no compensation",
+        "Pure biceps",
+        "Emphasizes single side",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 — 겨드랑이가 패드 끝에",
+        "팔꿈치 단단히 — 떨어지지 않게",
+        "한 손씩, 좌우 균형",
+        "내릴 때 완전히 펴지 않게 (어깨)",
+        "정점 1초",
+      ],
+      en: [
+        "Pad — armpit catches the top",
+        "Elbow firm — never lift off",
+        "One arm at a time, balanced",
+        "Don't fully extend (shoulder protection)",
+        "1-second peak",
+      ],
+    },
+  },
+
+  "아놀드 프레스 (Arnold Press)": {
+    imagePath: "/machine/incline-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 1쌍 + 인클라인 벤치(거의 수직)",
+        "아놀드 슈왈제네거 명명 — 회전 추가",
+        "덤벨 숄더 프레스와 다르게 — 손바닥 회전 동작",
+        "어깨 전체 자극",
+        "별도 머신 X",
+      ],
+      en: [
+        "A pair of dumbbells + near-vertical incline bench",
+        "Named after Arnold — adds rotation",
+        "Unlike DB Shoulder Press — palms rotate",
+        "Hits whole shoulder",
+        "No specific machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "시작 — 덤벨 가슴 앞, 손바닥 본인 쪽",
+        "올리며 손목 회전 — 정점 손바닥 앞쪽",
+        "팔꿈치 자연스럽게 옆으로",
+        "정점 잠금 + 회전하며 내림",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Start — dumbbells in front, palms toward you",
+        "Rotate as you press — palms forward at top",
+        "Elbows naturally flare out",
+        "Lock at top + rotate back down",
+        "Start light",
+      ],
+    },
+  },
+
+  "워킹 런지 (Walking Lunges)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "맨몸 또는 덤벨/바벨",
+        "공간 필요 (앞으로 진행)",
+        "정지 런지와 다르게 — 동적 동작",
+        "코어/균형 자극 ↑",
+        "별도 머신 X",
+      ],
+      en: [
+        "Bodyweight or with dumbbells/barbell",
+        "Need walking space",
+        "Unlike static lunges — dynamic",
+        "More core/balance demand",
+        "No specific machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "맨몸 손 허리, 덤벨 양옆",
+        "한 발 크게 앞으로 — 무릎 90도",
+        "뒷 무릎 바닥 직전",
+        "다음 걸음 — 제자리로 X",
+        "처음이면 맨몸 + 짧은 거리",
+      ],
+      en: [
+        "Hands on hips (BW) or sides (DB)",
+        "Step forward — knee at 90°",
+        "Back knee just above floor",
+        "Step into next — don't return",
+        "Start with bodyweight + short distance",
+      ],
+    },
+  },
+
+  "고블렛 스쿼트 (Goblet Squat)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 또는 케틀벨 1개 — 가슴 앞",
+        "별도 머신 X",
+        "케틀벨 고블릿과 동일",
+        "백 스쿼트와 다르게 — 무게 앞쪽",
+        "초보자 최고 추천 스쿼트",
+      ],
+      en: [
+        "Dumbbell or kettlebell — at chest",
+        "No machine",
+        "Same as Kettlebell Goblet Squat",
+        "Unlike Back Squat — front-loaded",
+        "Best beginner squat",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "양손으로 가슴 앞 잡기",
+        "발 어깨너비 살짝 넓게, 발끝 약 15도 바깥",
+        "허벅지 평행, 무릎 발끝 방향",
+        "상체 거의 수직",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Hold at chest with both hands",
+        "Feet slightly wider than shoulders, toes ~15° out",
+        "Thighs parallel, knees track over toes",
+        "Torso nearly vertical",
+        "Start light",
+      ],
+    },
+  },
+
+  "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "평벤치 + 덤벨 1쌍 또는 맨몸",
+        "한 발 바닥, 다른 발 벤치 위",
+        "엉덩이/대퇴 + 균형",
+        "정지 런지와 다르게 — 뒷발 올림",
+        "별도 머신 X",
+      ],
+      en: [
+        "Flat bench + dumbbells (or bodyweight)",
+        "One foot on floor, other on bench behind",
+        "Glute/quad + balance",
+        "Unlike static lunges — back foot elevated",
+        "No specific machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치까지 거리 — 무릎이 발끝 안 넘게",
+        "뒷발 — 발등이 벤치 또는 발끝 받침",
+        "내려갈 때 상체 거의 수직",
+        "앞다리로 일어남",
+        "처음이면 맨몸 + 짧은 가동범위",
+      ],
+      en: [
+        "Bench distance — knee shouldn't pass the toe at 90°",
+        "Back foot — top-of-foot on bench or toe-down",
+        "Torso nearly vertical on descent",
+        "Drive up with front leg",
+        "Start with bodyweight + short range",
+      ],
+    },
+  },
+
+  "리버스 런지 (Reverse Lunges)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "맨몸 또는 덤벨/바벨",
+        "한 발 뒤로 보내 런지",
+        "포워드 런지와 다르게 — 무릎 부담 ↓",
+        "초보자/무릎 약자 추천",
+        "별도 머신 X",
+      ],
+      en: [
+        "Bodyweight or with dumbbells/barbell",
+        "Step one foot back into a lunge",
+        "Unlike forward lunge — less knee load",
+        "Recommended for beginners / weak knees",
+        "No specific machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "맨몸 손 허리, 덤벨 양옆",
+        "한 발 크게 뒤로 — 뒷 무릎 바닥 직전",
+        "앞다리 90도",
+        "앞다리로 일어나 시작 자세",
+        "처음이면 맨몸",
+      ],
+      en: [
+        "Hands on hips (BW) or sides (DB)",
+        "Step back — back knee just above floor",
+        "Front knee ~90°",
+        "Drive up with front leg",
+        "Start with bodyweight",
+      ],
+    },
+  },
+
+  "스텝업 (Step-Up)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "평벤치/박스 + 덤벨 또는 맨몸",
+        "한 발씩 벤치 위로 올라감",
+        "다리/엉덩이 + 균형",
+        "런지와 다르게 — 단순 들어올리기",
+        "별도 머신 X",
+      ],
+      en: [
+        "Flat bench/box + dumbbells or bodyweight",
+        "Step up onto the bench, one foot at a time",
+        "Legs/glutes + balance",
+        "Unlike lunges — pure lifting",
+        "No specific machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치 높이 — 무릎 약 90도",
+        "발 전체가 벤치 위에",
+        "앞 다리로 \"밀어올리듯\"",
+        "내려올 때 천천히",
+        "처음이면 낮은 박스 + 맨몸",
+      ],
+      en: [
+        "Bench height — gives ~90° at knee",
+        "Full foot on the bench",
+        "Push up with front leg",
+        "Step down slowly",
+        "Start with low box + bodyweight",
+      ],
+    },
+  },
+
+  "케틀벨 워킹 런지 (Kettlebell Walking Lunge)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 (랙) 또는 2개 + 공간",
+        "워킹 런지 + 케틀벨 부하",
+        "케틀벨 거치대 옆",
+        "오버헤드 변형도 가능",
+        "한 손이면 좌우 따로",
+      ],
+      en: [
+        "One kettlebell (rack) or two + walking space",
+        "Walking lunges + kettlebell load",
+        "Near the kettlebell rack",
+        "Overhead variation possible",
+        "Single bell — alternate sides",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 어깨 앞 랙 포지션",
+        "한 발 크게 앞 — 무릎 90도",
+        "뒷 무릎 바닥 직전",
+        "다음 걸음으로",
+        "코어 brace",
+      ],
+      en: [
+        "Kettlebell at the shoulder (rack)",
+        "Step forward — knee at 90°",
+        "Back knee just above floor",
+        "Step into next rep",
+        "Brace the core",
+      ],
+    },
+  },
+
+  "싱글 레그 케틀벨 RDL (Single-Leg Kettlebell RDL)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 + 한 다리 균형",
+        "한 다리 RDL — 뒷다리 카운터",
+        "엉덩이/햄스트링 + 균형",
+        "별도 머신 X",
+        "처음이면 맨몸",
+      ],
+      en: [
+        "One kettlebell + single-leg balance",
+        "Single-leg RDL — back leg counterbalances",
+        "Glute/hamstring + balance",
+        "No machine",
+        "Start with bodyweight",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 — 운동 다리 반대 손",
+        "한 다리 살짝 굽힘 + hinge",
+        "뒷다리 천장으로 — 등 곧게",
+        "햄스트링 늘어남까지",
+        "올라올 때 엉덩이 짜내기",
+      ],
+      en: [
+        "Hold kettlebell on the opposite-side hand",
+        "Slight bend in working knee + hinge",
+        "Back leg extends + back straight",
+        "Lower until hamstring stretch",
+        "Glute squeeze on the way up",
+      ],
+    },
+  },
+
+  "케틀벨 플로어 프레스 (Kettlebell Floor Press)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 (한 손씩) + 바닥",
+        "바닥 누워 가슴 프레스",
+        "벤치와 다르게 — 가동범위 짧음",
+        "어깨 친화적",
+        "케틀벨 회전 자유",
+      ],
+      en: [
+        "One kettlebell (single arm) on the floor",
+        "Lying on floor for chest press",
+        "Unlike bench — shorter range",
+        "Shoulder-friendly",
+        "Kettlebell handle rotates freely",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "바닥 누워 — 편한 다리 자세",
+        "케틀벨 랙 포지션 — 손바닥 안쪽",
+        "팔꿈치 바닥 닿으면 멈춤",
+        "올릴 때 손목 회전",
+        "한쪽씩 — 코어 자극",
+      ],
+      en: [
+        "Lie on the floor — comfortable leg position",
+        "Start in rack position — palm in",
+        "Stop when elbow hits the floor",
+        "Rotate wrist on the way up",
+        "One arm — extra core demand",
+      ],
+    },
+  },
+
+  "케틀벨 윈드밀 (Kettlebell Windmill)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "케틀벨 1개 — 머리 위로 들고",
+        "옆구리/사선근/어깨 안정",
+        "고급 동작 — 가벼운 무게부터",
+        "케틀벨 거치대 옆",
+        "코어/모빌리티 운동",
+      ],
+      en: [
+        "One kettlebell — held overhead",
+        "Obliques/core/shoulder stability",
+        "Advanced — start light",
+        "Near the kettlebell rack",
+        "Core/mobility exercise",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "케틀벨 운동 손에 머리 위 락아웃",
+        "케틀벨 쪽 발 약 45도 바깥",
+        "케틀벨 시선 떼지 말기",
+        "허리로 옆 굽혀 반대 손이 바닥 쪽",
+        "처음이면 가벼운 무게 + 짧은 가동범위",
+      ],
+      en: [
+        "Lock kettlebell overhead in straight arm",
+        "Foot under kettlebell — turned ~45° out",
+        "Eyes on kettlebell at all times",
+        "Side-bend at the waist, opposite hand toward floor",
+        "Start light + short range",
+      ],
+    },
+  },
+
+  "원 암 랫 풀다운 (One Arm Lat Pulldown)": {
+    imagePath: "/machine/lat-pulldown.png",
+    findGuide: {
+      ko: [
+        "랫 풀다운 머신 + D핸들 (한 손씩)",
+        "양팔과 다르게 — 한 쪽 등 격리, 가동범위 ↑",
+        "동일 머신 — 핸들만 D로 교체",
+        "한 손씩 정확 자극",
+        "케이블 머신에서도 가능",
+      ],
+      en: [
+        "Lat Pulldown machine + D-handle (single arm)",
+        "Unlike two-arm — isolates one side, longer range",
+        "Same machine — swap handle",
+        "Targets each side precisely",
+        "Also works on cable machine",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "허벅지 패드 + 무게 핀 끝까지",
+        "D핸들 그립 — 운동 손",
+        "당길 때 손이 어깨 옆으로",
+        "반대 손 자유 (좌석 받침)",
+        "한쪽 끝나면 반대 같은 횟수",
+      ],
+      en: [
+        "Thigh pad + pin all the way",
+        "D-handle in working hand",
+        "Pull to shoulder side",
+        "Other hand free (resting on seat)",
+        "Switch sides for equal reps",
+      ],
+    },
+  },
+
+  "하이로우 머신 (High Row Machine)": {
+    imagePath: "/machine/lat-pulldown.png",
+    findGuide: {
+      ko: [
+        "위쪽에서 내려오는 손잡이를 가슴 쪽으로 당기는 머신",
+        "랫 풀다운보다 더 수평 — 등 가운데 자극",
+        "양옆 손잡이 분리 (헤머 스타일)",
+        "체스트 패드 — 허리 부담 ↓",
+        "보통 등 머신 영역",
+      ],
+      en: [
+        "Pull handles from above down toward chest",
+        "More horizontal than Lat Pulldown — mid-back",
+        "Independent side handles (Hammer-style)",
+        "Chest pad — less lower-back load",
+        "Usually in back-machine area",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "좌석 — 손잡이 가슴 위쪽",
+        "체스트 패드에 가슴 단단히",
+        "팔꿈치 뒤로 — 등 가운데 짜내기",
+        "양손 또는 한쪽씩",
+        "처음이면 가벼운 무게",
+      ],
+      en: [
+        "Seat — handles at upper-chest",
+        "Chest firmly on the pad",
+        "Pull elbows back — squeeze mid-back",
+        "Both arms or one side",
+        "Start light",
+      ],
+    },
+  },
 };
 
 export function getEquipmentInfo(exerciseName: string): EquipmentInfo | undefined {
