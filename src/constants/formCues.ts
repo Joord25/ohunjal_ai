@@ -525,6 +525,310 @@ export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
       ],
     },
   },
+
+  // ══════════════════════════════════
+  // ── BATCH 1 (회의 2026-04-29): 바벨/덤벨 변형 15종 추가 ──
+  // ══════════════════════════════════
+
+  "인클라인 바벨 프레스 (Incline Barbell Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "각도 30-45도 — 너무 세우면 어깨 운동",
+        "바벨 코스 — 가슴 위쪽(쇄골 아래)으로 부드럽게 내리기",
+        "팔꿈치 약 45도 (몸통과) — 어깨 보호",
+        "발은 바닥에 단단히, 등은 등받이에 \"고정\"",
+        "올릴 때 가슴 위쪽이 \"짜이는\" 느낌이 정확한 자극",
+      ],
+      en: [
+        "Angle 30-45° — too steep becomes shoulder",
+        "Bar path — lower to upper chest (just below collarbone)",
+        "Elbows ~45° from torso — shoulder protection",
+        "Feet firmly planted, back \"glued\" to the backrest",
+        "Squeeze in upper chest at the top — that's the right feel",
+      ],
+    },
+  },
+
+  "디클라인 벤치 프레스 (Decline Bench Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "발 고정 패드(롤러)에 발등 단단히 — 미끄러지면 위험",
+        "바벨 코스 — 가슴 아래쪽으로 부드럽게",
+        "팔꿈치 약 45도 — 평벤치보다 살짝 좁게도 OK",
+        "머리가 아래라 어지러울 수 있음 — 호흡 안정 후 시작",
+        "바벨이 떨어지지 않게 손목 직각 + 엄지 꼭 감싸기",
+      ],
+      en: [
+        "Lock feet under the rollers — slipping is dangerous",
+        "Bar path — lower to lower chest",
+        "Elbows ~45° (slightly narrower than flat is OK)",
+        "Head-down may cause dizziness — settle breathing first",
+        "Wrists at right angle + thumb wrapped to prevent dropping the bar",
+      ],
+    },
+  },
+
+  "스미스 머신 벤치 프레스 (Smith Machine Bench Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치를 머신 안 정중앙에 배치 — 바벨이 가슴 중앙으로 떨어지게",
+        "그립 너비 — 어깨너비 살짝 넓게",
+        "바벨이 레일 따라 직선만 움직임 — 자유 바벨보다 \"길\" 결정 X",
+        "끝나면 바벨 \"돌려서\" 후크에 걸기 — 잠금 확인 필수",
+        "처음이면 가벼운 무게로 후크 동작 익히기 — 잠금 안 되면 위험",
+      ],
+      en: [
+        "Center the bench inside the machine — bar should drop over the middle of your chest",
+        "Grip — slightly wider than shoulders",
+        "Bar moves only along the rails — no path choice (unlike free bar)",
+        "Rotate the bar to lock back into hooks at the end — confirm the lock",
+        "Start light to get used to the hook mechanism — failure to lock is dangerous",
+      ],
+    },
+  },
+
+  "프론트 스쿼트 (Front Squat)": {
+    source: "Starting Strength 3rd Ed. + NSCA Essentials",
+    cues: {
+      ko: [
+        "바벨 위치 — 어깨 앞 쇄골 위, 팔꿈치 높이 들기 (\"선반\")",
+        "발은 어깨너비, 발끝 약 15도 바깥",
+        "내려갈 때 상체 거의 수직 유지 (백 스쿼트보다 더 곧게)",
+        "팔꿈치가 떨어지면 바벨이 앞으로 굴러 — 항상 위로 들기",
+        "허벅지 평행 이상까지 내려가기 (가동 범위 안에서)",
+      ],
+      en: [
+        "Bar position — front shoulders over collarbone, elbows up high (\"shelf\")",
+        "Feet shoulder-width, toes ~15° out",
+        "Keep torso nearly vertical on the descent (more upright than back squat)",
+        "If elbows drop, the bar rolls forward — keep them up",
+        "Squat at least to thighs parallel (within your range)",
+      ],
+    },
+  },
+
+  "루마니안 데드리프트 (Romanian Deadlift)": {
+    source: "Starting Strength 3rd Ed. + NSCA Essentials",
+    cues: {
+      ko: [
+        "다리는 거의 곧게 (살짝만 굽힘) — 무릎 굽혀 내리는 게 아님",
+        "엉덩이를 뒤로 밀어내며 hinge — 뒤쪽 벽을 미는 느낌",
+        "허리 곧게 — 등이 둥글면 즉시 멈추기",
+        "바벨이 다리 앞면을 따라 천천히 — 멀어지지 않게",
+        "햄스트링이 \"늘어남\"을 느낄 때까지 — 그 이상 깊이 X",
+      ],
+      en: [
+        "Legs almost straight (only soft knees) — don't squat down",
+        "Push the hips back to hinge — like pushing a wall behind you",
+        "Back straight — stop immediately if it rounds",
+        "Bar slides slowly along the front of the legs — never pull away",
+        "Stop when hamstrings stretch — don't go further",
+      ],
+    },
+  },
+
+  "스모 데드리프트 (Sumo Deadlift)": {
+    source: "Starting Strength 3rd Ed. + NSCA Essentials",
+    cues: {
+      ko: [
+        "발 위치 — 어깨너비 1.5~2배, 발끝 약 30-45도 바깥",
+        "그립 — 다리 안쪽으로 들어가서 어깨너비",
+        "내릴 때 무릎이 발끝 방향으로 \"열림\" — 안쪽으로 무너지면 안 됨",
+        "정강이 거의 수직 + 등 곧게 — 허리 둥글면 멈춤",
+        "올라올 때 엉덩이로 밀고 — 무릎과 엉덩이 동시 펴짐",
+      ],
+      en: [
+        "Feet — 1.5-2× shoulder width, toes ~30-45° out",
+        "Grip — hands inside the legs, shoulder-width",
+        "Knees track outward toward the toes — don't collapse inward",
+        "Shins nearly vertical + back straight — stop if back rounds",
+        "Drive up by pushing the hips — knees and hips extend together",
+      ],
+    },
+  },
+
+  "밀리터리 프레스 (Military Press)": {
+    source: "Starting Strength 3rd Ed.",
+    cues: {
+      ko: [
+        "발 모음(\"차렷\") — 균형 어렵지만 코어 더 일함",
+        "그립 너비 — 어깨너비 살짝 넓게, 손목 직각",
+        "올릴 때 다리 반동 절대 X — 순수 어깨 힘",
+        "복근에 힘 — 허리 뒤로 꺾이지 않게",
+        "끝낼 때 머리 바로 위 — 어깨 위치까지 정렬",
+      ],
+      en: [
+        "Feet together (\"attention\") — balance harder, core works more",
+        "Grip — slightly wider than shoulders, wrists straight",
+        "No leg drive — pure shoulder strength",
+        "Brace the core — don't let the back arch backward",
+        "At lockout, the bar is directly over the head — aligned with shoulders",
+      ],
+    },
+  },
+
+  "펜들레이 로우 (Pendlay Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "허리 곧게 + 거의 90도 굽힌 자세 (등이 바닥과 거의 평행)",
+        "그립 너비 — 어깨너비, 오버그립",
+        "당길 때 명치(가슴 아래) 쪽으로 — 폭발적으로",
+        "매 렙 후 바닥에 \"리셋\" — 반동 없이 매번 처음부터",
+        "처음이면 바벨 로우보다 가벼운 무게 — 폼이 더 어려워요",
+      ],
+      en: [
+        "Back straight, bent ~90° (back nearly parallel to the floor)",
+        "Grip — shoulder-width, overhand",
+        "Pull explosively to the sternum",
+        "\"Reset\" on the floor between every rep — no momentum",
+        "Start lighter than Barbell Row — form is more demanding",
+      ],
+    },
+  },
+
+  "티바 로우 (T-Bar Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "발은 바벨 양옆에 어깨너비",
+        "허리 곧게 + 약 45도 굽힘",
+        "당길 때 손잡이를 가슴/배꼽 사이로 — 팔꿈치 뒤로",
+        "회전축이 고정이라 — 자연스럽게 \"호\" 그리며 당겨짐",
+        "체스트 패드가 있으면 사용 — 허리 부담 ↓",
+      ],
+      en: [
+        "Feet straddle the bar at shoulder width",
+        "Back straight, bent ~45°",
+        "Pull the handle between sternum and belly — drive the elbows back",
+        "Pivot is fixed — the bar naturally arcs as you pull",
+        "Use the chest pad if available — reduces lower-back load",
+      ],
+    },
+  },
+
+  "덤벨 로우 (Dumbbell Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치 받침 — 한 손/한 무릎 (3점 지지)",
+        "허리 곧게 — 등이 바닥과 거의 평행",
+        "당길 때 팔꿈치를 천장 쪽으로 — 명치/배꼽 사이로",
+        "어깨 으쓱하지 않게 — 등이 일하도록",
+        "처음이면 가벼운 무게 — 비대칭이라 회전 보상 위험",
+      ],
+      en: [
+        "Bench support — one hand and one knee (3-point base)",
+        "Back straight — nearly parallel to the floor",
+        "Pull the elbow toward the ceiling — toward sternum/belly",
+        "Don't shrug — let the back work",
+        "Start light — asymmetric, easy to compensate with rotation",
+      ],
+    },
+  },
+
+  "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "덤벨 로우와 동일 — 한 손씩 강조",
+        "당길 때 한쪽 등이 짜이는 느낌 — 좌우 따로 의식",
+        "팔꿈치를 천장 쪽으로 — 명치/배꼽 사이로",
+        "허리 곧게 + 등 평행",
+        "약 1초 정점에서 짜내고 천천히 내리기",
+      ],
+      en: [
+        "Same as Dumbbell Row — emphasize one side at a time",
+        "Feel one side of the back contract — focus per side",
+        "Pull elbow up toward the ceiling — to between sternum and belly",
+        "Back straight, parallel to the floor",
+        "1-second squeeze at the top, slow on the way down",
+      ],
+    },
+  },
+
+  "덤벨 컬 (Dumbbell Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "팔꿈치 옆구리 \"붙여\" 고정 — 절대 앞뒤로 안 움직이게",
+        "올릴 때 손목 자연스럽게 회전 (\"수파인\") — 정점에서 손바닥이 천장",
+        "내릴 때도 천천히 — 컨트롤이 핵심",
+        "한 번에 양손 또는 번갈아 — 어떻게든 좌우 같은 무게",
+        "어깨가 앞으로 빠지지 않게 — 어깨 으쓱 X",
+      ],
+      en: [
+        "Glue elbows to the sides — never swing forward/back",
+        "Rotate wrists on the way up (\"supination\") — palm faces the ceiling at the top",
+        "Lower slowly — control is key",
+        "Both arms together or alternating — match weight on both sides",
+        "Don't roll the shoulders forward — no shrugging",
+      ],
+    },
+  },
+
+  "인클라인 덤벨 컬 (Incline Dumbbell Curl)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치 각도 45-60도",
+        "팔꿈치는 어깨 뒤쪽에 \"매달려\" 있는 위치 — 움직이지 않게",
+        "내릴 때 팔이 완전히 펴진 뒤 1초 \"늘어남\" — 정점은 길어짐",
+        "올릴 때 손목 회전 — 정점에서 손바닥 천장",
+        "처음이면 매우 가벼운 무게 — 누운 자세에서 의외로 무거워요",
+      ],
+      en: [
+        "Bench angle 45-60°",
+        "Elbows hang behind the body — keep them fixed",
+        "At the bottom, fully extend arms and pause 1s (\"stretch\") — the lengthened position is the peak",
+        "Rotate wrists on the way up — palm faces the ceiling at the top",
+        "Start very light — heavier than expected when lying back",
+      ],
+    },
+  },
+
+  "덤벨 숄더 프레스 (Seated Dumbbell Press)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "벤치 등받이 거의 수직 — 너무 누우면 가슴 운동",
+        "그립 — 손목 직각, 손바닥이 앞쪽 향함",
+        "올릴 때 양손이 머리 위에서 살짝 모이는 느낌 (\"A자\")",
+        "내릴 때 어깨 옆 약 90도까지 — 너무 깊이 X",
+        "코어 안정 — 등받이가 받쳐주지만 복근 brace 유지",
+      ],
+      en: [
+        "Backrest near-vertical — too flat becomes a chest exercise",
+        "Grip — wrists straight, palms facing forward",
+        "On the way up, hands gather slightly inward (\"A-shape\") above the head",
+        "Lower until elbows ~90° beside the shoulders — don't go deeper",
+        "Core stable — backrest helps, but keep the abs braced",
+      ],
+    },
+  },
+
+  "인클라인 덤벨 플라이 (Incline Dumbbell Fly)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "각도 30-45도",
+        "팔꿈치 살짝 굽힌 채 고정 — 컬처럼 굽혔다 펴지 않게",
+        "내릴 때 양옆으로 호 그리듯 — 가슴 위쪽 \"늘어남\" 느낌",
+        "너무 깊이 가지 않게 — 어깨 부담",
+        "올릴 때 가슴 위쪽이 \"짜내지는\" 느낌 — 양손이 가슴 위에서 만나기 직전까지",
+      ],
+      en: [
+        "Angle 30-45°",
+        "Lock elbows softly bent — no curling motion",
+        "Sweep arms outward in an arc — feel the upper-chest stretch",
+        "Don't go too deep — shoulder strain risk",
+        "Squeeze the upper chest on the way up — hands almost meet at the top",
+      ],
+    },
+  },
 };
 
 export function getFormCues(exerciseName: string, locale: Locale): string[] {

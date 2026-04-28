@@ -751,6 +751,557 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
       ],
     },
   },
+
+  // ══════════════════════════════════
+  // ── BATCH 1 (회의 2026-04-29): 바벨/덤벨 변형 15종 추가 ──
+  // ══════════════════════════════════
+
+  // ── 가슴 (PUSH - 변형) ──
+  "인클라인 바벨 프레스 (Incline Barbell Press)": {
+    imagePath: "/machine/incline-bench.png",
+    findGuide: {
+      ko: [
+        "인클라인 벤치(30-45도) 위에 바벨 거치대가 양쪽으로 있는 셋업이에요",
+        "보통 자유 웨이트존에 바벨 벤치 프레스 옆에 함께 배치",
+        "각도 조절 핀이 등받이 뒤에 있어요",
+        "옆에 큰 플레이트 거치대가 함께 있어요",
+        "평벤치(바벨 벤치)와 다르게 — 등받이가 비스듬히 기울어져 있어요",
+      ],
+      en: [
+        "Incline bench (30-45°) with a barbell rack on both sides",
+        "Usually placed next to flat bench press in the free-weight area",
+        "Angle-adjusting pin is behind the backrest",
+        "A plate rack with large plates is next to it",
+        "Unlike a flat bench — the backrest is tilted up",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치 각도 30-45도 (너무 세우면 어깨 운동이 됨)",
+        "거치대 핀 — 누웠을 때 손목 살짝 아래",
+        "양쪽 플레이트 무게 같은지 + 콜라 고정",
+        "그립 너비 — 어깨너비 살짝 넓게, 손목 직각",
+        "백 스쿼트 셋업과 비슷 — 단지 바벨이 가슴 위쪽에 위치",
+      ],
+      en: [
+        "Bench angle 30-45° (too steep becomes a shoulder exercise)",
+        "Pin height — just below your wrist when lying down",
+        "Equal plate weight + collar lock",
+        "Grip width — slightly wider than shoulders, wrists straight",
+        "Setup similar to back squat — but bar lands on upper chest",
+      ],
+    },
+  },
+
+  "디클라인 벤치 프레스 (Decline Bench Press)": {
+    imagePath: "/machine/bench-press.png",
+    findGuide: {
+      ko: [
+        "머리가 발보다 아래로 가는 디클라인 벤치 위에 바벨이 있는 셋업",
+        "벤치 끝에 발을 고정시킬 패드(롤러) 있어요",
+        "보통 평벤치/인클라인 벤치 옆에 함께 배치",
+        "옆에 플레이트 거치대",
+        "인클라인과 반대 — 디클라인은 머리가 아래쪽이에요",
+      ],
+      en: [
+        "Decline bench (head lower than feet) with a barbell rack",
+        "Rollers/pads at the foot end to anchor your feet",
+        "Usually placed near flat and incline benches",
+        "Plate rack alongside",
+        "Opposite of incline — decline has the head lower",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "발 고정 패드(롤러) 위치 단단히 끼우기 — 미끄러지면 위험",
+        "거치대 핀 위치 — 누웠을 때 손이 닿는 높이",
+        "양쪽 플레이트 무게 + 콜라 고정",
+        "처음이면 보조 한 명이 옆에 있는 게 좋아요 (디클라인은 머리 아래라 위험)",
+        "바벨이 가슴 아래쪽으로 떨어지는 코스 — 평벤치와 다른 궤적",
+      ],
+      en: [
+        "Lock feet firmly under the rollers — slipping is dangerous",
+        "Pin height — within arm's reach when lying down",
+        "Equal plates + collars",
+        "If new, have a spotter (head-down position carries risk)",
+        "Bar travels to lower chest — different path from flat bench",
+      ],
+    },
+  },
+
+  "스미스 머신 벤치 프레스 (Smith Machine Bench Press)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: {
+      ko: [
+        "양쪽 기둥(레일)에 바벨이 고정되어 수직으로만 움직이는 큰 머신이에요",
+        "안전 후크가 있어 바벨을 어떤 위치에서든 멈출 수 있어요",
+        "벤치는 머신 안에 따로 넣어 사용 (이동식)",
+        "기둥에 일정 간격 후크가 있어 시작 위치 조절 가능",
+        "자유 바벨(스쿼트랙)과 다르게 — 좌우 흔들림 없이 레일 따라 움직임",
+      ],
+      en: [
+        "A large machine with the bar fixed to vertical rails",
+        "Safety hooks let you lock the bar at any height",
+        "A movable bench is placed inside the machine for use",
+        "Pegs along the rails for adjustable start positions",
+        "Unlike free barbell — the bar moves only along the rails (no side wobble)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치 위치 — 바벨이 가슴 중앙 위로 떨어지도록 정렬",
+        "시작 후크 — 누웠을 때 손이 닿는 높이",
+        "양쪽 플레이트 무게 + 콜라 고정",
+        "그립 후 바벨을 \"돌려서\" 후크 풀고 시작 (1/4 회전)",
+        "끝나면 다시 \"돌려서\" 후크에 걸기 — 잠금 확인 필수",
+      ],
+      en: [
+        "Bench position — bar should drop over the center of your chest",
+        "Start hook — within arm's reach when lying down",
+        "Equal plates + collars",
+        "Rotate the bar a quarter-turn to release the hooks at the start",
+        "End by rotating to lock back into the hooks — confirm the lock",
+      ],
+    },
+  },
+
+  // ── 다리 (LEGS - 변형) ──
+  "프론트 스쿼트 (Front Squat)": {
+    imagePath: ["/machine/squat-rack1.png", "/machine/squat-rack2.png", "/machine/squat-rack3.png"],
+    findGuide: {
+      ko: [
+        "백 스쿼트와 같은 스쿼트 랙(파워 랙) 사용 — 별도 머신 아님",
+        "바닥에 매트가 깔려있는 경우 많아요",
+        "옆에 플레이트 거치대",
+        "백 스쿼트와 차이 없음 — 셋업 동일, 바벨 거치 위치만 앞쪽",
+        "손목/팔꿈치 유연성 부족하면 어려움 — 처음이면 가벼운 무게로 자세부터",
+      ],
+      en: [
+        "Same squat rack used as back squat — no separate machine",
+        "Often has a floor mat for sound absorption",
+        "Plate rack alongside",
+        "No difference from back squat in setup — only bar rests on front shoulders",
+        "Tough if wrist/elbow mobility is limited — start light to learn the rack position",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "거치대 핀 — 어깨 살짝 아래 (백 스쿼트와 동일)",
+        "안전바 높이 — 가장 깊이 내릴 때 가슴 옆",
+        "양쪽 플레이트 + 콜라 고정",
+        "바벨 거치 — 어깨 앞 (쇄골 위), 팔꿈치 높이 들어 \"선반\" 만들기",
+        "그립 — 바벨 위에 손가락 올림 (\"클린 그립\") 또는 X자 교차 (\"크로스 그립\")",
+      ],
+      en: [
+        "Pin height — same as back squat (just below shoulder)",
+        "Safety bars at chest level for deepest squat",
+        "Equal plates + collars",
+        "Bar rest — front of shoulders (over collarbone), elbows high to create a \"shelf\"",
+        "Grip — fingertips on the bar (\"clean grip\") or arms crossed (\"cross grip\")",
+      ],
+    },
+  },
+
+  "루마니안 데드리프트 (Romanian Deadlift)": {
+    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
+    findGuide: {
+      ko: [
+        "데드리프트와 같은 자유 웨이트존/플랫폼에서 진행",
+        "올림픽 바벨 + 플레이트 (컨벤셔널과 동일)",
+        "랙에서 들고 시작하는 게 일반적 (바닥에서 시작 X)",
+        "주변 거울 있는 자리 추천 (등 자세 확인)",
+        "컨벤셔널 데드리프트와 다르게 — 무릎 거의 굽히지 않아 시작 위치도 더 높아요",
+      ],
+      en: [
+        "Same free-weight area / platform as deadlift",
+        "Olympic bar + plates (same as conventional)",
+        "Usually starts from a rack (not from the floor like conventional)",
+        "Mirror nearby helps for back form check",
+        "Unlike conventional — knees stay almost straight, so the start position is higher",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "랙에서 바벨 들고 한 발자국 뒤로 — 시작 자세는 직립",
+        "양쪽 플레이트 무게 + 콜라",
+        "그립 너비 — 어깨너비 (양팔이 다리 바깥)",
+        "다리는 거의 곧게 (살짝만 굽힘) — 무릎 굽혀서 내리는 게 아님",
+        "엉덩이로만 hinge — 컨벤셔널과 가장 큰 차이",
+      ],
+      en: [
+        "Lift bar from the rack and step back — start in a standing position",
+        "Equal plates + collars",
+        "Grip width — shoulder-width (arms outside legs)",
+        "Legs almost straight (only soft knees) — don't squat down",
+        "Hinge at the hips only — biggest difference from conventional",
+      ],
+    },
+  },
+
+  "스모 데드리프트 (Sumo Deadlift)": {
+    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
+    findGuide: {
+      ko: [
+        "컨벤셔널 데드리프트와 같은 플랫폼 사용",
+        "바닥에서 시작 — 바벨 + 플레이트만 있으면 됨",
+        "주변 공간 확보 (발 넓게 벌리는 자세라 더 필요)",
+        "큰 원판으로 바벨 높이 표준 맞추기 (작은 원판이면 매트로 보강)",
+        "컨벤셔널과 다르게 — 발이 매우 넓게, 양팔이 다리 안쪽",
+      ],
+      en: [
+        "Same platform as conventional deadlift",
+        "Start from the floor — just bar + plates",
+        "Need more clearance (wider stance)",
+        "Use 45 lb / 20 kg plates for standard bar height",
+        "Unlike conventional — feet very wide, arms inside legs",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "발 위치 — 어깨너비의 1.5~2배, 발끝 약 30-45도 바깥",
+        "양손 그립 — 다리 안쪽으로 들어가서 잡기",
+        "양쪽 플레이트 + 콜라 고정",
+        "정강이가 거의 수직 — 무릎이 발끝 방향으로 \"열림\"",
+        "내전근/엉덩이 자극이 컨벤셔널보다 큼 — 처음이면 가볍게",
+      ],
+      en: [
+        "Foot stance — 1.5-2× shoulder width, toes ~30-45° out",
+        "Grip — hands inside the legs",
+        "Equal plates + collars",
+        "Shins nearly vertical — knees \"open\" in line with toes",
+        "More adductor/glute load than conventional — start light",
+      ],
+    },
+  },
+
+  // ── 어깨 (OVERHEAD - 변형) ──
+  "밀리터리 프레스 (Military Press)": {
+    imagePath: ["/machine/squat-rack1.png", "/machine/squat-rack2.png", "/machine/squat-rack3.png"],
+    findGuide: {
+      ko: [
+        "스쿼트 랙(파워 랙) 사용 — 오버헤드 프레스와 동일 셋업",
+        "랙 핀 위치 어깨 높이",
+        "옆에 플레이트 거치대",
+        "오버헤드 프레스의 \"엄격한\" 변형 — 발을 모은 \"차렷\" 자세",
+        "푸시 프레스(다리 반동 사용)와 반대 — 밀리터리는 다리 반동 X",
+      ],
+      en: [
+        "Uses the squat rack (power rack) — same setup as overhead press",
+        "Pin at shoulder height",
+        "Plate rack alongside",
+        "Stricter version of OHP — feet together (\"attention\" stance)",
+        "Opposite of push press (which uses leg drive) — military uses no leg drive",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "랙 핀 — 쇄골 살짝 아래 (오버헤드와 동일)",
+        "양쪽 플레이트 + 콜라",
+        "그립 너비 — 어깨너비 살짝 넓게, 손목 직각",
+        "발 위치 — 양발 모음 (\"차렷\") — 균형 어려워 코어 더 일함",
+        "오버헤드와 같지만 다리 반동 절대 X — 순수 어깨 힘으로",
+      ],
+      en: [
+        "Pin height — just below the collarbone (same as OHP)",
+        "Equal plates + collars",
+        "Grip width — slightly wider than shoulders, wrists straight",
+        "Stance — feet together (\"attention\") — balance is harder, core works more",
+        "Same as OHP but no leg drive — pure shoulder strength",
+      ],
+    },
+  },
+
+  // ── 등 (PULL - 변형) ──
+  "펜들레이 로우 (Pendlay Row)": {
+    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
+    findGuide: {
+      ko: [
+        "데드리프트와 같은 자유 웨이트존/플랫폼에서 진행",
+        "바벨이 항상 바닥에서 시작 (바벨 로우와 다름)",
+        "큰 원판으로 바벨 높이 표준 맞추기",
+        "주변 공간 확보",
+        "바벨 로우와 다르게 — 매 렙마다 바벨이 바닥에 \"착지\"하고 다시 들어올림",
+      ],
+      en: [
+        "Same free-weight area / platform as deadlift",
+        "The bar always starts from the floor (unlike a regular Barbell Row)",
+        "Use 45 lb / 20 kg plates for standard bar height",
+        "Clear surrounding space",
+        "Different from Barbell Row — the bar lands on the floor between every rep",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "바벨 위치 — 발 중앙(미드풋) 위",
+        "양쪽 플레이트 + 콜라",
+        "허리 곧게 + 거의 90도 굽힌 자세 (등이 바닥과 거의 평행)",
+        "그립 너비 — 어깨너비, 오버그립",
+        "당길 때 명치 쪽으로 — 매 렙 후 바닥에 \"리셋\"",
+      ],
+      en: [
+        "Bar position — over your midfoot",
+        "Equal plates + collars",
+        "Back straight, bent ~90° (back nearly parallel to the floor)",
+        "Grip width — shoulder-width, overhand",
+        "Pull to the sternum — \"reset\" on the floor between every rep",
+      ],
+    },
+  },
+
+  "티바 로우 (T-Bar Row)": {
+    imagePath: "/machine/cable-machine.png",
+    findGuide: {
+      ko: [
+        "한쪽 끝이 바닥에 고정된 바벨에 V바 또는 가로형 손잡이를 끼우는 머신",
+        "보통 별도 T바 로우 머신 또는 랜드마인 어태치먼트 사용",
+        "바벨 다른 쪽 끝에 플레이트를 끼워요",
+        "가슴 패드가 있는 머신도 있음 (체스트 서포티드 형태)",
+        "바벨 로우와 다르게 — 바벨 한쪽이 고정되어 회전축으로 동작",
+      ],
+      en: [
+        "One end of the bar anchored to the floor, with a V-handle or grip attached at the working end",
+        "Usually a dedicated T-Bar Row machine or landmine attachment",
+        "Plates load on the other end of the bar",
+        "Some machines have a chest pad (chest-supported version)",
+        "Different from Barbell Row — one end of the bar pivots from a fixed point",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "바벨 한쪽이 회전축에 단단히 들어갔는지 확인",
+        "플레이트 끼울 때 콜라 사용 — 흔들림 위험",
+        "손잡이 종류 — V바, 클로즈 그립, 와이드 등",
+        "발 — 바벨 양옆에 어깨너비",
+        "허리 곧게 약 45도 굽힘 — 바벨 로우와 동일 등 자세",
+      ],
+      en: [
+        "Confirm the bar's pivot end is fully seated in the anchor",
+        "Use a collar when loading plates — risk of shifting",
+        "Handle options — V-bar, close grip, wide grip",
+        "Feet — straddle the bar at shoulder width",
+        "Back straight, hinged ~45° — same back posture as Barbell Row",
+      ],
+    },
+  },
+
+  "덤벨 로우 (Dumbbell Row)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "평벤치 + 덤벨 1개로 진행 (한 손씩)",
+        "벤치에 한 손과 한 무릎을 올려 \"3점 지지\" 자세",
+        "덤벨 랙은 가까이 있어야 함",
+        "보통 자유 웨이트존에 평벤치 옆에서 진행",
+        "바벨 로우와 다르게 — 한 손씩 비대칭으로, 등 한쪽 집중 자극",
+      ],
+      en: [
+        "Flat bench + one dumbbell (one arm at a time)",
+        "Place one hand and one knee on the bench (3-point base)",
+        "Dumbbell rack should be nearby",
+        "Usually performed in the free-weight area near flat benches",
+        "Unlike Barbell Row — one arm at a time, asymmetric loading targets each side",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "덤벨 무게 좌우 같이 (한 손씩 진행하지만 무게는 같게 — 균형용)",
+        "벤치 — 한 손과 한 무릎으로 받침 (지지 한 쪽 다리는 바닥)",
+        "허리 곧게 — 바닥과 거의 평행한 등",
+        "당길 때 명치/배꼽 쪽으로 — 팔꿈치를 천장으로 끌어올림",
+        "처음이면 가벼운 무게 — 비대칭 운동이라 회전 보상 위험",
+      ],
+      en: [
+        "Match dumbbell weight on both sides (even though one-arm-at-a-time, balance matters)",
+        "Bench support — one hand and one knee (the other foot on the floor)",
+        "Back straight — nearly parallel to the floor",
+        "Pull toward the sternum/belly — drive the elbow up to the ceiling",
+        "Start light — asymmetric loading invites rotational compensation",
+      ],
+    },
+  },
+
+  "싱글 암 덤벨 로우 (Single Arm Dumbbell Row)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 로우와 동일 셋업 — 평벤치 + 덤벨 1개",
+        "\"싱글 암\" 명시적 변형 — 한 손씩 정확하게 격리",
+        "벤치에 한 손/한 무릎 받침은 동일",
+        "덤벨 랙 가까이",
+        "덤벨 로우와 거의 같음 — 운동학적으로 동일, 강조점만 달라요",
+      ],
+      en: [
+        "Same setup as Dumbbell Row — flat bench + one dumbbell",
+        "Explicit \"single arm\" — precise isolation per side",
+        "Same 3-point base on the bench",
+        "Dumbbell rack nearby",
+        "Effectively the same as Dumbbell Row — biomechanically identical",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "덤벨 무게 좌우 같게",
+        "벤치 받침 — 한 손/한 무릎",
+        "허리 곧게 — 등이 바닥과 거의 평행",
+        "당길 때 한쪽 등이 짜이는 느낌 — 좌우 따로 집중",
+        "처음이면 가벼운 무게부터",
+      ],
+      en: [
+        "Match weight on both sides",
+        "3-point support — one hand and one knee on the bench",
+        "Back straight — nearly parallel to the floor",
+        "Feel one side of the back contract — focus on each side independently",
+        "Start light",
+      ],
+    },
+  },
+
+  // ── 팔 (CURL - 덤벨/바벨) ──
+  "덤벨 컬 (Dumbbell Curl)": {
+    imagePath: "/machine/flat-bench.png",
+    findGuide: {
+      ko: [
+        "덤벨 1쌍만 있으면 진행 — 별도 기구 불필요",
+        "보통 자유 웨이트존이나 거울 앞에서 서서 또는 앉아서",
+        "덤벨 랙 옆에서 진행하는 게 일반적",
+        "바벨 컬과 다르게 — 양손이 독립적으로 움직여 회전 가능",
+        "스탠딩(서서) / 시티드(앉아서) / 인클라인(누워서) 변형 다양",
+      ],
+      en: [
+        "Just need a pair of dumbbells — no other equipment",
+        "Usually done standing or seated in the free-weight area or in front of a mirror",
+        "Performed near the dumbbell rack",
+        "Unlike a Barbell Curl — hands move independently, allowing supination",
+        "Variations: standing / seated / incline (lying back)",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "덤벨 무게 좌우 같이",
+        "팔꿈치 옆구리에 \"붙여\" 고정 — 컬에서 절대 앞뒤로 안 움직이게",
+        "스탠딩일 때 발 어깨너비, 무릎 살짝 굽힘 (안정성)",
+        "올릴 때 손목 자연스럽게 회전 (\"수파인\") — 마지막에 손바닥이 천장",
+        "내릴 때도 천천히 — 컨트롤이 핵심",
+      ],
+      en: [
+        "Match weight on both sides",
+        "Glue elbows to the sides — never let them swing forward/back",
+        "Standing — feet shoulder-width, knees slightly bent (stability)",
+        "Rotate the wrists naturally on the way up (\"supination\") — palm faces the ceiling at the top",
+        "Lower slowly — control is key",
+      ],
+    },
+  },
+
+  "인클라인 덤벨 컬 (Incline Dumbbell Curl)": {
+    imagePath: "/machine/incline-bench.png",
+    findGuide: {
+      ko: [
+        "인클라인 벤치(45-60도) + 덤벨 1쌍",
+        "덤벨 랙 가까이",
+        "덤벨 컬과 다르게 — 누운 자세라 어깨 뒤로 빠진 위치에서 컬",
+        "이두 \"긴 머리\"(longhead) 더 자극되는 변형",
+        "각도가 더 클수록 (45도→60도) 이두 늘어남 강도 ↑",
+      ],
+      en: [
+        "Incline bench (45-60°) + a pair of dumbbells",
+        "Dumbbell rack nearby",
+        "Unlike standing curl — shoulders are behind the body, biceps stretched",
+        "Targets the long head of the biceps more",
+        "Steeper angle (45→60°) increases the stretch on the biceps",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "벤치 각도 45-60도 — 너무 누우면 어깨 부담",
+        "덤벨 무게 좌우 같이",
+        "팔꿈치 위치 고정 — 어깨 뒤쪽에 매달려 있는 느낌",
+        "내릴 때 팔이 완전히 펴진 뒤 1초 \"늘어남\" — 컬의 정점은 길어짐",
+        "처음이면 가벼운 무게 — 누운 자세에서 의외로 무거워요",
+      ],
+      en: [
+        "Bench angle 45-60° — too flat strains the shoulders",
+        "Match weight on both sides",
+        "Elbow position fixed — they hang behind the body",
+        "At the bottom, fully extend arms and pause 1s (\"stretch\") — the lengthened position is the peak",
+        "Start light — lying-back position is heavier than expected",
+      ],
+    },
+  },
+
+  // ── 어깨 (덤벨 변형) ──
+  "덤벨 숄더 프레스 (Seated Dumbbell Press)": {
+    imagePath: "/machine/incline-bench.png",
+    findGuide: {
+      ko: [
+        "인클라인 벤치를 거의 수직(90도)으로 세운 + 덤벨 1쌍",
+        "덤벨 랙 가까이",
+        "보통 인클라인 벤치 + 등받이 위로 강하게 세운 형태",
+        "오버헤드 프레스와 다르게 — 등받이가 받쳐주어 코어 부담 적음",
+        "양손 독립이라 어깨 자연스러운 궤도로 움직임",
+      ],
+      en: [
+        "Incline bench set nearly vertical (90°) + a pair of dumbbells",
+        "Dumbbell rack nearby",
+        "Usually an incline bench with the back fully upright",
+        "Unlike Overhead Press — backrest supports the spine, less core demand",
+        "Hands move independently, allowing the shoulders' natural arc",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "등받이 각도 — 거의 수직 (살짝 뒤로 젖혀도 OK)",
+        "덤벨 무게 좌우 같이",
+        "벤치에 앉아 덤벨을 무릎 위에 — 한쪽씩 어깨 옆으로 \"올려치기\"",
+        "발은 바닥 단단히 (등받이는 받침)",
+        "올릴 때 양손이 머리 위에서 모이는 느낌 — 수직보다 살짝 안쪽",
+      ],
+      en: [
+        "Backrest angle — near-vertical (slightly tilted back is OK)",
+        "Match weight on both sides",
+        "Sit on the bench, dumbbells on knees — \"kick up\" one at a time to shoulder height",
+        "Feet planted firmly (backrest takes care of support)",
+        "On the way up, hands gather slightly inward (not pure vertical) — meet softly above the head",
+      ],
+    },
+  },
+
+  // ── 가슴 (덤벨 - 추가 Accessory) ──
+  "인클라인 덤벨 플라이 (Incline Dumbbell Fly)": {
+    imagePath: "/machine/incline-bench.png",
+    findGuide: {
+      ko: [
+        "인클라인 벤치(30-45도) + 덤벨 1쌍",
+        "덤벨 랙 가까이",
+        "벤치 셋업은 인클라인 덤벨 프레스와 동일",
+        "프레스와 다르게 — 팔꿈치 거의 펴지 않고 호 그리듯 양옆으로",
+        "가슴 위쪽 + 안쪽 자극 강조",
+      ],
+      en: [
+        "Incline bench (30-45°) + a pair of dumbbells",
+        "Dumbbell rack nearby",
+        "Same setup as Incline Dumbbell Press",
+        "Unlike Press — arms stay nearly straight, sweep in an arc to the sides",
+        "Targets upper chest + inner chest squeeze",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "각도 30-45도",
+        "덤벨 무게 좌우 같이 (프레스보다 가벼운 무게가 일반적)",
+        "팔꿈치 살짝 굽혀서 고정 — 컬처럼 굽혔다 펴지 않게",
+        "발 바닥 단단히, 등 안정",
+        "내릴 때 가슴 늘어남 끝까지 — 너무 깊이 가면 어깨 부담",
+      ],
+      en: [
+        "Angle 30-45°",
+        "Match weight on both sides (typically lighter than press)",
+        "Lock elbows in soft bend — no curling motion",
+        "Feet planted firmly, back stable",
+        "Lower until chest stretch — too deep stresses the shoulders",
+      ],
+    },
+  },
 };
 
 export function getEquipmentInfo(exerciseName: string): EquipmentInfo | undefined {
