@@ -1327,5 +1327,13 @@
   "beginner_mode.chat_weight.input_placeholder": "kg",
   "beginner_mode.chat_weight.cta": "Start with this",
   "beginner_mode.rest.recommended": "ACSM recommends {sec}s",
-  "beginner_mode.rest.freedom_hint": "Rest as long as you like — tap [Start now] when ready"
+  "beginner_mode.rest.freedom_hint": "Rest as long as you like — tap [Start now] when ready",
+  "beginner_mode.workout_tooltip.label": "TIP",
+  "beginner_mode.workout_tooltip.warmup.title": "Follow the video to warm up",
+  "beginner_mode.workout_tooltip.warmup.body": "Take it slow and follow the video in the center.\nWhen you're done, tap [Next set] at the bottom!",
+  "beginner_mode.workout_tooltip.main.title": "Video → Set weight → Start",
+  "beginner_mode.workout_tooltip.main.body": "Watch the video to nail the form, set your weight, then go.\nAfter each set, share how it felt — your next set adapts to your feedback.",
+  "beginner_mode.workout_tooltip.skip_hint": "Don't need the guide? Tap the X (skip) at the top-right anytime.",
+  "beginner_mode.workout_tooltip.cta": "Got it",
+  "beginner_mode.workout_tooltip.dismiss_aria": "Dismiss tip"
 }

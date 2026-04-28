@@ -1323,5 +1323,13 @@
   "beginner_mode.chat_weight.input_placeholder": "kg",
   "beginner_mode.chat_weight.cta": "이 무게로 시작",
   "beginner_mode.rest.recommended": "ACSM 권장 {sec}초",
-  "beginner_mode.rest.freedom_hint": "쉬는 시간은 자유 — 준비되면 [지금 시작]"
+  "beginner_mode.rest.freedom_hint": "쉬는 시간은 자유 — 준비되면 [지금 시작]",
+  "beginner_mode.workout_tooltip.label": "TIP",
+  "beginner_mode.workout_tooltip.warmup.title": "영상 따라 동작 익혀보세요",
+  "beginner_mode.workout_tooltip.warmup.body": "화면 가운데 영상을 천천히 따라 하시면 돼요.\n동작 끝나면 아래 [다음 세트] 버튼을 눌러주세요!",
+  "beginner_mode.workout_tooltip.main.title": "영상 → 무게 설정 → 시작",
+  "beginner_mode.workout_tooltip.main.body": "기구 영상으로 폼 익히고, 무게 설정 후 운동하세요.\n세트 끝날 때마다 솔직하게 어땠는지 알려주시면 다음 세트가 더 잘 맞아져요.",
+  "beginner_mode.workout_tooltip.skip_hint": "안내가 필요 없으면 우측 상단 X(스킵) 버튼으로 건너뛸 수 있어요.",
+  "beginner_mode.workout_tooltip.cta": "확인",
+  "beginner_mode.workout_tooltip.dismiss_aria": "안내 닫기"
 }

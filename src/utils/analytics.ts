@@ -65,7 +65,9 @@ type FunnelEvent =
   | "tutorial_video_play"
   | "tutorial_video_done"
   | "chat_weight_chip_select"
-  | "equipment_find_done";
+  | "equipment_find_done"
+  | "workout_tooltip_show"
+  | "workout_tooltip_dismiss";
 
 export function trackEvent(event: FunnelEvent, params?: Record<string, string | number | boolean>) {
   try {

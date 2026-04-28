@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { FitScreen, FeedbackType } from "./FitScreen";
 import { BeginnerGuideOverlay, type BeginnerOverlayPhase } from "./BeginnerGuideOverlay";
+import { WorkoutTooltipOverlay } from "./WorkoutTooltipOverlay";
 import { getBeginnerMode, BEGINNER_MODE_EVENT } from "@/utils/beginnerMode";
 import { isBeginnerSupportedExercise } from "@/constants/exerciseEquipment";
 import type { RunningStats } from "@/constants/workout";
@@ -690,6 +691,14 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         onSkipExercise={handleSkipExercise}
         beginnerEnabled={beginnerEnabled}
       />}
+      {/* 회의 ζ-2 후속 (B-5): overlay sequence 끝난 후 워크아웃 페이지 첫 진입 시 1회 영구 dismiss tooltip.
+          warmup/main 종류별 별도 키 — localStorage 기반 영구 (한 유저 1번만) */}
+      {!showBeginnerOverlay && (
+        <WorkoutTooltipOverlay
+          exerciseType={currentExercise.type}
+          beginnerEnabled={beginnerEnabled}
+        />
+      )}
       {/* 회의 2026-04-27: WorkoutMusicPlayer 제거 — 외부 YouTube Music 등으로 대체 */}
 
       {/* 회의 ζ-2 (대표 정정 2026-04-28):
