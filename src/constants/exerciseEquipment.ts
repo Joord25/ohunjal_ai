@@ -5,8 +5,12 @@ export interface EquipmentInfo {
   findGuide: { ko: string[]; en: string[] };
 }
 
+/**
+ * Phase 1: 바벨 벤치 프레스 정확 1종만. 운동 풀 키 = workout.ts L270 와 정확 일치.
+ * 다른 벤치 변형 (덤벨/스미스/인클라인/디클라인/헤머/클로즈그립) 은 그립·각도 다름 → 동일 cue 부정확 → Phase 2 에서 변형별 분리 후 추가.
+ */
 export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
-  "벤치프레스": {
+  "바벨 벤치 프레스 (Barbell Bench Press)": {
     imagePath: "/machine/bench-press.png",
     findGuide: {
       ko: [
@@ -27,31 +31,20 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 };
 
-/**
- * Phase 1: 벤치 프레스 변형 7종 모두 매칭 (바벨/덤벨/디클라인/헤머/스미스/인클라인 바벨/클로즈그립).
- * 실제 운동 풀 이름은 "바벨 벤치 프레스 (Barbell Bench Press)" 같은 띄어쓰기+영문 병기 형식이라 부분 매칭 필요.
- * Phase 2 에서 변형별 폼 cue 분리 시 정확 매칭으로 전환.
- */
-function normalizeExerciseKey(exerciseName: string): string | null {
-  if (/벤치\s*프레스|bench\s*press/i.test(exerciseName)) return "벤치프레스";
-  return null;
-}
-
 export function getEquipmentInfo(exerciseName: string): EquipmentInfo | undefined {
-  const key = normalizeExerciseKey(exerciseName);
-  return key ? EXERCISE_EQUIPMENT[key] : undefined;
+  return EXERCISE_EQUIPMENT[exerciseName];
 }
 
 export function getEquipmentFindGuide(
   exerciseName: string,
   locale: Locale,
 ): string[] {
-  const info = getEquipmentInfo(exerciseName);
+  const info = EXERCISE_EQUIPMENT[exerciseName];
   if (!info) return [];
   return locale === "en" ? info.findGuide.en : info.findGuide.ko;
 }
 
-/** Phase 1: 벤치 프레스 변형 매칭 (overlay 마운트 + 휴식 분기 공유) */
+/** Phase 1: 정확 매칭 — overlay 마운트 + 휴식 분기 공유. Phase 2에서 컴파운드 추가 시 EXERCISE_EQUIPMENT 에 entry 추가하면 자동 확장 */
 export function isBeginnerSupportedExercise(exerciseName: string): boolean {
-  return normalizeExerciseKey(exerciseName) !== null;
+  return exerciseName in EXERCISE_EQUIPMENT;
 }

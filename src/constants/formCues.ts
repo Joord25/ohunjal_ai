@@ -5,8 +5,12 @@ export interface FormCueSet {
   cues: { ko: string[]; en: string[] };
 }
 
+/**
+ * Phase 1: 바벨 벤치 프레스 정확 1종 (ACSM 표준). 운동 풀 키 = workout.ts L270 와 정확 일치.
+ * 다른 벤치 변형 (덤벨/스미스/인클라인/디클라인/헤머/클로즈그립) 은 그립·각도가 달라 cue 가 달라야 함 → Phase 2 변형별 분리.
+ */
 export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
-  "벤치프레스": {
+  "바벨 벤치 프레스 (Barbell Bench Press)": {
     source: "ACSM Guidelines 11th ch.7 + NSCA Essentials of Strength Training 2nd Ed.",
     cues: {
       ko: [
@@ -27,21 +31,12 @@ export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
   },
 };
 
-/** Phase 1: 벤치 프레스 변형 7종 모두 동일 cue (ACSM 일반 가이드). Phase 2 에서 인클라인/디클라인 각도별 분리 */
-function normalizeExerciseKey(exerciseName: string): string | null {
-  if (/벤치\s*프레스|bench\s*press/i.test(exerciseName)) return "벤치프레스";
-  return null;
-}
-
 export function getFormCues(exerciseName: string, locale: Locale): string[] {
-  const key = normalizeExerciseKey(exerciseName);
-  if (!key) return [];
-  const set = EXERCISE_FORM_CUES[key];
+  const set = EXERCISE_FORM_CUES[exerciseName];
   if (!set) return [];
   return locale === "en" ? set.cues.en : set.cues.ko;
 }
 
 export function getFormCueSource(exerciseName: string): string | undefined {
-  const key = normalizeExerciseKey(exerciseName);
-  return key ? EXERCISE_FORM_CUES[key]?.source : undefined;
+  return EXERCISE_FORM_CUES[exerciseName]?.source;
 }
