@@ -196,5 +196,28 @@ export function useAlarmSynthesizer(opts?: AlarmOptions) {
     } catch (e) {}
   }, []);
 
-  return playAlarmSound;
+  /**
+   * 회의 ζ-5 (2026-04-30): 좌/우 음성 안내 (Web Speech API).
+   * 양쪽 교대 운동 (런지, 스플릿 스쿼트 등) 30초마다 호출.
+   * 사운드 OFF 시 무시. 브라우저 미지원 시 silent fail.
+   */
+  const speakDirection = useCallback((side: "left" | "right", locale: "ko" | "en" = "ko") => {
+    try {
+      if (typeof window === "undefined") return;
+      if (localStorage.getItem("ohunjal_settings_sound") === "false") return;
+      if (!("speechSynthesis" in window)) return;
+      const text = locale === "en"
+        ? (side === "left" ? "Left" : "Right")
+        : (side === "left" ? "왼쪽" : "오른쪽");
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = locale === "en" ? "en-US" : "ko-KR";
+      u.rate = 1.05;
+      u.volume = 1.0;
+      // 기존 발화가 큐에 있으면 cancel 후 새로 (중복 방지)
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }, []);
+
+  return { playAlarmSound, speakDirection };
 }

@@ -211,7 +211,11 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   }, [setInfo.current]);
 
   const halfAlarmFired = useRef(false);
-  const playAlarmSound = useAlarmSynthesizer({});
+  const { playAlarmSound, speakDirection } = useAlarmSynthesizer({});
+
+  // 회의 ζ-5 (2026-04-30): 양쪽 교대 운동 식별 — 30초마다 좌/우 음성 안내
+  const isBilateralExercise = (name: string): boolean =>
+    /런지|스플릿|사이드 스텝|사이드런지|얼터네이팅|원암|원레그|한쪽|Lunge|Split|Side\s?Step|Alternating|Single[-\s]?(Arm|Leg)|One[-\s]?(Arm|Leg)/i.test(name);
 
   // Weight presets: 4 nearest 10kg steps centered around current weight (excluding current)
   const weightPresets = (() => {
@@ -744,6 +748,14 @@ export const FitScreen: React.FC<FitScreenProps> = ({
             if (half > 0 && next === half && !halfAlarmFired.current) {
                 halfAlarmFired.current = true;
                 playAlarmSound("half");
+            }
+            // 회의 ζ-5 (2026-04-30): 양쪽 교대 운동 = 30초마다 좌/우 음성 안내 (warmup 한정, total ≥ 60s)
+            if (exercise.type === "warmup" && total >= 60 && isBilateralExercise(exercise.name)) {
+                const elapsed = total - next;
+                if (elapsed > 0 && elapsed < total && elapsed % 30 === 0) {
+                    const slot = elapsed / 30;
+                    speakDirection(slot % 2 === 1 ? "right" : "left", locale === "en" ? "en" : "ko");
+                }
             }
             // 카운트다운 틱 (5, 4, 3, 2, 1초)
             if (next > 0 && next <= 5) {
