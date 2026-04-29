@@ -66,6 +66,7 @@ type FunnelEvent =
   | "tutorial_video_done"
   | "chat_weight_chip_select"
   | "equipment_find_done"
+  | "beginner_equipment_not_found"
   | "workout_tooltip_show"
   | "workout_tooltip_dismiss";
 

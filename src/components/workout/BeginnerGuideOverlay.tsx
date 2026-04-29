@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/utils/analytics";
+import { getExerciseName } from "@/utils/exerciseName";
 import { EquipmentFinderCard } from "./EquipmentFinderCard";
 import { ChatStyleWeightPicker } from "./ChatStyleWeightPicker";
 
@@ -24,12 +25,19 @@ interface BeginnerGuideOverlayProps {
   onChatWeightSelect?: (weight: number) => void;
   /** chat_weight phase 전용 — 마지막 사용 무게 (kg). null = 첫 사용 */
   lastWeightKg?: number | null;
+  /** 회의 2026-04-29: equipment_find phase에서 "기구 못 찾음" 시 대체 운동 swap 콜백 */
+  onEquipmentSwap?: (newName: string) => void;
+  /** 비기너 가이드 지원 + 같은 근육군 대체 운동 후보 (최대 5개) */
+  swapAlternatives?: string[];
 }
 
 export const BeginnerGuideOverlay: React.FC<BeginnerGuideOverlayProps> = ({
   phase, exerciseName, onContinue, onSkip, onBack, onChatWeightSelect, lastWeightKg = null,
+  onEquipmentSwap, swapAlternatives = [],
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  // 회의 2026-04-29: 기구 못 찾음 → 대체 운동 모달
+  const [showSwapModal, setShowSwapModal] = useState(false);
 
   useEffect(() => {
     trackEvent("beginner_mode_overlay_show", { phase, exercise: exerciseName });
@@ -143,18 +151,86 @@ export const BeginnerGuideOverlay: React.FC<BeginnerGuideOverlayProps> = ({
       {/* chat_weight 는 자체 CTA (ChatStyleWeightPicker 안) — shell footer 미노출 */}
       {phase !== "chat_weight" && (
         <footer className="px-6 pt-3 pb-6 border-t border-gray-100 bg-white">
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="w-full h-14 rounded-2xl bg-[#1B4332] text-white text-[15px] font-black active:scale-[0.98] transition-transform"
-          >
-            {phase === "warmup_intro"
-              ? t("beginner_mode.warmup.cta")
-              : phase === "equipment_find"
-                ? t("beginner_mode.equipment.find.cta")
-                : t("beginner_mode.equipment.use.cta")}
-          </button>
+          {/* 회의 2026-04-29: equipment_find phase에 대체 운동 swap 옵션 — 50/50 버튼 분할.
+              swapAlternatives.length === 0 또는 onEquipmentSwap 미제공 시 단일 CTA 유지. */}
+          {phase === "equipment_find" && onEquipmentSwap && swapAlternatives.length > 0 ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleContinue}
+                className="flex-1 h-14 rounded-2xl bg-[#1B4332] text-white text-[15px] font-black active:scale-[0.98] transition-transform"
+              >
+                {t("beginner_mode.equipment.find.cta")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSwapModal(true)}
+                className="flex-1 h-14 rounded-2xl bg-white border border-gray-300 text-gray-600 text-[13px] font-bold active:scale-[0.98] transition-transform"
+              >
+                {t("beginner_mode.equipment.find.cta_unavailable")}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="w-full h-14 rounded-2xl bg-[#1B4332] text-white text-[15px] font-black active:scale-[0.98] transition-transform"
+            >
+              {phase === "warmup_intro"
+                ? t("beginner_mode.warmup.cta")
+                : phase === "equipment_find"
+                  ? t("beginner_mode.equipment.find.cta")
+                  : t("beginner_mode.equipment.use.cta")}
+            </button>
+          )}
         </footer>
+      )}
+
+      {/* 회의 2026-04-29: 대체 운동 모달 — equipment_find에서 "없어요" 클릭 시 */}
+      {showSwapModal && onEquipmentSwap && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/60 flex items-end sm:items-center justify-center px-4 animate-fade-in"
+          onClick={() => setShowSwapModal(false)}
+        >
+          <div
+            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+            style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="mb-4">
+              <h3 className="text-[18px] font-black text-[#1B4332]">
+                {t("beginner_mode.swap.modal.title")}
+              </h3>
+              <p className="text-[12px] text-gray-500 mt-1">
+                {t("beginner_mode.swap.modal.subtitle")}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {swapAlternatives.map((altName) => (
+                <button
+                  key={altName}
+                  type="button"
+                  onClick={() => {
+                    setShowSwapModal(false);
+                    onEquipmentSwap(altName);
+                  }}
+                  className="w-full text-left px-4 py-3.5 rounded-2xl border border-gray-200 bg-white active:scale-[0.98] transition-transform hover:bg-emerald-50/30"
+                >
+                  <span className="text-[15px] font-bold text-[#1B4332]">
+                    {getExerciseName(altName, locale)}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSwapModal(false)}
+              className="w-full mt-4 py-3 text-[13px] font-bold text-gray-500 active:opacity-60 transition-opacity"
+            >
+              {t("beginner_mode.swap.modal.cancel")}
+            </button>
+          </div>
+        </div>
       )}
       </div>
     </div>

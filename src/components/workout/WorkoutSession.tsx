@@ -7,7 +7,7 @@ import { WorkoutTooltipOverlay } from "./WorkoutTooltipOverlay";
 import { getBeginnerMode, BEGINNER_MODE_EVENT } from "@/utils/beginnerMode";
 import { isBeginnerSupportedExercise } from "@/constants/exerciseEquipment";
 import type { RunningStats } from "@/constants/workout";
-import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, LABELED_EXERCISE_POOLS } from "@/constants/workout";
+import { WorkoutSessionData, ExerciseStep, ExerciseLog, ExerciseTiming, LABELED_EXERCISE_POOLS, getAlternativeExercises } from "@/constants/workout";
 import { trackEvent } from "@/utils/analytics";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -480,6 +480,28 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
     setExercises(updated);
   };
 
+  // 회의 2026-04-29: 비기너 overlay에서 "기구 못 찾음 → 대체 운동" swap.
+  // 기존 handleSwapExercise + sequence step 리셋 (새 운동의 equipment_find부터 다시 시작)
+  // + 트래킹. 새 운동도 비기너 가이드 통과하도록 dismissedOverlays는 건드리지 X
+  // (sequence는 currentExercise.name 기준 useMemo 재계산되므로 새 phase 자동 노출).
+  const handleEquipmentSwap = (newExerciseName: string) => {
+    trackEvent("beginner_equipment_not_found", {
+      original: currentExercise.name,
+      swapped_to: newExerciseName,
+    });
+    handleSwapExercise(newExerciseName);
+    setOverlaySequenceStep(0);
+  };
+
+  // 비기너 가이드 지원 + 같은 근육군 대체 운동 (최대 5개)
+  const beginnerSwapAlternatives = useMemo<string[]>(() => {
+    if (!beginnerEnabled) return [];
+    return getAlternativeExercises(currentExercise.name)
+      .filter((name) => name !== currentExercise.name && isBeginnerSupportedExercise(name))
+      .slice(0, 5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentExercise.name, beginnerEnabled]);
+
   /** 회의 2026-04-24: FitScreen 우측 상단 스킵 아이콘 — 현재 운동을 건너뛰고 다음 운동으로.
    *  세트 기록 없이 진행. 마지막 운동을 스킵하면 add-exercise 화면으로 진입해 마침 or 운동 추가 선택 가능. */
   const handleSkipExercise = () => {
@@ -725,6 +747,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
           onBack={handleBeginnerOverlayBack}
           onChatWeightSelect={handleChatWeightSelect}
           lastWeightKg={lastWeightForChat}
+          onEquipmentSwap={handleEquipmentSwap}
+          swapAlternatives={beginnerSwapAlternatives}
         />
       )}
 
