@@ -50,6 +50,22 @@ function parseRepsToNumber(reps: string): number {
   return single ? parseInt(single[1], 10) : 10;
 }
 
+/** slotType → 사용자 친화 부위 라벨 (회의 ζ-5 정정 2026-04-30: RPE 표시 X, 부위·세트 표시) */
+function slotTypeBodyLabel(slotType: string): string {
+  if (slotType.startsWith("upper_push") || slotType.startsWith("push_") || slotType.startsWith("chest_safe") || slotType === "wendler_bench_day" || slotType === "wendler_ohp_day") return "가슴";
+  if (slotType.startsWith("upper_pull") || slotType.startsWith("pull_") || slotType.startsWith("back_") || slotType === "posture_thoracic_pull" || slotType === "posture_thoracic_rotation") return "등";
+  if (slotType.startsWith("lower_squat") || slotType.startsWith("legs_squat") || slotType === "wendler_squat_day" || slotType === "lower_compound" || slotType === "lower_full") return "하체";
+  if (slotType.startsWith("lower_hinge") || slotType.startsWith("legs_hinge") || slotType === "wendler_deadlift_day") return "하체";
+  if (slotType === "lower_volume" || slotType === "lower_low") return "하체";
+  if (slotType.startsWith("arms_")) return "팔";
+  if (slotType === "shoulder_rehab" || slotType === "posture_scap_rotator") return "어깨";
+  if (slotType === "posture_core_glute") return "코어";
+  if (slotType === "starter_fullbody" || slotType === "senior_fullbody" || slotType === "fullbody_a_squat" || slotType === "fullbody_b_hinge" || slotType === "metcon_circuit") return "전신";
+  if (slotType === "hiit_long_interval" || slotType === "hiit_medium_interval") return "HIIT";
+  if (slotType === "upper_low_intensity" || slotType === "upper_volume" || slotType === "upper_compound") return "상체";
+  return "운동";
+}
+
 /** role 별 무게 가이드 (간략) */
 function weightGuideForRole(role: string, gender?: "male" | "female"): string {
   const isFemale = gender === "female";
@@ -120,11 +136,13 @@ function generateSessionFromMatrix(matrix: MatrixSessionPayload, condition: User
     });
   }
 
-  const waveLabel = matrix.wendlerWave ? ` (${matrix.wendlerWave})` : "";
-  const lpLabel = matrix.linearProgression ? " · Linear" : "";
+  // 회의 ζ-5 정정 (2026-04-30): RPE/챕터 표시 X. 부위·종 수·세트 표시.
+  const bodyLabel = slotTypeBodyLabel(matrix.slotType);
+  const slotPool = CATALOG_SLOT_POOLS[matrix.slotType];
+  const slotCount = matrix.slots ?? (slotPool ? slotPool.length : 0);
   return {
-    title: `${catalogName} W${matrix.week} D${matrix.dayOfWeek}${waveLabel}`,
-    description: `RPE ${matrix.rpe}${lpLabel} · 챕터 ${matrix.chapter}`,
+    title: `${catalogName} W${matrix.week} D${matrix.dayOfWeek}`,
+    description: `${bodyLabel} ${slotCount}종 · ${matrix.sets}세트`,
     exercises,
     sessionMode: "balanced",
   };
