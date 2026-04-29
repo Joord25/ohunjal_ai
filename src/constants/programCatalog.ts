@@ -223,7 +223,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     weeks: 8,
     chapters: 2,
     engineGoal: "fat_loss",
-    match: { goal: ["fat_loss"] },
+    match: { goal: ["fat_loss", "endurance"] },
     setTemplate: TEMPLATE_FAT_LOSS,
   },
   {
@@ -273,7 +273,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     weeks: 8,
     chapters: 2,
     engineGoal: "muscle_gain",
-    match: { goal: ["muscle_gain"] },
+    match: { goal: ["muscle_gain", "endurance"] },
     setTemplate: TEMPLATE_HYPERTROPHY,
   },
   {
@@ -289,7 +289,33 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     setTemplate: TEMPLATE_STRENGTH,
   },
 
-  // ④ 목적별 — health (자세·부상 회피·시니어)
+  // ④ 목적별 — endurance (기초 체력)
+  {
+    id: "prog_fullbody_cond_8w",
+    kind: "program",
+    labelKo: "풀바디 컨디셔닝 8주",
+    labelEn: "Full-Body Conditioning 8W",
+    descriptionKo: "8주 (4주 × 2) · 전신 + HIIT + 코어",
+    weeks: 8,
+    chapters: 2,
+    engineGoal: "general_fitness",
+    match: { goal: ["endurance"] },
+    setTemplate: TEMPLATE_HEALTH,
+  },
+  {
+    id: "prog_starter_cond_4w",
+    kind: "program",
+    labelKo: "운동 시작 4주 체력 만들기",
+    labelEn: "Starter Conditioning 4W",
+    descriptionKo: "4주 · 주 3회 · 운동 입문 1개월 체력 빌드업",
+    weeks: 4,
+    chapters: 1,
+    engineGoal: "general_fitness",
+    match: { goal: ["endurance"] },
+    setTemplate: TEMPLATE_HEALTH,
+  },
+
+  // ⑤ 목적별 — health (자세·부상 회피·시니어)
   {
     id: "prog_posture_8w",
     kind: "program",

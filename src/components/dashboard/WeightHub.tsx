@@ -56,6 +56,7 @@ const ICON_PROFILE = (
 const CHIP_GOALS: { id: OnboardingGoal; ko: string; en: string }[] = [
   { id: "fat_loss", ko: "다이어트", en: "Fat Loss" },
   { id: "muscle_gain", ko: "근력향상", en: "Muscle Gain" },
+  { id: "endurance", ko: "기초체력", en: "Endurance" },
   { id: "health", ko: "건강", en: "Health" },
 ];
 
@@ -78,10 +79,7 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   onStartCatalog,
 }) => {
   const { locale } = useTranslation();
-  const [selectedGoal, setSelectedGoal] = useState<OnboardingGoal>(
-    // endurance 는 러닝 카탈로그 영역 → 기본을 fat_loss 로 fallback
-    onboardingGoal === "endurance" ? "fat_loss" : onboardingGoal
-  );
+  const [selectedGoal, setSelectedGoal] = useState<OnboardingGoal>(onboardingGoal);
   // 회의 ζ-5 (2026-04-30): body_picker 는 바텀시트 X → 같은 화면 다음 step (러닝 패턴)
   const [step, setStep] = useState<"list" | "body_picker">("list");
 
