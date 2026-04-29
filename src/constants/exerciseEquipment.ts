@@ -794,7 +794,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "디클라인 벤치 프레스 (Decline Bench Press)": {
-    imagePath: "/machine/bench-press.png",
+    imagePath: "/machine/decline-bench.png",
     findGuide: {
       ko: [
         "머리가 발보다 아래로 가는 디클라인 벤치 위에 바벨이 있는 셋업",
@@ -830,7 +830,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "스미스 머신 벤치 프레스 (Smith Machine Bench Press)": {
-    imagePath: "/machine/cable-machine.png",
+    imagePath: "/machine/smith-machine.png",
     findGuide: {
       ko: [
         "양쪽 기둥(레일)에 바벨이 고정되어 수직으로만 움직이는 큰 머신이에요",
@@ -1049,7 +1049,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "티바 로우 (T-Bar Row)": {
-    imagePath: "/machine/cable-machine.png",
+    imagePath: "/machine/t-bar-row.png",
     findGuide: {
       ko: [
         "한쪽 끝이 바닥에 고정된 바벨에 V바 또는 가로형 손잡이를 끼우는 머신",
@@ -1158,7 +1158,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
 
   // ── 팔 (CURL - 덤벨/바벨) ──
   "덤벨 컬 (Dumbbell Curl)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "덤벨 1쌍만 있으면 진행 — 별도 기구 불필요",
@@ -1309,7 +1309,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
 
   // ── 가슴 (MACHINE) ──
   "체스트 프레스 머신 (Chest Press Machine)": {
-    imagePath: "/machine/bench-press.png",
+    imagePath: "/machine/chest-press-machine.png",
     findGuide: {
       ko: [
         "앉아서 손잡이를 앞으로 미는 셀렉터라이즈 머신",
@@ -1345,7 +1345,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "펙덱 플라이 (Pec Deck Fly)": {
-    imagePath: "/machine/cable-machine.png",
+    imagePath: "/machine/pec-deck.png",
     findGuide: {
       ko: [
         "앉아서 양손/팔꿈치를 앞으로 모으는 플라이 전용 머신",
@@ -1382,7 +1382,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
 
   // ── 다리 (MACHINE) ──
   "레그 익스텐션 (Leg Extension)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/leg-extension.png",
     findGuide: {
       ko: [
         "앉아서 발목 패드를 앞으로 차올리는 머신",
@@ -1418,7 +1418,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "레그 컬 (Leg Curl)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/leg-curl.png",
     findGuide: {
       ko: [
         "엎드리거나 앉아서 발목으로 패드를 뒤로/아래로 당기는 머신",
@@ -1454,7 +1454,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "핵 스쿼트 (Hack Squat)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/hack-squat.png",
     findGuide: {
       ko: [
         "비스듬한 등받이에 어깨를 대고 발판에 발을 올려 미는 머신",
@@ -1490,7 +1490,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "힙 어덕션 머신 (Hip Adduction Machine)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/hip-adduction.png",
     findGuide: {
       ko: [
         "앉아서 양 무릎 안쪽 패드를 모으는 머신 (다리 모으기)",
@@ -1526,7 +1526,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "힙 어브덕션 머신 (Hip Abduction Machine)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/hip-abduction.png",
     findGuide: {
       ko: [
         "앉아서 양 무릎 바깥 패드를 벌리는 머신 (다리 벌리기)",
@@ -1562,7 +1562,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "백익스텐션 머신 (Back Extension Machine)": {
-    imagePath: "/machine/bench-press.png",
+    imagePath: "/machine/back-extension.png",
     findGuide: {
       ko: [
         "허리 위쪽이 패드, 발목 아래가 롤러로 고정된 머신 (45도 또는 90도)",
@@ -1635,7 +1635,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "어시스티드 풀업 (Assisted Pull-ups)": {
-    imagePath: "/machine/pull-up-bar.png",
+    imagePath: "/machine/assisted-pullup.png",
     findGuide: {
       ko: [
         "카운터웨이트로 체중 일부를 빼주는 어시스트 머신",
@@ -1707,7 +1707,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "중량 풀업 (Weighted Pull-ups)": {
-    imagePath: "/machine/pull-up-bar.png",
+    imagePath: ["/machine/pull-up-bar.png", "/machine/dipping-belt.png"],
     findGuide: {
       ko: [
         "풀업 봉 + 디핑 벨트(허리에 두르고 플레이트 매달기)",
@@ -1744,7 +1744,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
 
   // ── 케틀벨 (KETTLEBELL) ──
   "케틀벨 스윙 (Kettlebell Swing)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 + 빈 공간 (앞으로 1m 이상)",
@@ -1780,7 +1780,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 고블릿 스쿼트 (Kettlebell Goblet Squat)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개를 가슴 앞에 들고 스쿼트",
@@ -1816,7 +1816,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 데드리프트 (Kettlebell Deadlift)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 (또는 2개) — 양 발 사이",
@@ -1852,7 +1852,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 로우 (Kettlebell Row)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 — 한 손 로우 형태가 표준",
@@ -1888,7 +1888,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 오버헤드 프레스 (Kettlebell Overhead Press)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 — 한 손 프레스 표준 (또는 양손 더블)",
@@ -1924,7 +1924,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "더블 케틀벨 프론트 스쿼트 (Double Kettlebell Front Squat)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 2개 — 양 어깨 앞 \"랙 포지션\"",
@@ -1961,7 +1961,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
 
   // ── TRX/매달리기 ──
   "TRX 로우 (TRX Row)": {
-    imagePath: "/machine/pull-up-bar.png",
+    imagePath: "/machine/trx-strap.png",
     findGuide: {
       ko: [
         "천장이나 봉에 매달린 TRX 스트랩 (Y자 모양)",
@@ -1997,7 +1997,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "TRX 바이셉스 컬 (TRX Biceps Curl)": {
-    imagePath: "/machine/pull-up-bar.png",
+    imagePath: "/machine/trx-strap.png",
     findGuide: {
       ko: [
         "TRX 스트랩 사용 — 로우와 동일 셋업",
@@ -2106,7 +2106,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
 
   // ── 종아리 (CALF MACHINES) ──
   "스탠딩 카프 레이즈 (Standing Calf Raises)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/standing-calf.png",
     findGuide: {
       ko: [
         "어깨 패드가 있는 머신에서 발끝으로 \"까치발\" 동작",
@@ -2142,7 +2142,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "시티드 카프 레이즈 (Seated Calf Raises)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/seated-calf.png",
     findGuide: {
       ko: [
         "앉아서 무릎 위 패드를 올리는 머신",
@@ -2178,7 +2178,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "동키 카프 레이즈 (Donkey Calf Raises)": {
-    imagePath: "/machine/leg-press.png",
+    imagePath: "/machine/standing-calf.png",
     findGuide: {
       ko: [
         "허리 굽힌 자세 + 등 위에 무게(또는 머신)",
@@ -2218,7 +2218,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   // ══════════════════════════════════
 
   "바벨 컬 (Barbell Curl)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "올림픽 바벨 또는 EZ바 — 자유 웨이트존",
@@ -2254,7 +2254,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "바벨 슈러그 (Barbell Shrug)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "바벨 또는 덤벨 (바벨이 표준)",
@@ -2362,7 +2362,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "트랩바 데드리프트 (Trap Bar Deadlift)": {
-    imagePath: ["/machine/deadlift-platform1.png", "/machine/deadlift-platform2.png"],
+    imagePath: "/machine/trap-bar.png",
     findGuide: {
       ko: [
         "트랩바(육각형) + 플레이트",
@@ -2398,7 +2398,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "헤머 벤치 프레스 (Hammer Bench Press)": {
-    imagePath: "/machine/bench-press.png",
+    imagePath: "/machine/chest-press-machine.png",
     findGuide: {
       ko: [
         "헤머 스트렝스 브랜드 가슴 머신",
@@ -2434,7 +2434,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "업라이트 로우 (Upright Row)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "바벨, EZ바, 덤벨, 케이블 가능",
@@ -2470,7 +2470,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "덤벨 루마니안 데드리프트 (Dumbbell Romanian Deadlift)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "덤벨 1쌍 — 자유 웨이트존",
@@ -2506,7 +2506,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "덤벨 와이드 스쿼트 (Dumbbell Wide Squat)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "덤벨 1개 (양손) 또는 2개",
@@ -2542,7 +2542,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "덤벨 쓰러스터 (Dumbbell Thruster)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "덤벨 1쌍",
@@ -2650,7 +2650,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "덤벨 프리쳐 컬 (Dumbbell Preacher Curl)": {
-    imagePath: "/machine/incline-bench.png",
+    imagePath: "/machine/preacher-bench.png",
     findGuide: {
       ko: [
         "프리처 벤치 + 덤벨 1개 (한 손씩)",
@@ -2722,7 +2722,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "워킹 런지 (Walking Lunges)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "맨몸 또는 덤벨/바벨",
@@ -2758,7 +2758,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "고블렛 스쿼트 (Goblet Squat)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "덤벨 또는 케틀벨 1개 — 가슴 앞",
@@ -2830,7 +2830,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "리버스 런지 (Reverse Lunges)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/freeweight-space.jpg",
     findGuide: {
       ko: [
         "맨몸 또는 덤벨/바벨",
@@ -2902,7 +2902,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 워킹 런지 (Kettlebell Walking Lunge)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 (랙) 또는 2개 + 공간",
@@ -2938,7 +2938,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "싱글 레그 케틀벨 RDL (Single-Leg Kettlebell RDL)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 + 한 다리 균형",
@@ -2974,7 +2974,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 플로어 프레스 (Kettlebell Floor Press)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 (한 손씩) + 바닥",
@@ -3010,7 +3010,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 윈드밀 (Kettlebell Windmill)": {
-    imagePath: "/machine/flat-bench.png",
+    imagePath: "/machine/kettlebell-rack.png",
     findGuide: {
       ko: [
         "케틀벨 1개 — 머리 위로 들고",
@@ -3082,7 +3082,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "하이로우 머신 (High Row Machine)": {
-    imagePath: "/machine/lat-pulldown.png",
+    imagePath: "/machine/high-row.png",
     findGuide: {
       ko: [
         "위쪽에서 내려오는 손잡이를 가슴 쪽으로 당기는 머신",
