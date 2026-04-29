@@ -1,11 +1,12 @@
 ---
 id: SEED-003
-status: active — **백그라운드 즉시 시작 (대표 컨펌 2026-04-29). YouTube API 키 발급 대기 중**
+status: paused — **회의 ζ-5 (2026-04-30) 보류. 대표 결단 "조사는 넘기고". Claude 도메인 지식 기반 SSOT로 대체. 인프라 코드는 잔존(commit b9bb87c quota 절감 fix 포함). 추후 재개 시 즉시 활용 가능.**
 planted: 2026-04-29
 planted_during: 회의 2026-04-29-ζ-4 (SEED-002 P2 카탈로그 컨텐츠 의존성)
-trigger_when: 대표가 YouTube API 키 발급·전달 즉시
+paused_during: 회의 2026-04-30-ζ-5 (대표 결단)
+trigger_when: 카탈로그 1차 안 시장 검증 필요 시점 (분기별 재조사 등)
 scope: M (조사 인프라 + 분석 1회 = 약 1주, 분기별 재실행)
-parent: SEED-002 (ProgramFirst UX 전환 P2 카탈로그 의존)
+parent: SEED-002 (ProgramFirst UX 전환 P2 카탈로그 의존) — 보류로 의존성 해제됨
 ---
 
 # SEED-003: YouTube 시장 조사 — 카탈로그 컨텐츠 큐레이션 시그널
