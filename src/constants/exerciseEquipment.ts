@@ -2722,7 +2722,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "워킹 런지 (Walking Lunges)": {
-    imagePath: "/machine/freeweight-space.jpg",
+    imagePath: "/machine/walking-lunge.png",
     findGuide: {
       ko: [
         "맨몸 또는 덤벨/바벨",
@@ -2902,7 +2902,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 워킹 런지 (Kettlebell Walking Lunge)": {
-    imagePath: "/machine/kettlebell-rack.png",
+    imagePath: "/machine/walking-lunge.png",
     findGuide: {
       ko: [
         "케틀벨 1개 (랙) 또는 2개 + 공간",
@@ -3077,6 +3077,42 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
         "Pull to shoulder side",
         "Other hand free (resting on seat)",
         "Switch sides for equal reps",
+      ],
+    },
+  },
+
+  "체스트 서포티드 로우 (Chest Supported Row)": {
+    imagePath: "/machine/chest-supported-row.png",
+    findGuide: {
+      ko: [
+        "가슴 패드에 엎드려/기대어 양손으로 당기는 머신",
+        "T바 로우의 체스트 패드 버전 또는 전용 머신",
+        "허리 부담 거의 X — 가슴이 받쳐주어 안전",
+        "초보자/허리 약한 사람에게 좋은 등 운동",
+        "보통 등 운동 머신 영역",
+      ],
+      en: [
+        "Chest pad supports the body while you pull with both hands",
+        "T-Bar Row with chest pad or dedicated machine",
+        "Minimal lower-back load — chest pad keeps it safe",
+        "Great back exercise for beginners/weak backs",
+        "Usually in the back-machine area",
+      ],
+    },
+    useGuide: {
+      ko: [
+        "패드 — 가슴/배가 단단히 닿게 (배 압박 X)",
+        "발 — 발판이 있으면 단단히",
+        "그립 — 머신 종류에 따라 다양 (V바, 평행, 와이드)",
+        "당길 때 어깨 뒤로 + 등 가운데 짜내기",
+        "허리 둥글지 않게 — 패드가 도와줌",
+      ],
+      en: [
+        "Pad — chest/belly firmly against (not pressing the belly hard)",
+        "Feet — on the platform if provided",
+        "Grip — varies by machine (V-bar, parallel, wide)",
+        "Pull elbows back + squeeze mid-back",
+        "Back stays straight — pad helps",
       ],
     },
   },

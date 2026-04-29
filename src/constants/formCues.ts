@@ -1818,6 +1818,26 @@ export const EXERCISE_FORM_CUES: Record<string, FormCueSet> = {
     },
   },
 
+  "체스트 서포티드 로우 (Chest Supported Row)": {
+    source: "NSCA Essentials of Strength Training 2nd Ed.",
+    cues: {
+      ko: [
+        "패드 — 가슴/배 단단히 (배 압박 X)",
+        "그립 — 머신 종류 따라 V바/평행/와이드",
+        "당길 때 어깨 뒤로 + 등 가운데 짜내기",
+        "허리 둥글지 않게 — 패드가 받침",
+        "팔로 끌지 않게 — 등이 일하도록",
+      ],
+      en: [
+        "Pad — chest/belly firmly (not pressing too hard)",
+        "Grip — V-bar / parallel / wide depending on machine",
+        "Pull elbows back + squeeze mid-back",
+        "Back stays straight — pad supports",
+        "Don't pull with the arms — let the back work",
+      ],
+    },
+  },
+
   "하이로우 머신 (High Row Machine)": {
     source: "NSCA Essentials of Strength Training 2nd Ed.",
     cues: {
