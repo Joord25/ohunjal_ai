@@ -187,35 +187,22 @@ export const WeightHub: React.FC<WeightHubProps> = ({
 
             {/* 카탈로그 카드 — 한 페이지 ≤ 4. RunningProgramSheet 카드 톤 미러 */}
             <div className="flex flex-col gap-3">
-              {cards.map((item) => {
-                const isBodyPicker = item.kind === "body_picker";
-                const rightTag = isBodyPicker
-                  ? (locale === "en" ? "TODAY" : "오늘")
-                  : item.weeks > 0 ? `${item.weeks}${locale === "en" ? "W" : "주"}` : null;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleCardClick(item)}
-                    className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-gray-50 text-left"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-xl font-black text-[#1B4332] leading-tight">
-                        {label(item)}
-                      </span>
-                      {rightTag && (
-                        <span className="shrink-0 text-[10px] font-black tracking-[0.15em] uppercase text-[#2D6A4F] whitespace-nowrap">
-                          {rightTag}
-                        </span>
-                      )}
-                    </div>
-                    {item.descriptionKo && (
-                      <p className="text-[12.5px] text-gray-500 mt-1.5 leading-relaxed">
-                        {locale === "en" ? "" : item.descriptionKo}
-                      </p>
-                    )}
-                  </button>
-                );
-              })}
+              {cards.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleCardClick(item)}
+                  className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-gray-50 text-left"
+                >
+                  <span className="block text-xl font-black text-[#1B4332] leading-tight">
+                    {label(item)}
+                  </span>
+                  {item.descriptionKo && (
+                    <p className="text-[12.5px] text-gray-500 mt-1.5 leading-relaxed">
+                      {locale === "en" ? "" : item.descriptionKo}
+                    </p>
+                  )}
+                </button>
+              ))}
               {cards.length === 0 && (
                 <p className="text-center text-sm text-gray-400 py-12">
                   {locale === "en" ? "No programs match. Try another goal chip." : "조건에 맞는 프로그램이 없습니다. 다른 목적 칩을 눌러보세요."}
