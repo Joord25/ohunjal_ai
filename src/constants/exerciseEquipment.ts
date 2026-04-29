@@ -2902,7 +2902,7 @@ export const EXERCISE_EQUIPMENT: Record<string, EquipmentInfo> = {
   },
 
   "케틀벨 워킹 런지 (Kettlebell Walking Lunge)": {
-    imagePath: "/machine/walking-lunge.png",
+    imagePath: ["/machine/kettlebell-rack.png", "/machine/walking-lunge.png"],
     findGuide: {
       ko: [
         "케틀벨 1개 (랙) 또는 2개 + 공간",
