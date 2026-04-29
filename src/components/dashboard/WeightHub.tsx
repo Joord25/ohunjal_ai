@@ -140,7 +140,8 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   onStartCatalog,
 }) => {
   const { locale } = useTranslation();
-  const [selectedGoal, setSelectedGoal] = useState<OnboardingGoal>(onboardingGoal);
+  // 회의 ζ-5 정정 (2026-04-30): 칩 탭 폐기 — 운동 목표는 onboarding/프로필에서만 결정. 자동 매칭.
+  const selectedGoal = onboardingGoal;
   // 회의 ζ-5 (2026-04-30): body_picker 는 바텀시트 X → 같은 화면 다음 step (러닝 패턴)
   const [step, setStep] = useState<"list" | "body_picker">("list");
 
@@ -224,73 +225,40 @@ export const WeightHub: React.FC<WeightHubProps> = ({
               </p>
             </div>
 
-            {/* 회의 ζ-5 ④: 진행 중 웨이트 프로그램 — 러닝 패턴 미러 */}
+            {/* 회의 ζ-5 ④/Phase 5 정정 (2026-04-30): 진행 중 카드 = RunningProgramSheet 디자인 100% 미러 */}
             {activeWeightPrograms && activeWeightPrograms.length > 0 && (
-              <div className="mb-5">
-                <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400 mb-2">
+              <>
+                <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400 mb-3">
                   {locale === "en" ? "IN PROGRESS" : "진행 중"}
                 </p>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3 mb-6">
                   {activeWeightPrograms.map((p) => {
                     const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
-                    // 다음 세션 메타 (W·D·slotType 라벨)
-                    const ns = p.nextSession;
-                    const dayLabels = locale === "en" ? DAY_LABELS_EN : DAY_LABELS_KO;
-                    const slotLabelMap = SLOT_TYPE_LABELS[ns?.slotType ?? ""];
-                    const slotLabel = slotLabelMap ? (locale === "en" ? slotLabelMap.en : slotLabelMap.ko) : "";
-                    const dayLabel = ns?.dayOfWeek != null ? dayLabels[ns.dayOfWeek % 7] : "";
-                    const weekLabel = ns?.weekIndex != null ? `W${ns.weekIndex}` : "";
-                    const nextMeta = [weekLabel, dayLabel ? `${dayLabel}` : "", slotLabel].filter(Boolean).join(" · ");
                     return (
                       <button
                         key={p.programId}
                         onClick={() => p.nextSession && onResumeProgram?.(p.programId, p.nextSession.id)}
                         disabled={!p.nextSession}
-                        className="w-full text-left bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-4 active:scale-[0.98] transition-transform disabled:opacity-50"
+                        className="w-full bg-white border border-[#2D6A4F]/30 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-emerald-50/30 text-left disabled:opacity-50"
                       >
-                        <div className="flex items-center justify-between gap-3 mb-1.5">
+                        <div className="flex items-center justify-between gap-3 mb-2">
                           <span className="text-base font-black text-[#1B4332] leading-tight truncate">{p.programName}</span>
-                          <span className="shrink-0 text-[11px] font-black text-[#2D6A4F] whitespace-nowrap">
-                            {p.completed}/{p.total}
-                          </span>
+                          <span className="shrink-0 text-[11px] font-bold text-[#2D6A4F]">{p.completed}/{p.total}</span>
                         </div>
-                        <div className="h-1 bg-emerald-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#2D6A4F]" style={{ width: `${pct}%` }} />
+                        <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#2D6A4F] transition-[width] duration-500" style={{ width: `${pct}%` }} />
                         </div>
-                        {nextMeta && (
-                          <p className="text-[11px] text-gray-500 mt-2 leading-tight">
-                            {locale === "en" ? "Next: " : "다음: "}{nextMeta}
-                          </p>
-                        )}
-                        <p className="text-[12px] text-[#2D6A4F] mt-1 font-bold">
+                        <p className="text-[11px] text-[#2D6A4F] font-bold mt-2">
                           {locale === "en" ? "Continue →" : "이어가기 →"}
                         </p>
                       </button>
                     );
                   })}
                 </div>
-              </div>
+              </>
             )}
 
-            {/* 칩 탭 — 운동 목적 다르게 선택 */}
-            <div className="flex gap-2 mb-5 overflow-x-auto -mx-1 px-1">
-              {CHIP_GOALS.map((g) => {
-                const active = selectedGoal === g.id;
-                return (
-                  <button
-                    key={g.id}
-                    onClick={() => setSelectedGoal(g.id)}
-                    className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[12.5px] font-black transition ${
-                      active
-                        ? "bg-[#1B4332] text-white"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {locale === "en" ? g.en : g.ko}
-                  </button>
-                );
-              })}
-            </div>
+            {/* 회의 ζ-5 정정 (2026-04-30): 칩 탭 제거 — 온보딩/프로필 목표 자동 매칭 */}
 
             {/* 카탈로그 카드 — 한 페이지 ≤ 4. RunningProgramSheet 카드 톤 미러 */}
             <div className="flex flex-col gap-3">
