@@ -33,8 +33,8 @@ interface WeightHubProps {
   onBack: () => void;
   onOpenMyPlans: () => void;
   onOpenProfile: () => void;
-  /** 카탈로그 카드 클릭 핸들러. body_picker 는 muscle 동봉 */
-  onStartCatalog: (item: CatalogItem, opt?: { muscle?: TargetMuscle }) => void;
+  /** 카탈로그 카드 클릭 핸들러. body_picker 는 muscle 동봉. program/campaign 은 settings(sessionsPerWeek/startChoice) 동봉 */
+  onStartCatalog: (item: CatalogItem, opt?: { muscle?: TargetMuscle; sessionsPerWeek?: number; startChoice?: "today" | "tomorrow" | "next_monday" }) => void;
   onRequestLogin: () => void;
   onRequestPaywall: () => void;
 }
@@ -142,8 +142,11 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   const { locale } = useTranslation();
   // 회의 ζ-5 정정 (2026-04-30): 칩 탭 폐기 — 운동 목표는 onboarding/프로필에서만 결정. 자동 매칭.
   const selectedGoal = onboardingGoal;
-  // 회의 ζ-5 (2026-04-30): body_picker 는 바텀시트 X → 같은 화면 다음 step (러닝 패턴)
-  const [step, setStep] = useState<"list" | "body_picker">("list");
+  // 회의 ζ-5 (2026-04-30): body_picker / settings step (러닝 패턴 미러)
+  const [step, setStep] = useState<"list" | "body_picker" | "settings">("list");
+  const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
+  const [settingsFreq, setSettingsFreq] = useState<number>(3);
+  const [settingsStart, setSettingsStart] = useState<"today" | "tomorrow" | "next_monday">("today");
 
   const cards = useMemo<CatalogItem[]>(() => {
     return getMatchedCatalog({
@@ -161,16 +164,26 @@ export const WeightHub: React.FC<WeightHubProps> = ({
       setStep("body_picker");
       return;
     }
-    onStartCatalog(item);
+    // 회의 ζ-5 (2026-04-30): program/campaign → settings step (주당 빈도/시작 시점 입력)
+    setSelectedItem(item);
+    setSettingsFreq(item.sessionsPerWeek ?? 3);
+    setSettingsStart("today");
+    setStep("settings");
   };
 
   const handleMuscleSelect = (muscle: TargetMuscle) => {
     onStartCatalog(bodyPickerCard, { muscle });
   };
 
+  const handleStartProgram = () => {
+    if (!selectedItem) return;
+    onStartCatalog(selectedItem, { sessionsPerWeek: settingsFreq, startChoice: settingsStart });
+  };
+
   const handleBack = () => {
-    if (step === "body_picker") {
+    if (step === "body_picker" || step === "settings") {
       setStep("list");
+      setSelectedItem(null);
       return;
     }
     onBack();
@@ -295,7 +308,7 @@ export const WeightHub: React.FC<WeightHubProps> = ({
               )}
             </div>
           </>
-        ) : (
+        ) : step === "body_picker" ? (
           // 회의 ζ-5: body_picker step — 풀스크린 다음 페이지 (러닝 패턴 미러)
           <>
             <div className="mb-5">
@@ -322,6 +335,81 @@ export const WeightHub: React.FC<WeightHubProps> = ({
                 </button>
               ))}
             </div>
+          </>
+        ) : (
+          // 회의 ζ-5 (2026-04-30): settings step — 주당 빈도 + 시작 시점 (러닝 RunningProgramSheet StepSettings 미러)
+          <>
+            <div className="mb-6">
+              <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400">
+                SETTINGS
+              </p>
+              <h1 className="text-3xl font-black text-[#1B4332] mt-1">
+                {locale === "en" ? "Settings" : "세팅"}
+              </h1>
+              {selectedItem && (
+                <p className="text-[13px] text-gray-500 mt-3 leading-relaxed">
+                  {locale === "en" ? selectedItem.labelEn : selectedItem.labelKo}
+                </p>
+              )}
+            </div>
+
+            {/* Q1. 주당 빈도 */}
+            <div className="mb-6">
+              <p className="text-[14px] font-black text-[#1B4332] mb-3">
+                {locale === "en" ? "How many days per week?" : "일주일에 몇 번 운동할 수 있어요?"}
+              </p>
+              <div className="flex gap-2">
+                {[3, 4, 5].map((n) => {
+                  const active = settingsFreq === n;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setSettingsFreq(n)}
+                      className={`flex-1 py-3 rounded-2xl text-[15px] font-black transition ${
+                        active ? "bg-[#1B4332] text-white" : "bg-gray-50 text-gray-500"
+                      }`}
+                    >
+                      {locale === "en" ? `${n} days` : `${n}일`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Q2. 시작 시점 */}
+            <div className="mb-8">
+              <p className="text-[14px] font-black text-[#1B4332] mb-3">
+                {locale === "en" ? "When do you want to start?" : "언제 시작할까요?"}
+              </p>
+              <div className="flex gap-2">
+                {[
+                  { id: "today" as const, ko: "오늘", en: "Today" },
+                  { id: "tomorrow" as const, ko: "내일", en: "Tomorrow" },
+                  { id: "next_monday" as const, ko: "다음 주 월요일", en: "Next Mon" },
+                ].map((s) => {
+                  const active = settingsStart === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSettingsStart(s.id)}
+                      className={`flex-1 py-3 rounded-2xl text-[13px] font-black transition ${
+                        active ? "bg-[#1B4332] text-white" : "bg-gray-50 text-gray-500"
+                      }`}
+                    >
+                      {locale === "en" ? s.en : s.ko}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={handleStartProgram}
+              className="w-full py-4 rounded-2xl bg-[#1B4332] text-white text-[15px] font-black active:scale-[0.98] transition-transform"
+            >
+              {locale === "en" ? "Build my plan" : "여정 짜기"}
+            </button>
           </>
         )}
       </div>

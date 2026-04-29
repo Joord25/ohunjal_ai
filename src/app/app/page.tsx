@@ -1172,7 +1172,7 @@ export default function Home() {
         const activeWeightPrograms = weightHubAllActive.filter(p => p.programCategory === "strength");
         const weightHubActive = weightHubAllActive.length > 0;
 
-        const handleStartCatalog = async (item: CatalogItem, opt?: { muscle?: TargetMuscle }) => {
+        const handleStartCatalog = async (item: CatalogItem, opt?: { muscle?: TargetMuscle; sessionsPerWeek?: number; startChoice?: "today" | "tomorrow" | "next_monday" }) => {
           try {
             const goal = item.engineGoal;
             const condition: import("@/constants/workout").UserCondition = {
@@ -1213,14 +1213,32 @@ export default function Home() {
               if (!res.ok) throw new Error(`generateCatalogProgram ${res.status}`);
               const data = await res.json() as { ok: true; programId: string; programName: string; totalSessions: number; totalWeeks: number; sessions: SavedPlan[] };
 
-              saveProgramSessions(data.sessions);
-              remoteSaveProgram(data.sessions).catch(() => { /* local 저장 유지 */ });
+              // 회의 ζ-5 정정 (2026-04-30): startChoice 시작 시점 → 첫 세션 createdAt 조정
+              const startChoice = opt?.startChoice ?? "today";
+              const startMs = (() => {
+                const d = new Date();
+                d.setHours(8, 0, 0, 0);
+                if (startChoice === "tomorrow") d.setDate(d.getDate() + 1);
+                else if (startChoice === "next_monday") {
+                  const day = d.getDay();
+                  const diff = (8 - day) % 7 || 7;
+                  d.setDate(d.getDate() + diff);
+                }
+                return d.getTime();
+              })();
+              const adjustedSessions = data.sessions.map((s, idx) => ({
+                ...s,
+                createdAt: idx === 0 ? startMs : s.createdAt,
+              }));
+
+              saveProgramSessions(adjustedSessions);
+              remoteSaveProgram(adjustedSessions).catch(() => { /* local 저장 유지 */ });
 
               setIsLoading(false); // PlanLoadingOverlay 즉시 unmount (onComplete master_plan_preview 진입 cancel)
               setPendingExpandedProgramId(data.programId);
               setMyPlansReturnTo("weight_hub");
               setView("my_plans");
-              trackEvent("chat_plan_generated", { mode: "weight_catalog_program", catalog_id: item.id, total_sessions: data.totalSessions, total_weeks: data.totalWeeks });
+              trackEvent("chat_plan_generated", { mode: "weight_catalog_program", catalog_id: item.id, total_sessions: data.totalSessions, total_weeks: data.totalWeeks, sessions_per_week: opt?.sessionsPerWeek ?? item.sessionsPerWeek ?? 3, start_choice: startChoice });
               return;
             }
 
