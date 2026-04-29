@@ -261,6 +261,8 @@ export default function Home() {
   // 스크롤 내릴 때 탭바 숨김 (인스타 스타일)
   const [tabsVisible, setTabsVisible] = useState(true);
   const [view, setView] = useState<ViewState>("login"); // Start with login
+  // 회의 ζ-5 (2026-04-30): my_plans 진입 시 자동 expand 할 programId (카탈로그 시작 / 이어가기 클릭)
+  const [pendingExpandedProgramId, setPendingExpandedProgramId] = useState<string | null>(null);
   // 영양 탭 온보딩 완료 시 리마운트 트리거
   const [nutritionProfileVersion, setNutritionProfileVersion] = useState(0);
   // 회의 2026-04-27: ROOT 카드 첫 클릭 시 Onboarding 게이트. 완료되면 해당 카드로 자동 진입.
@@ -1073,18 +1075,11 @@ export default function Home() {
             isPremium={subStatus === "active"}
             hasActivePrograms={runHubActive}
             activeRunningPrograms={activeRunningPrograms}
-            onResumeProgram={(_programId, nextSessionId) => {
-              // 회의 2026-04-27: "이어가기" → 해당 프로그램 다음 세션을 master_plan_preview로 진입
-              try {
-                const all = getSavedPlans();
-                const session = all.find((p: SavedPlan) => p.id === nextSessionId);
-                if (!session) return;
-                setActiveSavedPlanId(session.id);
-                setCurrentWorkoutSession(session.sessionData);
-                setCurrentPlanSource("program");
-                setWorkoutReturnTo("running_hub");
-                setView("master_plan_preview");
-              } catch (e) { console.error("resume program failed", e); }
+            onResumeProgram={(programId, _nextSessionId) => {
+              // 회의 ζ-5 (2026-04-30) 정정: "이어가기" → my_plans 진입 (해당 프로그램 자동 expand)
+              setPendingExpandedProgramId(programId);
+              setMyPlansReturnTo("running_hub");
+              setView("my_plans");
             }}
             onBack={() => setView("root_home")}
             onOpenMyPlans={() => { setMyPlansReturnTo("running_hub"); setView("my_plans"); }}
@@ -1194,13 +1189,15 @@ export default function Home() {
             setCurrentPlanSource("chat");
             setWorkoutReturnTo("weight_hub");
 
-            // 회의 ζ-5 (2026-04-30) Phase 4: 장기 프로그램 (weeklyMatrix 있음) → multi-session 일괄 생성 (러닝 패턴)
+            // 회의 ζ-5 (2026-04-30) Phase 4 + 정정: weeklyMatrix → multi-session → my_plans 진입 (master_plan_preview X)
             if (item.kind !== "body_picker" && item.weeks > 0 && item.weeklyMatrix && item.weeklyMatrix.length > 0) {
               const { auth } = await import("@/lib/firebase");
               const fbUser = auth.currentUser;
               if (!fbUser) throw new Error("Not authenticated");
               const token = await fbUser.getIdToken();
-              const res = await fetch("/api/generateCatalogProgram", {
+
+              // PlanLoadingOverlay 최소 1.5초 노출 (마누스 풍 step 5개 다 보이게)
+              const fetchPromise = fetch("/api/generateCatalogProgram", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({
@@ -1210,20 +1207,18 @@ export default function Home() {
                   condition,
                 }),
               });
+              const minDelay = new Promise<void>((r) => setTimeout(r, 1500));
+              const [res] = await Promise.all([fetchPromise, minDelay]);
               if (!res.ok) throw new Error(`generateCatalogProgram ${res.status}`);
               const data = await res.json() as { ok: true; programId: string; programName: string; totalSessions: number; totalWeeks: number; sessions: SavedPlan[] };
 
               saveProgramSessions(data.sessions);
-              try { await remoteSaveProgram(data.sessions); } catch { /* local 저장 유지 */ }
+              remoteSaveProgram(data.sessions).catch(() => { /* local 저장 유지 */ });
 
-              // 첫 세션 = 진입 세션
-              const first = data.sessions[0];
-              setCurrentSession({ goal, sessionMode: "balanced" });
-              setCurrentWorkoutSession(first.sessionData);
-              setActiveSavedPlanId(first.id);
-              setCurrentPlanSource("program");
-              setView("master_plan_preview");
-              setIsLoading(false);
+              setIsLoading(false); // PlanLoadingOverlay 즉시 unmount (onComplete master_plan_preview 진입 cancel)
+              setPendingExpandedProgramId(data.programId);
+              setMyPlansReturnTo("weight_hub");
+              setView("my_plans");
               trackEvent("chat_plan_generated", { mode: "weight_catalog_program", catalog_id: item.id, total_sessions: data.totalSessions, total_weeks: data.totalWeeks });
               return;
             }
@@ -1271,17 +1266,11 @@ export default function Home() {
                 chapterIndex: p.nextSession.chapterIndex,
               } : null,
             }))}
-            onResumeProgram={(_programId, nextSessionId) => {
-              try {
-                const all = getSavedPlans();
-                const session = all.find((p: SavedPlan) => p.id === nextSessionId);
-                if (!session) return;
-                setActiveSavedPlanId(session.id);
-                setCurrentWorkoutSession(session.sessionData);
-                setCurrentPlanSource("program");
-                setWorkoutReturnTo("weight_hub");
-                setView("master_plan_preview");
-              } catch (e) { console.error("resume weight program failed", e); }
+            onResumeProgram={(programId, _nextSessionId) => {
+              // 회의 ζ-5 (2026-04-30) 정정: "이어가기" → my_plans 진입 (해당 프로그램 자동 expand)
+              setPendingExpandedProgramId(programId);
+              setMyPlansReturnTo("weight_hub");
+              setView("my_plans");
             }}
             onBack={() => setView("root_home")}
             onOpenMyPlans={() => { setMyPlansReturnTo("weight_hub"); setView("my_plans"); }}
@@ -1542,7 +1531,8 @@ export default function Home() {
       case "my_plans":
         return (
           <MyPlansScreen
-            onBack={() => setView(myPlansReturnTo)}
+            initialExpandedProgramId={pendingExpandedProgramId}
+            onBack={() => { setPendingExpandedProgramId(null); setView(myPlansReturnTo); }}
             onSelectPlan={(plan) => {
               // 저장 플랜 실행도 트라이얼/페이월 게이트 통과 (평가자 P0 지적)
               if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {

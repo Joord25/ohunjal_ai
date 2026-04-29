@@ -19,14 +19,16 @@ import type { WorkoutHistory } from "@/constants/workout";
 interface MyPlansScreenProps {
   onBack: () => void;
   onSelectPlan: (plan: SavedPlan) => void;
+  /** 회의 ζ-5 (2026-04-30): 카탈로그 시작 또는 진행 중 프로그램 클릭 시 자동 expand 할 programId */
+  initialExpandedProgramId?: string | null;
 }
 
-export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPlan }) => {
+export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPlan, initialExpandedProgramId }) => {
   const { t, locale } = useTranslation();
   const [plans, setPlans] = useState<SavedPlan[]>(() => getSavedPlans());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteProgramId, setConfirmDeleteProgramId] = useState<string | null>(null);
-  const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
+  const [expandedProgram, setExpandedProgram] = useState<string | null>(initialExpandedProgramId ?? null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistory[]>(() => getCachedWorkoutHistory());

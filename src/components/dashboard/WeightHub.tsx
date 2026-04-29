@@ -312,7 +312,7 @@ export const WeightHub: React.FC<WeightHubProps> = ({
                 <button
                   key={m.id}
                   onClick={() => handleMuscleSelect(m.id)}
-                  className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-gray-50 text-left"
+                  className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-gray-50 text-center"
                 >
                   <span className="text-xl font-black text-[#1B4332] leading-tight">
                     {locale === "en" ? m.en : m.ko}
