@@ -49,7 +49,15 @@ async function ytFetch<T>(path: string, params: Record<string, string>): Promise
   return (await res.json()) as T;
 }
 
+// 회의 ζ-4 fix (quota 절감): Firestore 캐시 활용 — 1번 lookup 후 channelId 재사용. search.list 회피.
 async function lookupChannelIdByName(name: string): Promise<{ channelId: string; title: string }> {
+  // 1) Firestore 캐시 조회 (searchName 일치)
+  const cached = await db.collection("youtube_research").where("searchName", "==", name).limit(1).get();
+  if (!cached.empty) {
+    const d = cached.docs[0].data();
+    if (d.channelId) return { channelId: d.channelId, title: d.title ?? name };
+  }
+  // 2) miss → search.list (100 units, 신규 채널만)
   type SearchResp = { items: YtChannelSearchItem[] };
   const json = await ytFetch<SearchResp>("search", {
     part: "snippet",
@@ -63,23 +71,43 @@ async function lookupChannelIdByName(name: string): Promise<{ channelId: string;
   return { channelId, title: item.snippet.title };
 }
 
+// 회의 ζ-4 fix (quota 절감): search.list (100 units) → channels.list + playlistItems.list + videos.list (3 units). 90% 절감.
+// 트레이드오프: search.list `order=viewCount` 폐기 → 최근 50 영상 fetch 후 메모리에서 viewCount 정렬.
+//                 채널의 진짜 all-time top 영상이 최근 50 안에 없으면 누락 가능. 인기 영상은 보통 최근 1-2년이라 실용적 영향 X.
 async function fetchChannelTopVideos(channelId: string, maxResults: number): Promise<YtVideoItem[]> {
-  type SearchResp = { items: { id: { videoId?: string } }[] };
-  const search = await ytFetch<SearchResp>("search", {
-    part: "id",
-    channelId,
-    type: "video",
-    order: "viewCount",
-    maxResults: String(maxResults),
+  // 1) channels.list — uploads playlist ID 추출 (1 unit)
+  type ChannelsResp = { items: { contentDetails?: { relatedPlaylists?: { uploads?: string } } }[] };
+  const ch = await ytFetch<ChannelsResp>("channels", {
+    part: "contentDetails",
+    id: channelId,
   });
-  const ids = search.items.map((i) => i.id.videoId).filter((v): v is string => Boolean(v));
-  if (ids.length === 0) return [];
+  const uploadsPlaylistId = ch.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsPlaylistId) return [];
+
+  // 2) playlistItems.list — 최근 50 영상 ID (1 unit)
+  type PlaylistResp = { items: { contentDetails: { videoId: string } }[] };
+  const pl = await ytFetch<PlaylistResp>("playlistItems", {
+    part: "contentDetails",
+    playlistId: uploadsPlaylistId,
+    maxResults: "50",
+  });
+  const allIds = pl.items.map((i) => i.contentDetails.videoId).filter(Boolean);
+  if (allIds.length === 0) return [];
+
+  // 3) videos.list — 메타 + statistics (1 unit, 최대 50개 한 번에)
   type VideosResp = { items: YtVideoItem[] };
   const videos = await ytFetch<VideosResp>("videos", {
     part: "snippet,statistics",
-    id: ids.join(","),
+    id: allIds.join(","),
   });
-  return videos.items;
+
+  // 4) viewCount 내림차순 정렬 → top maxResults
+  const sorted = [...videos.items].sort((a, b) => {
+    const av = parseInt(a.statistics.viewCount ?? "0", 10);
+    const bv = parseInt(b.statistics.viewCount ?? "0", 10);
+    return bv - av;
+  });
+  return sorted.slice(0, maxResults);
 }
 
 async function fetchTopComments(videoId: string, maxResults: number): Promise<YtCommentThreadItem[]> {
