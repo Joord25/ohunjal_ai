@@ -1192,7 +1192,7 @@ export default function Home() {
             setIsLoading(true);
             setCurrentCondition(condition);
             setCurrentGoal(goal);
-            setCurrentSession({ goal, sessionMode });
+            setCurrentSession({ goal, sessionMode, exerciseList: item.exerciseList });
             setCurrentPlanSource("chat");
             setWorkoutReturnTo("weight_hub");
             const session = await lazyGenerateWorkout(
@@ -1203,6 +1203,10 @@ export default function Home() {
               undefined,
               sessionMode,
               opt?.muscle,
+              undefined,
+              undefined,
+              // 회의 ζ-5: 카탈로그 exerciseList 전달 (교정·시니어·부상회피)
+              item.exerciseList,
             );
             pendingSessionRef.current = session;
             trackEvent("chat_plan_generated", { mode: "weight_catalog", catalog_id: item.id, kind: item.kind, muscle: opt?.muscle ?? "none" });

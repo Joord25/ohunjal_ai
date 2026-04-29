@@ -72,6 +72,17 @@ export interface CatalogItem {
   };
   /** setTemplate — body_picker 는 룰엔진 default 사용 (없음) */
   setTemplate?: SetTemplate;
+  /**
+   * 회의 ζ-5 (2026-04-30): 카탈로그가 운동 풀 명시 (교정·시니어·부상회피).
+   * 룰엔진의 generateFromExerciseList 호출 → main phase 가 이 풀로만 구성.
+   * core 그룹 운동(슈퍼맨·코브라·플랭크 등)은 자동 type=core 분류 → 시간 hold 타이머.
+   * "30초 유지" 같은 reps 패턴 = isStaticHold 적용 (FitScreen 자동 인식).
+   */
+  exerciseList?: Array<{
+    name: string;
+    sets: number;
+    reps: string;
+  }>;
 }
 
 // ─────────────────────────────────────────────
@@ -321,36 +332,57 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "거북목·굽은등 교정 8주",
     labelEn: "Posture Fix 8W",
-    descriptionKo: "8주 (4주 × 2) · 등·후면 어깨 강화",
+    descriptionKo: "8주 (4주 × 2) · 등·후면 어깨 강화 + 등척 hold",
     weeks: 8,
     chapters: 2,
     engineGoal: "general_fitness",
     match: { goal: ["health"] },
     setTemplate: TEMPLATE_HEALTH,
+    exerciseList: [
+      { name: "케이블 페이스 풀 (Cable Face Pull)", sets: 3, reps: "12-15회" },
+      { name: "밴드 풀 어파트 (Band Pull-Apart)", sets: 3, reps: "15-20회" },
+      { name: "시티드 케이블 로우 (Seated Cable Row)", sets: 3, reps: "12-15회" },
+      { name: "슈퍼맨 (Superman)", sets: 3, reps: "30초 유지" },
+      { name: "코브라 (Cobra)", sets: 2, reps: "20-30초 유지" },
+    ],
   },
   {
     id: "prog_shoulder_safe_4w",
     kind: "program",
     labelKo: "어깨 부상 회피 가슴 루틴",
     labelEn: "Shoulder-Safe Chest 4W",
-    descriptionKo: "4주 · 어깨 부담 없는 가슴 운동",
+    descriptionKo: "4주 · 어깨 부담 없는 가슴 + 회전근개 보강",
     weeks: 4,
     chapters: 1,
     engineGoal: "general_fitness",
     match: { goal: ["health"] },
     setTemplate: TEMPLATE_HEALTH,
+    exerciseList: [
+      { name: "인클라인 덤벨 프레스 (Incline Dumbbell Press)", sets: 3, reps: "10-12회" },
+      { name: "케이블 크로스오버 (Cable Crossover)", sets: 3, reps: "12-15회" },
+      { name: "푸쉬업 (Push-Up)", sets: 3, reps: "10-15회" },
+      { name: "체스트 서포티드 로우 (Chest Supported Row)", sets: 3, reps: "10-12회" },
+      { name: "케이블 페이스 풀 (Cable Face Pull)", sets: 3, reps: "12-15회" },
+    ],
   },
   {
     id: "prog_senior_4w",
     kind: "program",
     labelKo: "시니어 입문 4주",
     labelEn: "Senior Starter 4W",
-    descriptionKo: "4주 · 무릎·허리 부담 없이",
+    descriptionKo: "4주 · 무릎·허리 부담 없는 풀바디 + 등척",
     weeks: 4,
     chapters: 1,
     engineGoal: "general_fitness",
     match: { goal: ["health"] },
     setTemplate: TEMPLATE_HEALTH,
+    exerciseList: [
+      { name: "고블렛 스쿼트 (Goblet Squat)", sets: 3, reps: "10-12회" },
+      { name: "인클라인 푸쉬업 (Incline Push-Up)", sets: 3, reps: "8-12회" },
+      { name: "시티드 케이블 로우 (Seated Cable Row)", sets: 3, reps: "12-15회" },
+      { name: "글루트 브릿지 (Glute Bridge)", sets: 3, reps: "12-15회" },
+      { name: "월 시트 (Wall Sit)", sets: 2, reps: "20-30초 유지" },
+    ],
   },
 
   // ⑤ 캠페인 — 여성 한정
