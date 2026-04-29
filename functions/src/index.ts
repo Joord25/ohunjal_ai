@@ -16,3 +16,4 @@ export { renewPortOneSubscriptions } from "./billing/renewPortOneSubscriptions";
 export { selfDeleteAccount } from "./billing/selfDelete";
 export { adminActivate, adminCheckUser, adminCheckSelf, adminDeactivate, adminDashboard, adminListUsers, adminListPayments, adminLogs, adminCancelFeedbacks, adminRefundRequests, adminProcessRefund } from "./admin/admin";
 export { adminAnalyticsFunnel } from "./admin/analyticsFunnel";
+export { researchYoutubeChannel, analyzeYoutubeComments } from "./research/youtube";
