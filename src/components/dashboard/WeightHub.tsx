@@ -27,6 +27,9 @@ interface WeightHubProps {
   onboardingGoal: OnboardingGoal;
   gender?: "male" | "female";
   experienceMonths?: number;
+  /** 회의 ζ-5 ④: 진행 중 웨이트 프로그램 목록 — 상단 "이어가기" 섹션 */
+  activeWeightPrograms?: Array<{ programId: string; programName: string; completed: number; total: number; nextSession: { id: string } | null }>;
+  onResumeProgram?: (programId: string, nextSessionId: string) => void;
   onBack: () => void;
   onOpenMyPlans: () => void;
   onOpenProfile: () => void;
@@ -73,6 +76,8 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   onboardingGoal,
   gender,
   experienceMonths,
+  activeWeightPrograms,
+  onResumeProgram,
   onBack,
   onOpenMyPlans,
   onOpenProfile,
@@ -162,6 +167,41 @@ export const WeightHub: React.FC<WeightHubProps> = ({
                 {locale === "en" ? "Pick one and start today" : "오늘 한 가지 골라 시작하세요"}
               </p>
             </div>
+
+            {/* 회의 ζ-5 ④: 진행 중 웨이트 프로그램 — 러닝 패턴 미러 */}
+            {activeWeightPrograms && activeWeightPrograms.length > 0 && (
+              <div className="mb-5">
+                <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400 mb-2">
+                  {locale === "en" ? "IN PROGRESS" : "진행 중"}
+                </p>
+                <div className="flex flex-col gap-2">
+                  {activeWeightPrograms.map((p) => {
+                    const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+                    return (
+                      <button
+                        key={p.programId}
+                        onClick={() => p.nextSession && onResumeProgram?.(p.programId, p.nextSession.id)}
+                        disabled={!p.nextSession}
+                        className="w-full text-left bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-4 active:scale-[0.98] transition-transform disabled:opacity-50"
+                      >
+                        <div className="flex items-center justify-between gap-3 mb-1.5">
+                          <span className="text-base font-black text-[#1B4332] leading-tight truncate">{p.programName}</span>
+                          <span className="shrink-0 text-[11px] font-black text-[#2D6A4F] whitespace-nowrap">
+                            {p.completed}/{p.total}
+                          </span>
+                        </div>
+                        <div className="h-1 bg-emerald-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#2D6A4F]" style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="text-[12px] text-[#2D6A4F] mt-2 font-bold">
+                          {locale === "en" ? "Continue →" : "이어가기 →"}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 칩 탭 — 운동 목적 다르게 선택 */}
             <div className="flex gap-2 mb-5 overflow-x-auto -mx-1 px-1">

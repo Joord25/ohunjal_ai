@@ -83,6 +83,11 @@ export interface CatalogItem {
     sets: number;
     reps: string;
   }>;
+  /**
+   * 회의 ζ-5 (2026-04-30): 주당 세션 수. 장기 multi-session 메타 (totalSessions = weeks × sessionsPerWeek) 계산.
+   * body_picker / weeks=0 (단발) 은 무시. 기본값 = 3 (주 3회).
+   */
+  sessionsPerWeek?: number;
 }
 
 // ─────────────────────────────────────────────

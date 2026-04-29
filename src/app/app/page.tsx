@@ -28,7 +28,7 @@ import type { CatalogItem } from "@/constants/programCatalog";
 import type { TargetMuscle } from "@/constants/workout";
 import { RunningHub } from "@/components/dashboard/RunningHub";
 import { HomeWorkoutHub } from "@/components/dashboard/HomeWorkoutHub";
-import { getActivePrograms, getSavedPlans, type SavedPlan } from "@/utils/savedPlans";
+import { getActivePrograms, getSavedPlans, type SavedPlan, saveProgramSessions, remoteSaveProgram } from "@/utils/savedPlans";
 import { markPlanUsed, markSessionCompleted, remoteMarkPlanUsed } from "@/utils/savedPlans";
 import { applyProgramSessionLabel } from "@/utils/programSessionLabels";
 import { Onboarding } from "@/components/layout/Onboarding";
@@ -1173,7 +1173,9 @@ export default function Home() {
           catch { return {}; }
         })();
         const birthYear = parseInt(localStorage.getItem("ohunjal_birth_year") || "0") || undefined;
-        const weightHubActive = (() => { try { return getActivePrograms().length > 0; } catch { return false; } })();
+        const weightHubAllActive = (() => { try { return getActivePrograms(); } catch { return []; } })();
+        const activeWeightPrograms = weightHubAllActive.filter(p => p.programCategory === "strength");
+        const weightHubActive = weightHubAllActive.length > 0;
 
         const handleStartCatalog = async (item: CatalogItem, opt?: { muscle?: TargetMuscle }) => {
           try {
@@ -1210,6 +1212,33 @@ export default function Home() {
             );
             pendingSessionRef.current = session;
             trackEvent("chat_plan_generated", { mode: "weight_catalog", catalog_id: item.id, kind: item.kind, muscle: opt?.muscle ?? "none" });
+
+            // 회의 ζ-5 (2026-04-30) ④: 장기 프로그램 (program/campaign + weeks > 0) 메타 + 내플랜 저장
+            if (item.kind !== "body_picker" && item.weeks > 0) {
+              const sessionsPerWeek = item.sessionsPerWeek ?? 3;
+              const totalSessions = item.weeks * sessionsPerWeek;
+              const programId = `${item.id}_${Date.now()}`;
+              const planId = `${programId}_s1`;
+              const programPlan: SavedPlan = {
+                id: planId,
+                name: item.labelKo,
+                sessionData: session,
+                createdAt: Date.now(),
+                lastUsedAt: null,
+                useCount: 0,
+                programId,
+                sessionNumber: 1,
+                totalSessions,
+                programName: item.labelKo,
+                programCategory: "strength",
+                programGoal: item.id,
+                weekIndex: 1,
+                completedAt: null,
+              };
+              saveProgramSessions([programPlan]);
+              try { await remoteSaveProgram([programPlan]); } catch { /* server fail OK — local 저장 유지 */ }
+              setActiveSavedPlanId(planId);
+            }
           } catch (err) {
             console.error("WeightHub start failed:", err);
             setIsLoading(false);
@@ -1223,6 +1252,25 @@ export default function Home() {
             hasActivePrograms={weightHubActive}
             onboardingGoal={fp.goal ?? "fat_loss"}
             gender={fp.gender}
+            activeWeightPrograms={activeWeightPrograms.map(p => ({
+              programId: p.programId,
+              programName: p.programName,
+              completed: p.completed,
+              total: p.total,
+              nextSession: p.nextSession ? { id: p.nextSession.id } : null,
+            }))}
+            onResumeProgram={(_programId, nextSessionId) => {
+              try {
+                const all = getSavedPlans();
+                const session = all.find((p: SavedPlan) => p.id === nextSessionId);
+                if (!session) return;
+                setActiveSavedPlanId(session.id);
+                setCurrentWorkoutSession(session.sessionData);
+                setCurrentPlanSource("program");
+                setWorkoutReturnTo("weight_hub");
+                setView("master_plan_preview");
+              } catch (e) { console.error("resume weight program failed", e); }
+            }}
             onBack={() => setView("root_home")}
             onOpenMyPlans={() => { setMyPlansReturnTo("weight_hub"); setView("my_plans"); }}
             onOpenProfile={() => { setActiveTab("my"); setView("home"); }}
