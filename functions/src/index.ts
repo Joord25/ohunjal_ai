@@ -17,3 +17,4 @@ export { selfDeleteAccount } from "./billing/selfDelete";
 export { adminActivate, adminCheckUser, adminCheckSelf, adminDeactivate, adminDashboard, adminListUsers, adminListPayments, adminLogs, adminCancelFeedbacks, adminRefundRequests, adminProcessRefund } from "./admin/admin";
 export { adminAnalyticsFunnel } from "./admin/analyticsFunnel";
 export { researchYoutubeChannel, analyzeYoutubeComments, getResearchResults } from "./research/youtube";
+export { generateCatalogProgram } from "./catalog/catalogApi";

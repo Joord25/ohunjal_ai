@@ -698,7 +698,7 @@ const getWeightGuide = (role: "compound" | "accessory" | "isolation" | "light" |
 };
 
 // --- Korean Count Formatter ---
-const formatCountKo = (sets: number, reps: string | number, suffix?: string): string => {
+export const formatCountKo = (sets: number, reps: string | number, suffix?: string): string => {
   const repsStr = typeof reps === "number" ? `${reps}회` : reps.replace(/Reps/gi, "회").replace(/Each/gi, "양측").replace(/Sets/gi, "세트");
   return `${sets}세트 / ${repsStr}${suffix ? ` ${suffix}` : ""}`;
 };
@@ -847,7 +847,7 @@ const SESSION_TYPE_TO_WORKOUT: Record<string, WorkoutType[]> = {
 };
 
 // ====== Common Helpers for Session Generators ======
-function buildWarmup(condition: UserCondition, isRun = false): ExerciseStep[] {
+export function buildWarmup(condition: UserCondition, isRun = false): ExerciseStep[] {
   const pool = isRun
     ? WARMUP_POOLS_RUN[condition.bodyPart]
     : WARMUP_POOLS[condition.bodyPart];

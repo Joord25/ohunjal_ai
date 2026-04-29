@@ -52,6 +52,7 @@
       { "source": "/api/researchYoutubeChannel", "function": { "functionId": "researchYoutubeChannel", "region": "us-central1" } },
       { "source": "/api/analyzeYoutubeComments", "function": { "functionId": "analyzeYoutubeComments", "region": "us-central1" } },
       { "source": "/api/getResearchResults", "function": { "functionId": "getResearchResults", "region": "us-central1" } },
+      { "source": "/api/generateCatalogProgram", "function": { "functionId": "generateCatalogProgram", "region": "us-central1" } },
       { "source": "/api/planSession", "function": { "functionId": "planSession", "region": "us-central1" } },
       { "source": "/api/parseIntent", "function": { "functionId": "parseIntent", "region": "us-central1" } },
       { "source": "/api/getGuestTrialStatus", "function": { "functionId": "getGuestTrialStatus", "region": "us-central1" } },
