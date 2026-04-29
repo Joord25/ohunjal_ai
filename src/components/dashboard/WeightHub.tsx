@@ -2,7 +2,7 @@
 
 /**
  * WeightHub — 회의 ζ-5 (2026-04-30) ROOT 카드 → 웨이트 진입판 풀스크린.
- * 러닝 진입판(RunningHub) 패턴 미러링 + programCatalog SSOT 기반 큐레이션.
+ * RunningProgramSheet 디자인 패턴 미러링 (caption + h1 + 카드 톤 통일).
  *
  * 디자인 룰:
  * - 한 페이지 ≤ 4 카드
@@ -111,9 +111,9 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   const label = (item: CatalogItem) => locale === "en" ? item.labelEn : item.labelKo;
 
   return (
-    <div className="h-full w-full bg-[#FAFBF9] flex flex-col">
-      {/* 헤더 — pt safe-area 고려 */}
-      <div className="flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 bg-white">
+    <div className="h-full w-full bg-white flex flex-col">
+      {/* 헤더 — RunningProgramSheet 패턴: 좌(뒤로) + 우(북마크/프로필). 가운데 타이틀 X */}
+      <div className="flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 border-b border-gray-50">
         <button
           onClick={onBack}
           aria-label="뒤로가기"
@@ -121,9 +121,6 @@ export const WeightHub: React.FC<WeightHubProps> = ({
         >
           {ICON_BACK}
         </button>
-        <h1 className="text-lg font-black text-[#1B4332]">
-          {locale === "en" ? "Weight" : "웨이트"}
-        </h1>
         <div className="flex items-center gap-1">
           <button
             onClick={onOpenMyPlans}
@@ -143,106 +140,117 @@ export const WeightHub: React.FC<WeightHubProps> = ({
         </div>
       </div>
 
-      {/* 칩 탭 — 운동 목적 다르게 선택 */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white border-b border-gray-100">
-        {CHIP_GOALS.map((g) => {
-          const active = selectedGoal === g.id;
-          return (
-            <button
-              key={g.id}
-              onClick={() => setSelectedGoal(g.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition ${
-                active
-                  ? "bg-[#1B4332] text-white"
-                  : "bg-gray-100 text-gray-500"
-              }`}
-            >
-              {locale === "en" ? g.en : g.ko}
-            </button>
-          );
-        })}
-      </div>
+      {/* 본문 — px-6 pt-6 pb-10 (RunningProgramSheet 미러) */}
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-10">
+        {/* caption + h1 + subtitle */}
+        <div className="mb-5">
+          <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400">
+            {locale === "en" ? "WEIGHT TRAINING" : "WEIGHT TRAINING"}
+          </p>
+          <h1 className="text-3xl font-black text-[#1B4332] mt-1">
+            {locale === "en" ? "Weight" : "웨이트"}
+          </h1>
+          <p className="text-[13px] text-gray-500 mt-3 leading-relaxed">
+            {locale === "en" ? "Pick one and start today" : "오늘 한 가지 골라 시작하세요"}
+          </p>
+        </div>
 
-      {/* 카탈로그 카드 — 한 페이지 ≤ 4 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {cards.map((item) => {
-          const isBodyPicker = item.kind === "body_picker";
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleCardClick(item)}
-              className={`w-full text-left rounded-3xl p-5 transition active:scale-[0.99] ${
-                isBodyPicker
-                  ? "bg-white border-2 border-[#1B4332]"
-                  : "bg-white border border-gray-100 shadow-sm"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-black text-[#1B4332] mb-1">
+        {/* 칩 탭 — 운동 목적 다르게 선택 */}
+        <div className="flex gap-2 mb-5 overflow-x-auto -mx-1 px-1">
+          {CHIP_GOALS.map((g) => {
+            const active = selectedGoal === g.id;
+            return (
+              <button
+                key={g.id}
+                onClick={() => setSelectedGoal(g.id)}
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[12.5px] font-black transition ${
+                  active
+                    ? "bg-[#1B4332] text-white"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {locale === "en" ? g.en : g.ko}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 카탈로그 카드 — 한 페이지 ≤ 4. RunningProgramSheet 카드 톤 미러 */}
+        <div className="flex flex-col gap-3">
+          {cards.map((item) => {
+            const isBodyPicker = item.kind === "body_picker";
+            const rightTag = isBodyPicker
+              ? (locale === "en" ? "TODAY" : "오늘")
+              : item.weeks > 0 ? `${item.weeks}${locale === "en" ? "W" : "주"}` : null;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleCardClick(item)}
+                className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-gray-50 text-left"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xl font-black text-[#1B4332] leading-tight">
                     {label(item)}
-                  </p>
-                  {item.descriptionKo && (
-                    <p className="text-xs text-gray-500">
-                      {locale === "en" ? "" : item.descriptionKo}
-                    </p>
+                  </span>
+                  {rightTag && (
+                    <span className="shrink-0 text-[10px] font-black tracking-[0.15em] uppercase text-[#2D6A4F] whitespace-nowrap">
+                      {rightTag}
+                    </span>
                   )}
                 </div>
-                {item.weeks > 0 && (
-                  <span className="flex-shrink-0 text-[11px] font-bold text-[#2D6A4F] bg-emerald-50 px-2 py-1 rounded-lg">
-                    {item.weeks}{locale === "en" ? "W" : "주"}
-                  </span>
+                {item.descriptionKo && (
+                  <p className="text-[12.5px] text-gray-500 mt-1.5 leading-relaxed">
+                    {locale === "en" ? "" : item.descriptionKo}
+                  </p>
                 )}
-                {isBodyPicker && (
-                  <span className="flex-shrink-0 text-[11px] font-bold text-[#1B4332] bg-emerald-50 px-2 py-1 rounded-lg">
-                    {locale === "en" ? "Today" : "오늘"}
-                  </span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-        {cards.length === 0 && (
-          <p className="text-center text-sm text-gray-400 py-12">
-            {locale === "en" ? "No programs match. Try another goal chip." : "조건에 맞는 프로그램이 없습니다. 다른 목적 칩을 눌러보세요."}
-          </p>
-        )}
+              </button>
+            );
+          })}
+          {cards.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-12">
+              {locale === "en" ? "No programs match. Try another goal chip." : "조건에 맞는 프로그램이 없습니다. 다른 목적 칩을 눌러보세요."}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* 부위별 시트 — body_picker 클릭 시 */}
+      {/* 부위별 시트 — body_picker 클릭 시. RunningProgramSheet 톤 미러 */}
       {bodyPickerOpen && (
         <div
           className="absolute inset-0 z-50 flex items-end bg-black/40"
           onClick={() => setBodyPickerOpen(false)}
         >
           <div
-            className="w-full bg-white rounded-t-3xl p-5 pb-[max(env(safe-area-inset-bottom),20px)]"
+            className="w-full bg-white rounded-t-3xl px-6 pt-6 pb-[max(env(safe-area-inset-bottom),24px)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-base font-black text-[#1B4332]">
-                {locale === "en" ? "Pick a body part" : "오늘 운동할 부위"}
-              </p>
-              <button
-                onClick={() => setBodyPickerOpen(false)}
-                className="text-sm text-gray-400"
-              >
-                {locale === "en" ? "Cancel" : "취소"}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400">
+              {locale === "en" ? "BODY PART" : "BODY PART"}
+            </p>
+            <h2 className="text-2xl font-black text-[#1B4332] mt-1">
+              {locale === "en" ? "Pick one" : "오늘 운동할 부위"}
+            </h2>
+            <p className="text-[12.5px] text-gray-500 mt-2 mb-5 leading-relaxed">
               {locale === "en" ? "5-split pattern · single session today" : "5분할 · 오늘 단일 세션"}
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               {MUSCLE_OPTIONS.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => handleMuscleSelect(m.id)}
-                  className="py-4 rounded-2xl bg-gray-50 border border-gray-100 text-base font-bold text-[#1B4332] active:scale-[0.97] transition"
+                  className="w-full text-left bg-white border border-gray-100 rounded-2xl shadow-sm px-5 py-4 active:scale-[0.98] transition-transform hover:bg-gray-50"
                 >
-                  {locale === "en" ? m.en : m.ko}
+                  <span className="text-base font-black text-[#1B4332]">
+                    {locale === "en" ? m.en : m.ko}
+                  </span>
                 </button>
               ))}
+              <button
+                onClick={() => setBodyPickerOpen(false)}
+                className="mt-2 w-full py-3 text-[13px] font-black text-gray-400 active:scale-[0.98] transition-transform"
+              >
+                {locale === "en" ? "Cancel" : "취소"}
+              </button>
             </div>
           </div>
         </div>
