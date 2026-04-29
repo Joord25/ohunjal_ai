@@ -330,3 +330,132 @@ export const analyzeYoutubeComments = onRequest(
     }
   }
 );
+
+interface ResultVideo {
+  videoId: string;
+  channelId: string;
+  channelTitle: string;
+  title: string;
+  region: "kr" | "global";
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  engagementRate: number;
+  likeRate: number;
+  filter1Pass: boolean;
+  thumbnailUrl: string | null;
+  publishedAt: string;
+  analyzed: boolean;
+  behaviorSignalRate?: number;
+  behaviorCount?: number;
+  topKeywords?: { keyword: string; count: number }[];
+  topQuotes?: string[];
+  filter2Pass?: boolean;
+}
+
+interface ChannelSummary {
+  channelId: string;
+  title: string;
+  region: "kr" | "global";
+  videosFetched: number;
+  filter1PassedCount: number;
+  filter2PassedCount: number;
+  avgBehaviorRate: number;
+  topVideoId: string | null;
+}
+
+/**
+ * getResearchResults — Firestore 결과 종합 조회.
+ *
+ * Body: { sortBy?: "behavior"|"view"|"engagement", region?: "kr"|"global"|"all", filter?: "all"|"filter1"|"filter2" }
+ * Output: { videos: ResultVideo[] (정렬), channels: ChannelSummary[] }
+ */
+export const getResearchResults = onRequest(
+  { cors: true, timeoutSeconds: 60 },
+  async (req, res): Promise<void> => {
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    try { await verifyAdmin(req.headers.authorization); }
+    catch { res.status(403).json({ error: "Forbidden — admin only" }); return; }
+
+    const { sortBy = "behavior", region = "all", filter = "all" } = req.body ?? {};
+
+    try {
+      // collectionGroup 쿼리 — 모든 채널의 videos 서브컬렉션
+      const snap = await db.collectionGroup("videos").get();
+      const videos: ResultVideo[] = snap.docs.map((d) => {
+        const data = d.data();
+        const analysis = data.analysis;
+        return {
+          videoId: data.videoId,
+          channelId: data.channelId,
+          channelTitle: data.channelTitle,
+          title: data.title,
+          region: data.region,
+          viewCount: data.viewCount,
+          likeCount: data.likeCount,
+          commentCount: data.commentCount,
+          engagementRate: data.engagementRate,
+          likeRate: data.likeRate,
+          filter1Pass: data.filter1Pass,
+          thumbnailUrl: data.thumbnailUrl ?? null,
+          publishedAt: data.publishedAt,
+          analyzed: Boolean(analysis),
+          behaviorSignalRate: analysis?.behaviorSignalRate,
+          behaviorCount: analysis?.behaviorCount,
+          topKeywords: analysis?.topKeywords,
+          topQuotes: analysis?.topQuotes,
+          filter2Pass: analysis?.filter2Pass,
+        };
+      });
+
+      // region 필터
+      const regionFiltered = region === "all" ? videos : videos.filter((v) => v.region === region);
+      // filter 필터
+      const filtered = filter === "filter1" ? regionFiltered.filter((v) => v.filter1Pass)
+        : filter === "filter2" ? regionFiltered.filter((v) => v.filter2Pass === true)
+        : regionFiltered;
+
+      // 정렬
+      filtered.sort((a, b) => {
+        if (sortBy === "view") return b.viewCount - a.viewCount;
+        if (sortBy === "engagement") return b.engagementRate - a.engagementRate;
+        // default: behavior — 분석 안 된 영상은 뒤로
+        const ar = a.behaviorSignalRate ?? -1;
+        const br = b.behaviorSignalRate ?? -1;
+        return br - ar;
+      });
+
+      // 채널별 요약
+      const byChannel = new Map<string, { videos: ResultVideo[] }>();
+      for (const v of videos) {
+        const key = v.channelId;
+        if (!byChannel.has(key)) byChannel.set(key, { videos: [] });
+        byChannel.get(key)!.videos.push(v);
+      }
+      const channels: ChannelSummary[] = [];
+      for (const [channelId, { videos: chVideos }] of byChannel) {
+        const analyzed = chVideos.filter((v) => v.analyzed);
+        const avgBehavior = analyzed.length > 0
+          ? analyzed.reduce((sum, v) => sum + (v.behaviorSignalRate ?? 0), 0) / analyzed.length
+          : 0;
+        const sortedByBehavior = [...analyzed].sort((a, b) => (b.behaviorSignalRate ?? 0) - (a.behaviorSignalRate ?? 0));
+        channels.push({
+          channelId,
+          title: chVideos[0]?.channelTitle ?? channelId,
+          region: chVideos[0]?.region ?? "kr",
+          videosFetched: chVideos.length,
+          filter1PassedCount: chVideos.filter((v) => v.filter1Pass).length,
+          filter2PassedCount: chVideos.filter((v) => v.filter2Pass === true).length,
+          avgBehaviorRate: avgBehavior,
+          topVideoId: sortedByBehavior[0]?.videoId ?? null,
+        });
+      }
+      channels.sort((a, b) => b.avgBehaviorRate - a.avgBehaviorRate);
+
+      res.status(200).json({ videos: filtered, channels });
+    } catch (err) {
+      console.error("getResearchResults error:", err);
+      res.status(500).json({ error: err instanceof Error ? err.message : "unknown" });
+    }
+  }
+);

@@ -69,6 +69,39 @@ interface ResearchChannelResult {
   error?: string;
 }
 
+interface ResultVideo {
+  videoId: string;
+  channelId: string;
+  channelTitle: string;
+  title: string;
+  region: "kr" | "global";
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  engagementRate: number;
+  likeRate: number;
+  filter1Pass: boolean;
+  thumbnailUrl: string | null;
+  publishedAt: string;
+  analyzed: boolean;
+  behaviorSignalRate?: number;
+  behaviorCount?: number;
+  topKeywords?: { keyword: string; count: number }[];
+  topQuotes?: string[];
+  filter2Pass?: boolean;
+}
+
+interface ChannelSummary {
+  channelId: string;
+  title: string;
+  region: "kr" | "global";
+  videosFetched: number;
+  filter1PassedCount: number;
+  filter2PassedCount: number;
+  avgBehaviorRate: number;
+  topVideoId: string | null;
+}
+
 interface PaymentRecord {
   paymentId: string;
   uid: string;
@@ -328,6 +361,13 @@ export default function AdminPage() {
   const [researchRunning, setResearchRunning] = useState(false);
   const [analyzeRunning, setAnalyzeRunning] = useState(false);
   const [analyzeProgress, setAnalyzeProgress] = useState({ done: 0, total: 0 });
+  const [resultVideos, setResultVideos] = useState<ResultVideo[]>([]);
+  const [resultChannels, setResultChannels] = useState<ChannelSummary[]>([]);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [resultRegion, setResultRegion] = useState<"all" | "kr" | "global">("all");
+  const [resultFilter, setResultFilter] = useState<"all" | "filter1" | "filter2">("filter2");
+  const [resultSortBy, setResultSortBy] = useState<"behavior" | "view" | "engagement">("behavior");
+  const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
 
   // 회의 57 Tier 2: 일반 Confirm 모달 + Activate 모달 + Bulk + Export 상태
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -863,6 +903,28 @@ export default function AdminPage() {
     }
     setAnalyzeRunning(false);
   };
+
+  const loadResearchResults = useCallback(async () => {
+    setLoadingResults(true);
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/getResearchResults", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ sortBy: resultSortBy, region: resultRegion, filter: resultFilter }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResultVideos(data.videos ?? []);
+        setResultChannels(data.channels ?? []);
+      } else {
+        alert(`결과 조회 실패: ${data.error ?? "unknown"}`);
+      }
+    } catch (e) {
+      alert(`결과 조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
+    }
+    setLoadingResults(false);
+  }, [getToken, resultSortBy, resultRegion, resultFilter]);
 
   // 회의 57 Tier 1: "오늘 할 일" 집계
   const todayActions = (() => {
@@ -1784,7 +1846,137 @@ export default function AdminPage() {
 
             <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4 text-xs text-amber-900">
               <p className="font-bold mb-1">사용 안내</p>
-              <p>1단계 → 2단계 순서. 결과는 Firestore <code className="bg-amber-100 px-1 rounded">youtube_research/&#123;channelId&#125;</code> 에 저장. 완료 후 Claude 가 분석 결과 종합해서 카탈로그 5+5개 후보 보고합니다.</p>
+              <p>1단계 → 2단계 → 3단계 순서. 결과는 Firestore <code className="bg-amber-100 px-1 rounded">youtube_research/&#123;channelId&#125;</code> 에 저장.</p>
+            </div>
+
+            {/* 3단계: 결과 보기 */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-bold text-[#1B4332]">3단계: 결과 보기 (Top 영상)</p>
+                <button
+                  onClick={loadResearchResults}
+                  disabled={loadingResults}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#1B4332] text-white disabled:opacity-50"
+                >
+                  {loadingResults ? "조회 중..." : "새로고침"}
+                </button>
+              </div>
+
+              {/* 필터 */}
+              <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                <select
+                  value={resultRegion}
+                  onChange={(e) => setResultRegion(e.target.value as "all" | "kr" | "global")}
+                  className="px-2 py-1 border border-gray-200 rounded-lg"
+                >
+                  <option value="all">전체 지역</option>
+                  <option value="kr">한국</option>
+                  <option value="global">글로벌</option>
+                </select>
+                <select
+                  value={resultFilter}
+                  onChange={(e) => setResultFilter(e.target.value as "all" | "filter1" | "filter2")}
+                  className="px-2 py-1 border border-gray-200 rounded-lg"
+                >
+                  <option value="all">모든 영상</option>
+                  <option value="filter1">1차 통과만</option>
+                  <option value="filter2">2차 통과만 (행동 신호 ≥30%)</option>
+                </select>
+                <select
+                  value={resultSortBy}
+                  onChange={(e) => setResultSortBy(e.target.value as "behavior" | "view" | "engagement")}
+                  className="px-2 py-1 border border-gray-200 rounded-lg"
+                >
+                  <option value="behavior">행동 신호 비율</option>
+                  <option value="view">조회수</option>
+                  <option value="engagement">댓글 참여도</option>
+                </select>
+              </div>
+
+              {/* 채널 요약 */}
+              {resultChannels.length > 0 && (
+                <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  {resultChannels.slice(0, 6).map((c) => (
+                    <div key={c.channelId} className="bg-gray-50 rounded-lg p-2">
+                      <p className="font-bold text-gray-700 truncate">{c.title}</p>
+                      <p className="text-gray-500 mt-0.5">
+                        평균 행동 {(c.avgBehaviorRate * 100).toFixed(1)}% · 1차 {c.filter1PassedCount} · 2차 {c.filter2PassedCount}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 영상 리스트 */}
+              {resultVideos.length === 0 ? (
+                <p className="text-xs text-gray-400 py-4 text-center">새로고침을 눌러 결과를 조회하세요</p>
+              ) : (
+                <div className="space-y-2">
+                  {resultVideos.slice(0, 50).map((v) => (
+                    <div key={v.videoId} className="border border-gray-100 rounded-lg p-3">
+                      <div className="flex gap-3">
+                        {v.thumbnailUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={v.thumbnailUrl} alt="" className="w-20 h-14 object-cover rounded flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 line-clamp-2">{v.title}</p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-1">
+                            <span className={v.region === "kr" ? "text-blue-600" : "text-purple-600"}>{v.channelTitle}</span>
+                            <span>👁 {(v.viewCount / 1000).toFixed(0)}K</span>
+                            <span>💬 {(v.engagementRate * 100).toFixed(2)}%</span>
+                            <span>👍 {(v.likeRate * 100).toFixed(1)}%</span>
+                            {v.analyzed && (
+                              <span className={v.filter2Pass ? "text-emerald-600 font-bold" : "text-amber-600"}>
+                                행동 {((v.behaviorSignalRate ?? 0) * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            {v.filter1Pass && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">1차</span>}
+                            {v.filter2Pass && <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">2차</span>}
+                            <button
+                              onClick={() => setExpandedVideoId(expandedVideoId === v.videoId ? null : v.videoId)}
+                              className="text-[10px] text-gray-400 underline ml-auto"
+                            >
+                              {expandedVideoId === v.videoId ? "접기" : "상세"}
+                            </button>
+                            <a
+                              href={`https://youtu.be/${v.videoId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-blue-500 underline"
+                            >
+                              열기
+                            </a>
+                          </div>
+                          {expandedVideoId === v.videoId && v.analyzed && (
+                            <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-600">
+                              {v.topKeywords && v.topKeywords.length > 0 && (
+                                <p className="mb-1">
+                                  <span className="font-bold">키워드:</span>{" "}
+                                  {v.topKeywords.slice(0, 5).map((k) => `${k.keyword}(${k.count})`).join(", ")}
+                                </p>
+                              )}
+                              {v.topQuotes && v.topQuotes.length > 0 && (
+                                <div>
+                                  <span className="font-bold">대표 인용:</span>
+                                  <ul className="list-disc ml-4 mt-0.5 text-gray-500">
+                                    {v.topQuotes.slice(0, 3).map((q, i) => <li key={i} className="line-clamp-2">{q}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {resultVideos.length > 50 && (
+                    <p className="text-xs text-gray-400 text-center pt-2">상위 50개만 표시 (전체 {resultVideos.length}개)</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
