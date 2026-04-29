@@ -1263,7 +1263,13 @@ export default function Home() {
               programName: p.programName,
               completed: p.completed,
               total: p.total,
-              nextSession: p.nextSession ? { id: p.nextSession.id } : null,
+              nextSession: p.nextSession ? {
+                id: p.nextSession.id,
+                weekIndex: p.nextSession.weekIndex,
+                dayOfWeek: p.nextSession.dayOfWeek,
+                slotType: p.nextSession.slotType,
+                chapterIndex: p.nextSession.chapterIndex,
+              } : null,
             }))}
             onResumeProgram={(_programId, nextSessionId) => {
               try {
