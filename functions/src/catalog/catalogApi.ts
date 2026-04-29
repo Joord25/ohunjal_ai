@@ -35,6 +35,47 @@ interface GenerateCatalogProgramBody {
   condition: UserCondition;
   /** 회의 ζ-5 정정 (2026-04-30): 코어·카디오 자동 추가 분기 결정용 */
   engineGoal?: WorkoutGoal;
+  /** 회의 ζ-5 SETTINGS (2026-04-30): 사용자 선택 주당 빈도. weeklyMatrix day 자동 변환 */
+  sessionsPerWeek?: number;
+}
+
+/** 주당 빈도별 dayOfWeek 패턴 (회의 ζ-5 SETTINGS) */
+const DAY_PATTERNS: Record<number, number[]> = {
+  1: [1],                  // 월
+  2: [1, 4],               // 월·목
+  3: [1, 3, 5],            // 월·수·금
+  4: [1, 2, 4, 5],         // 월·화·목·금
+  5: [1, 2, 3, 4, 5],      // 월·화·수·목·금
+  6: [1, 2, 3, 4, 5, 6],   // 월·화·수·목·금·토
+};
+
+/** 사용자 선택 주당 빈도에 맞춰 weeklyMatrix 변환 (week 단위 슬라이스 + dayOfWeek 재할당) */
+function adjustMatrixToFrequency(matrix: MatrixSessionPayload[], targetFreq: number): MatrixSessionPayload[] {
+  if (!targetFreq || targetFreq < 1 || targetFreq > 6) return matrix;
+  const targetDays = DAY_PATTERNS[targetFreq];
+  if (!targetDays) return matrix;
+
+  // week 단위 그룹화
+  const byWeek = new Map<number, MatrixSessionPayload[]>();
+  for (const m of matrix) {
+    if (!byWeek.has(m.week)) byWeek.set(m.week, []);
+    byWeek.get(m.week)!.push(m);
+  }
+
+  const result: MatrixSessionPayload[] = [];
+  // week 키 정렬
+  const weeks = Array.from(byWeek.keys()).sort((a, b) => a - b);
+  for (const week of weeks) {
+    const sessions = byWeek.get(week)!;
+    const sorted = [...sessions].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+    // 사용자 N <= default: 첫 N session 만. N > default: default 그대로 + dayOfWeek 만 재할당
+    const sliceCount = Math.min(targetFreq, sorted.length);
+    const sliced = sorted.slice(0, sliceCount);
+    sliced.forEach((s, i) => {
+      result.push({ ...s, dayOfWeek: targetDays[i] ?? s.dayOfWeek });
+    });
+  }
+  return result;
 }
 
 /** 코어·카디오 자동 추가 스킵 slotType (이미 메인이 코어 또는 카디오) */
@@ -188,11 +229,16 @@ export const generateCatalogProgram = onRequest(
     }
 
     try {
-      const programId = `${body.catalogId}_${Date.now()}`;
-      const totalSessions = body.weeklyMatrix.length;
-      const totalWeeks = Math.max(...body.weeklyMatrix.map((m) => m.week));
+      // 회의 ζ-5 SETTINGS: 사용자 주당 빈도에 맞춰 매트릭스 변환
+      const adjustedMatrix = body.sessionsPerWeek
+        ? adjustMatrixToFrequency(body.weeklyMatrix, body.sessionsPerWeek)
+        : body.weeklyMatrix;
 
-      const sessions = body.weeklyMatrix.map((matrix, idx) => {
+      const programId = `${body.catalogId}_${Date.now()}`;
+      const totalSessions = adjustedMatrix.length;
+      const totalWeeks = Math.max(...adjustedMatrix.map((m) => m.week));
+
+      const sessions = adjustedMatrix.map((matrix, idx) => {
         const sessionData = generateSessionFromMatrix(matrix, body.condition, body.catalogName, body.engineGoal);
         return {
           id: `${programId}_w${matrix.week}d${matrix.dayOfWeek}`,

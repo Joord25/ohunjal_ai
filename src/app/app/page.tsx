@@ -1205,7 +1205,8 @@ export default function Home() {
                   catalogName: item.labelKo,
                   weeklyMatrix: item.weeklyMatrix,
                   condition,
-                  engineGoal: item.engineGoal, // 회의 ζ-5 정정: 카디오 강도 분기용
+                  engineGoal: item.engineGoal,
+                  sessionsPerWeek: opt?.sessionsPerWeek ?? item.sessionsPerWeek, // 회의 ζ-5 SETTINGS: 매트릭스 자동 변환
                 }),
               });
               const minDelay = new Promise<void>((r) => setTimeout(r, 1500));
