@@ -722,6 +722,7 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
         onRunningStatsComputed={handleRunningStatsComputed}
         onEndClick={onAbandon ? () => setShowAbandonModal(true) : undefined}
         onSkipExercise={handleSkipExercise}
+        isHomeTraining={sessionData.sessionMode === "home_training"}
         beginnerEnabled={beginnerEnabled}
       />}
       {/* 회의 ζ-2 후속 (B-5): overlay sequence 끝난 후 워크아웃 페이지 첫 진입 시 1회 영구 dismiss tooltip.

@@ -64,6 +64,8 @@ interface FitScreenProps {
   // 회의 2026-04-27: 음악 기능 제거 — bottomBar/onBeforeAlarm/onIsPlayingChange props 삭제됨.
   /** 회의 ζ Q3 (B 분기): 초보자 모드 ON 시 피드백/휴식 카피 친절체로 분기. default false (일반 모드 회귀 X) */
   beginnerEnabled?: boolean;
+  /** 회의 ζ-5 (2026-04-30): 홈트 = 피드백 시트 스킵, 바로 다음 세트/운동 진행 */
+  isHomeTraining?: boolean;
 }
 
 export const FitScreen: React.FC<FitScreenProps> = ({
@@ -85,6 +87,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   onEndClick,
   onSkipExercise,
   beginnerEnabled = false,
+  isHomeTraining = false,
 }) => {
   const { t, locale } = useTranslation();
   const { system: unitSystem, labels: unitLabels } = useUnits();
@@ -940,6 +943,12 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     // 강도별 휴식 시간 (ACSM 기준)
     const restBySets = adjustedReps <= 6 ? 150 : adjustedReps <= 12 ? 75 : 45;
     const restByType = exercise.type === "core" ? 45 : restBySets;
+
+    // 회의 ζ-5 (2026-04-30): 홈트 = 피드백 시트 스킵, 바로 onSetComplete(target) 호출
+    if (isHomeTraining) {
+      onSetComplete(adjustedReps, "target", actualWeight);
+      return;
+    }
 
     // 회의: 매 세트마다 피드백 시트 노출 (자동 target 스킵 제거)
     setView("feedback");

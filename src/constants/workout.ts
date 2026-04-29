@@ -82,6 +82,11 @@ export interface WorkoutSessionData {
    * 회의 16: 램프업/워밍업 기반 오분류 방지.
    */
   intendedIntensity?: "high" | "moderate" | "low";
+  /**
+   * 회의 ζ-5 (2026-04-30): 세션 모드. 홈트 분기(피드백 스킵 등)에 사용.
+   * 룰엔진(generateAdaptiveWorkout) 응답에 박혀서 클라이언트로 전달.
+   */
+  sessionMode?: SessionMode;
 }
 
 export interface BriefingStructured {

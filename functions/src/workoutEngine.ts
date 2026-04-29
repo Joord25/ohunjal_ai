@@ -86,6 +86,8 @@ export interface WorkoutSessionData {
    * 서버가 플랜 생성 단계에서 직접 할당한다. (회의 16)
    */
   intendedIntensity?: "high" | "moderate" | "low";
+  /** 회의 ζ-5 (2026-04-30): 세션 모드 — 홈트 분기(피드백 스킵 등) 클라이언트로 전달 */
+  sessionMode?: SessionMode;
 }
 
 export interface BriefingStructured {
@@ -1654,25 +1656,25 @@ export const generateAdaptiveWorkout = (
   // 러닝은 시간 순서(워밍업→드릴→메인→쿨다운)와 인터벌 구조가 엄격하므로 exerciseList 경로로 빠지면
   // 구조 손실. Gemini가 실수로 러닝 요청에 exerciseList를 채워도 여기서 차단.
   if (sessionMode === "running" && runType) {
-    return postProcessWeights(generateRunningWorkout(condition, runType, intensityOverride || undefined));
+    return { ...postProcessWeights(generateRunningWorkout(condition, runType, intensityOverride || undefined)), sessionMode: "running" };
   }
 
   // ====== exerciseList routing (회의 2026-04-24) ======
   // workoutTable과 동기화된 명시 운동 리스트가 오면 sessionMode 무시하고 그대로 구성.
   // 복합 부위 비율 요청("하체1 어깨2 팔2") 등 enum으로 표현 불가능한 조합 지원.
   if (Array.isArray(exerciseList) && exerciseList.length > 0) {
-    return postProcessWeights(generateFromExerciseList(exerciseList, condition, goal, intensityOverride || undefined));
+    return { ...postProcessWeights(generateFromExerciseList(exerciseList, condition, goal, intensityOverride || undefined)), sessionMode };
   }
 
   // ====== SessionMode routing ======
   if (sessionMode === "balanced") {
-    return postProcessWeights(generateBalancedWorkout(condition, goal, intensityOverride || undefined, lastUpperType));
+    return { ...postProcessWeights(generateBalancedWorkout(condition, goal, intensityOverride || undefined, lastUpperType)), sessionMode: "balanced" };
   }
   if (sessionMode === "split" && targetMuscle) {
-    return postProcessWeights(generateSplitWorkout(condition, goal, targetMuscle, intensityOverride || undefined));
+    return { ...postProcessWeights(generateSplitWorkout(condition, goal, targetMuscle, intensityOverride || undefined)), sessionMode: "split" };
   }
   if (sessionMode === "home_training") {
-    return postProcessWeights(generateHomeWorkout(condition, goal, intensityOverride || undefined, equipment, muscleGroup));
+    return { ...postProcessWeights(generateHomeWorkout(condition, goal, intensityOverride || undefined, equipment, muscleGroup)), sessionMode: "home_training" };
   }
 
   // ====== Legacy fallback: day-based schedule ======
