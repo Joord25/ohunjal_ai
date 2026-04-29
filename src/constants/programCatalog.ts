@@ -43,6 +43,56 @@ export interface SetTemplate {
   light: SetSpec[];
 }
 
+/**
+ * 회의 ζ-5 (2026-04-30) 매트릭스 시스템 — 주차×요일별 세션 정의.
+ * 슬롯 풀(실제 운동 목록)은 서버(workoutEngine.ts catalogPools)에 둠 — 보안 + 번들 사이즈 절약.
+ * 클라는 매트릭스 메타(type·sets·reps·rpe·linearProgression 등)만 보유.
+ *
+ * 룰엔진 신규 함수 `generateFromCatalogType(slotType, slotConfig)` 가 slotType 받아 슬롯 풀에서 랜덤 선택.
+ * 랜덤 시드 = (weekIndex × 7 + dayOfWeek) — 같은 주 같은 요일 = 같은 운동 (재방문 일관).
+ */
+export interface MatrixSession {
+  /** 1-based week (1 ~ totalWeeks) */
+  week: number;
+  /** ISO weekday: 1=월 ... 7=일. weight session 만 (휴식·카디오는 별도 dailyExtra) */
+  dayOfWeek: number;
+  /** 챕터 인덱스 (1, 2, 3, ...). 4주 청킹 기준 */
+  chapter: number;
+  /**
+   * 슬롯 타입 — 서버 catalogPools 에 매핑되는 키.
+   * 예: "upper_push_focus" / "lower_squat_focus" / "posture_thoracic_pull" / "metcon_circuit" / "arms_main_1" / "back_thickness" 등
+   */
+  slotType: string;
+  /** 슬롯 수 (보통 4-5) */
+  slots: number;
+  /** Sets per slot */
+  sets: number;
+  /** Reps per set 표기 (예: "10-15", "8-12", "30s 유지") */
+  reps: string;
+  /** RPE (Rate of Perceived Exertion) 1-10 */
+  rpe: number;
+  /** Wendler 5/3/1 등 메인 lift wave 정의 (선택). max_strength_8w 전용 */
+  wendlerWave?: "A" | "B" | "C" | "deload";
+  /** Linear progression 활성화 (Rippetoe 패턴, 매 세션 +2.5-5kg) */
+  linearProgression?: boolean;
+  /** finisher 추가 (예: AMRAP 30s × 4 라운드) */
+  finisher?: { rounds: number; workSec: number; restSec: number };
+  /** 1세트 빈바 시작 (웜업 명칭 X, 사실상 웜업) */
+  firstSetWarmup?: boolean;
+}
+
+/** 카디오 또는 모빌리티 등 weight 외 일별 추가 활동 */
+export interface MatrixDailyExtra {
+  week: number;
+  dayOfWeek: number;
+  /** 활동 타입: "liss" / "hiit" / "metcon_circuit" / "mobility" / "stretching" / "rest" / "walk" */
+  activity: string;
+  /** 시간 (분) — walk·LISS 만 */
+  durationMin?: number;
+  /** 일일 걸음 목표 (Israetel TIA mini cut) */
+  stepsTarget?: number;
+}
+
 /** 카탈로그 항목 — 카드 1개 */
 export interface CatalogItem {
   id: string;
@@ -88,6 +138,25 @@ export interface CatalogItem {
    * body_picker / weeks=0 (단발) 은 무시. 기본값 = 3 (주 3회).
    */
   sessionsPerWeek?: number;
+  /**
+   * 회의 ζ-5 매트릭스 시스템 (P1 추가).
+   * 주차×요일별 세션 매트릭스. 서버 catalogPools 에서 slotType 으로 운동 풀 lookup.
+   * body_picker / weeks=0 카탈로그는 undefined.
+   */
+  weeklyMatrix?: MatrixSession[];
+  /** 카디오·모빌리티·휴식 등 weight 외 일별 활동 (선택) */
+  dailyExtras?: MatrixDailyExtra[];
+  /**
+   * 챕터 경계 diet break 시점 (자연 보디빌더 패턴, Layne Norton).
+   * 예: [4, 8, 12] = W4, W8, W12 종료 시 diet break 권장.
+   * fat_loss·recomp 카탈로그 만 적용.
+   */
+  dietBreaks?: number[];
+  /**
+   * 경험 자기보고 매칭 — match.minExperienceMonths 와 별개로 카드 안에 노출하는 안내문 키.
+   * 예: "advanced_warning" → "이 프로그램은 헬스 6개월+ 경험자 권장"
+   */
+  experienceWarning?: "starter" | "advanced" | "senior_safe" | "shoulder_safe";
 }
 
 // ─────────────────────────────────────────────
