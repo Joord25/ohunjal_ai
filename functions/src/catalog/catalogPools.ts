@@ -20,8 +20,13 @@ export interface CatalogSlot {
   exercises: string[];
   /** 운동 role — 무게 가이드 적용에 사용 */
   role: "compound" | "accessory" | "isolation" | "light" | "bodyweight";
-  /** 등척 hold 여부 — true면 reps = "30s 유지" 같은 시간 표기, FitScreen isStaticHold 자동 처리 */
+  /** 등척 hold 여부 — true면 reps = 시간(초) 으로 사용, FitScreen isStaticHold 자동 처리 */
   isStaticHold?: boolean;
+  /**
+   * 회의 ζ-5 정정 (2026-04-30): 등척 hold 운동 시간(초). 운동 이름은 클라 풀과 매칭되되 hold 시간은 슬롯에서 박음.
+   * 기본값 = 30s. 슬롯 자극에 따라 다르게 (예: 45, 60).
+   */
+  holdSeconds?: number;
 }
 
 export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
@@ -153,27 +158,27 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "등 vertical pull", role: "compound", exercises: ["어시스티드 풀업 (Assisted Pull-up)", "랫 풀다운 (Lat Pulldown)", "클로즈그립 풀다운 (Close-Grip Pulldown)"] },
     { label: "등 horizontal pull", role: "accessory", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "인버티드 로우 (Inverted Row)", "체스트 서포티드 로우 (Chest Supported Row)"] },
     { label: "회전근개·후면 어깨", role: "light", exercises: ["케이블 페이스풀 (Cable Face Pull)", "밴드 풀 어파트 (Band Pull-Aparts)", "사이드 라잉 외회전 (Side-Lying External Rotation)"] },
-    { label: "척추 신전근 hold", role: "bodyweight", isStaticHold: true, exercises: ["슈퍼맨 동작 (Superman)", "백익스텐션 머신 (Back Extension Machine)"] },
+    { label: "척추 신전근 hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["슈퍼맨 동작 (Superman)", "백익스텐션 머신 (Back Extension Machine)"] },
   ],
   posture_core_glute: [
     { label: "코어 anti-rotation", role: "bodyweight", exercises: ["데드버그 (Dead Bug)", "버드 독 (Bird Dog)", "팔로프 프레스 (Pallof Press)"] },
-    { label: "코어 anti-extension hold", role: "bodyweight", isStaticHold: true, exercises: ["플랭크 (Plank)", "플랭크 (Plank)"] },
+    { label: "코어 anti-extension hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["플랭크 (Plank)", "플랭크 (Plank)"] },
     { label: "글루트 활성화", role: "light", exercises: ["글루트 브릿지 (Glute Bridge)", "클램쉘 (Clamshell)", "사이드 라잉 레그 레이즈 (Side-Lying Leg Raise)"] },
-    { label: "코어 측면 hold", role: "bodyweight", isStaticHold: true, exercises: ["사이드 플랭크 (Side Plank)"] },
+    { label: "코어 측면 hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["사이드 플랭크 (Side Plank)"] },
   ],
   posture_scap_rotator: [
     { label: "Y-T-W 레이즈 (Cressey)", role: "light", exercises: ["Y-T-W 레이즈 (Y-T-W Raises)", "리어 델트 플라이 (Rear Delt Fly)", "리버스 스노우 엔젤 (Reverse Snow Angel)"] },
     { label: "회전근개 외회전", role: "light", exercises: ["사이드 라잉 외회전 (Side-Lying External Rotation)", "스탠딩 케이블 외회전 (Standing Cable External Rotation)", "밴드 외회전 (Band External Rotation)"] },
     { label: "전거근 (Cressey)", role: "bodyweight", exercises: ["날개뼈 푸쉬업 플러스 (Scapular Push-up Plus)", "월 슬라이드 (Wall Slides)", "밴드 페이스 풀 (Band Face Pull)"] },
     { label: "후면 어깨", role: "isolation", exercises: ["리어 델트 플라이 (Rear Delt Fly)", "케이블 페이스풀 (Cable Face Pull)"] },
-    { label: "흉추 신전 hold", role: "bodyweight", isStaticHold: true, exercises: ["프론 코브라 (Prone Cobra)", "슈퍼맨 동작 (Superman)"] },
+    { label: "흉추 신전 hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["프론 코브라 (Prone Cobra)", "슈퍼맨 동작 (Superman)"] },
   ],
   posture_thoracic_rotation: [
     { label: "흉추 회전 모빌리티", role: "bodyweight", exercises: ["동적 흉추 회전 (Active Thoracic Rotation)", "벽 흉추 회전 (Wall Thoracic Rotations)", "흉추 회전 운동 (Thoracic Rotation)"] },
     { label: "힌지 compound (가벼운)", role: "compound", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Good Morning)"] },
     { label: "등 horizontal pull", role: "accessory", exercises: ["T-바 로우 (T-Bar Row)", "시티드 케이블 로우 (Seated Cable Row)", "체스트 서포티드 로우 (Chest Supported Row)"] },
     { label: "코어 hanging", role: "bodyweight", exercises: ["행잉 니 레이즈 (Hanging Knee Raise)", "행잉 레그 레이즈 (Hanging Leg Raise)"] },
-    { label: "코어 anti-flexion hold", role: "bodyweight", isStaticHold: true, exercises: ["인버티드 로우 (Inverted Row)"] },
+    { label: "코어 anti-flexion hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["인버티드 로우 (Inverted Row)"] },
   ],
 
   // ════════════ shoulder_safe_4w (어깨 회피) ════════════
@@ -202,13 +207,13 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "가슴 horizontal push", role: "compound", exercises: ["바벨 벤치 프레스 (Barbell Bench Press)", "인클라인 바벨 프레스 (Incline Barbell Bench Press)", "덤벨 벤치 프레스 (Dumbbell Bench Press)", "머신 체스트 프레스 (Machine Chest Press)"] },
     { label: "어깨 vertical push", role: "compound", exercises: ["오버헤드 프레스 (Overhead Press)", "덤벨 숄더 프레스 (Dumbbell Shoulder Press)", "머신 숄더 프레스 (Machine Shoulder Press)"] },
     { label: "등 horizontal pull (보조)", role: "accessory", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "인버티드 로우 (Inverted Row)"] },
-    { label: "코어", role: "bodyweight", isStaticHold: true, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)", "행잉 니 레이즈 (Hanging Knee Raise)"] },
+    { label: "코어", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)", "행잉 니 레이즈 (Hanging Knee Raise)"] },
   ],
   upper_pull_focus: [
     { label: "등 vertical pull", role: "compound", exercises: ["풀업 (Pull-ups)", "어시스티드 풀업 (Assisted Pull-up)", "랫 풀다운 (Lat Pulldown)"] },
     { label: "등 horizontal pull", role: "compound", exercises: ["벤트오버 바벨 로우 (Bent-over Barbell Row)", "T-바 로우 (T-Bar Row)", "시티드 케이블 로우 (Seated Cable Row)"] },
     { label: "후면 어깨 + 이두", role: "isolation", exercises: ["케이블 페이스풀 (Cable Face Pull)", "바벨 컬 (Barbell Curl)", "케이블 바이셉 컬 (Cable Bicep Curl)"] },
-    { label: "코어", role: "bodyweight", isStaticHold: true, exercises: ["사이드 플랭크 (Side Plank)", "행잉 니 레이즈 (Hanging Knee Raise)"] },
+    { label: "코어", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["사이드 플랭크 (Side Plank)", "행잉 니 레이즈 (Hanging Knee Raise)"] },
   ],
   lower_squat_focus: [
     { label: "무릎 dominant", role: "compound", exercises: ["바벨 백 스쿼트 (Barbell Back Squat)", "프론트 스쿼트 (Front Squat)", "핵 스쿼트 (Hack Squat)", "레그 프레스 (Leg Press)"] },
@@ -254,7 +259,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "하체 compound", role: "compound", exercises: ["고블렛 스쿼트 (Goblet Squat)", "박스 스쿼트 (Box Squat)", "루마니안 데드리프트 (Romanian Deadlift)"] },
     { label: "Push (가벼운)", role: "accessory", exercises: ["벽 푸쉬업 (Wall Push-Up)", "무릎 푸쉬업 (Knee Push-Up)", "인클라인 덤벨 프레스 (Incline Dumbbell Press)"] },
     { label: "Pull (가벼운)", role: "accessory", exercises: ["인버티드 로우 (Inverted Row)", "시티드 케이블 로우 (Seated Cable Row)", "어시스티드 풀업 (Assisted Pull-up)"] },
-    { label: "코어 hold 30s", role: "bodyweight", isStaticHold: true, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)", "버드 독 (Bird Dog)"] },
+    { label: "코어 hold 30s", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)", "버드 독 (Bird Dog)"] },
   ],
 
   // ════════════ vacation_arms_7d (팔 specialization) ════════════
@@ -320,14 +325,14 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "케이블 horizontal pull", role: "compound", exercises: ["시티드 케이블 로우 와이드 (Seated Cable Row Wide)", "체스트 서포티드 로우 (Chest Supported Row)"] },
     { label: "등 두께 isolation", role: "accessory", exercises: ["덤벨 로우 (Dumbbell Row)", "머신 로우 (Machine Row)"] },
     { label: "후면 어깨 + 트랩", role: "isolation", exercises: ["케이블 페이스풀 (Cable Face Pull)", "슈러그 (Shrug)", "리어 델트 플라이 (Rear Delt Fly)"] },
-    { label: "등 hold", role: "bodyweight", isStaticHold: true, exercises: ["인버티드 로우 (Inverted Row)", "인버티드 로우 (Inverted Row)"] },
+    { label: "등 hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["인버티드 로우 (Inverted Row)", "인버티드 로우 (Inverted Row)"] },
   ],
   back_width: [
     { label: "풀업", role: "compound", exercises: ["풀업 (Pull-ups)", "친업 (Chin-ups)", "어시스티드 풀업 (Assisted Pull-up)"] },
     { label: "랫 풀다운 변형", role: "compound", exercises: ["랫 풀다운 와이드 (Lat Pulldown Wide)", "머신 풀다운 (Machine Pulldown)", "클로즈그립 풀다운 (Close-Grip Pulldown)"] },
     { label: "풀오버 (lat 분리)", role: "isolation", exercises: ["케이블 풀오버 스트레이트암 (Cable Pullover Straight Arm)", "덤벨 풀오버 (Dumbbell Pullover)", "머신 풀오버 (Machine Pullover)"] },
     { label: "등 isolation", role: "isolation", exercises: ["어시스티드 친업 lat 강조 (Assisted Chin-up Lat Focus)"] },
-    { label: "데드 행 hold", role: "bodyweight", isStaticHold: true, exercises: ["인버티드 로우 (Inverted Row)"] },
+    { label: "데드 행 hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["인버티드 로우 (Inverted Row)"] },
   ],
   back_volume: [
     { label: "compound (가벼운, 고반복)", role: "compound", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "T-바 로우 (T-Bar Row)"] },
@@ -342,7 +347,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "하체 (무릎 부담 ↓)", role: "compound", exercises: ["레그 프레스 얕은 ROM (Leg Press Shallow ROM)", "고블렛 스쿼트 가벼운 (Goblet Squat Light)", "박스 스쿼트 (Box Squat)"] },
     { label: "Push (어깨 부담 ↓)", role: "accessory", exercises: ["인클라인 덤벨 프레스 가벼운 (Incline Dumbbell Press Light)", "벽 푸쉬업 (Wall Push-Up)", "무릎 푸쉬업 (Knee Push-Up)", "머신 체스트 프레스 (Machine Chest Press)"] },
     { label: "Pull (허리 부담 ↓)", role: "accessory", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "머신 로우 (Machine Row)", "어시스티드 풀업 (Assisted Pull-up)"] },
-    { label: "글루트·코어 hold 30s", role: "bodyweight", isStaticHold: true, exercises: ["글루트 브릿지 (Glute Bridge)", "데드버그 (Dead Bug)", "버드 독 (Bird Dog)"] },
+    { label: "글루트·코어 hold 30s", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["글루트 브릿지 (Glute Bridge)", "데드버그 (Dead Bug)", "버드 독 (Bird Dog)"] },
   ],
 
   // ════════════ cycle_diet_12w (Phase별) ════════════
@@ -350,7 +355,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "Push 가벼운", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "푸쉬업 (Push-Up)", "머신 체스트 프레스 (Machine Chest Press)"] },
     { label: "Pull 가벼운", role: "accessory", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "어시스티드 풀업 (Assisted Pull-up)"] },
     { label: "어깨 isolation", role: "isolation", exercises: ["사이드 레터럴 레이즈 (Side Lateral Raises)", "케이블 페이스풀 (Cable Face Pull)"] },
-    { label: "코어 hold 30s", role: "bodyweight", isStaticHold: true, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)"] },
+    { label: "코어 hold 30s", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)"] },
   ],
   lower_low: [
     { label: "하체 가벼운 compound", role: "accessory", exercises: ["고블렛 스쿼트 (Goblet Squat)", "워킹 런지 (Walking Lunges)", "레그 프레스 (Leg Press)"] },

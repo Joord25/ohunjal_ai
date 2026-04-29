@@ -104,10 +104,11 @@ function generateSessionFromMatrix(matrix: MatrixSessionPayload, condition: User
       const type: ExerciseType = isStaticHold ? "core" : (role === "bodyweight" ? "strength" : "strength");
       const phase: ExercisePhase = isStaticHold ? "core" : "main";
 
-      // count 표기 — hold 면 시간, 아니면 sets/reps
-      const count = isStaticHold
-        ? formatCountKo(matrix.sets, matrix.reps)
-        : formatCountKo(matrix.sets, matrix.reps);
+      // 회의 ζ-5 정정 (2026-04-30): 등척 hold 슬롯은 holdSeconds 사용 (시간 표기 + reps=초). 그 외는 matrix.reps.
+      const holdSec = meta.holdSeconds ?? 30;
+      const slotReps = isStaticHold ? `${holdSec}초 유지` : matrix.reps;
+      const slotRepsVal = isStaticHold ? holdSec : repsVal;
+      const count = formatCountKo(matrix.sets, slotReps);
 
       const weight = isStaticHold || role === "bodyweight" ? "맨몸" : weightGuideForRole(role, condition.gender);
 
@@ -118,7 +119,7 @@ function generateSessionFromMatrix(matrix: MatrixSessionPayload, condition: User
         count,
         weight,
         sets: matrix.sets,
-        reps: repsVal,
+        reps: slotRepsVal,
       });
     }
   }
