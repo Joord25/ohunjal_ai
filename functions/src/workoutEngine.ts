@@ -864,7 +864,7 @@ export function buildWarmup(condition: UserCondition, isRun = false): ExerciseSt
   }));
 }
 
-function buildCore(_isoRepsKo: string, _isoRepsVal: number): ExerciseStep[] {
+export function buildCore(_isoRepsKo: string, _isoRepsVal: number): ExerciseStep[] {
   // 코어/복근 운동은 최소 20회 시작
   const coreRepsKo = "20회";
   const coreRepsVal = 20;
@@ -903,7 +903,7 @@ function buildRunnerCore(): ExerciseStep[] {
   }));
 }
 
-function buildAdditionalCardio(condition: UserCondition, intensityOverride?: "high" | "moderate" | "low", goal?: WorkoutGoal): ExerciseStep[] {
+export function buildAdditionalCardio(condition: UserCondition, intensityOverride?: "high" | "moderate" | "low", goal?: WorkoutGoal): ExerciseStep[] {
   const isFatigued = condition.bodyPart === "full_fatigue" || condition.energyLevel <= 2;
   const isLowIntensity = intensityOverride === "low" || goal === "fat_loss";
   const name = isFatigued ? pick(ADDITIONAL_CARDIO.light) : pick(ADDITIONAL_CARDIO.moderate);

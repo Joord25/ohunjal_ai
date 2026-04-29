@@ -10,7 +10,7 @@
  */
 import { onRequest } from "firebase-functions/v2/https";
 import { verifyAuth } from "../helpers";
-import { buildWarmup, formatCountKo, type WorkoutSessionData, type ExerciseStep, type ExerciseType, type ExercisePhase, type UserCondition } from "../workoutEngine";
+import { buildWarmup, buildCore, buildAdditionalCardio, formatCountKo, type WorkoutSessionData, type ExerciseStep, type ExerciseType, type ExercisePhase, type UserCondition, type WorkoutGoal } from "../workoutEngine";
 import { CATALOG_SLOT_POOLS, pickFromSlot, getSlotMeta, getSlotCount } from "./catalogPools";
 
 interface MatrixSessionPayload {
@@ -33,7 +33,13 @@ interface GenerateCatalogProgramBody {
   catalogName: string;
   weeklyMatrix: MatrixSessionPayload[];
   condition: UserCondition;
+  /** 회의 ζ-5 정정 (2026-04-30): 코어·카디오 자동 추가 분기 결정용 */
+  engineGoal?: WorkoutGoal;
 }
+
+/** 코어·카디오 자동 추가 스킵 slotType (이미 메인이 코어 또는 카디오) */
+const SKIP_CORE_SLOTS = new Set(["posture_core_glute", "starter_fullbody"]);
+const SKIP_CARDIO_SLOTS = new Set(["hiit_long_interval", "hiit_medium_interval", "metcon_circuit"]);
 
 /** reps 문자열에서 숫자 추출. "8-12" → 10 (중간값), "30s" → 30 */
 function parseRepsToNumber(reps: string): number {
@@ -80,7 +86,7 @@ function weightGuideForRole(role: string, gender?: "male" | "female"): string {
 }
 
 /** 단일 MatrixSession → WorkoutSessionData 생성 */
-function generateSessionFromMatrix(matrix: MatrixSessionPayload, condition: UserCondition, catalogName: string): WorkoutSessionData {
+function generateSessionFromMatrix(matrix: MatrixSessionPayload, condition: UserCondition, catalogName: string, engineGoal?: WorkoutGoal): WorkoutSessionData {
   const exercises: ExerciseStep[] = [];
 
   // 1. Warmup (재활용)
@@ -124,7 +130,19 @@ function generateSessionFromMatrix(matrix: MatrixSessionPayload, condition: User
     }
   }
 
-  // 3. Finisher (있으면)
+  // 회의 ζ-5 정정 (2026-04-30): 코어·카디오 자동 추가 (이미 메인인 슬롯은 스킵)
+  // 3a. 코어 — 모든 카탈로그 (코어 메인 슬롯 제외)
+  if (!SKIP_CORE_SLOTS.has(matrix.slotType)) {
+    exercises.push(...buildCore("12-15회", 12));
+  }
+
+  // 3b. 추가 유산소 — 모든 카탈로그 (HIIT·MetCon 메인은 스킵)
+  if (!SKIP_CARDIO_SLOTS.has(matrix.slotType)) {
+    const intensity: "high" | "moderate" | "low" = matrix.rpe >= 8 ? "high" : matrix.rpe <= 6 ? "low" : "moderate";
+    exercises.push(...buildAdditionalCardio(condition, intensity, engineGoal));
+  }
+
+  // 4. Finisher (있으면) — 카디오 다음에 추가
   if (matrix.finisher) {
     const { rounds, workSec, restSec } = matrix.finisher;
     exercises.push({
@@ -175,7 +193,7 @@ export const generateCatalogProgram = onRequest(
       const totalWeeks = Math.max(...body.weeklyMatrix.map((m) => m.week));
 
       const sessions = body.weeklyMatrix.map((matrix, idx) => {
-        const sessionData = generateSessionFromMatrix(matrix, body.condition, body.catalogName);
+        const sessionData = generateSessionFromMatrix(matrix, body.condition, body.catalogName, body.engineGoal);
         return {
           id: `${programId}_w${matrix.week}d${matrix.dayOfWeek}`,
           name: `${body.catalogName} W${matrix.week} D${matrix.dayOfWeek}`,
