@@ -270,17 +270,19 @@ export const WeightHub: React.FC<WeightHubProps> = ({
                     onClick={() => handleCardClick(item)}
                     className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm px-6 py-5 active:scale-[0.98] transition-transform hover:bg-gray-50 text-left"
                   >
-                    <span className="block text-xl font-black text-[#1B4332] leading-tight">
-                      {label(item)}
-                    </span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xl font-black text-[#1B4332] leading-tight">
+                        {label(item)}
+                      </span>
+                      {freq && (
+                        <span className="shrink-0 text-[11px] font-black text-[#2D6A4F] whitespace-nowrap">
+                          {freq}
+                        </span>
+                      )}
+                    </div>
                     {item.descriptionKo && (
                       <p className="text-[12.5px] text-gray-500 mt-1.5 leading-relaxed">
                         {locale === "en" ? "" : item.descriptionKo}
-                      </p>
-                    )}
-                    {freq && (
-                      <p className="text-[11px] text-[#2D6A4F] mt-1.5 font-bold tracking-wide">
-                        {freq}
                       </p>
                     )}
                   </button>

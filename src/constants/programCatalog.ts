@@ -368,7 +368,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "급빠 4주 체지방감량",
     labelEn: "Quick Diet 4W",
-    descriptionKo: "단기 4주 집중 — 15-20회 + HIIT (Israetel TIA Mini Cut)",
+    descriptionKo: "단기 4주 집중 · 15-20회 고반복 + 인터벌",
     weeks: 4,
     chapters: 1,
     sessionsPerWeek: 4,
@@ -423,7 +423,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "4개월 본격 다이어트",
     labelEn: "Full Diet 16W",
-    descriptionKo: "16주 (4주 × 4) · 점진적 강도 상승 + 챕터 diet break",
+    descriptionKo: "16주 (4주 × 4) · 점진적 강도 상승 + 챕터별 휴식 주간",
     weeks: 16,
     chapters: 4,
     sessionsPerWeek: 4,
@@ -469,7 +469,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "8주 근육량 증가 프로그램",
     labelEn: "Muscle Gain 8W",
-    descriptionKo: "8주 (4주 × 2) · 글루트 강조 + 8-12회",
+    descriptionKo: "8주 (4주 × 2) · 엉덩이 강조 + 8-12회",
     weeks: 8,
     chapters: 2,
     sessionsPerWeek: 4,
@@ -498,7 +498,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "3개월 인바디 D로 만들기",
     labelEn: "Inbody D-Shape 12W",
-    descriptionKo: "12주 (4주 × 3) · 5일 PPL · calorie cycling",
+    descriptionKo: "12주 (4주 × 3) · 5일 분할 + 칼로리 주기 조절",
     weeks: 12,
     chapters: 3,
     sessionsPerWeek: 5,
@@ -537,7 +537,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "2분할 체력 튼튼 프로그램",
     labelEn: "2-Split Foundation 8W",
-    descriptionKo: "8주 (4주 × 2) · Rippetoe 3일 + Linear progression",
+    descriptionKo: "8주 (4주 × 2) · 3일 단순 분할 + 점진 증량",
     weeks: 8,
     chapters: 2,
     sessionsPerWeek: 3,
@@ -596,7 +596,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "최대근력 8주",
     labelEn: "Max Strength 8W",
-    descriptionKo: "8주 (Wendler 5/3/1 × 2 cycle) · 1RM 갱신, 3-5회",
+    descriptionKo: "8주 · 1RM 갱신 · 3-5회 고강도 (정통 5/3/1 방식)",
     weeks: 8,
     chapters: 2,
     sessionsPerWeek: 4,
@@ -691,7 +691,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "운동 시작 4주 체력 만들기",
     labelEn: "Starter Conditioning 4W",
-    descriptionKo: "4주 · 주 3회 · 운동 입문 1개월 체력 빌드업",
+    descriptionKo: "4주 · 주 3회 · 운동 입문 1개월 체력 만들기",
     weeks: 4,
     chapters: 1,
     sessionsPerWeek: 3,
@@ -733,7 +733,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "거북목·굽은등 교정 8주",
     labelEn: "Posture Fix 8W",
-    descriptionKo: "8주 (4주 × 2) · 등·후면 어깨 강화 + 등척 hold (Janda UCS)",
+    descriptionKo: "8주 (4주 × 2) · 등·후면 어깨 강화 + 버티기 운동",
     weeks: 8,
     chapters: 2,
     sessionsPerWeek: 4,
@@ -798,7 +798,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "시니어 입문 4주",
     labelEn: "Senior Starter 4W",
-    descriptionKo: "4주 · 무릎·허리 부담 없는 풀바디 + 등척 (NSCA 권장)",
+    descriptionKo: "4주 · 무릎·허리 부담 없는 전신 + 버티기 운동",
     weeks: 4,
     chapters: 1,
     sessionsPerWeek: 3,
@@ -840,7 +840,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "campaign",
     labelKo: "생리주기 다이어트 3개월",
     labelEn: "Cycle-Sync Diet 12W",
-    descriptionKo: "12주 · 28일 cycle × 3 / Phase별 강도·substrate 매칭",
+    descriptionKo: "12주 · 28일 주기 × 3 · 시기별 강도·영양 맞춤",
     weeks: 12,
     chapters: 3,
     sessionsPerWeek: 4,
@@ -928,7 +928,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "campaign",
     labelKo: "휴가 전 7일 팔뚝",
     labelEn: "Vacation Arms 7D",
-    descriptionKo: "1주 단기 · 팔 specialization + 펌프 + 글리코겐 saturation",
+    descriptionKo: "1주 단기 · 팔 집중 + 펌프 + 영양 충전",
     weeks: 1,
     chapters: 1,
     sessionsPerWeek: 4,
@@ -950,7 +950,7 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "campaign",
     labelKo: "상급자 등 루틴",
     labelEn: "Advanced Back 4W",
-    descriptionKo: "4주 · 등 두께·넓이 동시 공략 (Nippard Block 1 단축)",
+    descriptionKo: "4주 · 등 두께·넓이 동시 공략 (상급자용)",
     weeks: 4,
     chapters: 1,
     sessionsPerWeek: 3,
@@ -1025,14 +1025,12 @@ export function getMatchedCatalog(ctx: MatchContext): CatalogItem[] {
   const campaigns = PROGRAM_CATALOG.filter((c) => c.kind === "campaign" && matchOne(c));
 
   const result: CatalogItem[] = [bodyPicker];
-  // 캠페인 우선 노출 (시즌·페르소나 친화), 그 다음 목적별
-  for (const c of campaigns) {
+  // 회의 ζ-5 정정 (2026-04-30): 기간 큰 순서로 (3개월 다이어트 → 급빠 4주 → 휴가 7일).
+  // program + campaign 합쳐서 weeks desc 정렬.
+  const merged = [...programs, ...campaigns].sort((a, b) => b.weeks - a.weeks);
+  for (const item of merged) {
     if (result.length >= 4) break;
-    result.push(c);
-  }
-  for (const p of programs) {
-    if (result.length >= 4) break;
-    result.push(p);
+    result.push(item);
   }
   return result;
 }
