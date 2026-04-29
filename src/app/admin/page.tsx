@@ -65,6 +65,7 @@ interface ResearchChannelResult {
   videosFetched?: number;
   filter1Passed?: number;
   passedVideoIds?: string[];
+  allVideoIds?: string[];
   error?: string;
 }
 
@@ -823,6 +824,7 @@ export default function AdminPage() {
           videosFetched: data.videosFetched,
           filter1Passed: data.filter1Passed,
           passedVideoIds: data.passedVideoIds,
+          allVideoIds: data.allVideoIds,
         };
       } catch (e) {
         updated[i] = { ...channel, status: "error", error: e instanceof Error ? e.message : "unknown" };
@@ -834,19 +836,20 @@ export default function AdminPage() {
 
   const handleAnalyzeAll = async () => {
     if (analyzeRunning) return;
-    const targets = researchResults.filter((r) => r.status === "ok" && r.channelId && r.passedVideoIds && r.passedVideoIds.length > 0);
+    // 회의 ζ-4 fix: 분석 대상 = 모든 영상 (1차 필터 무관). 1차 통과는 결과 보고서에서 색칠 표시 용도.
+    const targets = researchResults.filter((r) => r.status === "ok" && r.channelId && r.allVideoIds && r.allVideoIds.length > 0);
     if (targets.length === 0) {
       alert("분석할 영상 없음. 먼저 채널 수집을 완료하세요.");
       return;
     }
-    const total = targets.reduce((sum, t) => sum + (t.passedVideoIds?.length ?? 0), 0);
+    const total = targets.reduce((sum, t) => sum + (t.allVideoIds?.length ?? 0), 0);
     setAnalyzeRunning(true);
     setAnalyzeProgress({ done: 0, total });
     const token = await getToken();
     let done = 0;
     for (const t of targets) {
       const lang: "ko" | "en" = t.region === "kr" ? "ko" : "en";
-      for (const videoId of t.passedVideoIds ?? []) {
+      for (const videoId of t.allVideoIds ?? []) {
         try {
           await fetch("/api/analyzeYoutubeComments", {
             method: "POST",

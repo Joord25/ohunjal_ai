@@ -117,10 +117,12 @@ interface VideoRecord {
   fetchedAt: FirebaseFirestore.FieldValue;
 }
 
+// 회의 ζ-4 fix (2026-04-29): 임계치 완화 — 실측 데이터 기반.
+// 한국 운동 영상 댓글 참여도 평균 ~0.2%, 좋아요율 평균 ~3%. 기존 1%/3% 는 너무 빡세서 0% 통과 → 0.2%/1.5% 로 완화.
 function classifyFilter1(v: { viewCount: number; engagementRate: number; likeRate: number }, region: "kr" | "global"): boolean {
   const viewMin = region === "kr" ? 100_000 : 1_000_000;
-  const engMin = region === "kr" ? 0.01 : 0.005;
-  const likeMin = region === "kr" ? 0.03 : 0.02;
+  const engMin = region === "kr" ? 0.002 : 0.001;
+  const likeMin = region === "kr" ? 0.015 : 0.010;
   return v.viewCount >= viewMin && v.engagementRate >= engMin && v.likeRate >= likeMin;
 }
 
@@ -193,24 +195,23 @@ export const researchYoutubeChannel = onRequest(
 
         await channelRef.collection("videos").doc(v.id).set(record, { merge: true });
 
-        // 1차 필터 통과한 영상만 댓글 수집 (quota 절약)
-        if (filter1Pass) {
-          passedVideos.push(record);
-          const comments = await fetchTopComments(v.id, maxComments);
-          const batch = db.batch();
-          for (const c of comments) {
-            const cs = c.snippet.topLevelComment;
-            batch.set(channelRef.collection("videos").doc(v.id).collection("comments").doc(cs.id), {
-              commentId: cs.id,
-              videoId: v.id,
-              text: cs.snippet.textOriginal,
-              likeCount: cs.snippet.likeCount,
-              author: cs.snippet.authorDisplayName,
-              publishedAt: cs.snippet.publishedAt,
-            });
-          }
-          if (comments.length > 0) await batch.commit();
+        // 회의 ζ-4 fix (2026-04-29): 1차 필터 통과 무관 모든 영상 댓글 수집.
+        // 사유 — 임계치 미세 조정 필요 시 매번 재수집 비효율. quota 충분 (영상당 1 unit).
+        if (filter1Pass) passedVideos.push(record);
+        const comments = await fetchTopComments(v.id, maxComments);
+        const batch = db.batch();
+        for (const c of comments) {
+          const cs = c.snippet.topLevelComment;
+          batch.set(channelRef.collection("videos").doc(v.id).collection("comments").doc(cs.id), {
+            commentId: cs.id,
+            videoId: v.id,
+            text: cs.snippet.textOriginal,
+            likeCount: cs.snippet.likeCount,
+            author: cs.snippet.authorDisplayName,
+            publishedAt: cs.snippet.publishedAt,
+          });
         }
+        if (comments.length > 0) await batch.commit();
       }
 
       res.status(200).json({
@@ -220,6 +221,8 @@ export const researchYoutubeChannel = onRequest(
         videosFetched: videos.length,
         filter1Passed: passedVideos.length,
         passedVideoIds: passedVideos.map((v) => v.videoId),
+        // 회의 ζ-4 fix: 분석 대상은 모든 영상 (1차 필터는 정보용)
+        allVideoIds: videos.map((v) => v.id),
       });
     } catch (err) {
       console.error("researchYoutubeChannel error:", err);
