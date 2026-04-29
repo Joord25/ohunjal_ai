@@ -1179,7 +1179,6 @@ export default function Home() {
 
         const handleStartCatalog = async (item: CatalogItem, opt?: { muscle?: TargetMuscle }) => {
           try {
-            // engineGoal 매핑 — 카탈로그가 직접 WorkoutGoal 반환
             const goal = item.engineGoal;
             const condition: import("@/constants/workout").UserCondition = {
               bodyPart: "good",
@@ -1189,14 +1188,49 @@ export default function Home() {
               birthYear,
               bodyWeightKg: fp.bodyWeight,
             };
-            // body_picker = split mode + targetMuscle / 그 외 program/campaign = balanced 1세션 PoC
-            const sessionMode: "split" | "balanced" = item.kind === "body_picker" && opt?.muscle ? "split" : "balanced";
             setIsLoading(true);
             setCurrentCondition(condition);
             setCurrentGoal(goal);
-            setCurrentSession({ goal, sessionMode, exerciseList: item.exerciseList });
             setCurrentPlanSource("chat");
             setWorkoutReturnTo("weight_hub");
+
+            // 회의 ζ-5 (2026-04-30) Phase 4: 장기 프로그램 (weeklyMatrix 있음) → multi-session 일괄 생성 (러닝 패턴)
+            if (item.kind !== "body_picker" && item.weeks > 0 && item.weeklyMatrix && item.weeklyMatrix.length > 0) {
+              const { auth } = await import("@/lib/firebase");
+              const fbUser = auth.currentUser;
+              if (!fbUser) throw new Error("Not authenticated");
+              const token = await fbUser.getIdToken();
+              const res = await fetch("/api/generateCatalogProgram", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({
+                  catalogId: item.id,
+                  catalogName: item.labelKo,
+                  weeklyMatrix: item.weeklyMatrix,
+                  condition,
+                }),
+              });
+              if (!res.ok) throw new Error(`generateCatalogProgram ${res.status}`);
+              const data = await res.json() as { ok: true; programId: string; programName: string; totalSessions: number; totalWeeks: number; sessions: SavedPlan[] };
+
+              saveProgramSessions(data.sessions);
+              try { await remoteSaveProgram(data.sessions); } catch { /* local 저장 유지 */ }
+
+              // 첫 세션 = 진입 세션
+              const first = data.sessions[0];
+              setCurrentSession({ goal, sessionMode: "balanced" });
+              setCurrentWorkoutSession(first.sessionData);
+              setActiveSavedPlanId(first.id);
+              setCurrentPlanSource("program");
+              setView("master_plan_preview");
+              setIsLoading(false);
+              trackEvent("chat_plan_generated", { mode: "weight_catalog_program", catalog_id: item.id, total_sessions: data.totalSessions, total_weeks: data.totalWeeks });
+              return;
+            }
+
+            // body_picker / weeks=0 / weeklyMatrix 없는 카탈로그 → 1세션 fallback (기존 흐름)
+            const sessionMode: "split" | "balanced" = item.kind === "body_picker" && opt?.muscle ? "split" : "balanced";
+            setCurrentSession({ goal, sessionMode, exerciseList: item.exerciseList });
             const session = await lazyGenerateWorkout(
               new Date().getDay(),
               condition,
@@ -1207,38 +1241,10 @@ export default function Home() {
               opt?.muscle,
               undefined,
               undefined,
-              // 회의 ζ-5: 카탈로그 exerciseList 전달 (교정·시니어·부상회피)
               item.exerciseList,
             );
             pendingSessionRef.current = session;
-            trackEvent("chat_plan_generated", { mode: "weight_catalog", catalog_id: item.id, kind: item.kind, muscle: opt?.muscle ?? "none" });
-
-            // 회의 ζ-5 (2026-04-30) ④: 장기 프로그램 (program/campaign + weeks > 0) 메타 + 내플랜 저장
-            if (item.kind !== "body_picker" && item.weeks > 0) {
-              const sessionsPerWeek = item.sessionsPerWeek ?? 3;
-              const totalSessions = item.weeks * sessionsPerWeek;
-              const programId = `${item.id}_${Date.now()}`;
-              const planId = `${programId}_s1`;
-              const programPlan: SavedPlan = {
-                id: planId,
-                name: item.labelKo,
-                sessionData: session,
-                createdAt: Date.now(),
-                lastUsedAt: null,
-                useCount: 0,
-                programId,
-                sessionNumber: 1,
-                totalSessions,
-                programName: item.labelKo,
-                programCategory: "strength",
-                programGoal: item.id,
-                weekIndex: 1,
-                completedAt: null,
-              };
-              saveProgramSessions([programPlan]);
-              try { await remoteSaveProgram([programPlan]); } catch { /* server fail OK — local 저장 유지 */ }
-              setActiveSavedPlanId(planId);
-            }
+            trackEvent("chat_plan_generated", { mode: "weight_catalog_single", catalog_id: item.id, kind: item.kind, muscle: opt?.muscle ?? "none" });
           } catch (err) {
             console.error("WeightHub start failed:", err);
             setIsLoading(false);
