@@ -124,9 +124,10 @@ export const EquipmentFinderCard: React.FC<EquipmentFinderCardProps> = ({ exerci
         <h2 className="text-2xl font-black text-[#1B4332] mt-1">{displayName}</h2>
       </div>
 
-      {/* 회의 2026-04-28: 사용법 페이지 유튜브 미리보기 영상 — 매핑 있을 때만. */}
+      {/* 회의 2026-04-29: 영상이 YouTube Shorts/Reels(9:16 세로)라 aspect-video(16:9)로
+          담으면 양옆 검은 바 발생. 9:16 컨테이너 + max-w-[240px] 가운데 정렬 — 폰 모양 프리뷰. */}
       {videoUrl && (
-        <div className="w-full aspect-video rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+        <div className="w-full max-w-[240px] mx-auto aspect-[9/16] rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
           <iframe
             src={videoUrl}
             className="w-full h-full"
