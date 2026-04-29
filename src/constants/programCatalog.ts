@@ -256,6 +256,57 @@ const TEMPLATE_HEALTH: SetTemplate = {
 };
 
 // ─────────────────────────────────────────────
+// weeklyMatrix 헬퍼 — chapter config → MatrixSession[] 동적 생성
+// ─────────────────────────────────────────────
+
+interface ChapterDayConfig {
+  dayOfWeek: number;
+  slotType: string;
+  slots?: number;
+  sets: number;
+  reps: string;
+  rpe: number;
+  wendlerWave?: "A" | "B" | "C" | "deload";
+  linearProgression?: boolean;
+  finisher?: { rounds: number; workSec: number; restSec: number };
+  firstSetWarmup?: boolean;
+}
+
+interface ChapterConfig {
+  weeks: number;
+  days: ChapterDayConfig[];
+}
+
+function buildMatrix(chapters: ChapterConfig[]): MatrixSession[] {
+  const result: MatrixSession[] = [];
+  let currentWeek = 1;
+  let chapterIndex = 1;
+  for (const chapter of chapters) {
+    for (let w = 0; w < chapter.weeks; w++) {
+      for (const day of chapter.days) {
+        result.push({
+          week: currentWeek,
+          dayOfWeek: day.dayOfWeek,
+          chapter: chapterIndex,
+          slotType: day.slotType,
+          slots: day.slots ?? 4,
+          sets: day.sets,
+          reps: day.reps,
+          rpe: day.rpe,
+          wendlerWave: day.wendlerWave,
+          linearProgression: day.linearProgression,
+          finisher: day.finisher,
+          firstSetWarmup: day.firstSetWarmup,
+        });
+      }
+      currentWeek++;
+    }
+    chapterIndex++;
+  }
+  return result;
+}
+
+// ─────────────────────────────────────────────
 // 카탈로그 항목 정의
 // ─────────────────────────────────────────────
 
@@ -283,21 +334,58 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     descriptionKo: "12주 (4주 × 3 챕터) · 15-20회 고반복",
     weeks: 12,
     chapters: 3,
+    sessionsPerWeek: 4,
     engineGoal: "fat_loss",
     match: { goal: ["fat_loss"], season: [4, 5, 6] },
     setTemplate: TEMPLATE_FAT_LOSS,
+    dietBreaks: [4, 8, 12],
+    weeklyMatrix: buildMatrix([
+      // Base 4주 — RPE 7, 12-15회
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+      ]},
+      // Build 4주 — RPE 8, 10-12회
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+      ]},
+      // Peak 4주 — RPE 8.5, 8-10회 + finisher
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
   {
     id: "prog_quick_diet_4w",
     kind: "program",
     labelKo: "급빠 4주 체지방감량",
     labelEn: "Quick Diet 4W",
-    descriptionKo: "단기 4주 집중 — 15-20회 + HIIT",
+    descriptionKo: "단기 4주 집중 — 15-20회 + HIIT (Israetel TIA Mini Cut)",
     weeks: 4,
     chapters: 1,
+    sessionsPerWeek: 4,
     engineGoal: "fat_loss",
     match: { goal: ["fat_loss"] },
     setTemplate: TEMPLATE_FAT_LOSS,
+    weeklyMatrix: buildMatrix([
+      { weeks: 4, days: [
+        // 매주 RPE/sets/rounds 진행 — 4주 단기라 매주 다른 progression
+        { dayOfWeek: 1, slotType: "upper_compound", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_compound", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "metcon_circuit", slots: 5, sets: 4, reps: "30s", rpe: 8, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 4, slotType: "upper_volume", sets: 3, reps: "15-20", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_volume", sets: 3, reps: "15-20", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 6, slotType: "metcon_circuit", slots: 5, sets: 4, reps: "30s", rpe: 8, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+      ]},
+    ]),
   },
   {
     id: "prog_hiit_8w",
@@ -307,21 +395,72 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     descriptionKo: "8주 (4주 × 2) · 고강도 인터벌 + 코어",
     weeks: 8,
     chapters: 2,
+    sessionsPerWeek: 5,
     engineGoal: "fat_loss",
     match: { goal: ["fat_loss", "endurance"] },
     setTemplate: TEMPLATE_FAT_LOSS,
+    weeklyMatrix: buildMatrix([
+      // Adaptation 4주 — Medium-Interval 8×2분
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "hiit_medium_interval", slots: 2, sets: 8, reps: "2min work / 2min rest", rpe: 8 },
+        { dayOfWeek: 2, slotType: "upper_push_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "hiit_medium_interval", slots: 2, sets: 8, reps: "2min work / 2min rest", rpe: 8 },
+        { dayOfWeek: 4, slotType: "lower_squat_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "hiit_medium_interval", slots: 2, sets: 8, reps: "2min work / 2min rest", rpe: 8 },
+      ]},
+      // Build 4주 — Long-Interval 4×4분 (gold standard)
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "hiit_long_interval", slots: 2, sets: 4, reps: "4min work / 4min rest", rpe: 9 },
+        { dayOfWeek: 2, slotType: "upper_push_focus", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "hiit_long_interval", slots: 2, sets: 4, reps: "4min work / 4min rest", rpe: 9 },
+        { dayOfWeek: 4, slotType: "lower_squat_focus", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "hiit_long_interval", slots: 2, sets: 4, reps: "4min work / 4min rest", rpe: 9 },
+      ]},
+    ]),
   },
   {
     id: "prog_diet_16w",
     kind: "program",
     labelKo: "4개월 본격 다이어트",
     labelEn: "Full Diet 16W",
-    descriptionKo: "16주 (4주 × 4) · 점진적 강도 상승",
+    descriptionKo: "16주 (4주 × 4) · 점진적 강도 상승 + 챕터 diet break",
     weeks: 16,
     chapters: 4,
+    sessionsPerWeek: 4,
     engineGoal: "fat_loss",
     match: { goal: ["fat_loss"] },
     setTemplate: TEMPLATE_FAT_LOSS,
+    dietBreaks: [4, 8, 12, 16],
+    weeklyMatrix: buildMatrix([
+      // Base 4주 — RPE 7, 12-15회, -15% kcal
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+      ]},
+      // Build 4주 — RPE 8, 10-12회
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true },
+      ]},
+      // Peak1 4주 — RPE 8.5, 8-10회 + drop set
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 4, reps: "8-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+      // Peak2 4주 — RPE 9, 6-10회 피라미드
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_push", sets: 4, reps: "6-10", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "lower_squat", sets: 4, reps: "6-10", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 4, slotType: "upper_pull", sets: 4, reps: "6-10", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "lower_hinge", sets: 4, reps: "6-10", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
 
   // ③ 목적별 — muscle_gain
@@ -330,48 +469,193 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "8주 근육량 증가 프로그램",
     labelEn: "Muscle Gain 8W",
-    descriptionKo: "8주 (4주 × 2) · PPL 근비대 8-12회",
+    descriptionKo: "8주 (4주 × 2) · 글루트 강조 + 8-12회",
     weeks: 8,
     chapters: 2,
+    sessionsPerWeek: 4,
     engineGoal: "muscle_gain",
     match: { goal: ["muscle_gain"] },
     setTemplate: TEMPLATE_HYPERTROPHY,
+    weeklyMatrix: buildMatrix([
+      // Base 4주 — Schoenfeld MEV (8-10 sets/muscle/wk)
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_a_push_emphasis", sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_a_squat_glute", sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_b_pull_emphasis", sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_b_hinge_glute", sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+      ]},
+      // Build 4주 — Schoenfeld MAV (15-20 sets) + W7-8 finisher
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "upper_a_push_emphasis", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "lower_a_squat_glute", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 4, slotType: "upper_b_pull_emphasis", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "lower_b_hinge_glute", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
   {
     id: "prog_inbody_d_12w",
     kind: "program",
     labelKo: "3개월 인바디 D로 만들기",
     labelEn: "Inbody D-Shape 12W",
-    descriptionKo: "12주 (4주 × 3) · 근비대 + 체지방 동시",
+    descriptionKo: "12주 (4주 × 3) · 5일 PPL · calorie cycling",
     weeks: 12,
     chapters: 3,
+    sessionsPerWeek: 5,
     engineGoal: "muscle_gain",
     match: { goal: ["muscle_gain"] },
     setTemplate: TEMPLATE_HYPERTROPHY,
+    weeklyMatrix: buildMatrix([
+      // Base 4주 — RPE 7, 8-12회, maintenance ±5%
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "push_a", slots: 5, sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "pull_a", slots: 5, sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "legs_squat_focus", slots: 5, sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "push_b", slots: 5, sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "legs_hinge_focus", slots: 5, sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+      ]},
+      // Build 4주 — RPE 8, calorie cycling
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "push_a", slots: 5, sets: 4, reps: "6-10", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "pull_a", slots: 5, sets: 4, reps: "6-10", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "legs_squat_focus", slots: 5, sets: 4, reps: "6-10", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "push_b", slots: 5, sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "legs_hinge_focus", slots: 5, sets: 4, reps: "6-10", rpe: 8, firstSetWarmup: true },
+      ]},
+      // Peak 4주 — RPE 8.5, 적자 -10% + finisher
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "push_a", slots: 5, sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "pull_a", slots: 5, sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 3, slotType: "legs_squat_focus", slots: 5, sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 4, slotType: "push_b", slots: 5, sets: 4, reps: "8-12", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "legs_hinge_focus", slots: 5, sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
   {
     id: "prog_2split_8w",
     kind: "program",
     labelKo: "2분할 체력 튼튼 프로그램",
     labelEn: "2-Split Foundation 8W",
-    descriptionKo: "8주 (4주 × 2) · 상하체 2분할 입문",
+    descriptionKo: "8주 (4주 × 2) · Rippetoe 3일 + Linear progression",
     weeks: 8,
     chapters: 2,
+    sessionsPerWeek: 3,
     engineGoal: "muscle_gain",
     match: { goal: ["muscle_gain", "endurance"] },
     setTemplate: TEMPLATE_HYPERTROPHY,
+    experienceWarning: "starter",
+    weeklyMatrix: buildMatrix([
+      // Adaptation 4주 — Linear progression 시작 (Rippetoe)
+      // 홀수주 (W1·W3): A → B → A. 짝수주 (W2·W4): B → A → B alternating
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_push_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 3, slotType: "lower_full", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 5, slotType: "upper_pull_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "lower_squat_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 3, slotType: "upper_pull_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 5, slotType: "lower_hinge_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_push_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 3, slotType: "lower_full", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 5, slotType: "upper_pull_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "lower_squat_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 3, slotType: "upper_pull_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 5, slotType: "lower_hinge_focus", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+      ]},
+      // Build 4주 — RPE 8, 10-12회 + finisher 5분
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_push_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 3, slotType: "lower_full", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 5, slotType: "upper_pull_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "lower_squat_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 3, slotType: "upper_pull_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 5, slotType: "lower_hinge_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_push_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 3, slotType: "lower_full", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 5, slotType: "upper_pull_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "lower_squat_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 3, slotType: "upper_pull_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 5, slotType: "lower_hinge_focus", sets: 4, reps: "10-12", rpe: 8, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 4, workSec: 30, restSec: 30 } },
+      ]},
+    ]),
   },
   {
     id: "prog_max_strength_8w",
     kind: "program",
     labelKo: "최대근력 8주",
     labelEn: "Max Strength 8W",
-    descriptionKo: "8주 (4주 × 2) · 1RM 갱신, 3-5회",
+    descriptionKo: "8주 (Wendler 5/3/1 × 2 cycle) · 1RM 갱신, 3-5회",
     weeks: 8,
     chapters: 2,
+    sessionsPerWeek: 4,
     engineGoal: "strength",
     match: { goal: ["muscle_gain"], minExperienceMonths: 6 },
     setTemplate: TEMPLATE_STRENGTH,
+    experienceWarning: "advanced",
+    weeklyMatrix: buildMatrix([
+      // Cycle 1 (W1-W4)
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+      ]},
+      // Cycle 2 (W5-W8) — Training Max +5lb (upper) / +10lb (lower)
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "5/5/5+", rpe: 8, wendlerWave: "A" },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "3/3/3+", rpe: 8.5, wendlerWave: "B" },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "5/3/1+", rpe: 9, wendlerWave: "C" },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "wendler_ohp_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+        { dayOfWeek: 2, slotType: "wendler_deadlift_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+        { dayOfWeek: 4, slotType: "wendler_bench_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+        { dayOfWeek: 5, slotType: "wendler_squat_day", sets: 3, reps: "5/5/5", rpe: 6, wendlerWave: "deload" },
+      ]},
+    ]),
   },
 
   // ④ 목적별 — endurance (기초 체력)
@@ -383,9 +667,24 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     descriptionKo: "8주 (4주 × 2) · 전신 + HIIT + 코어",
     weeks: 8,
     chapters: 2,
+    sessionsPerWeek: 3,
     engineGoal: "general_fitness",
     match: { goal: ["endurance"] },
     setTemplate: TEMPLATE_HEALTH,
+    weeklyMatrix: buildMatrix([
+      // Adaptation 4주 — 30-35분 풀바디
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "fullbody_a_squat", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "fullbody_b_hinge", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "fullbody_a_squat", sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+      ]},
+      // Build 4주 — 40-50분 + finisher
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "fullbody_a_squat", sets: 4, reps: "12-20", rpe: 8, firstSetWarmup: true, finisher: { rounds: 3, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 3, slotType: "fullbody_b_hinge", sets: 4, reps: "12-20", rpe: 8, firstSetWarmup: true, finisher: { rounds: 3, workSec: 30, restSec: 30 } },
+        { dayOfWeek: 5, slotType: "fullbody_a_squat", sets: 4, reps: "12-20", rpe: 8, firstSetWarmup: true, finisher: { rounds: 3, workSec: 30, restSec: 30 } },
+      ]},
+    ]),
   },
   {
     id: "prog_starter_cond_4w",
@@ -395,9 +694,37 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     descriptionKo: "4주 · 주 3회 · 운동 입문 1개월 체력 빌드업",
     weeks: 4,
     chapters: 1,
+    sessionsPerWeek: 3,
     engineGoal: "general_fitness",
     match: { goal: ["endurance"] },
     setTemplate: TEMPLATE_HEALTH,
+    experienceWarning: "starter",
+    weeklyMatrix: buildMatrix([
+      // W1 적응 — 매우 보수적 RPE 6
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "starter_fullbody", sets: 2, reps: "10-12", rpe: 6, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "starter_fullbody", sets: 2, reps: "10-12", rpe: 6, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "starter_fullbody", sets: 2, reps: "10-12", rpe: 6, firstSetWarmup: true },
+      ]},
+      // W2 안정 — 세트 +1
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "starter_fullbody", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "starter_fullbody", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "starter_fullbody", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+      ]},
+      // W3 Linear progression 시작 (Rippetoe)
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "starter_fullbody", sets: 3, reps: "10-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 3, slotType: "starter_fullbody", sets: 3, reps: "10-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+        { dayOfWeek: 5, slotType: "starter_fullbody", sets: 3, reps: "10-15", rpe: 7, firstSetWarmup: true, linearProgression: true },
+      ]},
+      // W4 마무리 + 30s 등척 finisher
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "starter_fullbody", sets: 3, reps: "10-15", rpe: 7, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 3, slotType: "starter_fullbody", sets: 3, reps: "10-15", rpe: 7, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "starter_fullbody", sets: 3, reps: "10-15", rpe: 7, firstSetWarmup: true, linearProgression: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
 
   // ⑤ 목적별 — health (자세·부상 회피·시니어)
@@ -406,19 +733,29 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "program",
     labelKo: "거북목·굽은등 교정 8주",
     labelEn: "Posture Fix 8W",
-    descriptionKo: "8주 (4주 × 2) · 등·후면 어깨 강화 + 등척 hold",
+    descriptionKo: "8주 (4주 × 2) · 등·후면 어깨 강화 + 등척 hold (Janda UCS)",
     weeks: 8,
     chapters: 2,
+    sessionsPerWeek: 4,
     engineGoal: "general_fitness",
     match: { goal: ["health"] },
     setTemplate: TEMPLATE_HEALTH,
-    exerciseList: [
-      { name: "케이블 페이스 풀 (Cable Face Pull)", sets: 3, reps: "12-15회" },
-      { name: "밴드 풀 어파트 (Band Pull-Apart)", sets: 3, reps: "15-20회" },
-      { name: "시티드 케이블 로우 (Seated Cable Row)", sets: 3, reps: "12-15회" },
-      { name: "슈퍼맨 (Superman)", sets: 3, reps: "30초 유지" },
-      { name: "코브라 (Cobra)", sets: 2, reps: "20-30초 유지" },
-    ],
+    weeklyMatrix: buildMatrix([
+      // Activation 4주 — RPE 6, 폼 우선, hold 30s
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "posture_thoracic_pull", slots: 5, sets: 3, reps: "12-15", rpe: 6, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "posture_core_glute", slots: 4, sets: 3, reps: "10-12", rpe: 6 },
+        { dayOfWeek: 4, slotType: "posture_scap_rotator", slots: 5, sets: 3, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 5, slotType: "posture_thoracic_rotation", slots: 5, sets: 3, reps: "12-15", rpe: 6 },
+      ]},
+      // Strengthening 4주 — RPE 7, hold 45-60s
+      { weeks: 4, days: [
+        { dayOfWeek: 1, slotType: "posture_thoracic_pull", slots: 5, sets: 4, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "posture_core_glute", slots: 4, sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 4, slotType: "posture_scap_rotator", slots: 5, sets: 4, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 5, slotType: "posture_thoracic_rotation", slots: 5, sets: 4, reps: "10-12", rpe: 7 },
+      ]},
+    ]),
   },
   {
     id: "prog_shoulder_safe_4w",
@@ -428,49 +765,161 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     descriptionKo: "4주 · 어깨 부담 없는 가슴 + 회전근개 보강",
     weeks: 4,
     chapters: 1,
+    sessionsPerWeek: 3,
     engineGoal: "general_fitness",
     match: { goal: ["health"] },
     setTemplate: TEMPLATE_HEALTH,
-    exerciseList: [
-      { name: "인클라인 덤벨 프레스 (Incline Dumbbell Press)", sets: 3, reps: "10-12회" },
-      { name: "케이블 크로스오버 (Cable Crossover)", sets: 3, reps: "12-15회" },
-      { name: "푸쉬업 (Push-Up)", sets: 3, reps: "10-15회" },
-      { name: "체스트 서포티드 로우 (Chest Supported Row)", sets: 3, reps: "10-12회" },
-      { name: "케이블 페이스 풀 (Cable Face Pull)", sets: 3, reps: "12-15회" },
-    ],
+    experienceWarning: "shoulder_safe",
+    weeklyMatrix: buildMatrix([
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "chest_safe_a", slots: 5, sets: 3, reps: "12-15", rpe: 6, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "shoulder_rehab", slots: 4, sets: 3, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 4, slotType: "chest_safe_b", slots: 4, sets: 3, reps: "12-15", rpe: 6 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "chest_safe_a", slots: 5, sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "shoulder_rehab", slots: 4, sets: 3, reps: "10-12", rpe: 7 },
+        { dayOfWeek: 4, slotType: "chest_safe_b", slots: 4, sets: 3, reps: "10-12", rpe: 7 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "chest_safe_a", slots: 5, sets: 4, reps: "10-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "shoulder_rehab", slots: 4, sets: 3, reps: "10-12", rpe: 7 },
+        { dayOfWeek: 4, slotType: "chest_safe_b", slots: 4, sets: 4, reps: "10-12", rpe: 7 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "chest_safe_a", slots: 5, sets: 4, reps: "10-12", rpe: 7.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "shoulder_rehab", slots: 4, sets: 3, reps: "10-12", rpe: 7.5 },
+        { dayOfWeek: 4, slotType: "chest_safe_b", slots: 4, sets: 4, reps: "10-12", rpe: 7.5, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
   {
     id: "prog_senior_4w",
     kind: "program",
     labelKo: "시니어 입문 4주",
     labelEn: "Senior Starter 4W",
-    descriptionKo: "4주 · 무릎·허리 부담 없는 풀바디 + 등척",
+    descriptionKo: "4주 · 무릎·허리 부담 없는 풀바디 + 등척 (NSCA 권장)",
     weeks: 4,
     chapters: 1,
+    sessionsPerWeek: 3,
     engineGoal: "general_fitness",
     match: { goal: ["health"] },
     setTemplate: TEMPLATE_HEALTH,
-    exerciseList: [
-      { name: "고블렛 스쿼트 (Goblet Squat)", sets: 3, reps: "10-12회" },
-      { name: "인클라인 푸쉬업 (Incline Push-Up)", sets: 3, reps: "8-12회" },
-      { name: "시티드 케이블 로우 (Seated Cable Row)", sets: 3, reps: "12-15회" },
-      { name: "글루트 브릿지 (Glute Bridge)", sets: 3, reps: "12-15회" },
-      { name: "월 시트 (Wall Sit)", sets: 2, reps: "20-30초 유지" },
-    ],
+    experienceWarning: "senior_safe",
+    weeklyMatrix: buildMatrix([
+      // W1 적응 — RPE 5-6 / 50% 1RM (NSCA 노인 권장)
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "senior_fullbody", sets: 2, reps: "10-12", rpe: 5.5, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "senior_fullbody", sets: 2, reps: "10-12", rpe: 5.5, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "senior_fullbody", sets: 2, reps: "10-12", rpe: 5.5, firstSetWarmup: true },
+      ]},
+      // W2 안정 — 세트 +1
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 6, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 6, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 6, firstSetWarmup: true },
+      ]},
+      // W3 점진 — 무게 약간 ↑
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 6.5, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 6.5, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 6.5, firstSetWarmup: true },
+      ]},
+      // W4 마무리 — RPE 7 / 60% 1RM + 등척 hold
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 3, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "senior_fullbody", sets: 3, reps: "10-12", rpe: 7, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
 
-  // ⑤ 캠페인 — 여성 한정
+  // ⑤ 캠페인 — 여성 한정 (28일 cycle × 3 = 12주 정확 정렬)
   {
     id: "camp_cycle_diet_12w",
     kind: "campaign",
     labelKo: "생리주기 다이어트 3개월",
     labelEn: "Cycle-Sync Diet 12W",
-    descriptionKo: "12주 · 호르몬 주기 맞춤 강도 조절",
+    descriptionKo: "12주 · 28일 cycle × 3 / Phase별 강도·substrate 매칭",
     weeks: 12,
     chapters: 3,
+    sessionsPerWeek: 4,
     engineGoal: "fat_loss",
     match: { goal: ["fat_loss"], gender: ["female"] },
     setTemplate: TEMPLATE_FAT_LOSS,
+    // 1 cycle (28일) = W1 Menstrual + W2 Follicular + W3 Early Luteal + W4 Late Luteal
+    weeklyMatrix: buildMatrix([
+      // Cycle 1 (W1-W4): Adaptation
+      // W1 Menstrual — 저강도 + 액티브 회복
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+        { dayOfWeek: 3, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+      ]},
+      // W2 Follicular — 고강도 power week
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_a_push_emphasis", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_a_squat_glute", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_b_pull_emphasis", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_b_hinge_glute", sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true },
+      ]},
+      // W3 Early Luteal — 중강도 cardio week
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 3, slotType: "lower_low", sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 3, reps: "12-15", rpe: 7 },
+      ]},
+      // W4 Late Luteal — 저강도 PMS recovery
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 3, slotType: "lower_low", sets: 2, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 6 },
+      ]},
+      // Cycle 2 (W5-W8): Build — 강도 ↑
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+        { dayOfWeek: 3, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_a_push_emphasis", sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "lower_a_squat_glute", sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true },
+        { dayOfWeek: 4, slotType: "upper_b_pull_emphasis", sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "lower_b_hinge_glute", sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 3, slotType: "lower_low", sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 3, reps: "12-15", rpe: 7 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 3, slotType: "lower_low", sets: 2, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 6 },
+      ]},
+      // Cycle 3 (W9-W12): Peak — 강도 maximum (Follicular PR 시도)
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+        { dayOfWeek: 3, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 5 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_a_push_emphasis", sets: 4, reps: "5-8", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 2, slotType: "lower_a_squat_glute", sets: 4, reps: "5-8", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 4, slotType: "upper_b_pull_emphasis", sets: 4, reps: "5-8", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "lower_b_hinge_glute", sets: 4, reps: "5-8", rpe: 9, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 3, slotType: "lower_low", sets: 3, reps: "12-15", rpe: 7 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 3, reps: "12-15", rpe: 7 },
+      ]},
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 3, slotType: "lower_low", sets: 2, reps: "12-15", rpe: 6 },
+        { dayOfWeek: 5, slotType: "upper_low_intensity", sets: 2, reps: "12-15", rpe: 6 },
+      ]},
+    ]),
   },
 
   // ⑥ 캠페인 — 단기 이벤트
@@ -479,24 +928,62 @@ export const PROGRAM_CATALOG: CatalogItem[] = [
     kind: "campaign",
     labelKo: "휴가 전 7일 팔뚝",
     labelEn: "Vacation Arms 7D",
-    descriptionKo: "1주 단기 · 팔·어깨 집중 펌핑",
+    descriptionKo: "1주 단기 · 팔 specialization + 펌프 + 글리코겐 saturation",
     weeks: 1,
     chapters: 1,
+    sessionsPerWeek: 4,
     engineGoal: "muscle_gain",
     match: {},
     setTemplate: TEMPLATE_HYPERTROPHY,
+    weeklyMatrix: buildMatrix([
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "arms_main_1", slots: 6, sets: 4, reps: "8-12", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 2, slotType: "fullbody_a_squat", sets: 3, reps: "12-15", rpe: 6 }, // 회복 자극
+        { dayOfWeek: 3, slotType: "arms_bicep_focus", slots: 5, sets: 4, reps: "10-15", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "arms_tricep_focus", slots: 5, sets: 4, reps: "10-15", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 6, slotType: "arms_pump_finisher", slots: 3, sets: 3, reps: "12-15", rpe: 7, finisher: { rounds: 1, workSec: 60, restSec: 0 } },
+      ]},
+    ]),
   },
   {
     id: "camp_advanced_back_4w",
     kind: "campaign",
     labelKo: "상급자 등 루틴",
     labelEn: "Advanced Back 4W",
-    descriptionKo: "4주 · 등 두께·넓이 동시 공략",
+    descriptionKo: "4주 · 등 두께·넓이 동시 공략 (Nippard Block 1 단축)",
     weeks: 4,
     chapters: 1,
+    sessionsPerWeek: 3,
     engineGoal: "muscle_gain",
     match: { minExperienceMonths: 12 },
     setTemplate: TEMPLATE_HYPERTROPHY,
+    experienceWarning: "advanced",
+    weeklyMatrix: buildMatrix([
+      // W1 적응
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "back_thickness", slots: 5, sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "back_width", slots: 5, sets: 3, reps: "8-12", rpe: 7, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "back_volume", slots: 5, sets: 3, reps: "12-15", rpe: 7, firstSetWarmup: true },
+      ]},
+      // W2 volume ↑
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "back_thickness", slots: 5, sets: 4, reps: "8-12", rpe: 7.5, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "back_width", slots: 5, sets: 4, reps: "8-12", rpe: 7.5, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "back_volume", slots: 5, sets: 4, reps: "12-15", rpe: 7.5, firstSetWarmup: true },
+      ]},
+      // W3 강도 ↑
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "back_thickness", slots: 5, sets: 4, reps: "6-10", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 3, slotType: "back_width", slots: 5, sets: 4, reps: "6-10", rpe: 8, firstSetWarmup: true },
+        { dayOfWeek: 5, slotType: "back_volume", slots: 5, sets: 4, reps: "10-15", rpe: 8, firstSetWarmup: true },
+      ]},
+      // W4 finisher
+      { weeks: 1, days: [
+        { dayOfWeek: 1, slotType: "back_thickness", slots: 5, sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 3, slotType: "back_width", slots: 5, sets: 4, reps: "6-10", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+        { dayOfWeek: 5, slotType: "back_volume", slots: 5, sets: 4, reps: "10-15", rpe: 8.5, firstSetWarmup: true, finisher: { rounds: 1, workSec: 30, restSec: 0 } },
+      ]},
+    ]),
   },
 ];
 
