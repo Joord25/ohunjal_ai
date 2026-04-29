@@ -23,6 +23,9 @@ import { FitnessReading } from "@/components/dashboard/FitnessReading";
 import { ChatHome } from "@/components/dashboard/ChatHome";
 import { MyPlansScreen } from "@/components/dashboard/MyPlansScreen";
 import { RootHomeCards, type RootCardTarget } from "@/components/dashboard/RootHomeCards";
+import { WeightHub } from "@/components/dashboard/WeightHub";
+import type { CatalogItem } from "@/constants/programCatalog";
+import type { TargetMuscle } from "@/constants/workout";
 import { RunningHub } from "@/components/dashboard/RunningHub";
 import { HomeWorkoutHub } from "@/components/dashboard/HomeWorkoutHub";
 import { getActivePrograms, getSavedPlans, type SavedPlan } from "@/utils/savedPlans";
@@ -187,6 +190,7 @@ type ViewState =
   | "root_home"
   | "running_hub"
   | "home_workout_hub"
+  | "weight_hub"
   | "my_plans"
   | "master_plan_preview"
   | "workout_session"
@@ -1028,7 +1032,8 @@ export default function Home() {
         // 안전망: 카드 진입 시 activeTab을 항상 home으로 reset (이전 탭이 my/proof/nutrition로 남아있어 ChatHome 진입 시 다른 탭이 그려지는 버그 방지)
         const enterTarget = (target: RootCardTarget) => {
           setActiveTab("home");
-          if (target === "weight") setView("home_chat");
+          // 회의 ζ-5 (2026-04-30): 웨이트 = ChatHome 폐기 → WeightHub (카탈로그 목록) 진입
+          if (target === "weight") setView("weight_hub");
           else if (target === "running") setView("running_hub");
           else setView("home_workout_hub");
         };
@@ -1161,6 +1166,72 @@ export default function Home() {
         );
       }
 
+      case "weight_hub": {
+        // 회의 ζ-5 (2026-04-30): ChatHome 대체. programCatalog SSOT 기반 카탈로그 목록.
+        const fp: { gender?: "male" | "female"; bodyWeight?: number; goal?: "fat_loss" | "muscle_gain" | "endurance" | "health" } = (() => {
+          try { return JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}"); }
+          catch { return {}; }
+        })();
+        const birthYear = parseInt(localStorage.getItem("ohunjal_birth_year") || "0") || undefined;
+        const weightHubActive = (() => { try { return getActivePrograms().length > 0; } catch { return false; } })();
+
+        const handleStartCatalog = async (item: CatalogItem, opt?: { muscle?: TargetMuscle }) => {
+          try {
+            // engineGoal 매핑 — 카탈로그가 직접 WorkoutGoal 반환
+            const goal = item.engineGoal;
+            const condition: import("@/constants/workout").UserCondition = {
+              bodyPart: "good",
+              energyLevel: 3,
+              availableTime: 50,
+              gender: fp.gender,
+              birthYear,
+              bodyWeightKg: fp.bodyWeight,
+            };
+            // body_picker = split mode + targetMuscle / 그 외 program/campaign = balanced 1세션 PoC
+            const sessionMode: "split" | "balanced" = item.kind === "body_picker" && opt?.muscle ? "split" : "balanced";
+            setIsLoading(true);
+            setCurrentCondition(condition);
+            setCurrentGoal(goal);
+            setCurrentSession({ goal, sessionMode });
+            setCurrentPlanSource("chat");
+            setWorkoutReturnTo("weight_hub");
+            const session = await lazyGenerateWorkout(
+              new Date().getDay(),
+              condition,
+              goal,
+              undefined,
+              undefined,
+              sessionMode,
+              opt?.muscle,
+            );
+            pendingSessionRef.current = session;
+            trackEvent("chat_plan_generated", { mode: "weight_catalog", catalog_id: item.id, kind: item.kind, muscle: opt?.muscle ?? "none" });
+          } catch (err) {
+            console.error("WeightHub start failed:", err);
+            setIsLoading(false);
+          }
+        };
+
+        return (
+          <WeightHub
+            isLoggedIn={isLoggedIn ?? false}
+            isPremium={subStatus === "active"}
+            hasActivePrograms={weightHubActive}
+            onboardingGoal={fp.goal ?? "fat_loss"}
+            gender={fp.gender}
+            onBack={() => setView("root_home")}
+            onOpenMyPlans={() => { setMyPlansReturnTo("weight_hub"); setView("my_plans"); }}
+            onOpenProfile={() => { setActiveTab("my"); setView("home"); }}
+            onStartCatalog={handleStartCatalog}
+            onRequestLogin={() => {
+              setLoginModalReason("generic");
+              setShowLoginModal(true);
+            }}
+            onRequestPaywall={() => setShowPaywall(true)}
+          />
+        );
+      }
+
       case "prediction_report":
         return (
           <FitnessReading
@@ -1220,7 +1291,7 @@ export default function Home() {
             onBack={() => {
               trackEvent("plan_preview_reject", { exercise_count: currentWorkoutSession?.exercises.length ?? 0, source: currentPlanSource });
               // 회의 2026-04-27 (5차): hub 진입자는 hub로 우선 복귀 (RunningHub의 onStartFirstSession이 setActiveSavedPlanId 호출하지만 → my_plans로 가면 안 됨)
-              if (workoutReturnTo === "running_hub" || workoutReturnTo === "home_workout_hub") {
+              if (workoutReturnTo === "running_hub" || workoutReturnTo === "home_workout_hub" || workoutReturnTo === "weight_hub") {
                 setActiveSavedPlanId(null);
                 setView(workoutReturnTo);
                 return;
