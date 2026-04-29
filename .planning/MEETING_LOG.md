@@ -2,6 +2,102 @@
 
 ---
 
+### 회의 2026-04-29-ζ-4: ChatHome 폐기 + 프로그램 카탈로그 중심 UX 재설계 / SEED-002·003 등록 (2026-04-29)
+
+**참석:** 대표(임주용 — 소집 + 6 컨펌 + 추가 4 컨펌), Claude(평가자/구현자), 자동 소환 자문단 8영역:
+- 코어: 기획/평가/프엔/백엔드/페르소나 4명 (project_team_roster)
+- 프로덕트: Pajak 의장 (UX 흐름 / 러닝 패턴 미러링)
+- 소비전략: 박충환(한국 결정 피로 회피) / Nir Eyal(*Hooked*, Trigger→Action→Reward)
+- 데이터: 이화식 / Tunguz(단위경제·트라이얼 모델)
+- 마케팅: 김경록(일헥타르 Stage 1) / Seth Godin(*마케팅이다*) / April Dunford(포지셔닝)
+- 운동과학: 한체대 교수 / 운동생리학자 (카탈로그 5개 설계)
+- 프롬프트: Amanda Askell (AI 자동 분기 vs 룰 매트릭스)
+
+**배경:**
+대표 소집 — 웨이트 진입 = 러닝 패턴(프로그램 목록 직접 클릭) 미러링 결단. 유저 자유도 축소 → 큐레이션 프로그램 유도 방향 결정. ChatHome(parseIntent 채팅 검색) **완전 폐기**. 동시에 온보딩 확장으로 사전 큐레이션 데이터 수집.
+
+**근본 결정 6건 (1차 컨펌):**
+
+1. **온보딩 6단계 확장 (룰 매트릭스 방식, AI X)** — gender→birth_year→height→weight→goal→**workout_preference**(NEW: 웨이트/러닝/홈트 multi-select). Amanda Askell + 이화식 의견 반영 — AI 자동 분기 X (latency·hallucination·디버깅 어려움). 룰 매트릭스가 더 안정적.
+
+2. **웨이트 카탈로그 5개 신설** — 분할(2/3/5) × 강도(근지구력/근비대/최대근력) 매트릭스. 기본 포맷 = 웜업→메인→코어. 1차 안:
+   - `weight_diet_12w` (3개월 다이어트 / 2분할 / 근지구력 15-20+회)
+   - `weight_starter_8w` (헬스 입문 / 2분할 / 근비대 10-15회)
+   - `weight_hypertrophy_12w` (PPL 근비대 / 3분할 / 8-12회)
+   - `weight_strength_8w` (최대근력 / 2-3분할 / 3-6회)
+   - `weight_bro_split_12w` (5분할 12주 / 8-15회)
+
+3. **홈트 카탈로그 5개** — 유튜브 레퍼 조사 후 확정 (대표 지시: "유저 선호하는 유튜브 레퍼로 조사"). SEED-003 으로 분리 등록.
+
+4. **ChatHome 완전 폐기** (격하 X) — 대표 결단. parseIntent / Gemini chat / redirect 카드 / 칩 등 전부 제거. WeightHub 신설 시 모두 dead. (페르소나 3 헬스 마니아 의견 "검색은 남겨주세요" 는 후속 회의로 연기, P3 시작 시 재투표).
+
+5. **비로그인 트라이얼 재설계** — 카탈로그 1세션 무료 체험 → **2회 진행 시 로그인 + 결제 유도**. 기존 `trial_ips` IP 해시 로직 재활용 (functions/src/plan/session.ts:78-91). FREE_PLAN_LIMIT 흐름 미러링.
+
+6. **러닝 4 프로그램 = 그대로 유지** — 대표 명시 "러닝은 4개 있는거 고정 건드릴필요없음". `vo2_boost`/`10k_sub_50`/`half_sub_2`/`full_sub_3` 카탈로그·룰 그대로 (.claude/rules/running-program.md 보존).
+
+**조사 기준 (대표 지시 — 추가 컨펌 4건):**
+
+대표 지시: "조회수가 많고 댓글에 참여도가 높은것 위주로 선정". 자문단 cross-check 후 **다층 필터** 확정:
+
+- **1차 필터 (정량 시장 신호)**: 조회수 임계치(KR 100K+ / Global 1M+) + 댓글 참여도(KR 1%+ / Global 0.5%+, 산업 평균 0.3-0.5%의 2배+) + 좋아요 비율(보조 호불호 제거)
+- **2차 필터 (댓글 정성)**: "따라했다 / 효과 봤다 / 재방문 / Day N / subscribed" 행동 신호 키워드 ≥ 30% (Nir Eyal *Hooked* 의견 반영, 단순 칭찬 댓글 제외)
+- **3차 필터 (효과·안전성)**: 운동과학 자문단 검증 — entertainment ≠ 효과 (박충환 경고 반영)
+- **4차 필터 (의향)**: 페르소나 4명 인터뷰
+
+**1차 풀 (315 영상, 22 채널):**
+- 한국 헬스 6채널 (김계란·핏블리·헬스마이프·강경원·혁피티·임종성) × 15 영상 = 90
+- 글로벌 웨이트 1·2순위 8채널 × 15 = 120
+  - 1순위(과학 기반): Jeff Nippard / Jeremy Ethier(BuiltWithScience) / Mike Israetel(RP) / Sean Nalewanyj
+  - 2순위(인기·다양성): AthleanX / Mike Thurston / Greg Doucette / Layne Norton
+- 글로벌 여성 웨이트 3채널 × 10 = 30 (Krissy Cela / Whitney Simmons / Stephanie Buttermore)
+- 한국 홈트 4채널 × 15 = 60 (땅끄부부·빅씨스·에이핏·강하나)
+- 글로벌 홈트 1채널 × 15 = 15 (Chloe Ting + 후속 추가)
+
+**임계치 예외 (대표 컨펌):** Stronger By Science (Greg Nuckols, ~250K 구독) 1M 미달이지만 댓글 참여도·과학 신뢰도 매우 高 → 포함.
+
+**조사 인프라 (대표 컨펌):**
+
+- **YouTube Data API v3**: 무료. 일일 quota 10,000 units 중 2,830 (28%) 사용 추정. Cloud Functions 시크릿 `YOUTUBE_API_KEY` 등록. 대표가 Google Cloud Console 에서 직접 발급 (가이드 5 step 제공).
+- **Gemini 2.5 Flash batch 분석**: 1회 약 150원 (input 630K + output 63K tokens). 영상별 batch (315 requests/day = 무료 tier RPD 1,500 한도 내).
+- **시작 시점**: 지금 백그라운드 (대표 컨펌 "지금"). SEED-001 Phase 2 와 병행.
+- **분석 방식**: Gemini 자동 + 운동과학 자문단 spot check 하이브리드 (수동은 9,450 댓글 비현실적).
+
+**Phase 분리 (P1~P4):**
+
+- **P1**: 온보딩 확장 (Onboarding.tsx 1 step 추가 + i18n) — 코드 영향 낮음, P2 의 입력 의존
+- **P2**: 웨이트 카탈로그 5개 + 홈트 카탈로그 5개 (운동과학 + 콘텐츠 MD + 시장 조사) — 가장 큰 작업
+- **P3**: WeightHub 신설(러닝 패턴 미러) + ChatHome 완전 폐기 + 트라이얼 재설계
+- **P4**: 마케팅 카피 갱신 (i18n + landingTexts + SEO meta) — 김경록 우려 대응
+
+**시작 트리거:** SEED-001 Phase 2 (가이드 90종 + carousel + swap) 마무리 후 대표 트리거 시점. 단 **시장 조사는 즉시 백그라운드 시작** (P1·P2 코드는 대기).
+
+**의도적 비결정 (다음 회의 위임):**
+- 고급자 5/3/1 정식 / Westside 등 — 별도 회의
+- 카탈로그 내부 운동 SSOT (정적 JSON vs 룰엔진 vs 하이브리드) — P2 시작 시 결정
+- 검색 기능 잔여 보존 여부 — P3 시작 시 페르소나 3 헬스 마니아 재투표
+- 검색 인터페이스 위치 (만약 보존 시) — WeightHub 우상단 vs 하단 vs 별도 탭
+
+**미해결 / 후속:**
+- ChatHome 자산 회수 비용 (parseIntent / Gemini chat 코드) 견적 → P3 착수 전 산정
+- GA 26 이벤트 카탈로그 재정의 (`parseIntent_*` → `program_*_select` 매핑) → P3 시작 시
+- 영문 시장 카피 별도 (네이티브 광고 문법 1차, [memory:feedback_native_copy_frame])
+
+**관련 SEED:**
+- **SEED-002 (ProgramFirst UX 전환)**: 본 회의 메인 트랙. P1~P4 코드 작업 단위
+- **SEED-003 (YouTube 시장 조사)**: P2 카탈로그 컨텐츠 큐레이션 의존성. 백그라운드 즉시 시작
+
+**규칙 적용 검증:**
+- ✅ [feedback_product_scope_focus]: "측정·진단 X, 실행" — 카탈로그 = 실행 강화. 정합
+- ✅ [feedback_user_attention_span]: 12주 상한 + 4주 청킹 — 카탈로그 5개 모두 준수
+- ✅ [feedback_source_grounded_opinions]: 자문 인용 시 .planning/advisors/ 경로 명시
+- ✅ [feedback_cross_verification]: 자문단 양면(찬·반) 의견 모두 기록
+- ✅ [feedback_work_methodology]: 4단계 (논리 → 계획 → 순서 → 우선순위) 적용
+- ⚠ [reference_brand_chasm_marketing]: Stage 1 초입 — "AI 채팅" 정체성 폐기는 김경록 우려. P4 마케팅 카피 갱신으로 대응
+
+**커밋:** (코드 작업 0, 문서만 — 회의록·SEED-002·SEED-003 등록)
+
+---
+
 ### 회의 2026-04-28-ζ-2: Phase 1.5 본인 폰 검증 후 정정 + B-5 워크아웃 툴팁 (2026-04-28)
 
 **참석:** 대표(임주용 — 본인 폰 검증 보고), Claude(평가자/구현자), Pajak 의장 (회의 ζ 결정 일부 번복 승인)
