@@ -31,6 +31,9 @@ const GLUTE: Set<string> = new Set([
   // 회의 2026-04-24: BW 보강 둔근 단축 isometric — glutes 아이콘
   "싱글 레그 글루트 브릿지 (Single-Leg Glute Bridge)",
   "프론 힙 익스텐션 (Prone Hip Extension)",
+  // 회의 ζ-5 (2026-04-30): 머신 글루트 익스텐션 / 사이드 라잉 레그 레이즈 (중둔근) — glutes 아이콘
+  "머신 글루트 익스텐션 (Machine Glute Extension)",
+  "사이드 라잉 레그 레이즈 (Side-Lying Leg Raise)",
 ]);
 
 const ADDUCTOR: Set<string> = new Set([
@@ -62,6 +65,8 @@ const ANTERIOR_LEG: Set<string> = new Set([
   "스쿼트 점프 (Squat Jumps)",
   // 에어 스쿼트 맨몸 — 대퇴사두 주도, 레그프레스 아이콘 (대표 지시 2026-04-19)
   "에어 스쿼트 (Air Squat)",
+  // 회의 ζ-5 (2026-04-30): 박스 스쿼트 — 무릎 dominant, leg-press 아이콘 (시니어 친화)
+  "박스 스쿼트 (Box Squat)",
 ]);
 
 const POSTERIOR_LEG: Set<string> = new Set([

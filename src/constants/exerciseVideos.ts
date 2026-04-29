@@ -341,6 +341,40 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "굿모닝": "sAAn3y-qxP4",
   "힙 힌지 홀드": "lvF6NckaNtQ",
   "프론 힙 익스텐션": "CLxYwpYDX9U",
+
+  // ══════════════════════════════════
+  // ── 회의 ζ-5 (2026-04-30) 카탈로그 신규 22 운동 ──
+  // ══════════════════════════════════
+  // 회전근개 (rear-delt)
+  "사이드 라잉 외회전": "6G9y-6MwGsE",
+  "케이블 외회전": "6xGIVNYBIwE",
+  "스탠딩 외회전": "6xGIVNYBIwE",
+  "스탠딩 케이블 외회전": "6xGIVNYBIwE",
+  "밴드 외회전": "7DqYesMRkzU",
+  // 코어
+  "팔로프 프레스": "99evyH71IWs",
+  "사이드 라잉 레그 레이즈": "SDzOQ58qVPQ",
+  "플랭크 변형": "pWF3PB8T1jg",
+  // 머신 류 (가슴·등·어깨·하체)
+  "머신 체스트 프레스": "dYF2d_I24uE",
+  "머신 로우": "Kh2WA2Y1M0k",
+  "머신 숄더 프레스": "L3R_9Lk_rsQ",
+  "머신 사이드 레이즈": "uEBut4ea6as",
+  "머신 풀다운": "fxrPOQx8xLg",
+  "머신 풀오버": "GMDiPGIVgmk",
+  "머신 글루트 익스텐션": "B9Ea3JbUHl4",
+  "인클라인 머신 프레스": "hkU6fSHcslw",
+  // 시니어·입문 친화 (가슴 변형)
+  "벽 푸쉬업": "YWw-3rGaoT0",
+  "무릎 푸쉬업": "CbjT4e_BgAs",
+  "박스 스쿼트": "glg8jtvDLNE",
+  "인클라인 푸쉬업": "hTm9vkhNCec",
+  "디클라인 푸쉬업": "lx-49Yjqm-Q",
+  // 등 변형
+  "어시스티드 친업": "H2YH7zMIJm8",
+  "클로즈그립 풀다운": "m_bA8WhoMKY",
+  // 어깨 변형
+  "케이블 사이드 레이즈": "23VoAvqwSzo",
 };
 
 /** 동의어 → 대표 이름 정규화 */

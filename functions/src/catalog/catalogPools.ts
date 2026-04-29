@@ -51,7 +51,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   ],
   lower_hinge: [
     { label: "힌지 compound", role: "compound", exercises: ["컨벤셔널 데드리프트 (Conventional Deadlift)", "스모 데드리프트 (Sumo Deadlift)", "트랩바 데드리프트 (Trap Bar Deadlift)"] },
-    { label: "힙 dominant", role: "accessory", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Good Morning)"] },
+    { label: "힙 dominant", role: "accessory", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Bodyweight Good Morning)"] },
     { label: "글루트", role: "accessory", exercises: ["바벨 힙 쓰러스트 (Barbell Hip Thrust)", "글루트 브릿지 (Glute Bridge)", "케이블 풀 스루 (Cable Pull-Through)"] },
     { label: "햄스트링 isolation", role: "isolation", exercises: ["시티드 레그 컬 (Seated Leg Curl)", "라잉 레그 컬 (Lying Leg Curl)"] },
   ],
@@ -84,7 +84,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   metcon_circuit: [
     { label: "전신 폭발 (스윙·클린)", role: "compound", exercises: ["케틀벨 스윙 (Kettlebell Swing)", "덤벨 쓰러스터 (Dumbbell Thruster)", "케틀벨 스윙 (Kettlebell Swing)"] },
     { label: "심폐 폭발 (버피·점프)", role: "bodyweight", exercises: ["버피 (Burpees)", "마운틴 클라이머 (Mountain Climbers)", "스쿼트 점프 (Squat Jumps)"] },
-    { label: "체중 push", role: "bodyweight", exercises: ["푸쉬업 (Push-Up)", "디클라인 푸쉬업 (Decline Push-Up)"] },
+    { label: "체중 push", role: "bodyweight", exercises: ["푸쉬업 (Push-up)", "디클라인 푸쉬업 (Decline Push-up)"] },
     { label: "다리 폭발", role: "bodyweight", exercises: ["스쿼트 점프 (Squat Jumps)", "점프 런지 (Jump Lunges)", "워킹 런지 (Walking Lunges)"] },
     { label: "코어", role: "bodyweight", exercises: ["행잉 니 레이즈 (Hanging Knee Raise)", "행잉 레그 레이즈 (Hanging Leg Raise)", "바이시클 크런치 (Bicycle Crunch)"] },
   ],
@@ -92,14 +92,14 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   // ════════════ muscle_8w (글루트 강조) ════════════
   upper_a_push_emphasis: [
     { label: "가슴 horizontal push", role: "compound", exercises: ["바벨 벤치 프레스 (Barbell Bench Press)", "인클라인 바벨 프레스 (Incline Barbell Bench Press)", "덤벨 벤치 프레스 (Dumbbell Bench Press)", "스미스 벤치 프레스 (Smith Bench Press)"] },
-    { label: "가슴 보조", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "트라이셉스 딥스 (Tricep Dips)", "케이블 크로스오버 (Cable Crossover)", "푸쉬업 (Push-Up)"] },
+    { label: "가슴 보조", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "트라이셉스 딥스 (Tricep Dips)", "케이블 크로스오버 (Cable Crossover)", "푸쉬업 (Push-up)"] },
     { label: "어깨", role: "accessory", exercises: ["오버헤드 프레스 (Overhead Press)", "머신 숄더 프레스 (Machine Shoulder Press)", "사이드 레터럴 레이즈 (Side Lateral Raises)"] },
     { label: "삼두 isolation", role: "isolation", exercises: ["케이블 푸쉬 다운 (Cable Pushdown)", "오버헤드 트라이셉 익스텐션 (Overhead Tricep Extension)", "스컬 크러셔 (Skullcrushers)"] },
   ],
   lower_a_squat_glute: [
     { label: "무릎 dominant compound", role: "compound", exercises: ["바벨 백 스쿼트 (Barbell Back Squat)", "프론트 스쿼트 (Front Squat)", "핵 스쿼트 (Hack Squat)", "레그 프레스 (Leg Press)"] },
     { label: "글루트 compound", role: "compound", exercises: ["바벨 힙 쓰러스트 (Barbell Hip Thrust)", "워킹 런지 (Walking Lunges)", "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)"] },
-    { label: "대퇴사두 isolation", role: "isolation", exercises: ["레그 익스텐션 (Leg Extension)", "스텝업 (Step-up)"] },
+    { label: "대퇴사두 isolation", role: "isolation", exercises: ["레그 익스텐션 (Leg Extension)", "스텝업 (Step-Up)"] },
     { label: "글루트 isolation", role: "isolation", exercises: ["케이블 킥백 (Cable Kickback)", "힙 어덕션 머신 (Hip Adduction Machine)", "힙 어브덕션 머신 (Hip Abduction Machine)"] },
   ],
   upper_b_pull_emphasis: [
@@ -132,21 +132,21 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   ],
   legs_squat_focus: [
     { label: "무릎 dominant", role: "compound", exercises: ["바벨 백 스쿼트 (Barbell Back Squat)", "프론트 스쿼트 (Front Squat)", "핵 스쿼트 (Hack Squat)"] },
-    { label: "단일다리", role: "accessory", exercises: ["워킹 런지 (Walking Lunges)", "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)", "스텝업 (Step-up)"] },
+    { label: "단일다리", role: "accessory", exercises: ["워킹 런지 (Walking Lunges)", "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)", "스텝업 (Step-Up)"] },
     { label: "글루트 강조", role: "accessory", exercises: ["바벨 힙 쓰러스트 (Barbell Hip Thrust)", "글루트 브릿지 (Glute Bridge)", "케이블 풀 스루 (Cable Pull-Through)"] },
     { label: "대퇴사두 isolation", role: "isolation", exercises: ["레그 익스텐션 (Leg Extension)", "레그 프레스 (Leg Press)"] },
     { label: "카프", role: "isolation", exercises: ["시티드 카프 레이즈 (Seated Calf Raise)", "스탠딩 카프 레이즈 (Standing Calf Raise)"] },
   ],
   push_b: [
-    { label: "어깨 vertical push compound", role: "compound", exercises: ["시티드 덤벨 프레스 (Seated Dumbbell Press)", "바벨 OHP (Barbell Overhead Press)", "머신 숄더 프레스 (Machine Shoulder Press)"] },
+    { label: "어깨 vertical push compound", role: "compound", exercises: ["덤벨 숄더 프레스 (Seated Dumbbell Press)", "바벨 OHP (Barbell Overhead Press)", "머신 숄더 프레스 (Machine Shoulder Press)"] },
     { label: "어깨 isolation", role: "isolation", exercises: ["사이드 레터럴 레이즈 (Side Lateral Raises)", "케이블 사이드 레이즈 (Cable Side Raise)"] },
-    { label: "가슴 보조", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "트라이셉스 딥스 (Tricep Dips)", "푸쉬업 (Push-Up)"] },
+    { label: "가슴 보조", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "트라이셉스 딥스 (Tricep Dips)", "푸쉬업 (Push-up)"] },
     { label: "삼두 compound", role: "compound", exercises: ["클로즈그립 벤치 프레스 (Close-Grip Bench Press)", "트라이셉스 딥스 (Tricep Dips)"] },
     { label: "삼두 isolation", role: "isolation", exercises: ["케이블 푸쉬 다운 (Cable Pushdown)", "스컬 크러셔 (Skullcrushers)"] },
   ],
   legs_hinge_focus: [
     { label: "힌지 compound", role: "compound", exercises: ["컨벤셔널 데드리프트 (Conventional Deadlift)", "스모 데드리프트 (Sumo Deadlift)", "트랩바 데드리프트 (Trap Bar Deadlift)", "루마니안 데드리프트 (Romanian Deadlift)"] },
-    { label: "힙 dominant", role: "accessory", exercises: ["바벨 힙 쓰러스트 (Barbell Hip Thrust)", "케이블 풀 스루 (Cable Pull-Through)", "굿모닝 (Good Morning)"] },
+    { label: "힙 dominant", role: "accessory", exercises: ["바벨 힙 쓰러스트 (Barbell Hip Thrust)", "케이블 풀 스루 (Cable Pull-Through)", "굿모닝 (Bodyweight Good Morning)"] },
     { label: "햄스트링 isolation", role: "isolation", exercises: ["시티드 레그 컬 (Seated Leg Curl)", "라잉 레그 컬 (Lying Leg Curl)"] },
     { label: "글루트 isolation", role: "isolation", exercises: ["케이블 킥백 (Cable Kickback)", "힙 어덕션 머신 (Hip Adduction Machine)", "힙 어브덕션 머신 (Hip Abduction Machine)"] },
     { label: "코어", role: "bodyweight", exercises: ["행잉 니 레이즈 (Hanging Knee Raise)", "행잉 레그 레이즈 (Hanging Leg Raise)", "케이블 크런치 (Cable Crunch)"] },
@@ -175,7 +175,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   ],
   posture_thoracic_rotation: [
     { label: "흉추 회전 모빌리티", role: "bodyweight", exercises: ["동적 흉추 회전 (Active Thoracic Rotation)", "벽 흉추 회전 (Wall Thoracic Rotations)", "흉추 회전 운동 (Thoracic Rotation)"] },
-    { label: "힌지 compound (가벼운)", role: "compound", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Good Morning)"] },
+    { label: "힌지 compound (가벼운)", role: "compound", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Bodyweight Good Morning)"] },
     { label: "등 horizontal pull", role: "accessory", exercises: ["T-바 로우 (T-Bar Row)", "시티드 케이블 로우 (Seated Cable Row)", "체스트 서포티드 로우 (Chest Supported Row)"] },
     { label: "코어 hanging", role: "bodyweight", exercises: ["행잉 니 레이즈 (Hanging Knee Raise)", "행잉 레그 레이즈 (Hanging Leg Raise)"] },
     { label: "코어 anti-flexion hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["인버티드 로우 (Inverted Row)"] },
@@ -185,14 +185,14 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   chest_safe_a: [
     { label: "인클라인 30-45도 push", role: "compound", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "인클라인 머신 프레스 (Incline Machine Press)", "인클라인 푸쉬업 (Incline Push-up)"] },
     { label: "가슴 케이블 (제어 ROM)", role: "accessory", exercises: ["케이블 크로스오버 (Cable Crossover)", "펙덱 플라이 (Pec Deck Fly)", "시티드 머신 플라이 (Seated Machine Fly)"] },
-    { label: "푸쉬업 변형", role: "bodyweight", exercises: ["푸쉬업 (Push-Up)", "디클라인 푸쉬업 (Decline Push-up)"] },
+    { label: "푸쉬업 변형", role: "bodyweight", exercises: ["푸쉬업 (Push-up)", "디클라인 푸쉬업 (Decline Push-up)"] },
     { label: "외회전 (회전근개 통합)", role: "light", exercises: ["사이드 라잉 외회전 (Side-Lying External Rotation)", "케이블 외회전 (Cable External Rotation)", "밴드 외회전 (Band External Rotation)"] },
     { label: "페이스풀 (후면 어깨)", role: "light", exercises: ["케이블 페이스풀 (Cable Face Pull)", "밴드 풀 어파트 (Band Pull-Aparts)"] },
   ],
   chest_safe_b: [
     { label: "인클라인 펌프", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "인클라인 머신 프레스 (Incline Machine Press)"] },
     { label: "케이블 펌프", role: "accessory", exercises: ["케이블 크로스오버 (Cable Crossover)", "펙덱 플라이 (Pec Deck Fly)"] },
-    { label: "푸쉬업 finisher", role: "bodyweight", exercises: ["푸쉬업 (Push-Up)", "인클라인 푸쉬업 (Incline Push-up)"] },
+    { label: "푸쉬업 finisher", role: "bodyweight", exercises: ["푸쉬업 (Push-up)", "인클라인 푸쉬업 (Incline Push-up)"] },
     { label: "외회전·페이스풀 보강", role: "light", exercises: ["케이블 페이스 풀 (Cable Face Pulls)", "사이드 라잉 외회전 (Side-Lying External Rotation)"] },
   ],
   shoulder_rehab: [
@@ -217,7 +217,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   ],
   lower_squat_focus: [
     { label: "무릎 dominant", role: "compound", exercises: ["바벨 백 스쿼트 (Barbell Back Squat)", "프론트 스쿼트 (Front Squat)", "핵 스쿼트 (Hack Squat)", "레그 프레스 (Leg Press)"] },
-    { label: "단일다리", role: "accessory", exercises: ["워킹 런지 (Walking Lunges)", "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)", "스텝업 (Step-up)"] },
+    { label: "단일다리", role: "accessory", exercises: ["워킹 런지 (Walking Lunges)", "불가리안 스플릿 스쿼트 (Bulgarian Split Squat)", "스텝업 (Step-Up)"] },
     { label: "글루트 + 햄", role: "accessory", exercises: ["글루트 브릿지 (Glute Bridge)", "라잉 레그 컬 (Lying Leg Curl)", "바벨 힙 쓰러스트 (Barbell Hip Thrust)"] },
     { label: "카프 + 코어", role: "isolation", exercises: ["스탠딩 카프 레이즈 (Standing Calf Raise)", "행잉 니 레이즈 (Hanging Knee Raise)", "플랭크 (Plank)"] },
   ],
@@ -245,13 +245,13 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   ],
   fullbody_a_squat: [
     { label: "스쿼트 compound", role: "compound", exercises: ["바벨 백 스쿼트 (Barbell Back Squat)", "프론트 스쿼트 (Front Squat)", "고블렛 스쿼트 (Goblet Squat)"] },
-    { label: "Push compound", role: "compound", exercises: ["바벨 벤치 프레스 (Barbell Bench Press)", "인클라인 덤벨 프레스 (Incline Dumbbell Press)", "푸쉬업 (Push-Up)"] },
+    { label: "Push compound", role: "compound", exercises: ["바벨 벤치 프레스 (Barbell Bench Press)", "인클라인 덤벨 프레스 (Incline Dumbbell Press)", "푸쉬업 (Push-up)"] },
     { label: "Pull compound", role: "compound", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "인버티드 로우 (Inverted Row)", "벤트오버 바벨 로우 (Bent-over Barbell Row)"] },
     { label: "코어 + finisher", role: "bodyweight", isStaticHold: false, exercises: ["플랭크 (Plank)", "행잉 니 레이즈 (Hanging Knee Raise)", "케틀벨 스윙 (Kettlebell Swing)"] },
   ],
   fullbody_b_hinge: [
     { label: "힌지 compound", role: "compound", exercises: ["컨벤셔널 데드리프트 (Conventional Deadlift)", "루마니안 데드리프트 (Romanian Deadlift)", "트랩바 데드리프트 (Trap Bar Deadlift)"] },
-    { label: "Push vertical", role: "compound", exercises: ["오버헤드 프레스 (Overhead Press)", "머신 숄더 프레스 (Machine Shoulder Press)", "푸쉬업 (Push-Up)"] },
+    { label: "Push vertical", role: "compound", exercises: ["오버헤드 프레스 (Overhead Press)", "머신 숄더 프레스 (Machine Shoulder Press)", "푸쉬업 (Push-up)"] },
     { label: "Pull vertical", role: "compound", exercises: ["풀업 (Pull-ups)", "어시스티드 풀업 (Assisted Pull-up)", "랫 풀다운 (Lat Pulldown)"] },
     { label: "단일다리 + 코어", role: "accessory", exercises: ["워킹 런지 (Walking Lunges) + 사이드 플랭크 20s (Side Plank 20s)"] },
   ],
@@ -296,7 +296,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   // ════════════ max_strength_8w (Wendler 5/3/1) ════════════
   wendler_squat_day: [
     { label: "메인: 스쿼트 (Wendler wave)", role: "compound", exercises: ["바벨 백 스쿼트 (Barbell Back Squat)"] },
-    { label: "Hinge 보조", role: "accessory", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Good Morning)"] },
+    { label: "Hinge 보조", role: "accessory", exercises: ["루마니안 데드리프트 (Romanian Deadlift)", "굿모닝 (Bodyweight Good Morning)"] },
     { label: "글루트", role: "accessory", exercises: ["바벨 힙 쓰러스트 (Barbell Hip Thrust)", "글루트 브릿지 (Glute Bridge)"] },
     { label: "코어", role: "bodyweight", exercises: ["행잉 니 레이즈 (Hanging Knee Raise)", "플랭크 (Plank)"] },
   ],
@@ -321,7 +321,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
 
   // ════════════ advanced_back_4w (등 specialization) ════════════
   back_thickness: [
-    { label: "horizontal pull compound", role: "compound", exercises: ["벤트오버 바벨 로우 (Bent-over Barbell Row)", "T-바 로우 (T-Bar Row)", "펜드레이 로우 (Pendlay Row)"] },
+    { label: "horizontal pull compound", role: "compound", exercises: ["벤트오버 바벨 로우 (Bent-over Barbell Row)", "T-바 로우 (T-Bar Row)", "펜들레이 로우 (Pendlay Row)"] },
     { label: "케이블 horizontal pull", role: "compound", exercises: ["시티드 케이블 로우 와이드 (Seated Cable Row Wide)", "체스트 서포티드 로우 (Chest Supported Row)"] },
     { label: "등 두께 isolation", role: "accessory", exercises: ["덤벨 로우 (Dumbbell Row)", "머신 로우 (Machine Row)"] },
     { label: "후면 어깨 + 트랩", role: "isolation", exercises: ["케이블 페이스풀 (Cable Face Pull)", "슈러그 (Shrug)", "리어 델트 플라이 (Rear Delt Fly)"] },
@@ -352,7 +352,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
 
   // ════════════ cycle_diet_12w (Phase별) ════════════
   upper_low_intensity: [
-    { label: "Push 가벼운", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "푸쉬업 (Push-Up)", "머신 체스트 프레스 (Machine Chest Press)"] },
+    { label: "Push 가벼운", role: "accessory", exercises: ["인클라인 덤벨 프레스 (Incline Dumbbell Press)", "푸쉬업 (Push-up)", "머신 체스트 프레스 (Machine Chest Press)"] },
     { label: "Pull 가벼운", role: "accessory", exercises: ["시티드 케이블 로우 (Seated Cable Row)", "어시스티드 풀업 (Assisted Pull-up)"] },
     { label: "어깨 isolation", role: "isolation", exercises: ["사이드 레터럴 레이즈 (Side Lateral Raises)", "케이블 페이스풀 (Cable Face Pull)"] },
     { label: "코어 hold 30s", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["플랭크 (Plank)", "데드버그 (Dead Bug)"] },
