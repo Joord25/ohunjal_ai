@@ -22,7 +22,51 @@ function useBodyScroll() {
     return () => { document.body.style.overflow = ""; };
   }, []);
 }
-type Tab = "dashboard" | "users" | "payments" | "cancel" | "refund" | "history";
+type Tab = "dashboard" | "users" | "payments" | "cancel" | "refund" | "history" | "research";
+
+// 회의 ζ-4 (SEED-003): YouTube 시장 조사 22채널 풀
+const RESEARCH_CHANNELS: { name: string; region: "kr" | "global" }[] = [
+  // 한국 헬스 6
+  { name: "김계란", region: "kr" },
+  { name: "핏블리", region: "kr" },
+  { name: "헬스마이프", region: "kr" },
+  { name: "강경원", region: "kr" },
+  { name: "혁피티", region: "kr" },
+  { name: "임종성", region: "kr" },
+  // 글로벌 웨이트 1·2순위 8
+  { name: "Jeff Nippard", region: "global" },
+  { name: "BuiltWithScience", region: "global" },
+  { name: "Renaissance Periodization", region: "global" },
+  { name: "Sean Nalewanyj", region: "global" },
+  { name: "AthleanX", region: "global" },
+  { name: "Mike Thurston", region: "global" },
+  { name: "Greg Doucette", region: "global" },
+  { name: "Layne Norton", region: "global" },
+  // 글로벌 여성 웨이트 3
+  { name: "Krissy Cela", region: "global" },
+  { name: "Whitney Simmons", region: "global" },
+  { name: "Stephanie Buttermore", region: "global" },
+  // 임계치 예외 1 (대표 컨펌)
+  { name: "Stronger By Science", region: "global" },
+  // 한국 홈트 4
+  { name: "땅끄부부", region: "kr" },
+  { name: "빅씨스", region: "kr" },
+  { name: "에이핏", region: "kr" },
+  { name: "강하나", region: "kr" },
+  // 글로벌 홈트 1
+  { name: "Chloe Ting", region: "global" },
+];
+
+interface ResearchChannelResult {
+  name: string;
+  region: "kr" | "global";
+  status: "pending" | "running" | "ok" | "error";
+  channelId?: string;
+  videosFetched?: number;
+  filter1Passed?: number;
+  passedVideoIds?: string[];
+  error?: string;
+}
 
 interface PaymentRecord {
   paymentId: string;
@@ -275,6 +319,14 @@ export default function AdminPage() {
   const [refundUserContext, setRefundUserContext] = useState<Record<string, UserInfo>>({});
   const [loadingRefundContext, setLoadingRefundContext] = useState<string | null>(null);
   const [confirmRefund, setConfirmRefund] = useState<{ id: string; action: "approve" | "reject"; email: string; amount: number } | null>(null);
+
+  // 회의 ζ-4 (SEED-003): YouTube 시장 조사
+  const [researchResults, setResearchResults] = useState<ResearchChannelResult[]>(
+    RESEARCH_CHANNELS.map((c) => ({ ...c, status: "pending" as const }))
+  );
+  const [researchRunning, setResearchRunning] = useState(false);
+  const [analyzeRunning, setAnalyzeRunning] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState({ done: 0, total: 0 });
 
   // 회의 57 Tier 2: 일반 Confirm 모달 + Activate 모달 + Bulk + Export 상태
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -745,6 +797,70 @@ export default function AdminPage() {
     setTab("users");
   };
 
+  // 회의 ζ-4 (SEED-003): YouTube 시장 조사 트리거
+  const handleResearchAll = async () => {
+    if (researchRunning) return;
+    setResearchRunning(true);
+    const token = await getToken();
+    const updated: ResearchChannelResult[] = RESEARCH_CHANNELS.map((c) => ({ ...c, status: "pending" }));
+    setResearchResults(updated);
+
+    for (let i = 0; i < RESEARCH_CHANNELS.length; i++) {
+      const channel = RESEARCH_CHANNELS[i];
+      updated[i] = { ...channel, status: "running" };
+      setResearchResults([...updated]);
+      try {
+        const res = await fetch("/api/researchYoutubeChannel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ channelName: channel.name, region: channel.region, maxVideos: 15, maxComments: 30 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        updated[i] = {
+          ...channel, status: "ok",
+          channelId: data.channelId,
+          videosFetched: data.videosFetched,
+          filter1Passed: data.filter1Passed,
+          passedVideoIds: data.passedVideoIds,
+        };
+      } catch (e) {
+        updated[i] = { ...channel, status: "error", error: e instanceof Error ? e.message : "unknown" };
+      }
+      setResearchResults([...updated]);
+    }
+    setResearchRunning(false);
+  };
+
+  const handleAnalyzeAll = async () => {
+    if (analyzeRunning) return;
+    const targets = researchResults.filter((r) => r.status === "ok" && r.channelId && r.passedVideoIds && r.passedVideoIds.length > 0);
+    if (targets.length === 0) {
+      alert("분석할 영상 없음. 먼저 채널 수집을 완료하세요.");
+      return;
+    }
+    const total = targets.reduce((sum, t) => sum + (t.passedVideoIds?.length ?? 0), 0);
+    setAnalyzeRunning(true);
+    setAnalyzeProgress({ done: 0, total });
+    const token = await getToken();
+    let done = 0;
+    for (const t of targets) {
+      const lang: "ko" | "en" = t.region === "kr" ? "ko" : "en";
+      for (const videoId of t.passedVideoIds ?? []) {
+        try {
+          await fetch("/api/analyzeYoutubeComments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({ channelId: t.channelId, videoId, language: lang }),
+          });
+        } catch { /* keep going */ }
+        done += 1;
+        setAnalyzeProgress({ done, total });
+      }
+    }
+    setAnalyzeRunning(false);
+  };
+
   // 회의 57 Tier 1: "오늘 할 일" 집계
   const todayActions = (() => {
     const pendingRefunds = refundRequests.filter(r => r.status === "pending").length;
@@ -788,7 +904,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1">
-          {([["dashboard","대시보드"],["users","유저"],["payments","결제"],["cancel","취소"],["refund","환불"],["history","이력"]] as [Tab,string][]).map(([t, label]) => (
+          {([["dashboard","대시보드"],["users","유저"],["payments","결제"],["cancel","취소"],["refund","환불"],["history","이력"],["research","조사"]] as [Tab,string][]).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${tab === t ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"}`}
             >{label}</button>
@@ -1589,6 +1705,84 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 회의 ζ-4 (SEED-003): YouTube 시장 조사 탭 */}
+        {tab === "research" && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+              <p className="font-bold text-[#1B4332] mb-1">YouTube 시장 조사 (SEED-003)</p>
+              <p className="text-xs text-gray-500 mb-4">22채널 × 15영상 = 약 315영상. 1차 정량 필터(조회수·참여도·좋아요) 후 통과 영상만 댓글 수집.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleResearchAll}
+                  disabled={researchRunning}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl bg-[#1B4332] text-white disabled:opacity-50"
+                >
+                  {researchRunning ? "수집 중..." : "1단계: 22채널 수집 시작"}
+                </button>
+                <button
+                  onClick={handleAnalyzeAll}
+                  disabled={analyzeRunning || researchResults.every((r) => r.status !== "ok")}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl bg-emerald-600 text-white disabled:opacity-50"
+                >
+                  {analyzeRunning
+                    ? `분석 중 ${analyzeProgress.done}/${analyzeProgress.total}`
+                    : "2단계: 댓글 Gemini 분석"}
+                </button>
+              </div>
+              {analyzeRunning && analyzeProgress.total > 0 && (
+                <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all"
+                    style={{ width: `${(analyzeProgress.done / analyzeProgress.total) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+              <p className="font-bold text-[#1B4332] mb-3">채널별 진행 상태</p>
+              <div className="space-y-1.5">
+                {researchResults.map((r) => (
+                  <div key={r.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-700 truncate">{r.name}</p>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.region === "kr" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}>
+                          {r.region === "kr" ? "KR" : "Global"}
+                        </span>
+                      </div>
+                      {r.status === "ok" && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {r.videosFetched}영상 · 1차 통과 {r.filter1Passed}
+                        </p>
+                      )}
+                      {r.status === "error" && (
+                        <p className="text-xs text-red-500 mt-0.5 truncate">{r.error}</p>
+                      )}
+                    </div>
+                    <span className={`text-xs font-bold ml-2 whitespace-nowrap ${
+                      r.status === "ok" ? "text-emerald-600"
+                      : r.status === "running" ? "text-amber-500"
+                      : r.status === "error" ? "text-red-500"
+                      : "text-gray-300"
+                    }`}>
+                      {r.status === "pending" ? "대기"
+                      : r.status === "running" ? "수집 중"
+                      : r.status === "ok" ? "완료"
+                      : "오류"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4 text-xs text-amber-900">
+              <p className="font-bold mb-1">사용 안내</p>
+              <p>1단계 → 2단계 순서. 결과는 Firestore <code className="bg-amber-100 px-1 rounded">youtube_research/&#123;channelId&#125;</code> 에 저장. 완료 후 Claude 가 분석 결과 종합해서 카탈로그 5+5개 후보 보고합니다.</p>
+            </div>
           </div>
         )}
       </div>
