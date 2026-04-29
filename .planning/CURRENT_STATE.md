@@ -1,6 +1,6 @@
 # CURRENT_STATE.md — 앱 UI/기능 인벤토리 SSOT
 
-**최종 갱신:** 2026-04-28 (회의 ζ-2 — 초보자 모드 Phase 1.5 코드 완료 + 본인 폰 검증 후 정정 5건 + B-5 워크아웃 툴팁: equipment_find/use 2단 분리 / 한 세션 1번 dismiss / 뒤로가기 버튼 / 튜토리얼 풀스크린 폐기 → 워크아웃 페이지 진입 툴팁 / chat_weight 폐기 / Q3 B 분기 친절 피드백 (초보자만, 일반 회귀 0). 6일 9분리 커밋. SEED-001=active. 측정 지표 1주 누적 대기. 이전: ε Phase 1 / 2026-04-27 ROOT 카드 / Paddle Live)
+**최종 갱신:** 2026-04-29 (회의 ζ-3 / Phase 2 — 초보자 가이드 운동 풀 12 → **90종** 확장 완료 (Big 5 + 케이블 12 + 바벨/덤벨 변형 15 + 머신/케틀벨/TRX/풀업 25 + 잡다 25). 사진 자산 12 → **36장** + carousel(슬라이드) 지원 + 케틀벨 거치대/자유 웨이트존 매핑. equipment_find phase 에 "기구 못 찾음 → 대체 운동 swap" 흐름 추가. 사용법 영상 9:16 세로(Shorts 핏). ACSM 권장 휴식 표시 부활(진입 시 1회 고정, ±15s 영향 X). 레이아웃 영구 fix: PhoneFrame 100dvh-env() → **100svh**(안드 PWA env() 미작동 영구 fix), `--safe-area-bottom` 기본값=env(). Hub CTA 헤더 111 → 91 → **70px**. 빌링 정리: `withdrawals` 익명 통계 컬렉션 제거(사용처 0). 이전: ζ-2 Phase 1.5 / ε Phase 1 / 2026-04-27 ROOT 카드 / Paddle Live)
 
 이 문서는 "오운잘 앱의 각 화면에 어떤 UI와 기능이 실제로 구현되어 있는지"의 단일 진실 공급원입니다.
 모든 항목은 코드 검증 기반 (`file:line` 인용). 추측 금지. 미검증은 **⚠ 미검증** 마킹.
@@ -360,7 +360,7 @@
 **④ Settings 드롭다운** (환경설정)
 - 사운드 토글 (localStorage `ohunjal_settings_sound`)
 - 진동 토글 (localStorage `ohunjal_settings_vibration`)
-- **초보자 모드 토글** (회의 2026-04-28-ε, SEED-001 Phase 1) — localStorage `ohunjal_beginner_mode` (`"1"`/`"0"`). ON 시 워크아웃 진행 중 BeginnerGuideOverlay (warmup_intro / main_equipment) 노출 + 벤치프레스 휴식 90/150초. CustomEvent `beginner_mode_change` 로 다중 화면 동기화
+- **초보자 모드 토글** (회의 2026-04-28-ε, SEED-001 Phase 1 / 회의 ζ-3 Phase 2) — localStorage `ohunjal_beginner_mode` (`"1"`/`"0"`). ON 시 워크아웃 진행 중 BeginnerGuideOverlay 노출(`warmup_intro` / `equipment_find` / `equipment_use` 3 phase) + 컴파운드 휴식 90/150초. **가이드 운동 풀 90종**(`EXERCISE_EQUIPMENT` SSOT, [src/constants/exerciseEquipment.ts](../src/constants/exerciseEquipment.ts) — Big 5 + 변형 + 케이블 + 머신/케틀벨/TRX/풀업 + 잡다). CustomEvent `beginner_mode_change` 로 다중 화면 동기화
 - 언어: KO / EN (useTranslation.setLocale)
 - 단위: kg/cm / lb/ft (useUnits.setSystem)
 
@@ -437,14 +437,20 @@
 **컴포넌트:** [src/components/workout/WorkoutSession.tsx](../src/components/workout/WorkoutSession.tsx) (+ [FitScreen.tsx](../src/components/workout/FitScreen.tsx))
 **진입:** MasterPlanPreview "운동 시작" → `sessionData` props 전달
 
-**초보자 모드 통합** (회의 2026-04-28-ε, SEED-001 Phase 1):
-- `BeginnerGuideOverlay` 마운트 (FitScreen 위 z-[70]) — `beginnerEnabled === true` + currentExercise 진입 시 phase별 1회:
-  - `currentExercise.type === "warmup"` → `warmup_intro` overlay (스트레칭존 안내 5줄 + 영상 따라하기 CTA)
-  - `currentExercise.name === "벤치프레스"` → `main_equipment` overlay (`EquipmentFinderCard` = 사진 `/machine/bench-press.png` + 찾는법 5줄 + 폼 cue 5줄 ACSM/NSCA 출처)
-- `dismissedOverlays: Set<string>` — 한 세션 내 phase별 1회 보장 (재진입 시 미노출)
-- 휴식 시간 분기 (L271-285): 초보자 + 벤치프레스 = target/easy 90s, fail 150s, min 60s (ACSM Guidelines 11th 컴파운드 90-120s)
+**초보자 모드 통합** (회의 2026-04-28-ε Phase 1 → 회의 ζ-2/ζ-3 Phase 2 정정):
+- `BeginnerGuideOverlay` 마운트 (FitScreen 위 z-[70]) — `beginnerEnabled === true` + currentExercise 진입 시 sequence 별 1회. 운동 진입 시점에 sequence 캐시(`useMemo`, [WorkoutSession.tsx:127](../src/components/workout/WorkoutSession.tsx#L127)) — 진행 중 변화 X (뒤로가기/역순 재노출 보장):
+  - `currentExercise.type === "warmup"` → `["warmup_intro"]` (스트레칭존 안내 + 영상 따라하기 CTA)
+  - `isBeginnerSupportedExercise(currentExercise.name) === true` → `["equipment_find", "equipment_use"]` 2단 분리:
+    - `equipment_find` — 기구 찾기 (사진 + 위치 cue), **"기구 못 찾음 → 대체 운동 swap"** 50/50 버튼 분할 (회의 2026-04-29, [BeginnerGuideOverlay.tsx:154](../src/components/workout/BeginnerGuideOverlay.tsx#L154))
+    - `equipment_use` — 사용법 (폼 cue + Shorts 9:16 세로 영상, ACSM/NSCA 출처)
+  - 그 외 운동 → overlay 0 (회귀 X)
+- `EquipmentFinderCard` (`mode: "find" | "use"`) — 사진 carousel(슬라이드) 지원, 36장 자산(`public/machine/`: bench-press / squat-rack 1~3 / deadlift-platform 1~2 / kettlebell-rack / freeweight-space.jpg / trx-strap / pull-up-bar / cable-machine / 머신 류 등)
+- `dismissedOverlays: Set<string>` — 한 세션 내 phase별 1회 보장 (회의 ζ-2 대표 정정 #1: 부활). swap 발생 시 새 운동도 가이드 통과하도록 dismissedOverlays 는 건드리지 X ([WorkoutSession.tsx:485](../src/components/workout/WorkoutSession.tsx#L485))
+- 휴식 시간 분기 ([WorkoutSession.tsx:325-338](../src/components/workout/WorkoutSession.tsx#L325-L338)): 초보자 + `isBeginnerSupportedExercise` true(컴파운드 90종 전체) = target/easy 90s, fail 150s, min 60s (ACSM Guidelines 11th 컴파운드 90-120s)
 - 일반 모드는 기존 60/45/90 (min 30) 그대로 — 회귀 X
+- **ACSM 권장 휴식 표시 부활** (회의 2026-04-29, [FitScreen.tsx:165-167, 2121-2126](../src/components/workout/FitScreen.tsx#L165)) — `recommendedRestSec` state 진입 시 1회 계산 후 고정. 카운트다운/`±15s` 수동 조정과 분리되어 항상 원본 ACSM 권장값 표시
 - `BEGINNER_MODE_EVENT` (`"beginner_mode_change"`) CustomEvent 리스너 — 프로필 토글 변경 즉시 반영
+- 폐기됨 (회의 ζ-2): `chat_weight` phase (FitScreen 무게 picker 와 중복) / `tutorial_video_*` 풀스크린 카드 (워크아웃 페이지 자체로 충분 → B-5 워크아웃 페이지 진입 툴팁으로 대체)
 
 **화면 구성:**
 - **Header** — 뒤로가기, `SET N/M · EXERCISE X/Y`, 경과 시간(MM:SS), 타이머 모드 SKIP 버튼
@@ -726,6 +732,35 @@ Timer/Running: 완료 or 자동 → DONE 펄스 → handleSetComplete
 ---
 
 # 🔧 내부 인프라 (유저 미노출)
+
+**초보자 가이드 운동 풀 12 → 90종 확장** (2026-04-29, 회의 ζ-3 Phase 2):
+- 누적 batch: 초안 12(Big 5 + 변형) → 케이블 12(24) → 바벨/덤벨 변형 15(36→51) → 머신/케틀벨/TRX/풀업 25(76) → 잡다 25(101). 실제 `EXERCISE_EQUIPMENT` 상위 키 90개 ([src/constants/exerciseEquipment.ts](../src/constants/exerciseEquipment.ts)).
+- 사진 자산 12 → 36장(`public/machine/`) — kettlebell-rack / freeweight-space.jpg / trx-strap / chest-supported-row / walking-lunge 등 22장 신규.
+- carousel(슬라이드) 지원: 1 운동 = 다중 사진(예: kettlebell-rack + walking-lunge 슬라이드).
+- 사용법 영상 컨테이너 9:16 세로 비율 (Shorts 핏).
+- `isBeginnerSupportedExercise(name)` = `name in EXERCISE_EQUIPMENT` 단일 체크 ([exerciseEquipment.ts:3180](../src/constants/exerciseEquipment.ts#L3180)).
+
+**기구 못 찾음 → 대체 운동 swap 흐름** (2026-04-29):
+- `BeginnerGuideOverlay` `equipment_find` phase 에 50/50 버튼 분할 ([BeginnerGuideOverlay.tsx:154](../src/components/workout/BeginnerGuideOverlay.tsx#L154)).
+- 좌: "찾았어요 다음으로" / 우: "못 찾았어요 → 다른 운동" → `swapAlternatives` 바텀시트 (`isBeginnerSupportedExercise` 풀에서 동일 근육군 후보).
+- swap 시 sequence step 리셋 — 새 운동도 `equipment_find` 부터 다시 ([WorkoutSession.tsx:484-485](../src/components/workout/WorkoutSession.tsx#L484-L485)).
+
+**레이아웃 영구 fix — 100svh 도입** (2026-04-28, 회의 ζ-3):
+- 버그: 안드 PWA 환경에서 `env(safe-area-inset-bottom)` 가 0으로 잡혀 `calc(100dvh - env())` 가 그대로 100dvh → 화면이 nav 뒤로 숨음.
+- 수정: `PhoneFrame` 외/내부 컨테이너 `h-[100svh]` 로 통일 ([PhoneFrame.tsx:14, 19](../src/components/layout/PhoneFrame.tsx#L14)). svh = small viewport height (chrome/nav 노출 상태 기준 안정 viewport, Chrome team 권장 Modern CSS 2025). 100dvh 와 달리 jank X, env() 의존 X.
+- `--safe-area-bottom` CSS 기본값을 `env(safe-area-inset-bottom, 0px)` 직접 사용으로 변경 ([globals.css:30](../src/app/globals.css#L30)) — viewport dynamic 변동 추적.
+
+**Hub CTA 헤더 높이 111 → 70px 축소** (2026-04-28, 2단계):
+- 1차 (회의 ζ): 111 → 91px (빈 공간 20px 축소).
+- 2차: 91 → 70px (`pt 1.25rem`, `pb 15px`) — 추가 축소.
+
+**withdrawals 익명 통계 컬렉션 제거** (2026-04-28):
+- 회원 탈퇴 시 익명 통계 저장하던 `withdrawals` Firestore 컬렉션 폐기 — 사용처 0건 grep 확인 후 제거.
+
+**워크아웃 풀 자잘 fix** (2026-04-29):
+- 정적 hold 운동 SSOT 통일 — Plan ↔ FitScreen 동기화 ([WorkoutSession.tsx](../src/components/workout/WorkoutSession.tsx)).
+- 맨몸 운동 정규식 보강 — 슈퍼맨 등 BW 표시 누락 수정.
+- 힙 어덕션 머신 한-영 불일치 typo + bodyIcon 매칭 보강.
 
 **ROOT 카드 화면 도입** (2026-04-27, 회의 2026-04-27, [PLAN-ROOT-HOME-CARDS.md](./PLAN-ROOT-HOME-CARDS.md)):
 - ViewState 확장: `root_home` / `running_hub` / `home_workout_hub` ([page.tsx:180-191](../src/app/app/page.tsx#L180-L191))
