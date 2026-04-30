@@ -447,9 +447,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
                 </p>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-bold text-[#1B4332]/70">
-                    {trial.stage === "guest"
-                      ? `${locale === "ko" ? "무료 체험" : "Free trial"} ${trial.currentCompleted}/${trial.currentLimit}`
-                      : trial.stage === "exhausted"
+                    {/* 회의 ζ-5-A (2026-04-30): "guest" 단계 폐기 */}
+                    {trial.stage === "exhausted"
                       ? (locale === "ko" ? "무료 체험 완료" : "Free trial done")
                       : `${locale === "ko" ? "무료 체험" : "Free trial"} ${trial.currentCompleted}/${trial.currentLimit}`}
                   </span>
@@ -477,13 +476,8 @@ export const WorkoutReport: React.FC<WorkoutReportProps> = ({
               )}
               {trial.stage !== "exhausted" && trial.remaining <= 1 && (
                 <p className="text-[11px] font-medium text-gray-500 mt-2">
-                  {locale === "ko"
-                    ? (trial.stage === "guest"
-                        ? "다음 운동 후 로그인 안내가 있어요"
-                        : "다음 운동 후 프리미엄 안내가 있어요")
-                    : (trial.stage === "guest"
-                        ? "Sign in reminder after next workout"
-                        : "Premium reminder after next workout")}
+                  {/* 회의 ζ-5-A (2026-04-30): "guest" 단계 폐기 — 항상 프리미엄 안내 */}
+                  {locale === "ko" ? "다음 운동 후 프리미엄 안내가 있어요" : "Premium reminder after next workout"}
                 </p>
               )}
             </div>

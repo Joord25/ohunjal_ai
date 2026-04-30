@@ -21,6 +21,13 @@ jobs:
           echo "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=${{ secrets.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN }}" >> .env.local
           echo "NEXT_PUBLIC_PADDLE_PRICE_MONTHLY=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY }}" >> .env.local
           echo "NEXT_PUBLIC_PADDLE_ENABLED=${{ secrets.NEXT_PUBLIC_PADDLE_ENABLED }}" >> .env.local
+          # 회의 ζ-5-A (2026-04-30): 가격 실험 6개 Paddle Price ID
+          echo "NEXT_PUBLIC_PADDLE_PRICE_199=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_199 }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_PRICE_299=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_299 }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_PRICE_399=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_399 }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_PRICE_499=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_499 }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_PRICE_599=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_599 }}" >> .env.local
+          echo "NEXT_PUBLIC_PADDLE_PRICE_699=${{ secrets.NEXT_PUBLIC_PADDLE_PRICE_699 }}" >> .env.local
           echo "NEXT_PUBLIC_PORTONE_CHANNEL_KEY=${{ secrets.NEXT_PUBLIC_PORTONE_CHANNEL_KEY }}" >> .env.local
           echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.NEXT_PUBLIC_GEMINI_API_KEY }}" >> .env.local
       - run: npm ci && npm run build

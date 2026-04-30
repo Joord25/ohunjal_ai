@@ -113,13 +113,13 @@ const ko: LandingTexts = {
     label: "PRICING",
     headingDim: "기존 운동앱 월 19,800원",
     headingBright: "오운잘은 월 6,900원",
-    sub: "먼저 써보고, 결정은 그 다음에.",
+    sub: "로그인하고 무료 체험. 결정은 그 다음에.",
     free: {
-      name: "무료",
-      desc: "부담 없이 시작",
+      name: "무료 체험",
+      desc: "로그인 후 첫 플랜 무료",
       price: "0원",
-      unit: "/월",
-      features: ["비로그인 1회 체험", "무료 2회 AI 운동 플랜 + 채팅 3회", "운동 기록 저장"],
+      unit: "/체험",
+      features: ["AI 운동 플랜 1회 무료 생성", "메인 운동 2개 무료 진행", "프리미엄 전환은 운동 중에 안내"],
     },
     premium: {
       badge: "초기 특가",
@@ -160,7 +160,7 @@ const ko: LandingTexts = {
       },
       {
         q: "무료로 충분한가요? 프리미엄은 뭐가 좋아요?",
-        a: "무료로도 AI 루틴의 강력함을 충분히 경험할 수 있어요 (무료 플랜 **2회** + AI 채팅 **3회** + 기록 저장). 더 빠른 성장을 원하면 프리미엄: 무제한 플랜, AI 분석 리포트, **AI 영양 코치** 무제한 채팅, 성장 예측 리포트 전부 포함. 월 **6,900원**.",
+        a: "로그인하면 AI 운동 플랜 **1회 무료** 생성! 진짜 AI 코칭이 어떤 느낌인지 체험할 수 있어요. 프리미엄 구독시: 무제한 플랜, **장기 프로그램** 무제한 저장, AI 분석 리포트, **AI 영양 코치** 무제한 채팅, 성장 예측 리포트 전부 포함.",
       },
       {
         q: "결제 수단 / 구독 취소 / 환불 / 데이터 보호는?",
@@ -223,13 +223,13 @@ const en: LandingTexts = {
     label: "PRICING",
     headingDim: "Other fitness apps: $15.99/mo",
     headingBright: "Ohunjal: $4.99/mo",
-    sub: "Try it first, decide later.",
+    sub: "Sign in for a free trial. Decide later.",
     free: {
-      name: "Free",
-      desc: "No commitment",
+      name: "Free Trial",
+      desc: "First plan free, after sign-in",
       price: "$0",
-      unit: "/mo",
-      features: ["1 free trial without sign-up", "2 free AI workout plans + 3 AI chats", "Workout history saved"],
+      unit: "/trial",
+      features: ["Generate 1 AI plan free", "Run 2 main exercises free", "Premium upgrade prompt mid-workout"],
     },
     premium: {
       badge: "Early Bird",
@@ -270,7 +270,7 @@ const en: LandingTexts = {
       },
       {
         q: "Is free enough? What does Premium add?",
-        a: "Free gives you the full AI routine experience (**2 free plans** + **3 AI chats** + workout logs). Want faster growth? Premium unlocks unlimited plans, AI analysis reports, **unlimited AI nutrition coach** chat, and growth prediction reports. Just **$4.99/month**.",
+        a: "Sign in to **generate 1 AI plan free** and feel what real AI coaching is like. Premium subscription unlocks: unlimited plans, **unlimited long-term program saves**, AI analysis reports, **unlimited AI nutrition coach** chat, growth prediction reports.",
       },
       {
         q: "Payment, cancellation, refunds, data protection?",

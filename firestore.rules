@@ -22,5 +22,25 @@ service cloud.firestore {
     match /international_waitlist/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // 회의 ζ-5-A (2026-04-30) + 평가자 P0-2 (2026-04-30): 가격 실험.
+    // 본인은 read 가능, write 는 tier/locale/paywallViews/lastPaywallAt/assignedAt 만 허용.
+    // paid 관련 필드 (paid/paidAt/paidAmount/paidCurrency/paidProvider/experimentTier) 는
+    // admin SDK (webhook) 만 write 가능 → 클라 위변조 차단 (전환율/매출 데이터 무결성 보호).
+    match /pricing_experiments/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && !("paid" in request.resource.data && request.resource.data.paid == true)
+        && !("paidAt" in request.resource.data)
+        && !("paidAmount" in request.resource.data)
+        && !("paidProvider" in request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == userId
+        // paid 필드 변경 차단 (서버 admin SDK 만 가능)
+        && (!("paid" in request.resource.data) || request.resource.data.paid == resource.data.paid)
+        && (!("paidAt" in request.resource.data) || request.resource.data.paidAt == resource.data.paidAt)
+        && (!("paidAmount" in request.resource.data) || request.resource.data.paidAmount == resource.data.paidAmount)
+        && (!("paidCurrency" in request.resource.data) || request.resource.data.paidCurrency == resource.data.paidCurrency)
+        && (!("paidProvider" in request.resource.data) || request.resource.data.paidProvider == resource.data.paidProvider);
+    }
   }
 }

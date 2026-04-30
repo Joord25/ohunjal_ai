@@ -191,6 +191,15 @@ export function useGpsTracker(options: UseGpsTrackerOptions): UseGpsTrackerRetur
 
     acquireWakeLock();
 
+    // 카톡/인스타 등 다른 앱 다녀오면 브라우저가 wake lock 을 자동 release.
+    // 복귀(visible) 시 재취득해야 OS 기본 auto-lock 이 다시 화면 끄는 걸 막을 수 있음.
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        acquireWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       handlePosition,
       handleError,
@@ -206,6 +215,7 @@ export function useGpsTracker(options: UseGpsTrackerOptions): UseGpsTrackerRetur
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
+      document.removeEventListener("visibilitychange", onVisibility);
       releaseWakeLock();
     };
   }, [enabled, isIndoor, acquireWakeLock, releaseWakeLock, handlePosition, handleError]);

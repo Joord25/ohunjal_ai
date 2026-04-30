@@ -10,7 +10,7 @@
  */
 import { onRequest } from "firebase-functions/v2/https";
 import { verifyAuth } from "../helpers";
-import { buildWarmup, buildCore, buildAdditionalCardio, formatCountKo, type WorkoutSessionData, type ExerciseStep, type ExerciseType, type ExercisePhase, type UserCondition, type WorkoutGoal } from "../workoutEngine";
+import { buildWarmup, buildCore, buildAdditionalCardio, formatCountKo, translateSessionToEn, type WorkoutSessionData, type ExerciseStep, type ExerciseType, type ExercisePhase, type UserCondition, type WorkoutGoal } from "../workoutEngine";
 import { CATALOG_SLOT_POOLS, pickFromSlot, getSlotMeta, getSlotCount } from "./catalogPools";
 
 interface MatrixSessionPayload {
@@ -37,6 +37,8 @@ interface GenerateCatalogProgramBody {
   engineGoal?: WorkoutGoal;
   /** 회의 ζ-5 SETTINGS (2026-04-30): 사용자 선택 주당 빈도. weeklyMatrix day 자동 변환 */
   sessionsPerWeek?: number;
+  /** 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저 한글 라벨 변환용 */
+  locale?: "ko" | "en";
 }
 
 /** 주당 빈도별 dayOfWeek 패턴 (회의 ζ-5 SETTINGS) */
@@ -238,8 +240,11 @@ export const generateCatalogProgram = onRequest(
       const totalSessions = adjustedMatrix.length;
       const totalWeeks = Math.max(...adjustedMatrix.map((m) => m.week));
 
+      // 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저 한글 → 영문 변환
+      const isEn = body.locale === "en";
       const sessions = adjustedMatrix.map((matrix, idx) => {
-        const sessionData = generateSessionFromMatrix(matrix, body.condition, body.catalogName, body.engineGoal);
+        const rawSession = generateSessionFromMatrix(matrix, body.condition, body.catalogName, body.engineGoal);
+        const sessionData = isEn ? translateSessionToEn(rawSession) : rawSession;
         return {
           id: `${programId}_w${matrix.week}d${matrix.dayOfWeek}`,
           name: `${body.catalogName} W${matrix.week} D${matrix.dayOfWeek}`,

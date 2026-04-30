@@ -1969,3 +1969,69 @@ export const generateAdaptiveWorkout = (
     intendedIntensity: legacyIntendedIntensity,
   });
 };
+
+// ============================================================
+// 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN locale 번역기
+// 서버는 한글 그대로 생성 → API 엔드포인트가 locale="en" 시 이 함수 통과시켜 영문 변환.
+// session.title / session.description 만 변환 (exercise.name 은 별도 매핑이라 건드리지 X).
+// ============================================================
+
+/** Korean → English 단어/구문 사전. 길이 긴 것부터 매칭하도록 sorted. */
+const KO_EN_PHRASE_MAP: Array<[string, string]> = [
+  // 요일
+  ["월요일", "Monday"], ["화요일", "Tuesday"], ["수요일", "Wednesday"],
+  ["목요일", "Thursday"], ["금요일", "Friday"], ["토요일", "Saturday"], ["일요일", "Sunday"],
+  // 부위
+  ["하체", "Lower Body"], ["상체", "Upper Body"], ["전신", "Full Body"],
+  ["가슴", "Chest"], ["등", "Back"], ["어깨", "Shoulders"], ["팔", "Arms"], ["다리", "Legs"],
+  ["코어", "Core"], ["복근", "Abs"],
+  // 동작/타입
+  ["푸시 데이", "Push Day"], ["풀 데이", "Pull Day"], ["레그 데이", "Leg Day"],
+  ["밀기", "Push"], ["당기기", "Pull"],
+  ["서킷", "Circuit"], ["인터벌", "Interval"], ["회복", "Recovery"],
+  ["근비대 훈련", "Hypertrophy"], ["근비대", "Hypertrophy"],
+  ["근력 강화", "Strength"], ["근력", "Strength"],
+  ["체지방 감량", "Fat Loss"], ["지방 연소", "Fat Burn"], ["감량", "Fat Loss"],
+  ["기초체력강화", "General Fitness"], ["기초체력", "General Fitness"], ["체력", "Endurance"],
+  ["힘 세지기", "Strength"], ["근육 키우기", "Muscle Gain"], ["살 빼기", "Fat Loss"],
+  // 운동 타입
+  ["스피드 러닝", "Speed Run"], ["인터벌 러닝", "Interval Run"], ["회복 러닝", "Recovery Run"],
+  ["존2 러닝", "Zone 2 Run"], ["LSD 러닝", "LSD Run"], ["장거리 러닝", "Long Run"],
+  ["이지 런", "Easy Run"], ["가벼운 유산소", "Light Cardio"], ["장거리 유산소", "Long Cardio"],
+  ["HIIT 유산소", "HIIT Cardio"], ["HIIT", "HIIT"], ["유산소", "Cardio"],
+  ["모빌리티", "Mobility"], ["홈트레이닝", "Home Workout"], ["홈트", "Home Workout"],
+  // 단위/구조
+  ["세트", "sets"], ["회", "reps"], ["분", "min"], ["초", "sec"],
+  ["종", "exercises"], ["운동", "Workout"],
+  ["맞춤 플랜", "Custom Plan"], ["집중 운동", "Focused Workout"], ["집중", "Focused"],
+  // 러너 코어 등 합성어
+  ["러너 코어", "Runner Core"], ["러닝", "Running"], ["러너", "Runner"],
+  // 기타
+  ["맨몸", "Bodyweight"],
+];
+
+function translateKoToEn(s: string): string {
+  let out = s;
+  for (const [ko, en] of KO_EN_PHRASE_MAP) {
+    if (out.includes(ko)) {
+      out = out.split(ko).join(en);
+    }
+  }
+  return out;
+}
+
+/**
+ * Session 의 title + description + 각 exercise 의 count(`3 세트 / 8회` 등)를 영문 변환.
+ * exercise.name 은 `한글 (English)` 포맷이라 건드리지 X (클라 getExerciseName 이 분기).
+ */
+export function translateSessionToEn(session: WorkoutSessionData): WorkoutSessionData {
+  return {
+    ...session,
+    title: translateKoToEn(session.title),
+    description: translateKoToEn(session.description),
+    exercises: session.exercises.map(ex => ({
+      ...ex,
+      count: ex.count ? translateKoToEn(ex.count) : ex.count,
+    })),
+  };
+}

@@ -43,6 +43,10 @@ interface WorkoutSessionProps {
   source?: "chat" | "saved" | "program" | "resume";
   /** 회의 64-γ: 모바일 백그라운드 discard 복귀 시 진행 상태 hydrate */
   restoredProgress?: ActiveSessionProgress | null;
+  /** 회의 ζ-5-A (2026-04-30): 무료 게이트 — 메인 운동 2개 완료 후 3번째 시작 시 호출. */
+  onFreeGateReached?: () => void;
+  /** 무료 게이트 enabled 여부 — 비활성(프리미엄) 유저는 false */
+  freeGateEnabled?: boolean;
 }
 
 export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
@@ -52,6 +56,8 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
   onAbandon,
   source = "chat",
   restoredProgress = null,
+  onFreeGateReached,
+  freeGateEnabled,
 }) => {
   const { t, locale } = useTranslation();
   // Initialize exercises with a deep copy to allow mutations for adaptive logic
@@ -350,6 +356,18 @@ export const WorkoutSession: React.FC<WorkoutSessionProps> = ({
 
       // Check if there are more exercises
       if (currentExerciseIndex < totalExercises - 1) {
+        // 회의 ζ-5-A (2026-04-30): 무료 게이트 — 메인 운동 2개 완료 후 3번째 main 시작 시 paywall.
+        if (freeGateEnabled && onFreeGateReached) {
+          // 현재까지 완료한 main 운동 수 (방금 끝난 거 포함)
+          const mainsDone = exercises.slice(0, currentExerciseIndex + 1).filter(e => e.phase === "main" || e.type === "strength").length;
+          const nextEx = exercises[currentExerciseIndex + 1];
+          const nextIsMain = nextEx && (nextEx.phase === "main" || nextEx.type === "strength");
+          if (mainsDone >= 2 && nextIsMain) {
+            trackEvent("free_gate_paywall_trigger", { mains_done: mainsDone, next_index: currentExerciseIndex + 1 });
+            onFreeGateReached();
+            return;
+          }
+        }
         exerciseStartRef.current = now; // next exercise starts now
         setCurrentIndex((prev) => prev + 1);
         setCurrentSet(1);

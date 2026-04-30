@@ -7,7 +7,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 interface LoginScreenProps {
   onLogin: () => void;
-  onTryFree?: () => void;
+  // 회의 ζ-5-A (2026-04-30): onTryFree 폐기 — 게스트 진입 경로 제거
 }
 
 const TERMS_TEXT = `제1조(목적)
@@ -228,7 +228,7 @@ Google LLC: 맞춤형 운동 플랜 및 리포트 생성을 위한 AI 연동(Gem
 부칙
 본 방침은 2026년 3월 1일부터 시행합니다.`;
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const { t, locale } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -268,7 +268,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
   };
 
   return (
-    <div className="flex flex-col h-full bg-white animate-fade-in relative overflow-y-auto scrollbar-hide">
+    // 회의 ζ-5-A (2026-04-30): iOS notch 침범 방지 — env() only (Android/PC 0)
+    <div
+      className="flex flex-col h-full bg-white animate-fade-in relative overflow-y-auto scrollbar-hide"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-gray-50" />
 
@@ -285,6 +289,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
           </div>
         </div>
 
+        {/* Description */}
         {/* Description */}
         <p className="text-[#1B4332] leading-relaxed text-sm max-w-[240px]">
           {t("login.tagline1")}<br />
@@ -318,14 +323,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTryFree }) 
             <p className="text-xs text-red-500 font-medium text-center">{error}</p>
           )}
 
-          {onTryFree && (
-            <button
-              onClick={onTryFree}
-              className="w-full py-3.5 rounded-2xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all"
-            >
-              {t("login.tryFree")}
-            </button>
-          )}
+          {/* 회의 ζ-5-A (2026-04-30): "가입 없이 체험" 버튼 폐기 — 게스트 시스템 통째 제거 */}
 
           <p className="text-[10px] text-gray-400 font-medium text-center tracking-widest">
             {t("login.agreePrefix")} <button type="button" onClick={() => locale === "ko" ? setShowTerms(true) : window.open("/en/terms", "_blank")} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.terms")}</button> {t("login.agreeAnd")} <button type="button" onClick={() => locale === "ko" ? setShowPrivacy(true) : window.open("/en/privacy", "_blank")} className="underline text-gray-500 hover:text-gray-700 transition-colors">{t("my.privacy")}</button>{t("login.agreeSuffix")}

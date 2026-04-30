@@ -851,6 +851,8 @@ export interface GenerateProgramArgs {
   limiter: Limiter;
   daysPerWeek: DaysPerWeek;
   user5kPaceSec?: number; // VO2 프로그램 필수
+  // 회의 ζ-5-A 평가자 P0-1 (2026-04-30): locale 분기 — EN 유저는 영문 라벨 저장.
+  locale?: "ko" | "en";
 }
 
 export interface GeneratedProgram {
@@ -863,11 +865,18 @@ export interface GeneratedProgram {
   sessions: ProgramSessionSpec[];
 }
 
-const PROGRAM_NAMES: Record<RunningProgramId, string> = {
+// 회의 ζ-5-A 평가자 P0-1 (2026-04-30): locale 별 분리 — EN 유저 한글 라벨 노출 버그 수정.
+const PROGRAM_NAMES_KO: Record<RunningProgramId, string> = {
   vo2_boost: "VO2 max 키우기",
   "10k_sub_50": "10K 50분 돌파",
   half_sub_2: "Half 2시간 돌파",
   full_sub_3: "Full 3시간 돌파",
+};
+const PROGRAM_NAMES_EN: Record<RunningProgramId, string> = {
+  vo2_boost: "VO2 Max Boost",
+  "10k_sub_50": "10K Sub 50",
+  half_sub_2: "Half Sub 2:00",
+  full_sub_3: "Full Sub 3:00",
 };
 
 /**
@@ -875,7 +884,7 @@ const PROGRAM_NAMES: Record<RunningProgramId, string> = {
  * VO2 프로그램인데 user5kPaceSec 없으면 에러.
  */
 export function generateRunningProgram(args: GenerateProgramArgs): GeneratedProgram {
-  const { programId, limiter, daysPerWeek, user5kPaceSec } = args;
+  const { programId, limiter, daysPerWeek, user5kPaceSec, locale } = args;
 
   if (programId === "vo2_boost" && user5kPaceSec == null) {
     throw new Error("VO2 max 프로그램은 최근 5K 기록이 필요합니다");
@@ -918,7 +927,7 @@ export function generateRunningProgram(args: GenerateProgramArgs): GeneratedProg
     daysPerWeek,
     totalWeeks,
     totalSessions: sessions.length,
-    programName: PROGRAM_NAMES[programId],
+    programName: (locale === "en" ? PROGRAM_NAMES_EN : PROGRAM_NAMES_KO)[programId],
     sessions,
   };
 }

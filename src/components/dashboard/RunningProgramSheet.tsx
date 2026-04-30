@@ -17,6 +17,15 @@ import { trackEvent } from "@/utils/analytics";
 import { newProgramId, saveProgramSessions, remoteSaveProgram, deleteProgram, type SavedPlan } from "@/utils/savedPlans";
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import type { RunningProgramId } from "@/constants/workout";
+import { PlanLoadingOverlay } from "@/components/plan/PlanLoadingOverlay";
+
+// 회의 ζ-5 (2026-04-30): 통일 로딩 화면 — 프로그램별 totalWeeks 메타.
+const PROGRAM_TOTAL_WEEKS: Record<RunningProgramId, number> = {
+  vo2_boost: 8,
+  "10k_sub_50": 10,
+  half_sub_2: 12,
+  full_sub_3: 12,
+};
 
 type DaysPerWeek = 3 | 4 | 5;
 type StartChoice = "today" | "tomorrow" | "next_monday";
@@ -49,6 +58,8 @@ interface RunningProgramSheetProps {
   onResumeProgram?: (programId: string, nextSessionId: string) => void;
   /** 회의 2026-04-28: fullscreen 헤더 우측 슬롯 — RunningHub의 [📋][👤] 아이콘을 헤더에 합쳐 정렬. */
   headerRight?: React.ReactNode;
+  /** 회의 ζ-5 (2026-04-30): 로딩 화면 인사말에 사용. 미지정 시 빈 문자열로 fallback. */
+  userName?: string;
 }
 
 // 회의 2026-04-27: 추천 뱃지 정리 — 10k_sub_50 추천 제거, full_sub_3 "경험자" 태그 유지(별도 키로 표시).
@@ -67,9 +78,9 @@ const PROGRAM_META: Array<{
 
 export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
   open, variant = "sheet", onClose, onProgramCreated, isLoggedIn, isPremium, onRequestLogin, onRequestPaywall,
-  activePrograms, onResumeProgram, headerRight,
+  activePrograms, onResumeProgram, headerRight, userName,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [step, setStep] = useState<Step>("select");
   const [selectedProgram, setSelectedProgram] = useState<RunningProgramId | null>(null);
   const [daysPerWeek, setDaysPerWeek] = useState<DaysPerWeek>(4);
@@ -198,6 +209,8 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
           limiter,
           daysPerWeek,
           user5kPaceSec,
+          // 회의 ζ-5-A 평가자 P0-1 (2026-04-30): locale 전달 — EN 유저 영문 programName 저장.
+          locale,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -250,6 +263,22 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
       setStep("preview");
     }
   };
+
+  // 회의 ζ-5 (2026-04-30): 로딩 중에는 sheet/fullscreen 분기 무시하고 통일 PlanLoadingOverlay 풀스크린 노출.
+  if (step === "loading" && selectedProgram) {
+    return (
+      <PlanLoadingOverlay
+        userName={userName ?? ""}
+        variant="catalog_program"
+        catalogContext={{
+          programName: t(`running_program.program.${selectedProgram === "10k_sub_50" ? "10k" : selectedProgram === "half_sub_2" ? "half" : selectedProgram === "full_sub_3" ? "full" : "vo2_boost"}.title`),
+          totalWeeks: PROGRAM_TOTAL_WEEKS[selectedProgram],
+          sessionsPerWeek: daysPerWeek,
+          totalSessions: PROGRAM_TOTAL_WEEKS[selectedProgram] * daysPerWeek,
+        }}
+      />
+    );
+  }
 
   if (variant === "fullscreen") {
     // 회의 2026-04-27: step-aware ← (select=root-back, 그 외=step-back) + 큰 타이틀 헤더 (Kenko 통일).
@@ -324,13 +353,7 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
           {step === "preview" && selectedProgram && (
             <StepPreview t={t} programId={selectedProgram} error={error} onBack={() => setStep("settings")} onStart={handleGenerate} hideHeader />
           )}
-          {step === "loading" && (
-            <div className="py-20 text-center">
-              <div className="inline-block w-10 h-10 border-4 border-[#2D6A4F] border-t-transparent rounded-full animate-spin mb-4" />
-              <p className="text-[14px] font-black text-[#1B4332]">{t("running_program.loading.title")}</p>
-              <p className="text-[11px] text-gray-500 mt-1">{t("running_program.loading.desc")}</p>
-            </div>
-          )}
+          {/* step === "loading" 은 컴포넌트 최상단에서 PlanLoadingOverlay 통일 노출. */}
         </div>
       </div>
     );
@@ -386,13 +409,7 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
             onStart={handleGenerate}
           />
         )}
-        {step === "loading" && (
-          <div className="py-10 text-center">
-            <div className="inline-block w-10 h-10 border-4 border-[#2D6A4F] border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-[14px] font-black text-[#1B4332]">{t("running_program.loading.title")}</p>
-            <p className="text-[11px] text-gray-500 mt-1">{t("running_program.loading.desc")}</p>
-          </div>
-        )}
+        {/* step === "loading" 은 컴포넌트 최상단에서 PlanLoadingOverlay 통일 노출. */}
       </div>
     </div>
   );

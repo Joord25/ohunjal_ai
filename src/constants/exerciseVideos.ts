@@ -133,7 +133,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
 
   // ── 하체 (LEG - Unilateral) ──
   "런지": "dG89n0jQSto",
-  "워킹 런지": "dG89n0jQSto",
+  "워킹 런지": "2ea3_b9rFdM",
   "불가리안 스플릿 스쿼트": "uBSoEWZu07k",
   "리버스 런지": "i3TNJmnInI0",
   "케틀벨 워킹 런지": "hzYUKP0nETA",

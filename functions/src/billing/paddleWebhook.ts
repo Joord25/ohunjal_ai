@@ -194,6 +194,23 @@ async function upsertSubscription(
   );
 }
 
+// ===== 회의 ζ-5-A 평가자 P0-1 (2026-04-30): Paddle Price ID → tier 역매핑 =====
+// env (NEXT_PUBLIC_PADDLE_PRICE_*) 가 빌드타임에만 박히므로 webhook 코드에 하드코딩.
+// Paddle Price ID 변경 시 이 매핑도 같이 수정.
+const PADDLE_PRICE_TO_TIER: Record<string, "t1" | "t2" | "t3" | "t4" | "t5" | "t6"> = {
+  "pri_01kqdmk2bpst2z6wg6sqapah8v": "t1", // $1.99
+  "pri_01kqdmmgkb1nf7m0bmgc5fgqhb": "t2", // $2.99
+  "pri_01kqdmn6e3nc1b7hj9n9kw1dhb": "t3", // $3.99
+  "pri_01kppp2svqxqb9q2fzqcs0nbse": "t4", // $4.99
+  "pri_01kqdmp1cyb2gr9bp6v025ge33": "t5", // $5.99
+  "pri_01kqdmqzay6gzj308jppa3srvq": "t6", // $6.99
+};
+
+function tierFromPaddlePriceId(priceId: string | undefined): string | null {
+  if (!priceId) return null;
+  return PADDLE_PRICE_TO_TIER[priceId] ?? null;
+}
+
 // ===== Transaction (payment history) =====
 
 async function recordPayment(tx: PaddleTransactionData): Promise<void> {
@@ -235,4 +252,22 @@ async function recordPayment(tx: PaddleTransactionData): Promise<void> {
     },
     { merge: true }
   );
+
+  // 회의 ζ-5-A 평가자 P0-1 (2026-04-30): pricing_experiments paid 기록 (해외 USD 결제 데이터 손실 방지)
+  const priceId = tx.items?.[0]?.price_id;
+  const tier = tierFromPaddlePriceId(priceId);
+  if (tier && (tx.status === "completed" || tx.status === "paid")) {
+    try {
+      await db.collection("pricing_experiments").doc(uid).set({
+        tier,
+        paid: true,
+        paidAt: FieldValue.serverTimestamp(),
+        paidAmount: amount,
+        paidCurrency: tx.currency_code || "USD",
+        paidProvider: "paddle",
+      }, { merge: true });
+    } catch (e) {
+      console.error(`[Paddle webhook] pricing_experiments record failed for ${uid}:`, e);
+    }
+  }
 }

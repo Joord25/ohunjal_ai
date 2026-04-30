@@ -22,6 +22,10 @@ interface MyProfileTabProps {
   autoEdit1RM?: boolean;
   /** 회의 30: 구독 취소 플로우 활성 상태를 page.tsx로 전달 (탭바 숨김용) */
   onCancelFlowChange?: (active: boolean) => void;
+  /** 회의 ζ-5-A (2026-04-30): WeightHub 목표 배지에서 진입 시 운동 목표 섹션 자동 스크롤 + 글로우. */
+  focusSection?: "goal" | null;
+  /** 포커스 진입 후 page.tsx 가 state 초기화하도록 호출 — 1회성 보장 */
+  onFocusConsumed?: () => void;
 }
 
 // 영어 약관/개인정보 요약 (모달용)
@@ -192,8 +196,22 @@ Phone: 010-4824-2869
 Supplementary Provisions
 This Refund Policy shall be effective from March 1, 2026.`;
 
-export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM, onCancelFlowChange }) => {
+export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, autoEdit1RM, onCancelFlowChange, focusSection, onFocusConsumed }) => {
   const { t, locale, setLocale } = useTranslation();
+  // 회의 ζ-5-A (2026-04-30): WeightHub 진입 시 운동 목표 섹션 자동 스크롤 + 글로우 (1.6초)
+  const goalSectionRef = useRef<HTMLDivElement | null>(null);
+  const [goalGlow, setGoalGlow] = useState(false);
+  useEffect(() => {
+    if (focusSection !== "goal") return;
+    // 다음 frame에서 scroll — DOM ready 보장
+    const t1 = setTimeout(() => {
+      goalSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setGoalGlow(true);
+    }, 100);
+    const t2 = setTimeout(() => setGoalGlow(false), 1700);
+    const t3 = setTimeout(() => onFocusConsumed?.(), 1800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [focusSection, onFocusConsumed]);
   const { system: unitSystem, setSystem: setUnitSystem, labels: unitLabels, fmt: unitFmt } = useUnits();
   const isImperial = unitSystem === "imperial";
   const [showSubscription, setShowSubscription] = useState(false);
@@ -492,7 +510,11 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
       />
 
       {/* Profile Header - Fixed */}
-      <div className="pt-8 pb-8 flex flex-col items-center text-center gap-4 px-8 shrink-0">
+      {/* 회의 ζ-5-A (2026-04-30): iOS notch/Dynamic Island 침범 방지 — env() only, fallback 없음 (Android/PC 영향 X) */}
+      <div
+        className="pt-8 pb-8 flex flex-col items-center text-center gap-4 px-8 shrink-0"
+        style={{ paddingTop: "calc(2rem + env(safe-area-inset-top, 0px))" }}
+      >
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
@@ -811,7 +833,12 @@ export const MyProfileTab: React.FC<MyProfileTabProps> = ({ user, onLogout, auto
           <div className="h-px bg-gray-100" />
 
           {/* 운동 목표 */}
-          <div>
+          <div
+            ref={goalSectionRef}
+            className={`scroll-mt-8 -mx-2 px-2 py-2 rounded-xl transition-all duration-500 ${
+              goalGlow ? "ring-2 ring-[#2D6A4F] bg-emerald-50/60" : "ring-0 bg-transparent"
+            }`}
+          >
             <span className="text-sm font-bold text-gray-500">{t("my.goal")}</span>
             <div className="flex gap-2 mt-2">
               {([

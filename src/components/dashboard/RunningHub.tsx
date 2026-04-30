@@ -16,6 +16,8 @@ interface RunningHubProps {
   onResumeProgram: (programId: string, nextSessionId: string) => void;
   onRequestLogin: () => void;
   onRequestPaywall: () => void;
+  /** 회의 ζ-5 (2026-04-30): 통일 로딩 화면 인사말 용. */
+  userName?: string;
 }
 
 const ICON_MY_PLANS = (
@@ -45,6 +47,7 @@ export const RunningHub: React.FC<RunningHubProps> = ({
   onResumeProgram,
   onRequestLogin,
   onRequestPaywall,
+  userName,
 }) => {
   const { t } = useTranslation();
 
@@ -84,6 +87,7 @@ export const RunningHub: React.FC<RunningHubProps> = ({
         activePrograms={activeRunningPrograms}
         onResumeProgram={onResumeProgram}
         headerRight={headerIcons}
+        userName={userName}
       />
     </div>
   );

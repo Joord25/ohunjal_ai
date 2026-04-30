@@ -540,7 +540,11 @@ export const MasterPlanPreview: React.FC<MasterPlanPreviewProps> = ({
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-[#FAFBF9] animate-fade-in relative overflow-hidden">
       {/* Header Bar */}
-      <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0 bg-[#FAFBF9]">
+      {/* 회의 ζ-5-A (2026-04-30): iOS notch 침범 방지 — env() only (Android/PC 0 padding 유지) */}
+      <div
+        className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0 bg-[#FAFBF9]"
+        style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top, 0px))" }}
+      >
         <button onClick={selectedIdx !== null ? () => setSelectedIdx(null) : onBack} className="p-2 -ml-2">
           <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />

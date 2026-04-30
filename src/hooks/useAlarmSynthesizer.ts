@@ -30,6 +30,19 @@ export function useAlarmSynthesizer(opts?: AlarmOptions) {
       // 소리 설정 OFF면 무시
       if (typeof window !== "undefined" && localStorage.getItem("ohunjal_settings_sound") === "false") return;
       onBeforePlayRef.current?.();
+
+      // 회의 ζ-5 (2026-04-30): 운동 종료음 = 복싱 벨 mp3 (synth smallBell 대체).
+      // start 는 음질 이슈로 mp3 폐기 → synth moktak 패턴 복귀 (2026-04-30 정정).
+      // 캐시 버스팅 ?v= : 음원 교체 시 숫자 ++ 하면 브라우저/CDN 캐시 무시.
+      if (pattern === "end") {
+        const audio = new Audio("/sounds/workout-end.mp3?v=2");
+        audio.volume = 1.0;
+        audio.play().catch(() => {
+          // 자동재생 차단 등 실패 시 silent fail
+        });
+        return;
+      }
+
       const ctx = getAudioCtx();
       const t = ctx.currentTime;
 
@@ -141,46 +154,16 @@ export function useAlarmSynthesizer(opts?: AlarmOptions) {
       };
 
       switch (pattern) {
-        case "start": {
-          const wb = ctx.createOscillator();
-          const wbG = ctx.createGain();
-          wb.type = "sine";
-          wb.frequency.setValueAtTime(480, t);
-          wb.frequency.exponentialRampToValueAtTime(180, t + 0.08);
-          wb.connect(wbG);
-          wbG.connect(master);
-          wbG.gain.setValueAtTime(0.9, t);
-          wbG.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-          wb.start(t); wb.stop(t + 0.12);
-          const wLen = Math.floor(ctx.sampleRate * 0.008);
-          const wBuf = ctx.createBuffer(1, wLen, ctx.sampleRate);
-          const wD = wBuf.getChannelData(0);
-          for (let i = 0; i < wLen; i++) wD[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / wLen, 3);
-          const wN = ctx.createBufferSource();
-          wN.buffer = wBuf;
-          const wNG = ctx.createGain();
-          const wF = ctx.createBiquadFilter();
-          wF.type = "bandpass";
-          wF.frequency.value = 800;
-          wF.Q.value = 3;
-          wN.connect(wF);
-          wF.connect(wNG);
-          wNG.connect(master);
-          wNG.gain.setValueAtTime(0.7, t);
-          wNG.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
-          wN.start(t);
-          break;
-        }
         case "tick":
-          moktak(t, 0.8);
+          // 회의 ζ-5 (2026-04-30): 마지막 5초 카운트는 크게 — 0.8 → 1.6
+          moktak(t, 1.6);
+          break;
+        case "start":
+          // 회의 ζ-5 (2026-04-30) 정정: mp3 음질 이슈로 synth 복귀. 0.9 → 1.6 (대표 지시 키우기).
+          moktak(t, 1.6);
           break;
         case "half":
           ripple(t, 0.55);
-          break;
-        case "end":
-          smallBell(t, 0.8, 0.8);
-          smallBell(t + 0.3, 0.8, 0.8);
-          smallBell(t + 0.6, 0.8, 0.8);
           break;
         case "rest_end":
           smallBell(t, 0.85, 0.8);
@@ -197,18 +180,16 @@ export function useAlarmSynthesizer(opts?: AlarmOptions) {
   }, []);
 
   /**
-   * 회의 ζ-5 (2026-04-30): 좌/우 음성 안내 (Web Speech API).
-   * 양쪽 교대 운동 (런지, 스플릿 스쿼트 등) 30초마다 호출.
+   * 회의 ζ-5 (2026-04-30): "반대쪽 시행" 음성 안내 (Web Speech API).
+   * 양쪽 교대 운동 (런지, 스플릿 스쿼트 등) 중간 시점(예: 1분 운동의 30초)에 호출.
    * 사운드 OFF 시 무시. 브라우저 미지원 시 silent fail.
    */
-  const speakDirection = useCallback((side: "left" | "right", locale: "ko" | "en" = "ko") => {
+  const speakSwitchSide = useCallback((locale: "ko" | "en" = "ko") => {
     try {
       if (typeof window === "undefined") return;
       if (localStorage.getItem("ohunjal_settings_sound") === "false") return;
       if (!("speechSynthesis" in window)) return;
-      const text = locale === "en"
-        ? (side === "left" ? "Left" : "Right")
-        : (side === "left" ? "왼쪽" : "오른쪽");
+      const text = locale === "en" ? "Switch sides!" : "반대쪽 시행해주세요!";
       const u = new SpeechSynthesisUtterance(text);
       u.lang = locale === "en" ? "en-US" : "ko-KR";
       u.rate = 1.05;
@@ -219,5 +200,5 @@ export function useAlarmSynthesizer(opts?: AlarmOptions) {
     } catch (e) {}
   }, []);
 
-  return { playAlarmSound, speakDirection };
+  return { playAlarmSound, speakSwitchSide };
 }

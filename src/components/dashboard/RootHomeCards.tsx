@@ -3,7 +3,6 @@
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/utils/analytics";
-import { getTrialStatus } from "@/utils/trialStatus";
 import { getPlanCount } from "@/utils/userProfile";
 
 export type RootCardTarget = "weight" | "running" | "home_workout";
@@ -17,6 +16,8 @@ interface RootHomeCardsProps {
   /** 회의 2026-04-28-γ Phase E QA: 우상단 내플랜 옆 프로필 아이콘 → 프로필 탭 진입 */
   onOpenProfile: () => void;
   hasActivePrograms: boolean;
+  /** 회의 ζ-5-A (2026-04-30): 배지 클릭 → paywall (free/exhausted) 또는 구독 관리 (premium) */
+  onOpenSubscription?: () => void;
 }
 
 // Figma Kenko UI Kit · icons / ic-tonnage-lifted (node 0:4223)
@@ -66,7 +67,7 @@ const RootCard: React.FC<CardProps> = ({ caption, label, icon, onClick }) => (
   </button>
 );
 
-export const RootHomeCards: React.FC<RootHomeCardsProps> = ({ userName, isLoggedIn, isPremium, onSelectCard, onOpenMyPlans, onOpenProfile, hasActivePrograms }) => {
+export const RootHomeCards: React.FC<RootHomeCardsProps> = ({ userName, isLoggedIn, isPremium, onSelectCard, onOpenMyPlans, onOpenProfile, hasActivePrograms, onOpenSubscription }) => {
   const { t, locale } = useTranslation();
 
   const displayName = userName || t("home.defaultName");
@@ -137,26 +138,28 @@ export const RootHomeCards: React.FC<RootHomeCardsProps> = ({ userName, isLogged
         <div className="flex items-center justify-between mt-1">
           <p className="text-[12px] font-medium text-gray-400">{dateStr}</p>
           {(() => {
-            const trial = getTrialStatus(isLoggedIn, isPremium, getPlanCount());
+            // 회의 ζ-5-A (2026-04-30): "무료 1회" / "구독요망" / "프리미엄" 3단계 + 클릭 시 SubscriptionScreen 진입.
+            const planCount = getPlanCount();
+            let label: string;
+            let bg: string;
+            let text: string;
             if (isPremium) {
-              return (
-                <span className="shrink-0 px-2.5 py-1 rounded-full bg-[#2D6A4F] text-white text-[10px] font-bold whitespace-nowrap">
-                  {locale === "en" ? "Premium" : "프리미엄"}
-                </span>
-              );
+              label = locale === "en" ? "Premium" : "프리미엄";
+              bg = "bg-[#2D6A4F]"; text = "text-white";
+            } else if (planCount >= 1) {
+              label = locale === "en" ? "Subscribe" : "구독요망";
+              bg = "bg-amber-100"; text = "text-amber-700";
+            } else {
+              label = locale === "en" ? "1 Free Trial" : "무료 1회";
+              bg = "bg-gray-100"; text = "text-[#1B4332]";
             }
-            if (trial.stage === "premium") return null;
-            const isGuest = trial.stage === "guest";
-            const label = locale === "ko"
-              ? (trial.stage === "exhausted" ? "무료 완료" : (isGuest ? "체험 " : "무료 ") + `${trial.remaining}번 남음`)
-              : (trial.stage === "exhausted" ? "Trial done" : (isGuest ? "Trial: " : "Free: ") + `${trial.remaining} left`);
-            const warn = trial.remaining <= 1;
             return (
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${
-                warn ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-[#1B4332]"
-              }`}>
+              <button
+                onClick={() => onOpenSubscription?.()}
+                className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap active:scale-95 transition-transform ${bg} ${text}`}
+              >
                 {label}
-              </span>
+              </button>
             );
           })()}
         </div>

@@ -22,6 +22,7 @@ interface SavedPlanPayload {
   createdAt?: number;
   lastUsedAt?: number | null;
   useCount?: number;
+  programId?: string;
 }
 
 /**
@@ -158,9 +159,22 @@ export const saveProgram = onRequest(
       res.status(400).json({ error: "Too many sessions (max 100)" }); return;
     }
 
+    // 회의 ζ-5-A (2026-04-30): 무료 1회 마스터 플랜 정책 → 비프리미엄도 program 1개 허용.
+    // 이미 program 1개 이상 보유 시 차단 (무료 한도 소진).
     const isPremium = await isUserPremium(uid);
     if (!isPremium) {
-      res.status(403).json({ error: "Premium required for programs" }); return;
+      const col = db.collection("users").doc(uid).collection("saved_plans");
+      const incomingProgramId = body.sessions[0]?.programId;
+      const existingProgramsSnap = await col.where("programId", "!=", null).get();
+      const existingProgramIds = new Set<string>();
+      existingProgramsSnap.forEach((doc) => {
+        const pid = doc.data().programId as string | undefined;
+        if (pid) existingProgramIds.add(pid);
+      });
+      // 들어오는 program 이 기존 동일 program 갱신이면 OK (덮어쓰기). 새 program 추가만 차단.
+      if (incomingProgramId && !existingProgramIds.has(incomingProgramId) && existingProgramIds.size >= 1) {
+        res.status(403).json({ error: "Free tier supports 1 program. Subscribe Premium for unlimited.", code: "FREE_PROGRAM_LIMIT" }); return;
+      }
     }
 
     try {

@@ -10,6 +10,7 @@
 
 import { onRequest } from "firebase-functions/v2/https";
 import { verifyAuth } from "../helpers";
+import { translateSessionToEn } from "../workoutEngine";
 import {
   generateRunningProgram,
   canEnterFullSub3,
@@ -28,6 +29,8 @@ interface GenerateRequestBody {
   limiter?: string;
   daysPerWeek?: number;
   user5kPaceSec?: number;
+  // 회의 ζ-5-A 평가자 P0-1 (2026-04-30): EN 유저 영문 라벨 저장용
+  locale?: "ko" | "en";
 }
 
 function randomProgramId(): string {
@@ -82,26 +85,34 @@ export const generateRunningProgramFn = onRequest(
     }
 
     try {
+      // 회의 ζ-5-A 평가자 P0-1 (2026-04-30): locale 클라에서 받음 (한글 라벨 EN 노출 방지).
+      const locale: "ko" | "en" = body.locale === "en" ? "en" : "ko";
       const gen = generateRunningProgram({
         programId,
         limiter,
         daysPerWeek,
         user5kPaceSec: body.user5kPaceSec,
+        locale,
       });
 
       const newProgramId = randomProgramId();
       const now = Date.now();
 
+      // 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저 title/description 영문 변환
+      const isEn = locale === "en";
       // ProgramSessionSpec → SavedPlan 형식으로 변환 (클라가 /saveProgram에 그대로 던지면 저장됨)
-      const sessions = gen.sessions.map(s => ({
-        id: randomSessionId(),
-        name: `${gen.programName} · ${s.sessionNumber}/${gen.totalSessions}`,
-        sessionData: {
+      const sessions = gen.sessions.map(s => {
+        const rawSessionData = {
           title: s.title,
           description: s.description,
           exercises: s.exercises,
           intendedIntensity: s.intendedIntensity,
-        },
+        };
+        const sessionData = isEn ? translateSessionToEn(rawSessionData) : rawSessionData;
+        return ({
+        id: randomSessionId(),
+        name: `${gen.programName} · ${s.sessionNumber}/${gen.totalSessions}`,
+        sessionData,
         createdAt: now,
         lastUsedAt: null,
         useCount: 0,
@@ -119,7 +130,8 @@ export const generateRunningProgramFn = onRequest(
         dayOfWeek: s.dayOfWeek,
         targetPaceSec: s.targetPaceSec,
         slotType: s.slotType,
-      }));
+        });
+      });
 
       res.status(200).json({
         ok: true,

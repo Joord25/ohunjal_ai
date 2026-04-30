@@ -1,52 +1,9 @@
 import { onRequest } from "firebase-functions/v2/https";
-import { getAuth } from "firebase-admin/auth";
-import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, db } from "../helpers";
-import { generateAdaptiveWorkout } from "../workoutEngine";
-import * as crypto from "crypto";
+import { generateAdaptiveWorkout, translateSessionToEn } from "../workoutEngine";
 
-const GUEST_TRIAL_LIMIT = 1;
-
-// IP 해시 헬퍼 — planSession 과 공통 로직
-function hashClientIp(req: { headers: Record<string, string | string[] | undefined>; socket?: { remoteAddress?: string } }): string {
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
-    || req.socket?.remoteAddress || "unknown";
-  return crypto.createHash("sha256").update(ip).digest("hex").slice(0, 16);
-}
-
-/**
- * POST /getGuestTrialStatus
- * Auth: anonymous OK (이메일 없어도 Firebase ID token 필요)
- * Returns: { count, limit } — 현재 IP 기반 체험 소진 상태
- *
- * 이유: 클라이언트 localStorage 는 캐시/기기 의존이라 stale 가능.
- * 서버의 trial_ips/{ipHash} 가 SSOT. 홈 진입 시 이걸로 localStorage 를 동기화.
- */
-export const getGuestTrialStatus = onRequest(
-  { cors: true },
-  async (req, res) => {
-    if (req.method !== "POST") {
-      res.status(405).json({ error: "Method not allowed" });
-      return;
-    }
-
-    // Auth 필수 — 익명 토큰이라도 있어야 함 (abuse 방지)
-    try { await verifyAuth(req.headers.authorization); } catch {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    try {
-      const ipHash = hashClientIp(req);
-      const doc = await db.collection("trial_ips").doc(ipHash).get();
-      const count = doc.exists ? Number(doc.data()?.count || 0) : 0;
-      res.status(200).json({ count, limit: GUEST_TRIAL_LIMIT });
-    } catch (error) {
-      console.error("getGuestTrialStatus error:", error);
-      res.status(500).json({ error: "Failed to read trial status" });
-    }
-  },
-);
+// 회의 ζ-5-A 평가자 P1-4 (2026-04-30): getGuestTrialStatus / 게스트 IP trial / isAnonymous 분기 통째 폐기.
+// 클라가 익명 진입 못 하므로 dead code 였고, 익명 토큰 abuser 의 우회 경로 차단을 위해 제거.
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Plan Session — 운동 플랜 생성 (서버사이드 룰베이스)
@@ -68,44 +25,24 @@ export const planSession = onRequest(
       return;
     }
 
-    // Server-side usage limits
-    const FREE_PLAN_LIMIT = 2;
+    // Server-side usage limits — 회의 ζ-5-A 평가자 P1-4 (2026-04-30): 게스트 분기 폐기.
+    // 로그인 free 유저만 FREE_PLAN_LIMIT 검증 (익명 토큰 우회 abuse 차단).
+    const FREE_PLAN_LIMIT = 1;
     try {
-      const userRecord = await getAuth().getUser(uid);
-      const isAnonymous = !userRecord.email;
+      const subDoc = await db.collection("subscriptions").doc(uid).get();
+      const subStatus = subDoc.exists ? subDoc.data()?.status : "free";
 
-      if (isAnonymous) {
-        // Guest: IP-based trial limit (survives cache clear)
-        const ipHash = hashClientIp(req);
-        const trialRef = db.collection("trial_ips").doc(ipHash);
-        const trialDoc = await trialRef.get();
-        const currentCount = trialDoc.exists ? (trialDoc.data()?.count || 0) : 0;
+      if (subStatus !== "active") {
+        const profileDoc = await db.collection("users").doc(uid).get();
+        const planCount = profileDoc.exists ? (profileDoc.data()?.planCount || 0) : 0;
 
-        if (currentCount >= GUEST_TRIAL_LIMIT) {
-          res.status(429).json({ error: "체험 횟수를 초과했습니다. 로그인 후 이용해주세요.", code: "TRIAL_LIMIT" });
+        if (planCount >= FREE_PLAN_LIMIT) {
+          res.status(403).json({ error: "무료 플랜 생성 한도에 도달했습니다. 프리미엄 구독 후 이용해주세요.", code: "FREE_LIMIT" });
           return;
-        }
-
-        (req as any)._trialRef = trialRef;
-        (req as any)._trialCount = currentCount;
-        (req as any)._isGuest = true;
-      } else {
-        // Logged-in free user: enforce plan limit server-side (CRITICAL: prevents paywall bypass)
-        const subDoc = await db.collection("subscriptions").doc(uid).get();
-        const subStatus = subDoc.exists ? subDoc.data()?.status : "free";
-
-        if (subStatus !== "active") {
-          const profileDoc = await db.collection("users").doc(uid).get();
-          const planCount = profileDoc.exists ? (profileDoc.data()?.planCount || 0) : 0;
-
-          if (planCount >= FREE_PLAN_LIMIT) {
-            res.status(403).json({ error: "무료 플랜 생성 한도에 도달했습니다. 프리미엄 구독 후 이용해주세요.", code: "FREE_LIMIT" });
-            return;
-          }
         }
       }
     } catch {
-      // Auth lookup failed — proceed anyway (don't block legitimate requests)
+      // Subscription lookup failed — proceed anyway (don't block legitimate requests)
     }
 
     const {
@@ -121,6 +58,7 @@ export const planSession = onRequest(
       equipment,
       exerciseList,
       muscleGroup,
+      locale, // 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저 한글 라벨 변환용
     } = req.body;
 
     if (condition === undefined || goal === undefined) {
@@ -160,21 +98,15 @@ export const planSession = onRequest(
         }
       }
 
-      // Increment guest trial count on success
-      if ((req as any)._isGuest && (req as any)._trialRef) {
-        const trialRef = (req as any)._trialRef;
-        const currentCount = (req as any)._trialCount;
-        if (currentCount === 0) {
-          await trialRef.set({ count: 1, firstSeenAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
-        } else {
-          await trialRef.update({ count: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
-        }
-      }
+      // 회의 ζ-5-A 평가자 P1-4 (2026-04-30): 게스트 trial 증가 로직 폐기.
+
+      // 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저는 title/description/count 영문 변환
+      const finalSession = locale === "en" ? translateSessionToEn(session) : session;
 
       // AI 응답처럼 보이는 딜레이
       await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
 
-      res.status(200).json(session);
+      res.status(200).json(finalSession);
     } catch (error) {
       console.error("planSession error:", error);
       res.status(500).json({ error: "Failed to generate workout plan" });

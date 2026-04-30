@@ -13,6 +13,15 @@ import {
   getNextProgramSessionFromHistory,
   type CompletionEntry,
 } from "@/utils/programCompletion";
+import { PROGRAM_CATALOG } from "@/constants/programCatalog";
+
+// 회의 ζ-5-A 평가자 P0-1 (2026-04-30): 기존 저장된 러닝 프로그램 EN locale lookup.
+const RUNNING_PROGRAM_NAMES: Record<string, { ko: string; en: string }> = {
+  vo2_boost: { ko: "VO2 max 키우기", en: "VO2 Max Boost" },
+  "10k_sub_50": { ko: "10K 50분 돌파", en: "10K Sub 50" },
+  half_sub_2: { ko: "Half 2시간 돌파", en: "Half Sub 2:00" },
+  full_sub_3: { ko: "Full 3시간 돌파", en: "Full Sub 3:00" },
+};
 import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import type { WorkoutHistory } from "@/constants/workout";
 
@@ -28,6 +37,8 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
   const [plans, setPlans] = useState<SavedPlan[]>(() => getSavedPlans());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteProgramId, setConfirmDeleteProgramId] = useState<string | null>(null);
+  // 회의 ζ-5 (2026-04-30): 삭제 진행 표시 — 비동기 remoteDelete 동안 멈춘 것처럼 보이는 UX 방어
+  const [isDeleting, setIsDeleting] = useState(false);
   const [expandedProgram, setExpandedProgram] = useState<string | null>(initialExpandedProgramId ?? null);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -51,17 +62,27 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
   };
 
   const handleDelete = async (id: string) => {
-    await remoteDeletePlan(id);
-    deletePlan(id);
-    setPlans(getSavedPlans());
-    setConfirmDeleteId(null);
+    setIsDeleting(true);
+    try {
+      await remoteDeletePlan(id);
+      deletePlan(id);
+      setPlans(getSavedPlans());
+      setConfirmDeleteId(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleDeleteProgram = async (programId: string) => {
-    await remoteDeleteProgram(programId);
-    deleteProgram(programId);
-    setPlans(getSavedPlans());
-    setConfirmDeleteProgramId(null);
+    setIsDeleting(true);
+    try {
+      await remoteDeleteProgram(programId);
+      deleteProgram(programId);
+      setPlans(getSavedPlans());
+      setConfirmDeleteProgramId(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // 회의 64-ζ-γ: 프로그램 그룹 + 완료 상태를 workout_history 기반으로 재계산.
@@ -82,9 +103,17 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
       programIds.add(p.programId);
       const sessions = getProgramSessions(p.programId);
       const completionMap = deriveProgramCompletions(sessions, workoutHistory);
+      // 회의 ζ-5-A (2026-04-30): EN 유저 한글 카탈로그 이름 노출 버그 — programGoal(=catalogId or RunningProgramId) lookup.
+      const catalogMatch = p.programGoal ? PROGRAM_CATALOG.find(c => c.id === p.programGoal) : null;
+      const runningMatch = p.programGoal && RUNNING_PROGRAM_NAMES[p.programGoal] ? RUNNING_PROGRAM_NAMES[p.programGoal] : null;
+      const localizedName = catalogMatch
+        ? (locale === "en" ? catalogMatch.labelEn : catalogMatch.labelKo)
+        : runningMatch
+        ? (locale === "en" ? runningMatch.en : runningMatch.ko)
+        : (p.programName ?? p.name);
       result.push({
         programId: p.programId,
-        programName: p.programName ?? p.name,
+        programName: localizedName,
         completed: completionMap.size,
         total: sessions.length,
         nextSession: getNextProgramSessionFromHistory(sessions, workoutHistory),
@@ -95,7 +124,7 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
       programs: result,
       singlePlans: all.filter(p => !p.programId),
     };
-  }, [plans, workoutHistory]);
+  }, [plans, workoutHistory, locale]);
   const isEmpty = programs.length === 0 && singlePlans.length === 0;
 
   return (
@@ -325,7 +354,7 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
 
       {/* 단일 플랜 삭제 확인 */}
       {confirmDeleteId && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center px-8" onClick={() => setConfirmDeleteId(null)}>
+        <div className="absolute inset-0 z-40 flex items-center justify-center px-8" onClick={() => { if (!isDeleting) setConfirmDeleteId(null); }}>
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative w-full max-w-xs bg-white rounded-2xl p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-black text-[#1B4332] mb-4 text-center">
@@ -335,11 +364,24 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
               {locale === "en" ? "Delete this plan?" : "정말 삭제할까요?"}
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 h-11 rounded-xl border-2 border-gray-200 text-gray-700 font-black text-sm">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-xl border-2 border-gray-200 text-gray-700 font-black text-sm disabled:opacity-40"
+              >
                 {t("common.cancel")}
               </button>
-              <button onClick={() => handleDelete(confirmDeleteId)} className="flex-1 h-11 rounded-xl bg-red-500 text-white font-black text-sm">
-                {t("my_plans.delete")}
+              <button
+                onClick={() => handleDelete(confirmDeleteId)}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-xl bg-red-500 text-white font-black text-sm flex items-center justify-center gap-1.5 disabled:opacity-70"
+              >
+                {isDeleting && (
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
+                  </svg>
+                )}
+                {isDeleting ? t("my_plans.deleting") : t("my_plans.delete")}
               </button>
             </div>
           </div>
@@ -348,7 +390,7 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
 
       {/* 프로그램 삭제 확인 */}
       {confirmDeleteProgramId && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center px-8" onClick={() => setConfirmDeleteProgramId(null)}>
+        <div className="absolute inset-0 z-40 flex items-center justify-center px-8" onClick={() => { if (!isDeleting) setConfirmDeleteProgramId(null); }}>
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative w-full max-w-xs bg-white rounded-2xl p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-black text-[#1B4332] mb-4 text-center">
@@ -358,11 +400,24 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
               {locale === "en" ? "Delete entire program and all sessions?" : "프로그램과 모든 세션을 삭제할까요?"}
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDeleteProgramId(null)} className="flex-1 h-11 rounded-xl border-2 border-gray-200 text-gray-700 font-black text-sm">
+              <button
+                onClick={() => setConfirmDeleteProgramId(null)}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-xl border-2 border-gray-200 text-gray-700 font-black text-sm disabled:opacity-40"
+              >
                 {t("common.cancel")}
               </button>
-              <button onClick={() => handleDeleteProgram(confirmDeleteProgramId)} className="flex-1 h-11 rounded-xl bg-red-500 text-white font-black text-sm">
-                {t("my_plans.delete")}
+              <button
+                onClick={() => handleDeleteProgram(confirmDeleteProgramId)}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-xl bg-red-500 text-white font-black text-sm flex items-center justify-center gap-1.5 disabled:opacity-70"
+              >
+                {isDeleting && (
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="30 60" />
+                  </svg>
+                )}
+                {isDeleting ? t("my_plans.deleting") : t("my_plans.delete")}
               </button>
             </div>
           </div>

@@ -35,6 +35,13 @@ type FunnelEvent =
   | "paywall_view"
   | "paywall_tap_subscribe"
   | "paywall_dismiss"
+  // 회의 ζ-5-A (2026-04-30) 가격 실험 funnel
+  | "pricing_experiment_assigned"
+  | "pricing_experiment_paywall_view"
+  | "pricing_experiment_paid"
+  | "free_main_exercise_completed"
+  | "free_gate_paywall_trigger"
+  // 회의 ζ-5-A 평가자 P2 (2026-04-30): 게스트 폐기 + ChatHome 폐기 예정 — enum 유지 (GA 히스토리 보존). 호출처 ChatHome.tsx 외 0건.
   | "guest_to_login"
   | "guest_trial_exhausted"
   | "login_modal_view"

@@ -135,7 +135,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ userName, onComplete }) 
   );
 
   return (
-    <div className="h-full flex flex-col bg-white relative overflow-hidden">
+    // 회의 ζ-5-A (2026-04-30): iOS notch 침범 방지 — env() only (Android/PC 0)
+    <div
+      className="h-full flex flex-col bg-white relative overflow-hidden"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
 
 
       {/* Welcome */}

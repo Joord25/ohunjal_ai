@@ -304,9 +304,20 @@ export const RunningReportBody: React.FC<RunningReportBodyProps> = ({ runningSta
               <div className="flex-1 min-w-0">
                 {hasDistance ? (
                   <>
-                    <p className="text-[56px] font-black text-[#1B4332] leading-none tabular-nums">
-                      {formatRunDistanceKm(weekly.totalDistance)}
-                    </p>
+                    {(() => {
+                      const distStr = formatRunDistanceKm(weekly.totalDistance);
+                      // 폰 폭 384 - ActivityRing 128 - gap 24 - padding 48 ≈ 184px 가용.
+                      // 56px 폰트는 3자 이하만 안전 (예: "9.8"). "13.12" 5자는 우측 잘림 → 동적 분기.
+                      const fontPx = distStr.length >= 5 ? 40 : distStr.length >= 4 ? 48 : 56;
+                      return (
+                        <p
+                          className="font-black text-[#1B4332] leading-none tabular-nums"
+                          style={{ fontSize: `${fontPx}px` }}
+                        >
+                          {distStr}
+                        </p>
+                      );
+                    })()}
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-2">km</p>
                     <div className="border-t border-gray-100 mt-4 pt-3">
                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.18em]">

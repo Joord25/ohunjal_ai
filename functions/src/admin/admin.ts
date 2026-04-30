@@ -814,10 +814,12 @@ export const adminDashboard = onRequest(
         // 회의 63: 월별 추이 (최근 6개월)
         monthlyTimeline,
         // 회의: 체험/무료 풀 소진 현황
+        // 회의 ζ-5-A 평가자 P2 (2026-04-30): 게스트 시스템 폐기 → guestTrial 은 legacy IP 데이터.
+        // 신규 카운트 0 (getGuestTrialStatus 제거됨). 과거 데이터 조회용으로만 유지.
         usage: {
           guestTrial: {
             total: trialIpsTotal,
-            exhausted: trialExhausted,  // >= 1회 사용 (GUEST_TRIAL_LIMIT=1이므로 1회면 소진)
+            exhausted: trialExhausted,  // legacy: 게스트 폐기 이전 IP 기록
           },
           freePlan: {
             total: freeUsersTotal,

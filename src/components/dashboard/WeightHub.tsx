@@ -33,6 +33,8 @@ interface WeightHubProps {
   onBack: () => void;
   onOpenMyPlans: () => void;
   onOpenProfile: () => void;
+  /** 회의 ζ-5-A (2026-04-30) 정정: 카탈로그 화면에서 바로 운동 목표 변경. 부모가 localStorage 저장 + 재렌더 트리거. */
+  onChangeGoal: (newGoal: OnboardingGoal) => void;
   /** 카탈로그 카드 클릭 핸들러. body_picker 는 muscle 동봉. program/campaign 은 settings(sessionsPerWeek/startChoice) 동봉 */
   onStartCatalog: (item: CatalogItem, opt?: { muscle?: TargetMuscle; sessionsPerWeek?: number; startChoice?: "today" | "tomorrow" | "next_monday" }) => void;
   onRequestLogin: () => void;
@@ -49,10 +51,13 @@ const ICON_MY_PLANS = (
     <path d="M6 4h12a1 1 0 011 1v16l-7-4-7 4V5a1 1 0 011-1z" />
   </svg>
 );
-const ICON_PROFILE = (
+// 회의 ζ-5-A (2026-04-30): 헤더 우측 = 운동 목표 변경 (기존 프로필 아이콘 폐기 → 스위치 아이콘)
+const ICON_SWITCH = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-    <circle cx="12" cy="9" r="3.5" />
-    <path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" />
+    <polyline points="17 1 21 5 17 9" />
+    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+    <polyline points="7 23 3 19 7 15" />
+    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
   </svg>
 );
 
@@ -137,6 +142,7 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   onBack,
   onOpenMyPlans,
   onOpenProfile,
+  onChangeGoal,
   onStartCatalog,
 }) => {
   const { locale } = useTranslation();
@@ -144,6 +150,8 @@ export const WeightHub: React.FC<WeightHubProps> = ({
   const selectedGoal = onboardingGoal;
   // 회의 ζ-5 (2026-04-30): body_picker / settings step (러닝 패턴 미러)
   const [step, setStep] = useState<"list" | "body_picker" | "settings">("list");
+  // 회의 ζ-5-A (2026-04-30) 정정: 배지 → 같은 화면 목표 픽커 모달 (프로필 이동 X)
+  const [showGoalPicker, setShowGoalPicker] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
   const [settingsFreq, setSettingsFreq] = useState<number>(3);
   const [settingsStart, setSettingsStart] = useState<"today" | "tomorrow" | "next_monday">("today");
@@ -166,7 +174,8 @@ export const WeightHub: React.FC<WeightHubProps> = ({
     }
     // 회의 ζ-5 (2026-04-30): program/campaign → settings step (주당 빈도/시작 시점 입력)
     setSelectedItem(item);
-    setSettingsFreq(item.sessionsPerWeek ?? 3);
+    // 빈도 옵션은 2/3/4로만 노출 — 카탈로그 default 5는 4로 clamp
+    setSettingsFreq(Math.min(4, Math.max(2, item.sessionsPerWeek ?? 3)));
     setSettingsStart("today");
     setStep("settings");
   };
@@ -211,12 +220,13 @@ export const WeightHub: React.FC<WeightHubProps> = ({
             {ICON_MY_PLANS}
             {hasActivePrograms && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />}
           </button>
+          {/* 회의 ζ-5-A (2026-04-30): 프로필 아이콘 → 스위치 아이콘 + 운동 목표 픽커 직결 */}
           <button
-            onClick={onOpenProfile}
-            aria-label="프로필"
+            onClick={() => setShowGoalPicker(true)}
+            aria-label={locale === "en" ? "Change goal" : "운동 목표 변경"}
             className="p-2 text-[#1B4332] active:scale-[0.94] transition-transform"
           >
-            {ICON_PROFILE}
+            {ICON_SWITCH}
           </button>
         </div>
       </div>
@@ -237,6 +247,8 @@ export const WeightHub: React.FC<WeightHubProps> = ({
                 {locale === "en" ? "Pick one and start today" : "오늘 한 가지 골라 시작하세요"}
               </p>
             </div>
+
+            {/* 회의 ζ-5-A (2026-04-30) 재정정: 운동 목표 emerald 배지 폐기 → 헤더 우측 스위치 아이콘으로 통일 */}
 
             {/* 회의 ζ-5 ④/Phase 5 정정 (2026-04-30): 진행 중 카드 = RunningProgramSheet 디자인 100% 미러 */}
             {activeWeightPrograms && activeWeightPrograms.length > 0 && (
@@ -359,7 +371,7 @@ export const WeightHub: React.FC<WeightHubProps> = ({
                 {locale === "en" ? "How many days per week?" : "일주일에 몇 번 운동할 수 있어요?"}
               </p>
               <div className="flex gap-2">
-                {[3, 4, 5].map((n) => {
+                {[2, 3, 4].map((n) => {
                   const active = settingsFreq === n;
                   return (
                     <button
@@ -413,6 +425,51 @@ export const WeightHub: React.FC<WeightHubProps> = ({
           </>
         )}
       </div>
+
+      {/* 회의 ζ-5-A (2026-04-30): 운동 목표 픽커 모달 — 같은 화면에서 목표 변경 → 카탈로그 자동 갱신 */}
+      {showGoalPicker && (
+        <div className="absolute inset-0 z-50 flex items-end" onClick={() => setShowGoalPicker(false)}>
+          <div className="absolute inset-0 bg-black/40 animate-fade-in" />
+          <div
+            className="relative w-full bg-white rounded-t-3xl px-6 pt-5 pb-8 animate-slide-up shadow-2xl"
+            style={{ paddingBottom: "calc(var(--safe-area-bottom, 0px) + 24px)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <p className="text-[10px] font-black tracking-[0.18em] uppercase text-gray-400">
+              {locale === "en" ? "GOAL" : "운동 목표"}
+            </p>
+            <h2 className="text-2xl font-black text-[#1B4332] mt-1 mb-1">
+              {locale === "en" ? "Pick your goal" : "어떤 목표로 운동할까요?"}
+            </h2>
+            <p className="text-[12px] text-gray-500 mb-5">
+              {locale === "en" ? "Catalog updates automatically" : "선택하면 카탈로그가 자동으로 바뀌어요"}
+            </p>
+            <div className="flex flex-col gap-2">
+              {CHIP_GOALS.map((g) => {
+                const active = g.id === onboardingGoal;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => {
+                      onChangeGoal(g.id);
+                      setShowGoalPicker(false);
+                    }}
+                    className={`w-full py-3.5 rounded-2xl text-[14px] font-black transition ${
+                      active
+                        ? "bg-[#1B4332] text-white"
+                        : "bg-gray-50 text-[#1B4332] active:bg-gray-100"
+                    }`}
+                  >
+                    {locale === "en" ? g.en : g.ko}
+                    {active && <span className="ml-2 text-[11px] font-bold opacity-70">{locale === "en" ? "current" : "현재"}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
