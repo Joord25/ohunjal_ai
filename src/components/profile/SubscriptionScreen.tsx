@@ -6,9 +6,17 @@ import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { trackEvent } from "@/utils/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
-import { detectPersona } from "@/utils/personaSystem";
-import { getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { getPaddle, getPaddleMonthlyPriceId, isPaddleEnabled } from "@/utils/paddle";
+import {
+  getOrAssignTier,
+  getPaddlePriceIdForTier,
+  recordPaywallView,
+  recordPaywallPaid,
+  KRW_BY_TIER,
+  USD_BY_TIER,
+  formatPriceForLocale,
+  type PricingTier,
+} from "@/utils/pricingExperiment";
 
 const REFUND_EN = `NOTICE: This English translation is provided for reference purposes only. The legally binding version is the Korean original.
 
@@ -414,6 +422,38 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   const [waitlistJoined, setWaitlistJoined] = useState(false);
   const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
 
+  // 회의 ζ-5-A (2026-04-30): 가격 실험 — uid 기반 tier 할당 + paywall view 기록.
+  // ζ-5-A 후속 fix (2026-04-30): noise 제거 2단 가드 —
+  //   (a) URL 가드: ?billing_key 또는 ?paddle_success 진입은 결제 redirect 후 reload 라
+  //       의도된 새 paywall 진입 아님. paywall view 기록 스킵 (yimspring paywallViews=2 재발 방지).
+  //   (b) sessionStorage dedupe: 같은 브라우저 세션에서 같은 uid 1번만 카운트.
+  //       SubscriptionScreen 토글/재마운트로 인한 중복 +1 제거. 새 탭/세션이면 다시 카운트.
+  const [tier, setTier] = useState<PricingTier | null>(null);
+  useEffect(() => {
+    if (!user?.uid) return;
+    let cancelled = false;
+    getOrAssignTier(user.uid, locale === "ko" ? "ko" : "en").then((assigned) => {
+      if (cancelled) return;
+      setTier(assigned);
+      if (initialStatus === "active") return; // 이미 결제한 유저 X
+      // (a) URL 가드 — 결제 redirect 진입은 noise
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("billing_key") || params.get("billingKey") || params.get("paddle_success")) return;
+        // (b) sessionStorage dedupe — 한 세션 1번만
+        const key = `pricing_paywall_view_${user.uid}`;
+        if (sessionStorage.getItem(key) === "1") return;
+        sessionStorage.setItem(key, "1");
+      }
+      recordPaywallView(assigned, "subscription_screen").catch(() => { /* ignore */ });
+    });
+    return () => { cancelled = true; };
+  }, [user?.uid, initialStatus]);
+
+  const tierKrwAmount = tier ? KRW_BY_TIER[tier] : 6900;
+  const tierUsdAmount = tier ? USD_BY_TIER[tier] : 4.99;
+  const tierPriceLabel = tier ? formatPriceForLocale(tier, locale === "ko" ? "ko" : "en") : (locale === "ko" ? "₩6,900" : "$4.99");
+
   useEffect(() => {
     if (!paddleDisabled || !user?.uid) return;
     getDoc(doc(db, "international_waitlist", user.uid))
@@ -539,16 +579,18 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   };
 
   const handlePaddleSubscribe = async () => {
-    const priceId = getPaddleMonthlyPriceId();
+    // 회의 ζ-5-A (2026-04-30): tier 기반 Paddle Price ID 분기. fallback = 기존 monthly.
+    const tierPriceId = tier ? getPaddlePriceIdForTier(tier) : "";
+    const priceId = tierPriceId || getPaddleMonthlyPriceId();
     if (!priceId) {
       setError(t("sub.error.generic"));
-      console.error("[Paddle] Price ID missing (NEXT_PUBLIC_PADDLE_PRICE_MONTHLY)");
+      console.error("[Paddle] Price ID missing — tier:", tier, "fallback:", getPaddleMonthlyPriceId());
       return;
     }
 
     setIsProcessing(true);
     setError(null);
-    trackEvent("paywall_tap_subscribe", { plan: "monthly", value: 4.99, currency: "USD" });
+    trackEvent("paywall_tap_subscribe", { plan: "monthly", value: tierUsdAmount, currency: "USD", tier: tier ?? "default" });
 
     try {
       const paddle = await getPaddle();
@@ -595,7 +637,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       return;
     }
 
-    trackEvent("paywall_tap_subscribe", { plan: "monthly", value: 6900, currency: "KRW" });
+    trackEvent("paywall_tap_subscribe", { plan: "monthly", value: tierKrwAmount, currency: "KRW", tier: tier ?? "default" });
     setIsProcessing(true);
     setError(null);
 
@@ -641,6 +683,9 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
         },
         body: JSON.stringify({
           billingKey: response.billingKey,
+          // 회의 ζ-5-A (2026-04-30): 가격 실험 — tier 기반 amount 서버 전달.
+          amount: tierKrwAmount,
+          tier: tier ?? null,
         }),
       });
 
@@ -653,11 +698,16 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       const data = await serverRes.json().catch(() => ({} as { paymentId?: string; amount?: number; plan?: string; currency?: string }));
       trackEvent("purchase", {
         transaction_id: data.paymentId || "",
-        value: data.amount || 6900,
+        value: data.amount || tierKrwAmount,
         currency: data.currency || "KRW",
         plan: data.plan || "monthly",
         payment_method: "kakaopay",
+        tier: tier ?? "default",
       });
+      // 회의 ζ-5-A (2026-04-30): 가격 실험 — paid 상태 클라 기록 (서버도 같이 기록함).
+      if (tier) {
+        recordPaywallPaid(tier, data.amount || tierKrwAmount, "KRW", "portone").catch(() => { /* ignore */ });
+      }
       setStatus("active");
       await checkSubscription();
     } catch (err) {
@@ -881,42 +931,28 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
               </div>
             )}
 
-            {/* Brand Admiration 인트로 — 회의 53 (박충환 Enrich) */}
-            {status === "free" && (() => {
-              const history = getCachedWorkoutHistory();
-              if (history.length < 3) return null;
-              const persona = detectPersona(history);
-              return (
-                <div className="rounded-3xl bg-gradient-to-br from-[#1B4332] to-[#2D6A4F] p-5 text-white">
-                  <p className="text-[10px] font-black text-emerald-300 uppercase tracking-[0.2em] mb-2">
-                    {locale === "ko" ? `★ ${history.length}번의 여정 ★` : `★ ${history.length} workouts in ★`}
-                  </p>
-                  <p className="text-xl font-black leading-tight mb-1">
-                    {locale === "ko"
-                      ? <>지금까지의 당신,<br />{persona.name}형이 완성되고 있어요</>
-                      : <>You are becoming<br />a {persona.nameEn}</>}
-                  </p>
-                  <p className="text-sm text-emerald-100/80 mt-3 leading-relaxed">
-                    {locale === "ko"
-                      ? "이 정체성과 기록, 당신만의 것이에요. 계속 지키시겠어요?"
-                      : "This identity and record is yours alone. Will you keep it?"}
-                  </p>
-                </div>
-              );
-            })()}
+            {/* 회의 ζ-5-A (2026-04-30): 페르소나 인트로 폐기 → 단순 CTA 헤드라인 (free 유저 전체 노출) */}
+            {status === "free" && (
+              <div className="rounded-3xl bg-gradient-to-br from-[#1B4332] to-[#2D6A4F] p-5 text-white text-center">
+                <p className="text-xl font-black leading-tight">
+                  {locale === "ko"
+                    ? <>계속 운동하고 싶다면!<br />바로 구독!</>
+                    : <>Want to keep going?<br />Subscribe now!</>}
+                </p>
+              </div>
+            )}
 
             {/* Pricing Card */}
             <div className="p-6 rounded-2xl border-2 border-[#2D6A4F] bg-[#f0fdf4] relative text-center">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#2D6A4F] text-white text-xs font-bold rounded-full whitespace-nowrap">{t("sub.earlyBird")}</div>
+              {/* 회의 ζ-5-A 평가자 P1-5 (2026-04-30): 9,900원 line-through 제거 (표시광고법 — 최초 판매가 입증 부담). */}
               <div className="mb-5 mt-2">
                 <div className="flex items-baseline justify-center gap-2">
-                  <span className="text-lg text-gray-400 line-through">{t("my.premium.originalPrice")}</span>
-                  <span className="text-4xl font-black text-[#1B4332]">{locale === "en" ? "$4.99" : "₩6,900"}</span>
+                  <span className="text-4xl font-black text-[#1B4332]">{tierPriceLabel}</span>
                   <span className="text-base font-medium text-gray-400">{t("sub.perMonth")}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 mt-2">
-                  <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{t("sub.discount")}</span>
-                  <span className="text-xs text-[#2D6A4F] font-semibold">{t("sub.earlyBird")}</span>
+                  <span className="px-2.5 py-0.5 bg-emerald-50 text-[#2D6A4F] text-xs font-bold rounded-full">{t("sub.discount")}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2.5 text-left">
