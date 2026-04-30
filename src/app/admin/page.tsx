@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import { onAuthStateChanged, signInWithPopup, User } from "firebase/auth";
 
@@ -22,85 +22,81 @@ function useBodyScroll() {
     return () => { document.body.style.overflow = ""; };
   }, []);
 }
-type Tab = "dashboard" | "users" | "payments" | "cancel" | "refund" | "history" | "research";
 
-// 회의 ζ-4 (SEED-003): YouTube 시장 조사 22채널 풀
-const RESEARCH_CHANNELS: { name: string; region: "kr" | "global" }[] = [
-  // 한국 헬스 6
-  { name: "김계란", region: "kr" },
-  { name: "핏블리", region: "kr" },
-  { name: "헬스마이프", region: "kr" },
-  { name: "강경원", region: "kr" },
-  { name: "혁피티", region: "kr" },
-  { name: "임종성", region: "kr" },
-  // 글로벌 웨이트 1·2순위 8
-  { name: "Jeff Nippard", region: "global" },
-  { name: "BuiltWithScience", region: "global" },
-  { name: "Renaissance Periodization", region: "global" },
-  { name: "Sean Nalewanyj", region: "global" },
-  { name: "AthleanX", region: "global" },
-  { name: "Mike Thurston", region: "global" },
-  { name: "Greg Doucette", region: "global" },
-  { name: "Layne Norton", region: "global" },
-  // 글로벌 여성 웨이트 3
-  { name: "Krissy Cela", region: "global" },
-  { name: "Whitney Simmons", region: "global" },
-  { name: "Stephanie Buttermore", region: "global" },
-  // 임계치 예외 1 (대표 컨펌)
-  { name: "Stronger By Science", region: "global" },
-  // 한국 홈트 4
-  { name: "땅끄부부", region: "kr" },
-  { name: "빅씨스", region: "kr" },
-  { name: "에이핏", region: "kr" },
-  { name: "강하나", region: "kr" },
-  // 글로벌 홈트 1
-  { name: "Chloe Ting", region: "global" },
-];
+// 회의 ζ-5-A 후속 (2026-04-30): 가격 실험 대시보드 컬럼 설명 툴팁 — hover(데스크톱) + tap(모바일).
+// 1차 시도(absolute) 실패: 테이블 overflow-x-auto 컨테이너가 위쪽 자식 잘라먹음.
+// fixed positioning + getBoundingClientRect 으로 viewport 기준 표시 → overflow 영향 X.
+const InfoTooltip: React.FC<{ label: React.ReactNode; tip: string }> = ({ label, tip }) => {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
-interface ResearchChannelResult {
-  name: string;
-  region: "kr" | "global";
-  status: "pending" | "running" | "ok" | "error";
-  channelId?: string;
-  videosFetched?: number;
-  filter1Passed?: number;
-  passedVideoIds?: string[];
-  allVideoIds?: string[];
-  error?: string;
-}
+  const showTip = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 6, left: rect.left + rect.width / 2 });
+    }
+    setOpen(true);
+  };
+  const hideTip = () => setOpen(false);
 
-interface ResultVideo {
-  videoId: string;
-  channelId: string;
-  channelTitle: string;
-  title: string;
-  region: "kr" | "global";
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  engagementRate: number;
-  likeRate: number;
-  filter1Pass: boolean;
-  thumbnailUrl: string | null;
-  publishedAt: string;
-  analyzed: boolean;
-  behaviorSignalRate?: number;
-  behaviorCount?: number;
-  topKeywords?: { keyword: string; count: number }[];
-  topQuotes?: string[];
-  filter2Pass?: boolean;
-}
+  useEffect(() => {
+    if (!open) return;
+    const onClickOut = (e: MouseEvent) => {
+      if (!btnRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onScroll = () => setOpen(false);
+    document.addEventListener("click", onClickOut);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("click", onClickOut);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open]);
 
-interface ChannelSummary {
-  channelId: string;
-  title: string;
-  region: "kr" | "global";
-  videosFetched: number;
-  filter1PassedCount: number;
-  filter2PassedCount: number;
-  avgBehaviorRate: number;
-  topVideoId: string | null;
-}
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span>{label}</span>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); open ? hideTip() : showTip(); }}
+        onMouseEnter={showTip}
+        onMouseLeave={hideTip}
+        className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-300 hover:bg-gray-500 text-white text-[8px] font-bold leading-none transition-colors shrink-0 cursor-help"
+        aria-label="설명 보기"
+      >?</button>
+      {open && pos && (
+        <span
+          style={{
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            backgroundColor: "#111827",
+            color: "white",
+            fontSize: "10px",
+            lineHeight: 1.45,
+            fontWeight: 400,
+            padding: "8px 10px",
+            borderRadius: 6,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+            width: "max-content",
+            maxWidth: 240,
+            textAlign: "left",
+            whiteSpace: "normal",
+            pointerEvents: "none",
+          }}
+        >
+          {tip}
+        </span>
+      )}
+    </span>
+  );
+};
+// 회의 ζ-5-A (2026-04-30): SEED-003 research 폐기. 가격 실험은 dashboard 로 통합.
+type Tab = "dashboard" | "users" | "payments" | "cancel" | "refund" | "history";
 
 interface PaymentRecord {
   paymentId: string;
@@ -180,7 +176,7 @@ interface DashboardData {
     revenue: number;
     churnedSubs: number;
   }>;
-  // 체험/무료 풀 소진 현황
+  // 체험/무료 풀 소진 현황 (회의 ζ-5-A: guestTrial 은 legacy 데이터, freePlan 은 활성)
   usage?: {
     guestTrial: {
       total: number;
@@ -354,19 +350,25 @@ export default function AdminPage() {
   const [loadingRefundContext, setLoadingRefundContext] = useState<string | null>(null);
   const [confirmRefund, setConfirmRefund] = useState<{ id: string; action: "approve" | "reject"; email: string; amount: number } | null>(null);
 
-  // 회의 ζ-4 (SEED-003): YouTube 시장 조사
-  const [researchResults, setResearchResults] = useState<ResearchChannelResult[]>(
-    RESEARCH_CHANNELS.map((c) => ({ ...c, status: "pending" as const }))
-  );
-  const [researchRunning, setResearchRunning] = useState(false);
-  const [analyzeRunning, setAnalyzeRunning] = useState(false);
-  const [analyzeProgress, setAnalyzeProgress] = useState({ done: 0, total: 0 });
-  const [resultVideos, setResultVideos] = useState<ResultVideo[]>([]);
-  const [resultChannels, setResultChannels] = useState<ChannelSummary[]>([]);
-  const [loadingResults, setLoadingResults] = useState(false);
-  const [resultRegion, setResultRegion] = useState<"all" | "kr" | "global">("all");
-  const [resultFilter, setResultFilter] = useState<"all" | "filter1" | "filter2">("filter2");
-  const [resultSortBy, setResultSortBy] = useState<"behavior" | "view" | "engagement">("behavior");
+  // 회의 ζ-5-A (2026-04-30): 가격 실험 대시보드 — locale 분리 12행
+  const [pricingStats, setPricingStats] = useState<{
+    rows: Array<{
+      tier: string;
+      locale: "ko" | "en";
+      price: number;
+      currency: "KRW" | "USD";
+      assignedCount: number;
+      paywallViews: number;
+      paidCount: number;
+      conversionRate: number;
+      paymentConversionRate: number;
+      revenuePerAssignedKrw: number;
+    }>;
+    total: { assignedCount: number; paywallViews: number; paidCount: number };
+    byLocale?: { ko: { assignedCount: number; paywallViews: number; paidCount: number }; en: { assignedCount: number; paywallViews: number; paidCount: number } };
+    updatedAt?: string;
+  } | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
 
   // 회의 57 Tier 2: 일반 Confirm 모달 + Activate 모달 + Bulk + Export 상태
@@ -838,93 +840,26 @@ export default function AdminPage() {
     setTab("users");
   };
 
-  // 회의 ζ-4 (SEED-003): YouTube 시장 조사 트리거
-  const handleResearchAll = async () => {
-    if (researchRunning) return;
-    setResearchRunning(true);
-    const token = await getToken();
-    const updated: ResearchChannelResult[] = RESEARCH_CHANNELS.map((c) => ({ ...c, status: "pending" }));
-    setResearchResults(updated);
-
-    for (let i = 0; i < RESEARCH_CHANNELS.length; i++) {
-      const channel = RESEARCH_CHANNELS[i];
-      updated[i] = { ...channel, status: "running" };
-      setResearchResults([...updated]);
-      try {
-        const res = await fetch("/api/researchYoutubeChannel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ channelName: channel.name, region: channel.region, maxVideos: 15, maxComments: 30 }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        updated[i] = {
-          ...channel, status: "ok",
-          channelId: data.channelId,
-          videosFetched: data.videosFetched,
-          filter1Passed: data.filter1Passed,
-          passedVideoIds: data.passedVideoIds,
-          allVideoIds: data.allVideoIds,
-        };
-      } catch (e) {
-        updated[i] = { ...channel, status: "error", error: e instanceof Error ? e.message : "unknown" };
-      }
-      setResearchResults([...updated]);
-    }
-    setResearchRunning(false);
-  };
-
-  const handleAnalyzeAll = async () => {
-    if (analyzeRunning) return;
-    // 회의 ζ-4 fix: 분석 대상 = 모든 영상 (1차 필터 무관). 1차 통과는 결과 보고서에서 색칠 표시 용도.
-    const targets = researchResults.filter((r) => r.status === "ok" && r.channelId && r.allVideoIds && r.allVideoIds.length > 0);
-    if (targets.length === 0) {
-      alert("분석할 영상 없음. 먼저 채널 수집을 완료하세요.");
-      return;
-    }
-    const total = targets.reduce((sum, t) => sum + (t.allVideoIds?.length ?? 0), 0);
-    setAnalyzeRunning(true);
-    setAnalyzeProgress({ done: 0, total });
-    const token = await getToken();
-    let done = 0;
-    for (const t of targets) {
-      const lang: "ko" | "en" = t.region === "kr" ? "ko" : "en";
-      for (const videoId of t.allVideoIds ?? []) {
-        try {
-          await fetch("/api/analyzeYoutubeComments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ channelId: t.channelId, videoId, language: lang }),
-          });
-        } catch { /* keep going */ }
-        done += 1;
-        setAnalyzeProgress({ done, total });
-      }
-    }
-    setAnalyzeRunning(false);
-  };
-
-  const loadResearchResults = useCallback(async () => {
-    setLoadingResults(true);
+  // 회의 ζ-5-A (2026-04-30): 가격 실험 통계 로딩
+  const loadPricingStats = useCallback(async () => {
+    setPricingLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch("/api/getResearchResults", {
+      const res = await fetch("/api/adminPricingExperiment", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ sortBy: resultSortBy, region: resultRegion, filter: resultFilter }),
       });
       const data = await res.json();
       if (res.ok) {
-        setResultVideos(data.videos ?? []);
-        setResultChannels(data.channels ?? []);
+        setPricingStats(data);
       } else {
-        alert(`결과 조회 실패: ${data.error ?? "unknown"}`);
+        alert(`집계 실패: ${data.error ?? "unknown"}`);
       }
     } catch (e) {
-      alert(`결과 조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
+      alert(`집계 실패: ${e instanceof Error ? e.message : "unknown"}`);
     }
-    setLoadingResults(false);
-  }, [getToken, resultSortBy, resultRegion, resultFilter]);
+    setPricingLoading(false);
+  }, [getToken]);
 
   // 회의 57 Tier 1: "오늘 할 일" 집계
   const todayActions = (() => {
@@ -969,7 +904,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1">
-          {([["dashboard","대시보드"],["users","유저"],["payments","결제"],["cancel","취소"],["refund","환불"],["history","이력"],["research","조사"]] as [Tab,string][]).map(([t, label]) => (
+          {([["dashboard","대시보드"],["users","유저"],["payments","결제"],["cancel","취소"],["refund","환불"],["history","이력"]] as [Tab,string][]).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${tab === t ? "bg-white text-[#1B4332] shadow-sm" : "text-gray-400"}`}
             >{label}</button>
@@ -1033,131 +968,118 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                {/* 회의 64-M2 Step B: 유저 행동 퍼널 — 회의 2026-04-23 레이블 재정의:
-                    "앱 진입" 은 실제로 Auth 계정 생성 시점이라 "계정 생성" 으로 정정.
-                    "챗 시작" 은 첫 parseIntent 호출이라 "첫 채팅" 으로 명시.
-                    Agent 코드 감사 결과 (2026-04-23) 반영. */}
-                {dashboard.funnel && (() => {
-                  const STAGES = [
-                    { key: "appEntered" as const, label: "계정 생성" },
-                    { key: "chatStarted" as const, label: "첫 채팅" },
-                    { key: "planCreated" as const, label: "플랜 생성" },
-                    { key: "workoutStarted" as const, label: "운동 기록" },
-                    { key: "workoutCompleted" as const, label: "운동 완주" },
-                  ];
-                  const customActive = !!dashboard.customRange;
-                  const BUCKETS: Array<{ key: keyof UserStats; label: string }> = [
-                    { key: "today", label: "오늘" },
-                    { key: "yesterday", label: "어제" },
-                    { key: "week", label: "이번 주" },
-                    { key: "month", label: "이번 달" },
-                    { key: "total", label: "전체" },
-                  ];
-                  if (customActive) {
-                    const r = dashboard.customRange!;
-                    const fmt = (iso: string | null) => iso ? iso.slice(5, 10).replace("-", ".") : "?";
-                    BUCKETS.push({
-                      key: "custom",
-                      label: `${fmt(r.start)}~${fmt(r.end)}`,
-                    });
-                  }
-                  const SEGS = [
-                    { key: "anon" as const, label: "비로그인", color: "text-gray-500", headerColor: "text-gray-400" },
-                    { key: "loggedIn" as const, label: "로그인(가입자)", color: "text-[#2D6A4F]", headerColor: "text-[#2D6A4F]/70" },
-                  ];
-                  return (
-                    <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
-                      <div className="flex items-baseline justify-between mb-3">
-                        <p className="font-bold text-[#1B4332]">유저 행동 퍼널</p>
-                        <p className="text-[10px] text-gray-400">계정 생성 → 완주 · 이탈률 표시 (방문 ≠ 계정 생성 주의)</p>
-                      </div>
-                      {/* 회의 2026-04-23: 커스텀 날짜 범위 입력 */}
-                      <div className="flex items-center flex-wrap gap-2 mb-3 text-[11px]">
-                        <span className="text-gray-500">기간:</span>
-                        <input
-                          type="date"
-                          value={funnelCustomStart}
-                          onChange={(e) => setFunnelCustomStart(e.target.value)}
-                          className="px-2 py-1 border border-gray-200 rounded-md text-[11px] text-[#1B4332]"
-                        />
-                        <span className="text-gray-400">~</span>
-                        <input
-                          type="date"
-                          value={funnelCustomEnd}
-                          onChange={(e) => setFunnelCustomEnd(e.target.value)}
-                          className="px-2 py-1 border border-gray-200 rounded-md text-[11px] text-[#1B4332]"
-                        />
-                        <button
-                          type="button"
-                          disabled={!funnelCustomStart || !funnelCustomEnd}
-                          onClick={() => loadDashboard({ start: funnelCustomStart, end: funnelCustomEnd })}
-                          className="px-2.5 py-1 rounded-md bg-[#1B4332] text-white font-bold disabled:opacity-40 active:scale-95 transition"
-                        >
-                          적용
-                        </button>
-                        {customActive && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFunnelCustomStart("");
-                              setFunnelCustomEnd("");
-                              loadDashboard(null);
-                            }}
-                            className="px-2.5 py-1 rounded-md bg-gray-100 text-gray-600 font-medium active:scale-95 transition"
-                          >
-                            초기화
-                          </button>
+                {/* 회의 ζ-5-A (2026-04-30): 유저 행동 퍼널 폐기 → 가격 실험 대시보드로 교체 */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-bold text-[#1B4332]">가격 실험 (SEED-002 ζ-5-A)</p>
+                    <button
+                      onClick={loadPricingStats}
+                      disabled={pricingLoading}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#1B4332] text-white disabled:opacity-50"
+                    >
+                      {pricingLoading ? "조회 중..." : "새로고침"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">
+                    6 tier × 2 locale = 12행. 같은 tier 안에 KO/EN 분리. 매출/할당 최댓값 행 (emerald) = 매출 효율적 가격대.
+                  </p>
+
+                  {!pricingStats && (
+                    <p className="text-sm text-gray-400 text-center py-8">새로고침을 눌러 통계를 조회하세요.</p>
+                  )}
+
+                  {pricingStats && (
+                    <>
+                      <div className="mb-3 p-3 rounded-lg bg-gray-50 text-sm">
+                        <p className="font-bold text-[#1B4332] mb-2">전체</p>
+                        <div className="flex flex-wrap gap-3 text-xs text-gray-700 mb-2">
+                          <span><InfoTooltip label="할당" tip="실험에 진입한 고유 유저 수. uid 해시 기반 결정적 분배 — 한 유저는 평생 한 tier 고정." />: <strong>{pricingStats.total.assignedCount}</strong></span>
+                          <span><InfoTooltip label="paywall 노출" tip="paywall 화면이 노출된 총 횟수. URL redirect 가드 + sessionStorage dedupe 적용 후 — 의도된 진입 1회당 1번 카운트." />: <strong>{pricingStats.total.paywallViews}</strong></span>
+                          <span><InfoTooltip label="결제" tip="실제 결제 완료한 고유 유저 수." />: <strong>{pricingStats.total.paidCount}</strong></span>
+                          <span><InfoTooltip label="전환율" tip="결제 ÷ 할당. 실험에 진입한 유저 중 몇 % 가 결제했나." />: <strong>{pricingStats.total.assignedCount > 0 ? ((pricingStats.total.paidCount / pricingStats.total.assignedCount) * 100).toFixed(2) : 0}%</strong></span>
+                        </div>
+                        {pricingStats.byLocale && (
+                          <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-gray-200">
+                            <div className="px-2 py-1.5 rounded bg-blue-50">
+                              <p className="font-bold text-blue-700 mb-0.5">KO 한국</p>
+                              <p className="text-gray-700">할당 {pricingStats.byLocale.ko.assignedCount} · 결제 {pricingStats.byLocale.ko.paidCount} · {pricingStats.byLocale.ko.assignedCount > 0 ? ((pricingStats.byLocale.ko.paidCount / pricingStats.byLocale.ko.assignedCount) * 100).toFixed(2) : 0}%</p>
+                            </div>
+                            <div className="px-2 py-1.5 rounded bg-purple-50">
+                              <p className="font-bold text-purple-700 mb-0.5">EN 해외</p>
+                              <p className="text-gray-700">할당 {pricingStats.byLocale.en.assignedCount} · 결제 {pricingStats.byLocale.en.paidCount} · {pricingStats.byLocale.en.assignedCount > 0 ? ((pricingStats.byLocale.en.paidCount / pricingStats.byLocale.en.assignedCount) * 100).toFixed(2) : 0}%</p>
+                            </div>
+                          </div>
                         )}
                       </div>
-
-                      {SEGS.map((seg, segIdx) => {
-                        const segData = dashboard.funnel![seg.key];
-                        return (
-                          <div key={seg.key} className={segIdx > 0 ? "mt-5 pt-4 border-t border-gray-100" : ""}>
-                            <p className={`text-[10px] font-black ${seg.headerColor} uppercase tracking-widest mb-2`}>{seg.label}</p>
-                            <table className="w-full text-[12px]">
-                              <thead>
-                                <tr className="text-[10px] text-gray-400">
-                                  <th className="text-left pb-2 font-medium"></th>
-                                  {BUCKETS.map(b => <th key={b.key} className="text-center pb-2 font-medium">{b.label}</th>)}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {STAGES.map((stage, sIdx) => {
-                                  const prevStage = sIdx > 0 ? STAGES[sIdx - 1] : null;
-                                  return (
-                                    <tr key={stage.key} className="border-t border-gray-50">
-                                      <td className={`py-1.5 font-bold ${seg.color}`}>{stage.label}</td>
-                                      {BUCKETS.map(b => {
-                                        const count = segData[stage.key][b.key] ?? 0;
-                                        const prevCount = prevStage ? (segData[prevStage.key][b.key] ?? 0) : null;
-                                        const dropPct = prevCount && prevCount > 0
-                                          ? Math.round(((prevCount - count) / prevCount) * 100)
-                                          : null;
-                                        return (
-                                          <td key={b.key} className="py-1.5 text-center">
-                                            <span className={`font-bold ${seg.color}`}>{count}</span>
-                                            {dropPct !== null && dropPct > 0 && (
-                                              <span className="block text-[9px] text-red-500 font-bold">▼{dropPct}%</span>
-                                            )}
-                                          </td>
-                                        );
-                                      })}
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        );
-                      })}
-
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-gray-100 text-gray-600">
+                            <tr>
+                              <th className="text-left p-2">
+                                <InfoTooltip label="Tier" tip="가격 등급. t1=최저가 (KO ₩990 / EN $1.99) → t6=최고가 (KO ₩5,900 / EN $6.99)." />
+                              </th>
+                              <th className="text-left p-2">
+                                <InfoTooltip label="Locale" tip="KO=한국어 유저(KRW · PortOne 카카오페이) / EN=해외 유저(USD · Paddle)." />
+                              </th>
+                              <th className="text-right p-2">
+                                <InfoTooltip label="가격" tip="해당 tier × locale 의 표시 가격. 월간 구독료." />
+                              </th>
+                              <th className="text-right p-2">
+                                <InfoTooltip label="할당" tip="이 tier 에 할당된 고유 유저 수. uid 해시 기반 — 한 유저는 평생 한 tier 고정." />
+                              </th>
+                              <th className="text-right p-2">
+                                <InfoTooltip label="노출" tip="paywall 화면 노출 횟수. URL redirect 가드 + sessionStorage dedupe 적용 후 의도된 진입만 카운트 (한 세션 1회)." />
+                              </th>
+                              <th className="text-right p-2">
+                                <InfoTooltip label="결제" tip="이 tier 에서 실제 결제 완료한 고유 유저 수." />
+                              </th>
+                              <th className="text-right p-2">
+                                <InfoTooltip label="전환율" tip="결제 ÷ 할당. 이 가격에 할당된 유저 중 몇 % 가 결제했나." />
+                              </th>
+                              <th className="text-right p-2">
+                                <InfoTooltip label="매출/할당 (KRW)" tip="가격 × 전환율. 할당 1명당 기대 매출. USD tier 는 USD×1400 환산. 이 컬럼 최댓값(emerald) = 매출 효율 1위 가격대." />
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              const maxRev = Math.max(...pricingStats.rows.map(r => r.revenuePerAssignedKrw));
+                              return pricingStats.rows.map((r) => {
+                                const isBest = r.revenuePerAssignedKrw === maxRev && maxRev > 0;
+                                const priceLabel = r.currency === "KRW"
+                                  ? `₩${r.price.toLocaleString()}`
+                                  : `$${r.price.toFixed(2)}`;
+                                return (
+                                  <tr key={`${r.tier}-${r.locale}`} className={`border-b border-gray-100 ${isBest ? "bg-emerald-50" : ""}`}>
+                                    <td className="p-2 font-bold">{r.tier}</td>
+                                    <td className="p-2"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.locale === "ko" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}>{r.locale.toUpperCase()}</span></td>
+                                    <td className="p-2 text-right">{priceLabel}</td>
+                                    <td className="p-2 text-right">{r.assignedCount}</td>
+                                    <td className="p-2 text-right">{r.paywallViews}</td>
+                                    <td className="p-2 text-right">{r.paidCount}</td>
+                                    <td className="p-2 text-right">{(r.conversionRate * 100).toFixed(2)}%</td>
+                                    <td className={`p-2 text-right font-bold ${isBest ? "text-emerald-600" : "text-gray-700"}`}>
+                                      ₩{r.revenuePerAssignedKrw.toLocaleString()}
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
                       <p className="text-[9px] text-gray-400 mt-3 leading-relaxed">
-                        ⓘ 비로그인 세그먼트는 IP ↔ anon uid 매칭 불가능해 stage마다 다른 타임축 사용 (근사). 로그인은 cohort 일관.
+                        ⓘ 매출/할당 = price(KRW) × 전환율. USD tier 는 USD→KRW 환산 (≈1400) 으로 비교. 표본 부족 시 노이즈 — tier당 50명+ 권장.
                       </p>
-                    </div>
-                  );
-                })()}
+                      {pricingStats.updatedAt && (
+                        <p className="text-[10px] text-gray-400 mt-2 text-right">
+                          최근 갱신: {new Date(pricingStats.updatedAt).toLocaleString("ko-KR")}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
 
                 {/* 회의 57 Tier 1: 숫자 카드 → drill-down 가능 */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
@@ -1773,213 +1695,8 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 회의 ζ-4 (SEED-003): YouTube 시장 조사 탭 */}
-        {tab === "research" && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <p className="font-bold text-[#1B4332] mb-1">YouTube 시장 조사 (SEED-003)</p>
-              <p className="text-xs text-gray-500 mb-4">22채널 × 15영상 = 약 315영상. 1차 정량 필터(조회수·참여도·좋아요) 후 통과 영상만 댓글 수집.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleResearchAll}
-                  disabled={researchRunning}
-                  className="flex-1 py-2.5 text-sm font-bold rounded-xl bg-[#1B4332] text-white disabled:opacity-50"
-                >
-                  {researchRunning ? "수집 중..." : "1단계: 22채널 수집 시작"}
-                </button>
-                <button
-                  onClick={handleAnalyzeAll}
-                  disabled={analyzeRunning || researchResults.every((r) => r.status !== "ok")}
-                  className="flex-1 py-2.5 text-sm font-bold rounded-xl bg-emerald-600 text-white disabled:opacity-50"
-                >
-                  {analyzeRunning
-                    ? `분석 중 ${analyzeProgress.done}/${analyzeProgress.total}`
-                    : "2단계: 댓글 Gemini 분석"}
-                </button>
-              </div>
-              {analyzeRunning && analyzeProgress.total > 0 && (
-                <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 transition-all"
-                    style={{ width: `${(analyzeProgress.done / analyzeProgress.total) * 100}%` }}
-                  />
-                </div>
-              )}
-            </div>
+        {/* 회의 ζ-5-A (2026-04-30): 가격 실험 대시보드 */}
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <p className="font-bold text-[#1B4332] mb-3">채널별 진행 상태</p>
-              <div className="space-y-1.5">
-                {researchResults.map((r) => (
-                  <div key={r.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-700 truncate">{r.name}</p>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.region === "kr" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}>
-                          {r.region === "kr" ? "KR" : "Global"}
-                        </span>
-                      </div>
-                      {r.status === "ok" && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {r.videosFetched}영상 · 1차 통과 {r.filter1Passed}
-                        </p>
-                      )}
-                      {r.status === "error" && (
-                        <p className="text-xs text-red-500 mt-0.5 truncate">{r.error}</p>
-                      )}
-                    </div>
-                    <span className={`text-xs font-bold ml-2 whitespace-nowrap ${
-                      r.status === "ok" ? "text-emerald-600"
-                      : r.status === "running" ? "text-amber-500"
-                      : r.status === "error" ? "text-red-500"
-                      : "text-gray-300"
-                    }`}>
-                      {r.status === "pending" ? "대기"
-                      : r.status === "running" ? "수집 중"
-                      : r.status === "ok" ? "완료"
-                      : "오류"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4 text-xs text-amber-900">
-              <p className="font-bold mb-1">사용 안내</p>
-              <p>1단계 → 2단계 → 3단계 순서. 결과는 Firestore <code className="bg-amber-100 px-1 rounded">youtube_research/&#123;channelId&#125;</code> 에 저장.</p>
-            </div>
-
-            {/* 3단계: 결과 보기 */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-bold text-[#1B4332]">3단계: 결과 보기 (Top 영상)</p>
-                <button
-                  onClick={loadResearchResults}
-                  disabled={loadingResults}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#1B4332] text-white disabled:opacity-50"
-                >
-                  {loadingResults ? "조회 중..." : "새로고침"}
-                </button>
-              </div>
-
-              {/* 필터 */}
-              <div className="flex flex-wrap gap-2 mb-3 text-xs">
-                <select
-                  value={resultRegion}
-                  onChange={(e) => setResultRegion(e.target.value as "all" | "kr" | "global")}
-                  className="px-2 py-1 border border-gray-200 rounded-lg"
-                >
-                  <option value="all">전체 지역</option>
-                  <option value="kr">한국</option>
-                  <option value="global">글로벌</option>
-                </select>
-                <select
-                  value={resultFilter}
-                  onChange={(e) => setResultFilter(e.target.value as "all" | "filter1" | "filter2")}
-                  className="px-2 py-1 border border-gray-200 rounded-lg"
-                >
-                  <option value="all">모든 영상</option>
-                  <option value="filter1">1차 통과만</option>
-                  <option value="filter2">2차 통과만 (행동 신호 ≥30%)</option>
-                </select>
-                <select
-                  value={resultSortBy}
-                  onChange={(e) => setResultSortBy(e.target.value as "behavior" | "view" | "engagement")}
-                  className="px-2 py-1 border border-gray-200 rounded-lg"
-                >
-                  <option value="behavior">행동 신호 비율</option>
-                  <option value="view">조회수</option>
-                  <option value="engagement">댓글 참여도</option>
-                </select>
-              </div>
-
-              {/* 채널 요약 */}
-              {resultChannels.length > 0 && (
-                <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                  {resultChannels.slice(0, 6).map((c) => (
-                    <div key={c.channelId} className="bg-gray-50 rounded-lg p-2">
-                      <p className="font-bold text-gray-700 truncate">{c.title}</p>
-                      <p className="text-gray-500 mt-0.5">
-                        평균 행동 {(c.avgBehaviorRate * 100).toFixed(1)}% · 1차 {c.filter1PassedCount} · 2차 {c.filter2PassedCount}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 영상 리스트 */}
-              {resultVideos.length === 0 ? (
-                <p className="text-xs text-gray-400 py-4 text-center">새로고침을 눌러 결과를 조회하세요</p>
-              ) : (
-                <div className="space-y-2">
-                  {resultVideos.slice(0, 50).map((v) => (
-                    <div key={v.videoId} className="border border-gray-100 rounded-lg p-3">
-                      <div className="flex gap-3">
-                        {v.thumbnailUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={v.thumbnailUrl} alt="" className="w-20 h-14 object-cover rounded flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 line-clamp-2">{v.title}</p>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-1">
-                            <span className={v.region === "kr" ? "text-blue-600" : "text-purple-600"}>{v.channelTitle}</span>
-                            <span>👁 {(v.viewCount / 1000).toFixed(0)}K</span>
-                            <span>💬 {(v.engagementRate * 100).toFixed(2)}%</span>
-                            <span>👍 {(v.likeRate * 100).toFixed(1)}%</span>
-                            {v.analyzed && (
-                              <span className={v.filter2Pass ? "text-emerald-600 font-bold" : "text-amber-600"}>
-                                행동 {((v.behaviorSignalRate ?? 0) * 100).toFixed(0)}%
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            {v.filter1Pass && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">1차</span>}
-                            {v.filter2Pass && <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">2차</span>}
-                            <button
-                              onClick={() => setExpandedVideoId(expandedVideoId === v.videoId ? null : v.videoId)}
-                              className="text-[10px] text-gray-400 underline ml-auto"
-                            >
-                              {expandedVideoId === v.videoId ? "접기" : "상세"}
-                            </button>
-                            <a
-                              href={`https://youtu.be/${v.videoId}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[10px] text-blue-500 underline"
-                            >
-                              열기
-                            </a>
-                          </div>
-                          {expandedVideoId === v.videoId && v.analyzed && (
-                            <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-600">
-                              {v.topKeywords && v.topKeywords.length > 0 && (
-                                <p className="mb-1">
-                                  <span className="font-bold">키워드:</span>{" "}
-                                  {v.topKeywords.slice(0, 5).map((k) => `${k.keyword}(${k.count})`).join(", ")}
-                                </p>
-                              )}
-                              {v.topQuotes && v.topQuotes.length > 0 && (
-                                <div>
-                                  <span className="font-bold">대표 인용:</span>
-                                  <ul className="list-disc ml-4 mt-0.5 text-gray-500">
-                                    {v.topQuotes.slice(0, 3).map((q, i) => <li key={i} className="line-clamp-2">{q}</li>)}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {resultVideos.length > 50 && (
-                    <p className="text-xs text-gray-400 text-center pt-2">상위 50개만 표시 (전체 {resultVideos.length}개)</p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 회의 57 Tier 2: Bulk Action 플로팅 바 */}
