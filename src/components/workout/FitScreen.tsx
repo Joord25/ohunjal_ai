@@ -102,10 +102,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   const closeSwap = () => { setShowSwapMenu(false); setSwapSearch(""); setSwapFilter(null); };
   const isStrengthType = exercise.type === "strength" || exercise.type === "core";
   // 회의 2026-04-28: 맨몸 운동 정규식 보강 — 슈퍼맨/데드버그/버드독/글루트브릿지 등 누락 보충.
+  // 회의 ζ-5-A 후속 (2026-05-01): BW 보강 8종 (Y-T-W·스노우 엔젤·프론 코브라·타올 로우·
+  //   힙 힌지 홀드·날개뼈 푸쉬업 플러스·월 슬라이드·고양이-낙타) 누락 → 무게 픽커 노출 사고.
+  //   대표 보고: "홈트 메인에 Y-T-W 레이즈 가 15kg 으로 떴음".
   // 중량 변형(웨이티드 푸쉬업, 중량 풀업 등)은 exception 으로 제외.
   const isBodyweight = !exercise.weight || exercise.weight === "Bodyweight"
     || /맨몸|체중|bodyweight/i.test(exercise.weight)
-    || (/푸쉬업|푸시업|push[\s-]?up|pull[\s-]?up|풀업|친업|chin[\s-]?up|턱걸이|딥스|dip|plank|플랭크|버피|burpee|크런치|crunch|레그[\s-]?레이즈|leg[\s-]?raise|마운틴\s?클라이머|mountain\s?climber|점프|jump|슈퍼맨|superman|데드[\s-]?버그|dead[\s-]?bug|deadbug|버드[\s-]?독|bird[\s-]?dog|글루트[\s-]?브릿지|glute[\s-]?bridge|힙[\s-]?브릿지|hip[\s-]?bridge|클램쉘|clamshell|베어[\s-]?크롤|bear[\s-]?crawl|인버티드|inverted|행잉|hanging|V[-\s]?업|V[-\s]?up|브이[\s-]?업|시저|scissor|플러터|flutter|토[\s-]?터치|toe[\s-]?touch|TRX|trx|바이시클|bicycle|오블리크|oblique|점핑[\s-]?잭|jumping[\s-]?jack|jacks|스케이터|skater|하이니즈|high[\s-]?knees|섀도|shadow|폼롤러|foam[\s-]?roller|스트레칭|stretch|가동성|mobility|코브라|cobra|마칭|marching|니[\s-]?푸쉬업|knee[\s-]?push/i.test(exercise.name) && !/중량|weighted|웨이티드/i.test(exercise.name));
+    || (/푸쉬업|푸시업|push[\s-]?up|pull[\s-]?up|풀업|친업|chin[\s-]?up|턱걸이|딥스|dip|plank|플랭크|버피|burpee|크런치|crunch|레그[\s-]?레이즈|leg[\s-]?raise|마운틴\s?클라이머|mountain\s?climber|점프|jump|슈퍼맨|superman|데드[\s-]?버그|dead[\s-]?bug|deadbug|버드[\s-]?독|bird[\s-]?dog|글루트[\s-]?브릿지|glute[\s-]?bridge|힙[\s-]?브릿지|hip[\s-]?bridge|클램쉘|clamshell|베어[\s-]?크롤|bear[\s-]?crawl|인버티드|inverted|행잉|hanging|V[-\s]?업|V[-\s]?up|브이[\s-]?업|시저|scissor|플러터|flutter|토[\s-]?터치|toe[\s-]?touch|TRX|trx|바이시클|bicycle|오블리크|oblique|점핑[\s-]?잭|jumping[\s-]?jack|jacks|스케이터|skater|하이니즈|high[\s-]?knees|섀도|shadow|폼롤러|foam[\s-]?roller|스트레칭|stretch|가동성|mobility|코브라|cobra|마칭|marching|니[\s-]?푸쉬업|knee[\s-]?push|Y[-\s]?T[-\s]?W|y[-\s]?t[-\s]?w|스노우[\s-]?엔젤|snow[\s-]?angel|프론[\s-]?코브라|prone[\s-]?cobra|타올[\s-]?로우|towel[\s-]?row|힙[\s-]?힌지[\s-]?홀드|hip[\s-]?hinge[\s-]?hold|날개뼈|scapular[\s-]?push|월[\s-]?슬라이드|wall[\s-]?slide|고양이[-\s]?낙타|cat[-\s]?cow|밴드[\s-]?풀[\s-]?어파트|band[\s-]?pull[\s-]?apart|밴드[\s-]?페이스[\s-]?풀|band[\s-]?face[\s-]?pull|굿모닝|good[\s-]?morning|프론[\s-]?힙|prone[\s-]?hip|동적\s?흉추|active[\s-]?thoracic|벽\s?흉추|wall[\s-]?thoracic|흉추[\s-]?회전|thoracic[\s-]?rotation|팔로프|pallof|사이드[\s-]?라잉[\s-]?레그|side[\s-]?lying[\s-]?leg/i.test(exercise.name) && !/중량|weighted|웨이티드/i.test(exercise.name));
   const hasWeight = isStrengthType && !isBodyweight;
 
   // 장비 타입 감지 (운동 이름 키워드 기반)

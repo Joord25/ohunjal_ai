@@ -167,7 +167,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
     { label: "코어 측면 hold", role: "bodyweight", isStaticHold: true, holdSeconds: 30, exercises: ["사이드 플랭크 (Side Plank)"] },
   ],
   posture_scap_rotator: [
-    { label: "Y-T-W 레이즈 (Cressey)", role: "light", exercises: ["Y-T-W 레이즈 (Y-T-W Raises)", "리어 델트 플라이 (Rear Delt Fly)", "리버스 스노우 엔젤 (Reverse Snow Angel)"] },
+    { label: "Y-T-W 레이즈 (Cressey)", role: "bodyweight", exercises: ["Y-T-W 레이즈 (Y-T-W Raises)", "리어 델트 플라이 (Rear Delt Fly)", "리버스 스노우 엔젤 (Reverse Snow Angel)"] },
     { label: "회전근개 외회전", role: "light", exercises: ["사이드 라잉 외회전 (Side-Lying External Rotation)", "스탠딩 케이블 외회전 (Standing Cable External Rotation)", "밴드 외회전 (Band External Rotation)"] },
     { label: "전거근 (Cressey)", role: "bodyweight", exercises: ["날개뼈 푸쉬업 플러스 (Scapular Push-up Plus)", "월 슬라이드 (Wall Slides)", "밴드 페이스 풀 (Band Face Pull)"] },
     { label: "후면 어깨", role: "isolation", exercises: ["리어 델트 플라이 (Rear Delt Fly)", "케이블 페이스풀 (Cable Face Pull)"] },
@@ -197,7 +197,7 @@ export const CATALOG_SLOT_POOLS: Record<string, CatalogSlot[]> = {
   ],
   shoulder_rehab: [
     { label: "회전근개 외회전", role: "light", exercises: ["사이드 라잉 외회전 (Side-Lying External Rotation)", "스탠딩 외회전 (Standing External Rotation)"] },
-    { label: "Y-T-W 레이즈", role: "light", exercises: ["Y-T-W 레이즈 (Y-T-W Raises)", "리어 델트 플라이 (Rear Delt Fly)", "리버스 스노우 엔젤 (Reverse Snow Angel)"] },
+    { label: "Y-T-W 레이즈", role: "bodyweight", exercises: ["Y-T-W 레이즈 (Y-T-W Raises)", "리어 델트 플라이 (Rear Delt Fly)", "리버스 스노우 엔젤 (Reverse Snow Angel)"] },
     { label: "전거근", role: "bodyweight", exercises: ["날개뼈 푸쉬업 플러스 (Scapular Push-up Plus)", "월 슬라이드 (Wall Slides)"] },
     { label: "흉추 모빌리티", role: "bodyweight", exercises: ["폼롤러 흉추 스트레칭 (Foam Roller Thoracic Extension)", "고양이-낙타 자세 (Cat-Cow Pose)", "동적 흉추 회전 (Active Thoracic Rotation)"] },
   ],
