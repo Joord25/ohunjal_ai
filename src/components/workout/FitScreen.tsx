@@ -211,11 +211,29 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   }, [setInfo.current]);
 
   const halfAlarmFired = useRef(false);
-  const { playAlarmSound, speakDirection } = useAlarmSynthesizer({});
+  const { playAlarmSound, speakSwitchSide } = useAlarmSynthesizer({});
 
-  // 회의 ζ-5 (2026-04-30): 양쪽 교대 운동 식별 — 30초마다 좌/우 음성 안내
+  // 회의 ζ-5 (2026-04-30) 정정: 한쪽씩 정해진 시간 동안 시행 후 반대쪽으로 교체하는 운동 화이트리스트.
+  // 매 reps 좌/우 자연 교대하는 운동(워킹런지·스파이더맨런지·Hip 90/90·고블렛 스쿼트 프라잉)은 제외 — 멘트 충돌.
+  // 운동명 substring 매칭 — 한글 코어 키워드만 비교 (영문 괄호는 무시).
+  const BILATERAL_WARMUP_KEYS: string[] = [
+    "동적 런지",
+    "런지 & 트위스트",
+    "앞벅지 스트레칭",
+    "앞벅지 스트레치",
+    "동적 고관절 굴곡근 스트레칭",
+    "고관절 굴곡근 스트레칭",
+    "동적 다리 스윙",
+    "다리 스윙 앞/옆",
+    "힙 CARs",
+    "숄더 CARs",
+    "손목 CARs",
+    "앵클 CARs",
+    "안벅지 동적 스트레칭",
+    "내전근 동적 스트레칭",
+  ];
   const isBilateralExercise = (name: string): boolean =>
-    /런지|스플릿|사이드 스텝|사이드런지|얼터네이팅|원암|원레그|한쪽|Lunge|Split|Side\s?Step|Alternating|Single[-\s]?(Arm|Leg)|One[-\s]?(Arm|Leg)/i.test(name);
+    BILATERAL_WARMUP_KEYS.some((k) => name.includes(k));
 
   // Weight presets: 4 nearest 10kg steps centered around current weight (excluding current)
   const weightPresets = (() => {
@@ -749,13 +767,9 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                 halfAlarmFired.current = true;
                 playAlarmSound("half");
             }
-            // 회의 ζ-5 (2026-04-30): 양쪽 교대 운동 = 30초마다 좌/우 음성 안내 (warmup 한정, total ≥ 60s)
-            if (exercise.type === "warmup" && total >= 60 && isBilateralExercise(exercise.name)) {
-                const elapsed = total - next;
-                if (elapsed > 0 && elapsed < total && elapsed % 30 === 0) {
-                    const slot = elapsed / 30;
-                    speakDirection(slot % 2 === 1 ? "right" : "left", locale === "en" ? "en" : "ko");
-                }
+            // 회의 ζ-5 (2026-04-30) 정정: 양쪽 교대 운동 = 중간 시점 한 번 "반대쪽 시행" 안내 (warmup 한정, total ≥ 30s)
+            if (exercise.type === "warmup" && total >= 30 && isBilateralExercise(exercise.name) && next === half && half > 0) {
+                speakSwitchSide(locale === "en" ? "en" : "ko");
             }
             // 카운트다운 틱 (5, 4, 3, 2, 1초)
             if (next > 0 && next <= 5) {
@@ -956,9 +970,17 @@ export const FitScreen: React.FC<FitScreenProps> = ({
     const restBySets = adjustedReps <= 6 ? 150 : adjustedReps <= 12 ? 75 : 45;
     const restByType = exercise.type === "core" ? 45 : restBySets;
 
-    // 회의 ζ-5 (2026-04-30): 홈트 = 피드백 시트 스킵, 바로 onSetComplete(target) 호출
+    // 회의 ζ-5 (2026-04-30): 홈트 = 피드백 시트 스킵, 바로 다음 세트.
+    // ζ-5 후속 fix (2026-04-30): 부모 setIsResting(true) 가 켜지지만 FitScreen은 휴식 UI를
+    // 렌더하지 않음(restTimer prop은 _restTimer로 의도적 미사용, 휴식 카운트다운은 피드백 시트
+    // 안의 localRestSec로만 표시). 결과: DONE 클릭 후 45~150s 동안 화면 무반응 → 사용자가
+    // "버튼이 안 먹는다" 인식. handleEndRest와 동일 패턴(50ms timeout)으로 onSkipRest 즉시 호출.
     if (isHomeTraining) {
-      onSetComplete(adjustedReps, "target", actualWeight);
+      setIsDoneAnimating(true);
+      setTimeout(() => {
+        onSetComplete(adjustedReps, "target", actualWeight);
+        setTimeout(() => onSkipRest(), 50);
+      }, 500);
       return;
     }
 
