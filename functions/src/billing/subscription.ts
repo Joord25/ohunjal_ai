@@ -4,7 +4,10 @@ import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, db } from "../helpers";
 
 const PORTONE_API_BASE = "https://api.portone.io";
-const SUBSCRIPTION_AMOUNT = 6900;
+const SUBSCRIPTION_AMOUNT = 6900; // 회의 ζ-5-A 이전 default — 클라이언트가 amount 안 보내면 fallback.
+
+// 회의 ζ-5-A (2026-04-30): 가격 실험 — 6 tier 허용 amount.
+const ALLOWED_TIER_AMOUNTS = new Set<number>([990, 1900, 2900, 3900, 4900, 5900, 6900]);
 
 function getPortOneSecret(): string {
   const secret = process.env.PORTONE_API_SECRET;
@@ -25,11 +28,34 @@ export const subscribe = onRequest(
     let uid: string;
     try { uid = await verifyAuth(req.headers.authorization); } catch { res.status(401).json({ error: "Unauthorized" }); return; }
 
-    const { billingKey } = req.body;
+    const { billingKey, amount: amountFromClient, tier: clientTier } = req.body as {
+      billingKey?: string;
+      amount?: number;
+      tier?: string;
+    };
     if (!billingKey) { res.status(400).json({ error: "Missing billingKey" }); return; }
 
     try {
       const secret = getPortOneSecret();
+
+      // 회의 ζ-5-A 후속 fix (2026-04-30): 모바일 KakaoPay REDIRECTION 흐름은 결제 후 페이지 reload 로
+      // React state 초기화 → processRedirectBillingKey 가 { billingKey } 만 보냄. 결과: tier=null,
+      // amount 누락 → fallback 6900 청구. yimspring(t2 할당) 가 6900 결제된 케이스. 서버에서 uid 로
+      // pricing_experiments 직접 조회해 SSOT 보장.
+      let tierLabel: string | null = typeof clientTier === "string" ? clientTier : null;
+      if (!tierLabel) {
+        try {
+          const expDoc = await db.collection("pricing_experiments").doc(uid).get();
+          const t = expDoc.data()?.tier;
+          if (typeof t === "string") tierLabel = t;
+        } catch (e) { console.warn("pricing_experiments tier lookup failed:", e); }
+      }
+
+      const TIER_KRW: Record<string, number> = { t1: 990, t2: 1900, t3: 2900, t4: 3900, t5: 4900, t6: 5900 };
+      // amount 결정 우선순위: (1) 클라가 화이트리스트 amount 보냄 (2) 서버 조회 tier 가격 (3) fallback 6900
+      const subscriptionAmount = (typeof amountFromClient === "number" && ALLOWED_TIER_AMOUNTS.has(amountFromClient))
+        ? amountFromClient
+        : (tierLabel && TIER_KRW[tierLabel] ? TIER_KRW[tierLabel] : SUBSCRIPTION_AMOUNT);
       const subRef = db.collection("subscriptions").doc(uid);
 
       // 0. Atomic pre-check via transaction — prevent race conditions & duplicate charges
@@ -113,7 +139,7 @@ export const subscribe = onRequest(
         body: JSON.stringify({
           billingKey,
           orderName: "오운잘 AI 월간 구독",
-          amount: { total: SUBSCRIPTION_AMOUNT },
+          amount: { total: subscriptionAmount },
           currency: "KRW",
         }),
       });
@@ -139,32 +165,50 @@ export const subscribe = onRequest(
         provider: "portone", // renewPortOneSubscriptions 가 provider 필드로 분기
         status: "active",
         plan: "monthly",
-        amount: SUBSCRIPTION_AMOUNT,
+        amount: subscriptionAmount,
         currency: "KRW",
         lastPaymentId: paymentId,
         lastPaymentAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
         planCountAtPayment,
+        ...(tierLabel ? { experimentTier: tierLabel } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       });
 
       // 3. Save payment record to history subcollection
       await subRef.collection("payments").doc(paymentId).set({
         paymentId,
-        amount: SUBSCRIPTION_AMOUNT,
+        amount: subscriptionAmount,
         plan: "monthly",
         status: "paid",
         paidAt: now.toISOString(),
         periodStart: now.toISOString(),
         periodEnd: expiresAt.toISOString(),
+        ...(tierLabel ? { experimentTier: tierLabel } : {}),
         createdAt: FieldValue.serverTimestamp(),
       });
+
+      // 4. 회의 ζ-5-A (2026-04-30): pricing_experiments 컬렉션에 paid 상태 기록 (admin SDK).
+      if (tierLabel) {
+        try {
+          await db.collection("pricing_experiments").doc(uid).set({
+            tier: tierLabel,
+            paid: true,
+            paidAt: FieldValue.serverTimestamp(),
+            paidAmount: subscriptionAmount,
+            paidCurrency: "KRW",
+            paidProvider: "portone",
+          }, { merge: true });
+        } catch (logErr) {
+          console.error("pricing_experiments paid log failed:", logErr);
+        }
+      }
 
       res.status(200).json({
         status: "active",
         expiresAt: expiresAt.toISOString(),
         paymentId,
-        amount: SUBSCRIPTION_AMOUNT,
+        amount: subscriptionAmount,
         plan: "monthly",
         currency: "KRW",
       });
