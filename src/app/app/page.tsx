@@ -16,11 +16,10 @@ import type { WorkoutSessionData, UserCondition, WorkoutGoal, ExerciseLog, Exerc
 import { buildWorkoutMetrics, getIntensityRecommendation } from "@/utils/workoutMetrics";
 import { saveWorkoutHistory, updateWorkoutAnalysis, updateReportTabs, getCachedWorkoutHistory } from "@/utils/workoutHistory";
 import { auth, googleProvider } from "@/lib/firebase";
-import { onAuthStateChanged, signOut, signInWithPopup, signInAnonymously, User } from "firebase/auth";
+import { onAuthStateChanged, signOut, signInWithPopup, User } from "firebase/auth";
 import { SubscriptionScreen } from "@/components/profile/SubscriptionScreen";
 import { PlanLoadingOverlay } from "@/components/plan/PlanLoadingOverlay";
 import { FitnessReading } from "@/components/dashboard/FitnessReading";
-import { ChatHome } from "@/components/dashboard/ChatHome";
 import { MyPlansScreen } from "@/components/dashboard/MyPlansScreen";
 import { RootHomeCards, type RootCardTarget } from "@/components/dashboard/RootHomeCards";
 import { WeightHub } from "@/components/dashboard/WeightHub";
@@ -28,16 +27,17 @@ import type { CatalogItem } from "@/constants/programCatalog";
 import type { TargetMuscle } from "@/constants/workout";
 import { RunningHub } from "@/components/dashboard/RunningHub";
 import { HomeWorkoutHub } from "@/components/dashboard/HomeWorkoutHub";
-import { getActivePrograms, getSavedPlans, type SavedPlan, saveProgramSessions, remoteSaveProgram } from "@/utils/savedPlans";
+import { getActivePrograms, getSavedPlans, type SavedPlan, saveProgramSessions, remoteSaveProgram, deleteProgram } from "@/utils/savedPlans";
 import { markPlanUsed, markSessionCompleted, remoteMarkPlanUsed } from "@/utils/savedPlans";
 import { applyProgramSessionLabel } from "@/utils/programSessionLabels";
 import { Onboarding } from "@/components/layout/Onboarding";
 import { NutritionTab } from "@/components/report/tabs/NutritionTab";
 import { loadUserProfile, getPlanCount, incrementPlanCount, loadPlanCount } from "@/utils/userProfile";
+import { isFreeTrialEnded, isFreeGateTriggered, markFirstSessionStarted, markFreeGateTriggered, clearFreeTrialState } from "@/utils/freeProgramTrial";
 import { syncExpFromFirestore, processWorkoutCompletion, getOrRebuildSeasonExp, type ExpLogEntry } from "@/utils/questSystem";
 import { useSafeArea } from "@/hooks/useSafeArea";
 import { trackEvent, setAnalyticsUserId } from "@/utils/analytics";
-import { FREE_PLAN_LIMIT as TRIAL_FREE_PLAN_LIMIT, GUEST_TRIAL_LIMIT as TRIAL_GUEST_LIMIT } from "@/utils/trialStatus";
+import { FREE_PLAN_LIMIT as TRIAL_FREE_PLAN_LIMIT } from "@/utils/trialStatus";
 import { I18nProvider, useTranslation } from "@/hooks/useTranslation";
 import { UnitsProvider } from "@/hooks/useUnits";
 import {
@@ -141,12 +141,16 @@ const lazyGenerateWorkout = async (
   // Push/Pull 교대 상태를 localStorage에서 읽어서 서버에 전달
   const lastUpperType = (typeof window !== "undefined" ? localStorage.getItem("ohunjal_last_upper_type") as "push" | "pull" : null) || undefined;
 
+  // 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저 한글 라벨 변환용
+  const localeForApi = (typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en") ? "en" : "ko";
+
   const body = JSON.stringify({
     dayIndex, condition, goal, selectedSessionType,
     intensityOverride, sessionMode, targetMuscle, runType, lastUpperType,
     equipment,
     exerciseList,
     muscleGroup,
+    locale: localeForApi,
   });
   const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
 
@@ -186,7 +190,6 @@ type ViewState =
   | "login"
   | "prediction_report"
   | "home"
-  | "home_chat"
   | "root_home"
   | "running_hub"
   | "home_workout_hub"
@@ -267,10 +270,10 @@ export default function Home() {
   const [nutritionProfileVersion, setNutritionProfileVersion] = useState(0);
   // 회의 2026-04-27: ROOT 카드 첫 클릭 시 Onboarding 게이트. 완료되면 해당 카드로 자동 진입.
   const [pendingRootTarget, setPendingRootTarget] = useState<RootCardTarget | null>(null);
-  // 회의 2026-04-27 (5차): MyPlansScreen 진입 출처 기억 — 뒤로가기 시 그곳으로 복귀 (root_home / home_chat / running_hub / home_workout_hub)
-  const [myPlansReturnTo, setMyPlansReturnTo] = useState<ViewState>("home_chat");
+  // 회의 2026-04-27 (5차): MyPlansScreen 진입 출처 기억 — 뒤로가기 시 그곳으로 복귀 (root_home / weight_hub / running_hub / home_workout_hub)
+  const [myPlansReturnTo, setMyPlansReturnTo] = useState<ViewState>("root_home");
   // 회의 2026-04-27 (5차): master_plan_preview/workout 진입 출처 기억 — 뒤로/재시작 시 그곳으로 복귀
-  const [workoutReturnTo, setWorkoutReturnTo] = useState<ViewState>("home_chat");
+  const [workoutReturnTo, setWorkoutReturnTo] = useState<ViewState>("root_home");
 
   // 회의 2026-04-27: ROOT 카드 화면 도입. "home" + activeTab=home 일 때만 root_home으로 자동 치환.
   // (activeTab=my/proof/nutrition 인 경우엔 home view 유지 → home case의 탭 분기가 MyProfileTab 등 렌더)
@@ -383,9 +386,16 @@ export default function Home() {
   }, [activeTab, view]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // 게스트 체험 서버 동기화 카운터 (ChatHome key bump 용)
-  const [guestTrialSyncVersion, setGuestTrialSyncVersion] = useState(0);
   const [isLoading, setIsLoading] = useState(false); // AI Loading State
+  // 회의 ζ-5 (2026-04-30): 카탈로그 프로그램 생성 시 PlanLoadingOverlay 변형 + 컨텍스트
+  const [catalogLoadingContext, setCatalogLoadingContext] = useState<{
+    programName: string;
+    totalWeeks: number;
+    totalSessions: number;
+    sessionsPerWeek: number;
+  } | null>(null);
+  // 회의 ζ-5-A (2026-04-30) 정정: WeightHub 에서 직접 운동 목표 변경 → fp 재로드 강제 (localStorage SSOT).
+  const [fitnessProfileVersion, setFitnessProfileVersion] = useState(0);
   const pendingSessionRef = useRef<WorkoutSessionData | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
@@ -429,15 +439,11 @@ export default function Home() {
   const [subStatus, setSubStatus] = useState<"loading" | "free" | "active" | "cancelled" | "expired">("loading");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
-  // 회의 64-N (2026-04-19): SSOT 정리 — 기존 page.tsx 로컬 FREE_PLAN_LIMIT=4 / GUEST_TRIAL_LIMIT=3이
-  // utils/trialStatus.ts(2,1)·functions/session.ts(2,1)와 불일치. "페이월 안 뜸" 버그의 근본 원인.
-  // 대표 지시: 무료 체험 2번 유지 + 페이월 확실 노출. utils 값으로 통일.
+  // 회의 64-N (2026-04-19) + ζ-5-A (2026-04-30): GUEST_TRIAL 폐기. FREE_PLAN_LIMIT 만 유지.
   const FREE_PLAN_LIMIT = TRIAL_FREE_PLAN_LIMIT;
-  const GUEST_TRIAL_LIMIT = TRIAL_GUEST_LIMIT;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingBeginnerModal, setPendingBeginnerModal] = useState(false);
-  // 회의 53: 모달을 띄운 이유 — trial_exhausted = 무료 체험 3회 완료, generic = 그 외
-  const [loginModalReason, setLoginModalReason] = useState<"trial_exhausted" | "generic">("generic");
+  // 회의 ζ-5-A (2026-04-30): loginModalReason 폐기 — trial_exhausted 분기 사라짐 (게스트 시스템 제거)
   const [predictionReturnTab, setPredictionReturnTab] = useState<"home" | "proof" | "my">("home");
 
   // Firebase Auth listener
@@ -445,28 +451,9 @@ export default function Home() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
 
+      // 회의 ζ-5-A (2026-04-30): 게스트(익명) 시스템 통째 폐기. 익명 토큰 잔존 시 강제 로그아웃.
       if (firebaseUser && firebaseUser.isAnonymous) {
-        // 익명 유저: API 토큰은 있지만 "로그인"은 아님
-        setIsLoggedIn(false);
-        setSubStatus("free");
-        setView("home_chat");
-        setIsInitialized(true);
-        // 게스트 체험 카운트 서버 동기화 — IP 기반 SSOT
-        // 이유: 캐시 지우거나 다른 기기로 접속해도 trial_ips 는 유지됨.
-        //       localStorage 만 보면 "0/3" 으로 뜨는 버그 방지.
-        firebaseUser.getIdToken().then(token => {
-          return fetch("/api/getGuestTrialStatus", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          });
-        }).then(res => res.ok ? res.json() : null).then(data => {
-          if (data && typeof data.count === "number") {
-            const local = parseInt(localStorage.getItem("ohunjal_guest_trial_count") || "0", 10);
-            const synced = Math.max(local, data.count);
-            localStorage.setItem("ohunjal_guest_trial_count", String(synced));
-            setGuestTrialSyncVersion(v => v + 1); // ChatHome remount → 배지 재계산
-          }
-        }).catch(() => { /* 네트워크 실패 시 localStorage 로 폴백 */ });
+        signOut(auth).catch(() => { /* ignore */ });
         return;
       }
 
@@ -514,15 +501,11 @@ export default function Home() {
           // 리포트는 PROOF 탭 히스토리에서만 접근 가능
         }
       } else {
-        // 유저 없음 → 익명 로그인 시도 (API 토큰 확보용)
-        signInAnonymously(auth).catch(() => {
-          // 익명 로그인 실패해도 앱은 진행 (API 호출만 못 함)
-          setIsLoggedIn(false);
-          setSubStatus("free");
-          setView("home");
-          setIsInitialized(true);
-        });
-        // onAuthStateChanged가 다시 호출되어 anonymous 분기로 처리됨
+        // 회의 ζ-5-A (2026-04-30): 익명 로그인 폐기. 비로그인 시 LoginScreen 강제 노출.
+        setIsLoggedIn(false);
+        setSubStatus("free");
+        setView("login");
+        setIsInitialized(true);
         return;
       }
       // setIsInitialized는 Promise.all.finally 안에서 setView 후 호출
@@ -651,11 +634,7 @@ export default function Home() {
     setView("home");
   };
 
-  const getGuestTrialCount = () => parseInt(localStorage.getItem("ohunjal_guest_trial_count") || "0", 10);
-  const incrementGuestTrial = () => {
-    const count = getGuestTrialCount() + 1;
-    localStorage.setItem("ohunjal_guest_trial_count", count.toString());
-  };
+  // 회의 ζ-5-A (2026-04-30): getGuestTrialCount/incrementGuestTrial 폐기. 게스트 시스템 통째 제거.
 
   // Save to LocalStorage
   const completeRitual = (ritualId: string) => {
@@ -702,14 +681,15 @@ export default function Home() {
                 setCurrentWorkoutSession(session);
                 setActiveSavedPlanId(null);
                 setCurrentPlanSource("chat"); // 회의 63-A
-                // 회의 2026-04-27 (5차): ChatHome 흐름 — master_plan_preview 뒤로가기 시 ChatHome으로 복귀
-                setWorkoutReturnTo("home_chat");
+                // 회의 ζ-5-A (2026-04-30) ChatHome 폐기: home_chat → root_home redirect.
+                // handleConditionComplete 자체는 dead path (ChatHome 외 호출처 0). Stage 4 정리 예정.
+                setWorkoutReturnTo("root_home");
                 setView("master_plan_preview");
                 return;
             }
             pendingSessionRef.current = session;
-            // 회의 2026-04-27 (5차): ChatHome 흐름 — overlay 완료 후 master_plan_preview 진입 시 복귀 출처 home_chat
-            setWorkoutReturnTo("home_chat");
+            // 회의 ζ-5-A (2026-04-30) ChatHome 폐기: home_chat → root_home redirect.
+            setWorkoutReturnTo("root_home");
             // isLoading stays true — PlanLoadingOverlay.onComplete will clear it
             return;
         } else {
@@ -729,8 +709,8 @@ export default function Home() {
           throw e;
         }
 
-        // 그 외 에러 (네트워크 장애, 서버 500 등)는 조용히 채팅홈 복귀
-        setView("home_chat");
+        // 회의 ζ-5-A 평가자 P1-6 (2026-04-30): 에러 fallback 을 root_home 으로 변경 (ChatHome 폐기 예정).
+        setView("root_home");
     } finally {
         // sessionMode path: onComplete callback handles isLoading
         if (!pendingSessionRef.current) {
@@ -742,16 +722,8 @@ export default function Home() {
   // getPlanCount, incrementPlanCount는 @/utils/userProfile에서 import
 
   const handleConditionComplete = async (condition: UserCondition, goal: WorkoutGoal, session?: SessionSelection, opts?: { skipLoadingAnim?: boolean }) => {
-    // 비로그인 게스트 체험 제한 — 홈으로 돌려보내고 로그인 모달 표시
-    if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
-      trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
-      trackEvent("login_modal_view", { trigger: "trial_limit" });
-      setView("home");
-      setLoginModalReason("trial_exhausted");
-      setShowLoginModal(true);
-      return;
-    }
-    // Check free usage limit (로그인 유저만 — 게스트는 GUEST_TRIAL_LIMIT으로 제한)
+    // 회의 ζ-5-A (2026-04-30): 게스트 시스템 폐기. 모든 유저 로그인 상태.
+    // Check free usage limit (subStatus !== "active" 유저는 FREE_PLAN_LIMIT 적용)
     if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
       trackEvent("paywall_view", { session_number: getPlanCount() });
       setShowPaywall(true);
@@ -803,17 +775,12 @@ export default function Home() {
       await generatePlan(condition, goal, undefined, intensityCtx, resolvedIntensity, session, opts);
     } catch (err) {
       if (err instanceof Error && err.message === "TRIAL_LIMIT") {
-        trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
-        trackEvent("login_modal_view", { trigger: "server_trial_limit" });
-        setView("home");
-        setLoginModalReason("trial_exhausted");
-        setShowLoginModal(true);
+        // 회의 ζ-5-A (2026-04-30): 게스트 폐기 후 서버 TRIAL_LIMIT 응답은 free plan limit 초과 의미 → 페이월
+        setShowPaywall(true);
         return;
       }
       throw err;
     }
-    // 게스트 체험 카운트: 플랜 생성 시점에 증가 (서버 IP 카운트와 동기화)
-    if (!isLoggedIn) incrementGuestTrial();
     // planCount는 운동 시작(onStart) 시점에 증가 — 생성만 하고 취소해도 횟수 차감 안 됨
     // sessionMode path: view transition handled by onComplete callback
     if (!session?.sessionMode) {
@@ -920,13 +887,13 @@ export default function Home() {
       </div>
     );
 
-    if (activeTab === "proof" && (view === "home" || view === "home_chat")) {
+    if (activeTab === "proof" && view === "home") {
       return <ProofTab lockedRuleIds={[]} onShowPrediction={() => { setPredictionReturnTab("proof"); setView("prediction_report"); }} />;
     }
 
     // 회의 57 후속: 영양 탭 — 첫 진입 시 프로필 없으면 Onboarding 게이트.
     // 필수 3개(gender + bodyWeight + goal) 있으면 바로 NutritionTab.
-    if (activeTab === "nutrition" && (view === "home" || view === "home_chat")) {
+    if (activeTab === "nutrition" && view === "home") {
       // 프리미엄 게이트 — 비프리미엄 유저는 업그레이드 CTA 노출
       if (subStatus !== "active") {
         return (
@@ -1000,7 +967,11 @@ export default function Home() {
         <div
           key={`nutrition-${nutritionProfileVersion}`}
           className="h-full overflow-y-auto overflow-x-hidden px-4 bg-[#FAFBF9]"
-          style={{ paddingBottom: "calc(88px + var(--safe-area-bottom, 0px))" }}
+          style={{
+            // 회의 ζ-5-A (2026-04-30): iOS notch 침범 방지 — env() only (Android/PC 0)
+            paddingTop: "env(safe-area-inset-top, 0px)",
+            paddingBottom: "calc(88px + var(--safe-area-bottom, 0px))",
+          }}
         >
           <NutritionTab
             bodyWeightKg={fp.bodyWeight || 70}
@@ -1061,6 +1032,7 @@ export default function Home() {
             onOpenMyPlans={() => { setMyPlansReturnTo("root_home"); setView("my_plans"); }}
             onOpenProfile={() => { setActiveTab("my"); setView("home"); }}
             hasActivePrograms={activePrograms.length > 0}
+            onOpenSubscription={() => setShowPaywall(true)}
           />
         );
       }
@@ -1071,6 +1043,7 @@ export default function Home() {
         const activeRunningPrograms = allActive.filter(p => p.programCategory === "running");
         return (
           <RunningHub
+            userName={getDisplayName(user, "")}
             isLoggedIn={isLoggedIn ?? false}
             isPremium={subStatus === "active"}
             hasActivePrograms={runHubActive}
@@ -1085,7 +1058,6 @@ export default function Home() {
             onOpenMyPlans={() => { setMyPlansReturnTo("running_hub"); setView("my_plans"); }}
             onOpenProfile={() => { setActiveTab("my"); setView("home"); }}
             onRequestLogin={() => {
-              setLoginModalReason("generic");
               setShowLoginModal(true);
             }}
             onRequestPaywall={() => setShowPaywall(true)}
@@ -1183,33 +1155,51 @@ export default function Home() {
               birthYear,
               bodyWeightKg: fp.bodyWeight,
             };
+            // 회의 ζ-5 (2026-04-30) Phase 4 + 정정: weeklyMatrix → multi-session → my_plans 진입 (master_plan_preview X)
+            const isMultiSession = item.kind !== "body_picker" && item.weeks > 0 && item.weeklyMatrix && item.weeklyMatrix.length > 0;
+            const requestedSessionsPerWeek = opt?.sessionsPerWeek ?? item.sessionsPerWeek ?? 3;
+            // 회의 ζ-5-A (2026-04-30): locale 기반 라벨 — EN 유저는 labelEn 으로 저장
+            const catalogLabel = locale === "en" ? item.labelEn : item.labelKo;
+            // 카탈로그 변형 로딩 컨텍스트는 setIsLoading(true) 전에 세팅 (overlay 첫 렌더에 즉시 반영)
+            if (isMultiSession) {
+              setCatalogLoadingContext({
+                programName: catalogLabel,
+                totalWeeks: item.weeks,
+                sessionsPerWeek: requestedSessionsPerWeek,
+                totalSessions: item.weeks * requestedSessionsPerWeek,
+              });
+            } else {
+              setCatalogLoadingContext(null);
+            }
             setIsLoading(true);
             setCurrentCondition(condition);
             setCurrentGoal(goal);
             setCurrentPlanSource("chat");
             setWorkoutReturnTo("weight_hub");
 
-            // 회의 ζ-5 (2026-04-30) Phase 4 + 정정: weeklyMatrix → multi-session → my_plans 진입 (master_plan_preview X)
-            if (item.kind !== "body_picker" && item.weeks > 0 && item.weeklyMatrix && item.weeklyMatrix.length > 0) {
+            if (isMultiSession) {
               const { auth } = await import("@/lib/firebase");
               const fbUser = auth.currentUser;
               if (!fbUser) throw new Error("Not authenticated");
               const token = await fbUser.getIdToken();
 
-              // PlanLoadingOverlay 최소 1.5초 노출 (마누스 풍 step 5개 다 보이게)
+              // 회의 ζ-5 (2026-04-30) 버그픽스: remoteSaveProgram await 필수.
+              // fire-and-forget 시 my_plans 진입 → syncSavedPlansFromServer가 서버 반영 전 OLD 목록을
+              // 다시 받아 localStorage 덮어써 새 세션이 사라졌다 한참 뒤 재등장. 반드시 서버 저장 완료 후 navigate.
               const fetchPromise = fetch("/api/generateCatalogProgram", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({
                   catalogId: item.id,
-                  catalogName: item.labelKo,
+                  catalogName: catalogLabel,
                   weeklyMatrix: item.weeklyMatrix,
                   condition,
                   engineGoal: item.engineGoal,
-                  sessionsPerWeek: opt?.sessionsPerWeek ?? item.sessionsPerWeek, // 회의 ζ-5 SETTINGS: 매트릭스 자동 변환
+                  sessionsPerWeek: requestedSessionsPerWeek, // 회의 ζ-5 SETTINGS: 매트릭스 자동 변환
+                  locale, // 회의 ζ-5-A 평가자 P0-2 (2026-04-30): EN 유저 한글 변환
                 }),
               });
-              const minDelay = new Promise<void>((r) => setTimeout(r, 1500));
+              const minDelay = new Promise<void>((r) => setTimeout(r, 2500));
               const [res] = await Promise.all([fetchPromise, minDelay]);
               if (!res.ok) throw new Error(`generateCatalogProgram ${res.status}`);
               const data = await res.json() as { ok: true; programId: string; programName: string; totalSessions: number; totalWeeks: number; sessions: SavedPlan[] };
@@ -1233,13 +1223,24 @@ export default function Home() {
               }));
 
               saveProgramSessions(adjustedSessions);
-              remoteSaveProgram(adjustedSessions).catch(() => { /* local 저장 유지 */ });
+              // 회의 ζ-5-A (2026-04-30): 서버 저장 결과 체크 — 403(limit) 시 local 롤백 + paywall
+              const remoteResult = await remoteSaveProgram(adjustedSessions).catch(() => ({ ok: false as const, reason: "error" as const }));
+              if (!remoteResult.ok && remoteResult.reason === "limit") {
+                // 무료 program 한도 초과 — local 저장도 롤백 + paywall 진입
+                deleteProgram(data.programId);
+                setIsLoading(false);
+                setCatalogLoadingContext(null);
+                setShowPaywall(true);
+                trackEvent("paywall_view", { trigger: "free_program_limit", surface: "catalog_save" });
+                return;
+              }
 
-              setIsLoading(false); // PlanLoadingOverlay 즉시 unmount (onComplete master_plan_preview 진입 cancel)
+              setIsLoading(false);
+              setCatalogLoadingContext(null);
               setPendingExpandedProgramId(data.programId);
               setMyPlansReturnTo("weight_hub");
               setView("my_plans");
-              trackEvent("chat_plan_generated", { mode: "weight_catalog_program", catalog_id: item.id, total_sessions: data.totalSessions, total_weeks: data.totalWeeks, sessions_per_week: opt?.sessionsPerWeek ?? item.sessionsPerWeek ?? 3, start_choice: startChoice });
+              trackEvent("chat_plan_generated", { mode: "weight_catalog_program", catalog_id: item.id, total_sessions: data.totalSessions, total_weeks: data.totalWeeks, sessions_per_week: requestedSessionsPerWeek, start_choice: startChoice });
               return;
             }
 
@@ -1263,6 +1264,7 @@ export default function Home() {
           } catch (err) {
             console.error("WeightHub start failed:", err);
             setIsLoading(false);
+            setCatalogLoadingContext(null);
           }
         };
 
@@ -1295,9 +1297,19 @@ export default function Home() {
             onBack={() => setView("root_home")}
             onOpenMyPlans={() => { setMyPlansReturnTo("weight_hub"); setView("my_plans"); }}
             onOpenProfile={() => { setActiveTab("my"); setView("home"); }}
+            onChangeGoal={(newGoal) => {
+              try {
+                const cur = JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}");
+                cur.goal = newGoal;
+                localStorage.setItem("ohunjal_fitness_profile", JSON.stringify(cur));
+                import("@/utils/userProfile").then(({ saveUserProfile }) => {
+                  saveUserProfile({ fitnessProfile: cur });
+                });
+              } catch {}
+              setFitnessProfileVersion(v => v + 1);
+            }}
             onStartCatalog={handleStartCatalog}
             onRequestLogin={() => {
-              setLoginModalReason("generic");
               setShowLoginModal(true);
             }}
             onRequestPaywall={() => setShowPaywall(true)}
@@ -1329,28 +1341,25 @@ export default function Home() {
             source={currentPlanSource}
             restoredExercises={restoredPreviewExercises}
             onStart={(modifiedData) => {
-              // 회의 64-N (2026-04-19): 운동 시작 시점 체험 소진 체크 — 대표 지시 "제발 페이월 잘 뜨게".
-              // 기존: Master Plan 체류 중 체험이 소진돼도 "운동 시작" 누르면 그냥 통과하던 버그.
-              // 게스트 소진 → 로그인 모달, 로그인 무료 소진 → 페이월. 프리미엄은 항상 통과.
+              // 회의 64-N + ζ-5-A (2026-04-30): 게스트 폐기. 로그인 무료 소진 → 페이월. 프리미엄은 통과.
+              if (subStatus !== "active" && getPlanCount() >= FREE_PLAN_LIMIT) {
+                trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "workout_start_exhausted", surface: "modal" });
+                setShowPaywall(true);
+                return;
+              }
+              // 회의 ζ-5-A 후속 (2026-04-30): 무료 1회 정책 — 12시간 만료 OR 게이트 발화 이력 시 paywall.
+              if (subStatus !== "active" && isFreeTrialEnded()) {
+                trackEvent("paywall_view", { trigger: isFreeGateTriggered() ? "free_gate_replay" : "free_trial_12hr_expired", surface: "modal" });
+                setShowPaywall(true);
+                return;
+              }
+              // 첫 세션 onStart 시점에 트라이얼 타이머 박힘 (최초 1회만).
               if (subStatus !== "active") {
-                if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
-                  trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT, trigger: "workout_start" });
-                  trackEvent("login_modal_view", { trigger: "workout_start_exhausted" });
-                  setLoginModalReason("trial_exhausted");
-                  setShowLoginModal(true);
-                  return;
-                }
-                if (isLoggedIn && getPlanCount() >= FREE_PLAN_LIMIT) {
-                  trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "workout_start_exhausted", surface: "modal" });
-                  setShowPaywall(true);
-                  return;
-                }
+                markFirstSessionStarted();
               }
               trackEvent("plan_preview_start", { source: currentPlanSource }); // 회의 63-A
               incrementPlanCount();
-              // 저장 플랜 실행도 게스트 트라이얼 소진시킴 (평가자 P0 지적)
               if (activeSavedPlanId) {
-                if (!isLoggedIn) incrementGuestTrial();
                 markPlanUsed(activeSavedPlanId);
                 void remoteMarkPlanUsed(activeSavedPlanId);
               }
@@ -1381,7 +1390,6 @@ export default function Home() {
             isLoggedIn={isLoggedIn}
             onGuestSaveAttempt={() => {
               trackEvent("login_modal_view", { trigger: "guest_save_attempt" });
-              setLoginModalReason("generic");
               setShowLoginModal(true);
             }}
             savedPlanId={activeSavedPlanId ?? undefined}
@@ -1395,6 +1403,12 @@ export default function Home() {
             sessionData={currentWorkoutSession}
             source={currentPlanSource}
             restoredProgress={restoredProgress}
+            freeGateEnabled={subStatus === "free" || subStatus === "expired" || subStatus === "cancelled"}
+            onFreeGateReached={() => {
+              // 회의 ζ-5-A 후속 (2026-04-30): 게이트 발화 영구 기록 → 다음 세션 시작 시도 시 즉시 paywall.
+              markFreeGateTriggered();
+              setShowPaywall(true);
+            }}
             onComplete={(completedData, logs, timing, runningStats) => {
               trackEvent("workout_complete", { session_number: getPlanCount(), duration_min: Math.round(timing.totalDurationSec / 60), source: currentPlanSource });
               setCurrentWorkoutSession(completedData);
@@ -1554,14 +1568,7 @@ export default function Home() {
             initialExpandedProgramId={pendingExpandedProgramId}
             onBack={() => { setPendingExpandedProgramId(null); setView(myPlansReturnTo); }}
             onSelectPlan={(plan) => {
-              // 저장 플랜 실행도 트라이얼/페이월 게이트 통과 (평가자 P0 지적)
-              if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
-                trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
-                trackEvent("login_modal_view", { trigger: "saved_plan_trial_limit" });
-                setLoginModalReason("trial_exhausted");
-                setShowLoginModal(true);
-                return;
-              }
+              // 회의 ζ-5-A (2026-04-30): 게스트 폐기. 페이월만 체크.
               if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
                 trackEvent("paywall_view", { session_number: getPlanCount() });
                 setShowPaywall(true);
@@ -1581,107 +1588,10 @@ export default function Home() {
           />
         );
 
-      case "home_chat": {
-        // 회의 57: 채팅형 홈. 유저 자연어 → parseIntent → handleConditionComplete 재사용.
-        if (activeTab === "my") {
-          return <MyProfileTab user={user} onLogout={handleLogout} autoEdit1RM={autoEdit1RM} onCancelFlowChange={setCancelFlowActive} key={autoEdit1RM ? "edit1rm" : "normal"} />;
-        }
-        const bodyWeightKg = (() => { const w = parseFloat(localStorage.getItem("ohunjal_body_weight") || ""); return isNaN(w) ? undefined : w; })();
-        const birthYear = (() => { const y = parseInt(localStorage.getItem("ohunjal_birth_year") || ""); return isNaN(y) ? undefined : y; })();
-        const genderVal = (localStorage.getItem("ohunjal_gender") as "male" | "female" | null) || undefined;
-        // fitness_profile에서 목표/1RM/주간빈도/키까지 꺼내서 Gemini 컨텍스트 강화
-        const fp = (() => {
-          try { return JSON.parse(localStorage.getItem("ohunjal_fitness_profile") || "{}"); }
-          catch { return {}; }
-        })() as {
-          goal?: "fat_loss" | "muscle_gain" | "endurance" | "health";
-          weeklyFrequency?: number;
-          height?: number;
-          bench1RM?: number;
-          squat1RM?: number;
-          deadlift1RM?: number;
-        };
-        return (
-          <ChatHome
-            key={`${guestTrialSyncVersion}`}
-            userName={getDisplayName(user, "")}
-            isGuest={!isLoggedIn}
-            isLoggedIn={isLoggedIn}
-            isPremium={subStatus === "active"}
-            activeStrengthPrograms={(() => { try { return getActivePrograms().filter(p => p.programCategory === "strength"); } catch { return []; } })()}
-            onResumeProgram={(_programId, nextSessionId) => {
-              // 회의 2026-04-27: ChatHome 진행 중 띠 → 다음 세션 master_plan_preview 진입
-              try {
-                const all = getSavedPlans();
-                const session = all.find((p: SavedPlan) => p.id === nextSessionId);
-                if (!session) return;
-                setActiveSavedPlanId(session.id);
-                setCurrentWorkoutSession(session.sessionData);
-                setCurrentPlanSource("program");
-                setWorkoutReturnTo("home_chat");
-                setView("master_plan_preview");
-              } catch (e) { console.error("resume strength program failed", e); }
-            }}
-            onOpenMyPlans={() => { setMyPlansReturnTo("home_chat"); setView("my_plans"); }}
-            savedPlansCount={typeof window !== "undefined" ? JSON.parse(localStorage.getItem("ohunjal_saved_plans") || "[]").length : 0}
-            userProfile={{
-              gender: genderVal,
-              birthYear,
-              bodyWeightKg,
-              heightCm: typeof fp.height === "number" ? fp.height : undefined,
-              goal: fp.goal,
-              weeklyFrequency: typeof fp.weeklyFrequency === "number" ? fp.weeklyFrequency : undefined,
-              bench1RM: typeof fp.bench1RM === "number" ? fp.bench1RM : undefined,
-              squat1RM: typeof fp.squat1RM === "number" ? fp.squat1RM : undefined,
-              deadlift1RM: typeof fp.deadlift1RM === "number" ? fp.deadlift1RM : undefined,
-            }}
-            onSubmit={handleConditionComplete}
-            canSubmit={() => {
-              // 게스트 체험 소진 → 즉시 로그인 모달
-              if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
-                trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
-                trackEvent("login_modal_view", { trigger: "chat_submit_trial_limit" });
-                setLoginModalReason("trial_exhausted");
-                setShowLoginModal(true);
-                return false;
-              }
-              // 로그인 무료 소진 → paywall
-              if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
-                trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "chat_submit_paywall", surface: "modal" });
-                setShowPaywall(true);
-                return false;
-              }
-              return true;
-            }}
-            getBlockReason={() => {
-              if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) return "guest_exhausted";
-              if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) return "free_plan_limit";
-              return null;
-            }}
-            onRequestLogin={() => {
-              setLoginModalReason("trial_exhausted");
-              setShowLoginModal(true);
-            }}
-            onRequestPaywall={() => {
-              trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "chat_inline_retap", surface: "modal" });
-              setShowPaywall(true);
-            }}
-            lastPlanSummary={currentWorkoutSession ? {
-              title: currentWorkoutSession.description?.split("·")[0].trim() || currentWorkoutSession.title || "",
-              exerciseCount: currentWorkoutSession.exercises.length,
-            } : null}
-            onResumeLastPlan={() => {
-              if (currentWorkoutSession) {
-                setCurrentPlanSource("resume"); // 회의 63-A
-                setView("master_plan_preview");
-              }
-            }}
-          />
-        );
-      }
+      // 회의 ζ-5-A (2026-04-30): case "home_chat" 폐기. WeightHub/RunningHub/HomeWorkoutHub 로 흐름 분산.
 
       case "login":
-        return <LoginScreen onLogin={handleLogin} onTryFree={() => { trackEvent("login", { method: "guest" }); setView("home"); }} />;
+        return <LoginScreen onLogin={handleLogin} />;
 
       case "home":
       default:
@@ -1710,15 +1620,7 @@ export default function Home() {
                  const newCompleted = completedRitualIds.filter(id => id !== "workout");
                  setCompletedRitualIds(newCompleted);
                  localStorage.setItem("ohunjal_completed_rituals", JSON.stringify(newCompleted));
-                 // 회의: 바로 직전 운동 완료로 planCount 소진된 케이스 대비 — 홈 CTA와 동일 가드
-                 if (!isLoggedIn && getGuestTrialCount() >= GUEST_TRIAL_LIMIT) {
-                   trackEvent("guest_trial_exhausted", { limit: GUEST_TRIAL_LIMIT });
-                   trackEvent("login_modal_view", { trigger: "trial_limit_restart" });
-                   setView("home");
-                   setLoginModalReason("trial_exhausted");
-                   setShowLoginModal(true);
-                   return;
-                 }
+                 // 회의 ζ-5-A (2026-04-30): 게스트 폐기. 페이월만.
                  if (isLoggedIn && (subStatus === "free" || subStatus === "expired") && getPlanCount() >= FREE_PLAN_LIMIT) {
                    trackEvent("paywall_view", { session_number: getPlanCount(), trigger: "workout_restart" });
                    setView("home");
@@ -1744,7 +1646,7 @@ export default function Home() {
            );
         }
 
-        // HomeScreen 폐기 — useEffect가 home → home_chat 자동 리다이렉트. 1 프레임 null 반환.
+        // HomeScreen 폐기 — home + activeTab=home 은 useEffect 가 root_home 으로 자동 리다이렉트. 1 프레임 null 반환.
         return null;
     }
   };
@@ -1752,7 +1654,7 @@ export default function Home() {
   return (
     <I18nProvider>
     <UnitsProvider>
-    <PhoneFrame pullToRefresh={view === "home" || view === "home_chat"}>
+    <PhoneFrame pullToRefresh={view === "home"}>
       <div className="h-full w-full relative overflow-hidden">
         <div className={`h-full overflow-y-auto overflow-x-hidden scrollbar-hide ${view === "login" ? "" : ""}`} style={view === "login" || view === "workout_session" || view === "master_plan_preview" || view === "root_home" || view === "running_hub" || view === "home_workout_hub" ? undefined : { paddingBottom: "calc(88px + var(--safe-area-bottom, 0px))" }}>
           {renderContent()}
@@ -1769,7 +1671,7 @@ export default function Home() {
                 setPendingRootTarget(null);
                 // 회의 2026-04-27: 진입 전 activeTab을 home으로 reset (이전 탭 잔재 방지)
                 setActiveTab("home");
-                if (target === "weight") setView("home_chat");
+                if (target === "weight") setView("weight_hub");
                 else if (target === "running") setView("running_hub");
                 else setView("home_workout_hub");
               }}
@@ -1785,14 +1687,28 @@ export default function Home() {
               onClose={() => {
                 trackEvent("paywall_dismiss");
                 setShowPaywall(false);
-                // Re-check subscription status
+                // 회의 ζ-5-A 후속 (2026-04-30) 버그픽스: workout_session 중 paywall 닫기 시
+                // 자동으로 이전 화면 복귀 — 안 하면 운동화면 stuck → "다음" 누를 때마다 paywall 재발화 (무한 루프).
+                // 결제 활성화 (active) 시점에는 별도 분기 — 운동 이어서 가능.
                 user.getIdToken().then(token => {
                   fetch("/api/getSubscription", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                   })
                     .then(res => res.ok ? res.json() : { status: "free" })
-                    .then(data => setSubStatus(data.status || "free"))
+                    .then(data => {
+                      const newStatus = data.status || "free";
+                      setSubStatus(newStatus);
+                      if (newStatus === "active") {
+                        // 결제 완료 → 트라이얼 상태 초기화. 운동 이어서 OK.
+                        clearFreeTrialState();
+                      } else if (view === "workout_session") {
+                        // 비활성 상태로 paywall 닫음 + 운동 중 → 운동 자동 빠져나감 (stuck 방지).
+                        setCurrentWorkoutSession(null);
+                        setActiveSavedPlanId(null);
+                        setView(workoutReturnTo);
+                      }
+                    })
                     .catch(() => setSubStatus("free"));
                 }).catch(() => setSubStatus("free"));
               }}
@@ -1808,6 +1724,8 @@ export default function Home() {
             goal={currentGoal}
             sessionMode={currentSession?.sessionMode}
             targetMuscle={currentSession?.targetMuscle}
+            variant={catalogLoadingContext ? "catalog_program" : "default"}
+            catalogContext={catalogLoadingContext ?? undefined}
             onComplete={() => {
               // 서버 응답 대기: pendingSession이 있을 때까지 폴링 (최대 20회=10초)
               let pollCount = 0;
@@ -1841,7 +1759,6 @@ export default function Home() {
           >
             <BottomTabs active={activeTab} onChange={(id) => {
               if (!isLoggedIn && (id === "proof" || id === "my" || id === "nutrition")) {
-                setLoginModalReason("generic");
                 setShowLoginModal(true);
                 return;
               }
@@ -1856,31 +1773,18 @@ export default function Home() {
             <div className="bg-white rounded-2xl p-6 mx-6 shadow-xl max-w-[320px] w-full">
               <div className="flex flex-col items-center gap-1 mb-5">
                 <img src={locale === "ko" ? "/login-logo-kor2.png" : "/login-logo-Eng.png"} alt="Ohunjal AI" className="w-32 h-auto mb-2" />
-                {loginModalReason === "trial_exhausted" ? (
-                  <>
-                    <p className="text-center text-gray-800 font-bold text-base">
-                      {locale === "ko" ? "무료체험 3회를 모두 사용하셨습니다!" : "You've used all 3 free trials!"}
-                    </p>
-                    <p className="text-center text-gray-500 text-sm">
-                      {locale === "ko" ? <>로그인하고 계속 이용해 주세요</> : <>Sign in to continue</>}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-center text-gray-800 font-bold text-base">
-                      {locale === "ko" ? "로그인하고 계속하기" : "Sign in to continue"}
-                    </p>
-                    <p className="text-center text-gray-500 text-sm">
-                      {locale === "ko" ? <>운동 기록 저장, 성장 분석 등<br />모든 기능을 이용할 수 있어요</> : <>Save workout records, growth analysis<br />and unlock all features</>}
-                    </p>
-                  </>
-                )}
+                {/* 회의 ζ-5-A (2026-04-30): trial_exhausted 분기 폐기 (게스트 시스템 제거) */}
+                <p className="text-center text-gray-800 font-bold text-base">
+                  {locale === "ko" ? "로그인하고 계속하기" : "Sign in to continue"}
+                </p>
+                <p className="text-center text-gray-500 text-sm">
+                  {locale === "ko" ? <>운동 기록 저장, 성장 분석 등<br />모든 기능을 이용할 수 있어요</> : <>Save workout records, growth analysis<br />and unlock all features</>}
+                </p>
               </div>
               <button
                 onClick={async () => {
                   try {
                     await signInWithPopup(auth, googleProvider);
-                    trackEvent("guest_to_login", { trial_count: getGuestTrialCount() });
                     handleLogin();
                   } catch (err: any) {
                     if (err.code !== "auth/popup-closed-by-user") {
