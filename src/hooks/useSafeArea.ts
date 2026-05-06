@@ -35,8 +35,16 @@ export function useSafeArea() {
         return;
       }
 
-      // 회의 ζ-3 (2026-04-28): PhoneFrame 100svh 채택 후 — svh 자체가 chrome/nav 노출 상태 기준 안전 viewport.
-      // BottomTabs / CTA 들이 svh 하단 = 시스템 nav top 과 동일선상. 추가 padding 0.
+      // 안드 PWA: 회의 ζ-3 (2026-04-28) — env() 안 잡혀도 fallback 48px 강제 (Android nav bar 평균).
+      // 100dvh 채택 시 viewport 가 nav 영역 포함하므로 paddingBottom 으로 회피.
+      const isAndroid = /Android/.test(navigator.userAgent);
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+      if (isAndroid && isStandalone) {
+        document.documentElement.style.setProperty("--safe-area-bottom", "48px");
+        return;
+      }
+
+      // 그 외 모바일 브라우저 — chrome 이 nav 위에서 끝남 → 추가 padding 0.
       document.documentElement.style.setProperty("--safe-area-bottom", "0px");
     }
 
