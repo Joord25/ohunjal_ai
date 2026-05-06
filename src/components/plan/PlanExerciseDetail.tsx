@@ -383,7 +383,8 @@ export const PlanExerciseDetail: React.FC<PlanExerciseDetailProps> = ({
           <div className="px-4 pt-3 pb-4 flex justify-center">
             <button
               onClick={() => window.open(searchUrl, "_blank")}
-              className="aspect-[9/16] max-h-[40dvh] rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all"
+              className="rounded-2xl overflow-hidden bg-black relative shadow-lg active:scale-[0.97] transition-all"
+              style={{ aspectRatio: "9 / 16", height: "40vh", maxHeight: "40dvh" }}
             >
               <iframe
                 src={embedUrl}
