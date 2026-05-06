@@ -843,7 +843,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
   return (
     <div className="flex flex-col h-full bg-white animate-fade-in">
       {/* Header - fixed */}
-      <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0 bg-white">
+      <div className="pt-[max(3rem,env(safe-area-inset-top))] pb-3 px-6 flex items-center justify-between shrink-0 bg-white">
         <button onClick={onClose} className="p-2 -ml-2">
           <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />

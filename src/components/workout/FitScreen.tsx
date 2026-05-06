@@ -301,6 +301,31 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   // Timer State for Cardio/Warmup
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  // 러닝 세션 화면 잠금 (호주머니 안전) — long-press 1.5s 해제
+  const [isLocked, setIsLocked] = useState(false);
+  const [unlockPressing, setUnlockPressing] = useState(false);
+  const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleUnlockPressStart = () => {
+    setUnlockPressing(true);
+    unlockTimerRef.current = setTimeout(() => {
+      setIsLocked(false);
+      setUnlockPressing(false);
+      if (navigator.vibrate && (localStorage.getItem("ohunjal_settings_vibration") ?? "1") === "1") {
+        navigator.vibrate([60, 40, 80]);
+      }
+    }, 1500);
+  };
+  const handleUnlockPressEnd = () => {
+    setUnlockPressing(false);
+    if (unlockTimerRef.current) {
+      clearTimeout(unlockTimerRef.current);
+      unlockTimerRef.current = null;
+    }
+  };
+  useEffect(() => () => {
+    if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+  }, []);
   // 회의 2026-04-26 음악 도입: 운동 ▶/⏸ → 음악 단방향 동기화 (timer/cardio/running 만).
   // 첫 mount 의 false 발화는 noop 처리하여 음악 의도치 않은 pause 방지.
   const firstIsPlayingChangeRef = useRef(true);
@@ -1024,13 +1049,13 @@ export const FitScreen: React.FC<FitScreenProps> = ({
 
     return (
       <div className="flex flex-col h-full bg-white animate-fade-in relative">
-        <div className="pt-[max(2.5rem,env(safe-area-inset-top))] pb-4 px-6 flex items-center justify-between relative shrink-0">
+        <div className="pt-[max(3rem,env(safe-area-inset-top))] pb-4 px-6 flex items-center justify-between relative shrink-0">
           <button onClick={onBack} className="p-2 -ml-2 z-50 relative">
             <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-[max(2.5rem,env(safe-area-inset-top))] pb-4 pointer-events-none z-0">
+          <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-[max(3rem,env(safe-area-inset-top))] pb-4 pointer-events-none z-0">
             <span className="text-[10px] font-bold text-gray-400 tracking-[0.2em]">
               EXERCISE {exerciseIndex} / {totalExercises}
             </span>
@@ -1306,7 +1331,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-white animate-fade-in relative">
       {/* Header with Back Button */}
-      <div className="pt-[max(2rem,env(safe-area-inset-top))] pb-1 px-6 flex items-center justify-between relative shrink-0">
+      <div className="pt-[max(3rem,env(safe-area-inset-top))] pb-1 px-6 flex items-center justify-between relative shrink-0">
         <button
           onClick={onBack}
           className="p-2 -ml-2 z-50 relative"
@@ -1327,7 +1352,7 @@ export const FitScreen: React.FC<FitScreenProps> = ({
           </svg>
         </button>
 
-        <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-[max(2rem,env(safe-area-inset-top))] pb-1 pointer-events-none z-0">
+        <div className="absolute inset-x-16 top-0 bottom-0 flex flex-col items-center justify-center pt-[max(3rem,env(safe-area-inset-top))] pb-1 pointer-events-none z-0">
           <span
             className="text-2xl tracking-widest uppercase font-black px-4 py-1 rounded-xl"
             style={{ color: THEME.textMain }}
@@ -1759,8 +1784,18 @@ export const FitScreen: React.FC<FitScreenProps> = ({
                     <span className="font-black text-base tracking-wider">{t("fit.done")}</span>
                   </button>
                 ) : isRunningExercise ? (
-                  // 회의 41/43: 러닝 운동(인터벌+연속)은 재생/일시정지 상태와 무관하게 재생 + 완료 2버튼 고정
-                  <div className="flex items-center gap-6">
+                  // 러닝 운동(인터벌+연속): 자물쇠(작음) + 재생/일시정지 + 완료
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setIsLocked(true)}
+                      aria-label={t("fit.lock.aria")}
+                      className="w-12 h-12 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="5" y="11" width="14" height="9" rx="2" />
+                        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </button>
                     <button
                       onClick={() => {
                         if (isPlaying) {
@@ -2358,7 +2393,43 @@ export const FitScreen: React.FC<FitScreenProps> = ({
         </div>
       )}
 
-      {/* 회의 2026-04-27: 음악 미니바 슬롯 제거 */}
+      {/* 화면 잠금 오버레이 — 러닝 호주머니 안전. 1.5s long-press 해제 */}
+      {isLocked && (
+        <div className="fixed inset-0 z-[200] bg-black/85 flex flex-col items-center justify-center select-none">
+          <button
+            onPointerDown={handleUnlockPressStart}
+            onPointerUp={handleUnlockPressEnd}
+            onPointerCancel={handleUnlockPressEnd}
+            onPointerLeave={handleUnlockPressEnd}
+            aria-label={t("fit.unlock.aria")}
+            className="relative w-32 h-32 active:scale-95 transition-transform touch-none"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <svg className="absolute inset-0 -rotate-90" viewBox="0 0 128 128">
+              <circle cx="64" cy="64" r="58" stroke="rgba(255,255,255,0.15)" strokeWidth={4} fill="none" />
+              <circle
+                cx="64" cy="64" r="58"
+                stroke="#2D6A4F" strokeWidth={4} fill="none" strokeLinecap="round"
+                strokeDasharray={364}
+                strokeDashoffset={unlockPressing ? 0 : 364}
+                style={{ transition: unlockPressing ? "stroke-dashoffset 1.5s linear" : "stroke-dashoffset 0s" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+            </div>
+          </button>
+          <p className="mt-8 text-white text-base font-black tracking-wide">
+            {t("fit.lock.holdToUnlock")}
+          </p>
+          <p className="mt-2 text-white/50 text-[12px]">
+            {t("fit.lock.hint")}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

@@ -131,8 +131,7 @@ export const MyPlansScreen: React.FC<MyPlansScreenProps> = ({ onBack, onSelectPl
     <div className="h-full flex flex-col bg-[#FAFBF9]">
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-5 py-3 bg-[#FAFBF9] border-b border-gray-200"
-        style={{ paddingTop: "calc(var(--safe-area-top, 0px) + 12px)" }}
+        className="shrink-0 flex items-center justify-between px-5 py-3 bg-[#FAFBF9] border-b border-gray-200 pt-[max(3rem,env(safe-area-inset-top))]"
       >
         <button onClick={() => { setIsEditMode(false); onBack(); }} className="p-2 -ml-2 text-gray-600 active:text-gray-900">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
