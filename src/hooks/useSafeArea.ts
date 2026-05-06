@@ -29,8 +29,9 @@ export function useSafeArea() {
         // iOS (PWA·사파리 공통): 대표 지시 2026-05-04 — 하단 여백 0.
         // 안드는 시스템 nav bar 때문에 padding 필요하지만 iOS는 svh 자체가 home indicator 위에서 끝남.
         document.documentElement.style.setProperty("--safe-area-bottom", "0px");
-        // 대표 지시 2026-05-06: BottomTabs 의 추가 16px 패딩도 iOS 에서 제거 (안드/PC 는 16px 유지).
-        document.documentElement.style.setProperty("--bottom-tabs-extra-pad", "0px");
+        // 대표 지시 2026-05-06: 콘텐츠 wrapper paddingBottom 88px magic number 를 iOS 에서만 80px 로 축소.
+        // 88px(default, 안드/PC fallback) → BottomTabs 영역(52+16=68) + 여유 12px 적정. 안드/PC 는 미정의 → 88 그대로.
+        document.documentElement.style.setProperty("--content-bottom-pad", "80px");
         return;
       }
 

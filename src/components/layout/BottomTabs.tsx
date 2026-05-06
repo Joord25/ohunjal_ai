@@ -25,8 +25,7 @@ export const BottomTabs: React.FC<BottomTabsProps> = ({ active, onChange }) => {
       className="absolute bottom-0 left-0 right-0 flex justify-center px-4 sm:px-6"
       style={{
         zIndex: 40,
-        // iOS 는 useSafeArea 에서 --bottom-tabs-extra-pad: 0px 강제. 안드/PC 는 변수 미정의 → fallback 16px.
-        paddingBottom: "calc(var(--safe-area-bottom, 0px) + var(--bottom-tabs-extra-pad, 16px))",
+        paddingBottom: "calc(var(--safe-area-bottom, 0px) + 16px)",
       }}
     >
       <div
