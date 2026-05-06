@@ -9,7 +9,7 @@ import { useEffect } from "react";
  * env() 가 0 으로 잡히는 케이스 발생 → viewport 가 nav 뒤로 확장 → 화면이 nav 뒤로 숨음.
  * PhoneFrame 100dvh 복원 + useSafeArea 가 환경별 padding 직접 보장:
  * - 안드 PWA: env() 안 잡혀도 fallback 48px 강제 (Android nav bar 평균)
- * - iOS PWA: 12px 고정 (홈 인디케이터)
+ * - iOS PWA / iOS 사파리: 0px (대표 지시 2026-05-04 — iOS는 하단 여백 불필요)
  * - 모바일 브라우저: 0px (chrome 이 nav 위에서 끝남)
  * - PC: 4px
  */
@@ -22,15 +22,13 @@ export function useSafeArea() {
         return;
       }
 
-      const isStandalone =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        (navigator as unknown as { standalone?: boolean }).standalone === true;
       const isIOS = (navigator as unknown as { standalone?: boolean }).standalone === true
         || /iPhone|iPad|iPod/.test(navigator.userAgent);
 
-      if (isIOS && isStandalone) {
-        // iOS PWA: 홈 인디케이터 회피 — env(~34px)는 과해서 12px 고정.
-        document.documentElement.style.setProperty("--safe-area-bottom", "12px");
+      if (isIOS) {
+        // iOS (PWA·사파리 공통): 대표 지시 2026-05-04 — 하단 여백 0.
+        // 안드는 시스템 nav bar 때문에 padding 필요하지만 iOS는 svh 자체가 home indicator 위에서 끝남.
+        document.documentElement.style.setProperty("--safe-area-bottom", "0px");
         return;
       }
 
