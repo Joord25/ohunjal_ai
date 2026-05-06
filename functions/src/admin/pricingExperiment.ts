@@ -3,32 +3,25 @@ import { verifyAdmin, db } from "../helpers";
 
 /**
  * POST /adminPricingExperiment
- * Admin only — pricing_experiments 컬렉션 집계 (tier × locale 분리).
+ * Admin only — pricing_experiments 컬렉션 집계 (locale 분리, 단일 가격).
  *
- * 회의 ζ-5-A (2026-04-30): 가격 실험 + locale 행 분리 (대표 지시).
+ * 회의 ζ-5-A (2026-04-30): 가격 실험 시작 (6 tier × 2 locale = 12행).
+ * 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900 / $1.99 고정 → KO/EN 2행 합산.
+ * 과거 tier 할당 데이터는 컬렉션에 보존, 집계만 locale 차원으로 단순화.
  *
  * Response:
  * {
- *   rows: [
- *     { tier, locale: "ko" | "en", price, currency, assignedCount, paywallViews,
- *       paidCount, conversionRate, paymentConversionRate, revenuePerAssignedKrw },
- *     ...  // 6 tier × 2 locale = 12 rows
- *   ],
+ *   rows: [{ tier:"all", locale, price, currency, assignedCount, paywallViews,
+ *            paidCount, conversionRate, paymentConversionRate, revenuePerAssignedKrw }, ...],  // 2 rows
  *   total: { assignedCount, paywallViews, paidCount },
+ *   byLocale: { ko: {...}, en: {...} },
  *   updatedAt: ISO,
  * }
  */
 
-const TIER_KRW: Record<string, number> = {
-  t1: 990, t2: 1900, t3: 2900, t4: 3900, t5: 4900, t6: 5900,
-};
-const TIER_USD: Record<string, number> = {
-  t1: 1.99, t2: 2.99, t3: 3.99, t4: 4.99, t5: 5.99, t6: 6.99,
-};
-const TIERS = ["t1", "t2", "t3", "t4", "t5", "t6"] as const;
+const FIXED_KRW = 1900;
+const FIXED_USD = 1.99;
 const LOCALES = ["ko", "en"] as const;
-
-// 매출/할당 → KRW 통일 비교 위한 USD→KRW 환산 (대략)
 const USD_TO_KRW = 1400;
 
 export const adminPricingExperiment = onRequest(
@@ -45,14 +38,10 @@ export const adminPricingExperiment = onRequest(
     try {
       const snap = await db.collection("pricing_experiments").get();
 
-      // [tier][locale] = stats
-      const buckets: Record<string, Record<string, { assigned: number; views: number; paid: number }>> = {};
-      for (const tier of TIERS) {
-        buckets[tier] = {};
-        for (const locale of LOCALES) {
-          buckets[tier][locale] = { assigned: 0, views: 0, paid: 0 };
-        }
-      }
+      const buckets: Record<"ko" | "en", { assigned: number; views: number; paid: number }> = {
+        ko: { assigned: 0, views: 0, paid: 0 },
+        en: { assigned: 0, views: 0, paid: 0 },
+      };
 
       let totalAssigned = 0;
       let totalViews = 0;
@@ -60,12 +49,10 @@ export const adminPricingExperiment = onRequest(
 
       snap.forEach(doc => {
         const data = doc.data();
-        const tier = data?.tier as string | undefined;
-        if (!tier || !TIERS.includes(tier as typeof TIERS[number])) return;
         const localeRaw = data?.locale as string | undefined;
-        const locale: typeof LOCALES[number] = localeRaw === "en" ? "en" : "ko"; // 미설정 doc 은 ko fallback
+        const locale: typeof LOCALES[number] = localeRaw === "en" ? "en" : "ko";
 
-        const b = buckets[tier][locale];
+        const b = buckets[locale];
         b.assigned += 1;
         totalAssigned += 1;
         const views = typeof data?.paywallViews === "number" ? data.paywallViews : 0;
@@ -77,42 +64,31 @@ export const adminPricingExperiment = onRequest(
         }
       });
 
-      const rows = TIERS.flatMap(tier =>
-        LOCALES.map(locale => {
-          const b = buckets[tier][locale];
-          const price = locale === "ko" ? TIER_KRW[tier] : TIER_USD[tier];
-          const priceKrw = locale === "ko" ? TIER_KRW[tier] : Math.round(TIER_USD[tier] * USD_TO_KRW);
-          const conversionRate = b.assigned > 0 ? b.paid / b.assigned : 0;
-          const paymentConversionRate = b.views > 0 ? b.paid / b.views : 0;
-          const revenuePerAssignedKrw = Math.round(priceKrw * conversionRate);
-          return {
-            tier,
-            locale,
-            price,
-            currency: locale === "ko" ? "KRW" : "USD",
-            assignedCount: b.assigned,
-            paywallViews: b.views,
-            paidCount: b.paid,
-            conversionRate,
-            paymentConversionRate,
-            revenuePerAssignedKrw,
-          };
-        })
-      );
+      const rows = LOCALES.map(locale => {
+        const b = buckets[locale];
+        const price = locale === "ko" ? FIXED_KRW : FIXED_USD;
+        const priceKrw = locale === "ko" ? FIXED_KRW : Math.round(FIXED_USD * USD_TO_KRW);
+        const conversionRate = b.assigned > 0 ? b.paid / b.assigned : 0;
+        const paymentConversionRate = b.views > 0 ? b.paid / b.views : 0;
+        const revenuePerAssignedKrw = Math.round(priceKrw * conversionRate);
+        return {
+          tier: "all",
+          locale,
+          price,
+          currency: locale === "ko" ? "KRW" : "USD",
+          assignedCount: b.assigned,
+          paywallViews: b.views,
+          paidCount: b.paid,
+          conversionRate,
+          paymentConversionRate,
+          revenuePerAssignedKrw,
+        };
+      });
 
-      // 회의 ζ-5-A 평가자 P1-7 (2026-04-30): 통화별 분리 합계 — KO/EN cohort LTV 비대칭 비교 방지.
       const localeBreakdown: Record<"ko" | "en", { assignedCount: number; paywallViews: number; paidCount: number }> = {
-        ko: { assignedCount: 0, paywallViews: 0, paidCount: 0 },
-        en: { assignedCount: 0, paywallViews: 0, paidCount: 0 },
+        ko: { assignedCount: buckets.ko.assigned, paywallViews: buckets.ko.views, paidCount: buckets.ko.paid },
+        en: { assignedCount: buckets.en.assigned, paywallViews: buckets.en.views, paidCount: buckets.en.paid },
       };
-      for (const tier of TIERS) {
-        for (const locale of LOCALES) {
-          const b = buckets[tier][locale];
-          localeBreakdown[locale].assignedCount += b.assigned;
-          localeBreakdown[locale].paywallViews += b.views;
-          localeBreakdown[locale].paidCount += b.paid;
-        }
-      }
 
       res.status(200).json({
         rows,

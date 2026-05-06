@@ -981,7 +981,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mb-4">
-                    6 tier × 2 locale = 12행. 같은 tier 안에 KO/EN 분리. 매출/할당 최댓값 행 (emerald) = 매출 효율적 가격대.
+                    가격 실험 종료 (2026-05-06) — 단일 가격 ₩1,900 / $1.99 고정. KO/EN 2행 집계. 과거 tier 할당 데이터는 보존됨.
                   </p>
 
                   {!pricingStats && (
@@ -993,7 +993,7 @@ export default function AdminPage() {
                       <div className="mb-3 p-3 rounded-lg bg-gray-50 text-sm">
                         <p className="font-bold text-[#1B4332] mb-2">전체</p>
                         <div className="flex flex-wrap gap-3 text-xs text-gray-700 mb-2">
-                          <span><InfoTooltip label="할당" tip="실험에 진입한 고유 유저 수. uid 해시 기반 결정적 분배 — 한 유저는 평생 한 tier 고정." />: <strong>{pricingStats.total.assignedCount}</strong></span>
+                          <span><InfoTooltip label="할당" tip="pricing_experiments 컬렉션에 doc 이 있는 고유 유저 수 (가입 후 paywall 진입 경험)." />: <strong>{pricingStats.total.assignedCount}</strong></span>
                           <span><InfoTooltip label="paywall 노출" tip="paywall 화면이 노출된 총 횟수. URL redirect 가드 + sessionStorage dedupe 적용 후 — 의도된 진입 1회당 1번 카운트." />: <strong>{pricingStats.total.paywallViews}</strong></span>
                           <span><InfoTooltip label="결제" tip="실제 결제 완료한 고유 유저 수." />: <strong>{pricingStats.total.paidCount}</strong></span>
                           <span><InfoTooltip label="전환율" tip="결제 ÷ 할당. 실험에 진입한 유저 중 몇 % 가 결제했나." />: <strong>{pricingStats.total.assignedCount > 0 ? ((pricingStats.total.paidCount / pricingStats.total.assignedCount) * 100).toFixed(2) : 0}%</strong></span>
@@ -1016,28 +1016,28 @@ export default function AdminPage() {
                           <thead className="bg-gray-100 text-gray-600">
                             <tr>
                               <th className="text-left p-2">
-                                <InfoTooltip label="Tier" tip="가격 등급. t1=최저가 (KO ₩990 / EN $1.99) → t6=최고가 (KO ₩5,900 / EN $6.99)." />
+                                <InfoTooltip label="Tier" tip="가격 실험 종료 후 단일 가격 — 'all' 로 표시 (₩1,900 / $1.99)." />
                               </th>
                               <th className="text-left p-2">
                                 <InfoTooltip label="Locale" tip="KO=한국어 유저(KRW · PortOne 카카오페이) / EN=해외 유저(USD · Paddle)." />
                               </th>
                               <th className="text-right p-2">
-                                <InfoTooltip label="가격" tip="해당 tier × locale 의 표시 가격. 월간 구독료." />
+                                <InfoTooltip label="가격" tip="단일 가격 — KO ₩1,900 / EN $1.99. 월간 구독료." />
                               </th>
                               <th className="text-right p-2">
-                                <InfoTooltip label="할당" tip="이 tier 에 할당된 고유 유저 수. uid 해시 기반 — 한 유저는 평생 한 tier 고정." />
+                                <InfoTooltip label="할당" tip="이 locale 의 고유 유저 수 (가입 후 paywall 진입 경험)." />
                               </th>
                               <th className="text-right p-2">
                                 <InfoTooltip label="노출" tip="paywall 화면 노출 횟수. URL redirect 가드 + sessionStorage dedupe 적용 후 의도된 진입만 카운트 (한 세션 1회)." />
                               </th>
                               <th className="text-right p-2">
-                                <InfoTooltip label="결제" tip="이 tier 에서 실제 결제 완료한 고유 유저 수." />
+                                <InfoTooltip label="결제" tip="이 locale 에서 실제 결제 완료한 고유 유저 수." />
                               </th>
                               <th className="text-right p-2">
-                                <InfoTooltip label="전환율" tip="결제 ÷ 할당. 이 가격에 할당된 유저 중 몇 % 가 결제했나." />
+                                <InfoTooltip label="전환율" tip="결제 ÷ 할당. 이 locale 유저 중 몇 % 가 결제했나." />
                               </th>
                               <th className="text-right p-2">
-                                <InfoTooltip label="매출/할당 (KRW)" tip="가격 × 전환율. 할당 1명당 기대 매출. USD tier 는 USD×1400 환산. 이 컬럼 최댓값(emerald) = 매출 효율 1위 가격대." />
+                                <InfoTooltip label="매출/할당 (KRW)" tip="가격 × 전환율. 할당 1명당 기대 매출. USD 는 USD×1400 환산. 매출 효율 1위 행이 emerald 강조." />
                               </th>
                             </tr>
                           </thead>
@@ -1069,7 +1069,7 @@ export default function AdminPage() {
                         </table>
                       </div>
                       <p className="text-[9px] text-gray-400 mt-3 leading-relaxed">
-                        ⓘ 매출/할당 = price(KRW) × 전환율. USD tier 는 USD→KRW 환산 (≈1400) 으로 비교. 표본 부족 시 노이즈 — tier당 50명+ 권장.
+                        ⓘ 매출/할당 = price(KRW) × 전환율. USD 는 USD→KRW 환산 (≈1400) 으로 비교. 표본 부족 시 노이즈.
                       </p>
                       {pricingStats.updatedAt && (
                         <p className="text-[10px] text-gray-400 mt-2 text-right">
