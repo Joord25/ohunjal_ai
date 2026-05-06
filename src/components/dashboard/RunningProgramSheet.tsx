@@ -308,8 +308,8 @@ export const RunningProgramSheet: React.FC<RunningProgramSheetProps> = ({
         {/* 회의 2026-04-28: 상단 CTA — h-[70px] (111→91→70, 추가 21px 축소로 컴팩트).
             뒤로가기 + headerRight(📋/👤). 제목/캡션은 콘텐츠 영역 상단으로 내림. */}
         <div
-          className="shrink-0 h-[70px] flex items-end justify-between px-2 pb-[15px] border-b border-gray-100 bg-white"
-          style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
+          className="shrink-0 min-h-[70px] flex items-end justify-between px-2 pb-[15px] border-b border-gray-100 bg-white"
+          style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}
         >
           <button
             onClick={handleStepBack}

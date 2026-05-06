@@ -67,8 +67,8 @@ export const HomeWorkoutHub: React.FC<HomeWorkoutHubProps> = ({ busy, hasActiveP
       {/* 회의 2026-04-28: 상단 CTA h-[70px] (111→91→70 단계적 축소). 뒤로가기 + 📋/👤만.
           (러닝 프로그램과 동일 패턴 — 톤앤매너 통일) */}
       <div
-        className="shrink-0 h-[70px] flex items-end justify-between px-2 pb-[15px] border-b border-gray-100 bg-white"
-        style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
+        className="shrink-0 min-h-[70px] flex items-end justify-between px-2 pb-[15px] border-b border-gray-100 bg-white"
+        style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}
       >
         <button
           onClick={onBack}
