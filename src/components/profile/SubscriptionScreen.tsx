@@ -1174,7 +1174,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       {/* Refund Request Overlay */}
       {refundStep > 0 && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(24px + var(--safe-area-bottom, 0px))" }}>
-          <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0">
+          <div className="pt-[max(3rem,env(safe-area-inset-top))] pb-3 px-6 flex items-center justify-between shrink-0">
             <button onClick={() => setRefundStep(0)} className="p-2 -ml-2">
               <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -1244,7 +1244,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       {cancelStep > 0 && (
         <div className="absolute inset-0 z-50 bg-white flex flex-col animate-fade-in overflow-y-auto scrollbar-hide" style={{ paddingBottom: "calc(24px + var(--safe-area-bottom, 0px))" }}>
           {/* Header */}
-          <div className="pt-5 pb-3 px-6 flex items-center justify-between shrink-0">
+          <div className="pt-[max(3rem,env(safe-area-inset-top))] pb-3 px-6 flex items-center justify-between shrink-0">
             <button onClick={() => setCancelStep(0)} className="p-2 -ml-2">
               <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
