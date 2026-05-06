@@ -58,7 +58,10 @@ export const BeginnerGuideOverlay: React.FC<BeginnerGuideOverlayProps> = ({
     // PhoneFrame과 동일 폭(sm:max-w-[415px])으로 가두고 외곽은 회색으로 통일.
     <div className="fixed inset-0 z-[70] bg-[#FAFBF9] sm:bg-gray-100 animate-fade-in">
       <div className="bg-white w-full h-full flex flex-col sm:max-w-[415px] sm:mx-auto sm:shadow-lg">
-        <header className="flex justify-between items-center px-3 pt-3">
+        <header
+          className="flex justify-between items-center px-3 pb-3 shrink-0"
+          style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}
+        >
         <button
           type="button"
           onClick={onBack}
