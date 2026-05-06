@@ -112,7 +112,7 @@ const ko: LandingTexts = {
   pricing: {
     label: "PRICING",
     headingDim: "기존 운동앱 월 19,800원",
-    headingBright: "오운잘은 월 6,900원",
+    headingBright: "오운잘은 월 1,900원",
     sub: "로그인하고 무료 체험. 결정은 그 다음에.",
     free: {
       name: "무료 체험",
@@ -126,9 +126,9 @@ const ko: LandingTexts = {
       name: "프리미엄",
       desc: "모든 기능 무제한",
       priceOld: "9,900원",
-      price: "6,900원",
+      price: "1,900원",
       unit: "/월",
-      discount: "30% 할인",
+      discount: "80% 할인",
       features: [
         "AI 운동 플랜 무제한",
         "세션별 AI 분석 리포트",
@@ -222,7 +222,7 @@ const en: LandingTexts = {
   pricing: {
     label: "PRICING",
     headingDim: "Other fitness apps: $15.99/mo",
-    headingBright: "Ohunjal: $4.99/mo",
+    headingBright: "Ohunjal: $1.99/mo",
     sub: "Sign in for a free trial. Decide later.",
     free: {
       name: "Free Trial",
@@ -236,9 +236,9 @@ const en: LandingTexts = {
       name: "Premium",
       desc: "Everything, unlimited",
       priceOld: "$7.99",
-      price: "$4.99",
+      price: "$1.99",
       unit: "/mo",
-      discount: "30% off",
+      discount: "75% off",
       features: [
         "Unlimited AI workout plans",
         "AI analysis report per session",

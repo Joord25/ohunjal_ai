@@ -4,7 +4,8 @@ import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, db } from "../helpers";
 
 const PORTONE_API_BASE = "https://api.portone.io";
-const SUBSCRIPTION_AMOUNT = 6900; // 회의 ζ-5-A 이전 default — 클라이언트가 amount 안 보내면 fallback.
+// 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900. 클라이언트가 amount 안 보내면 fallback.
+const SUBSCRIPTION_AMOUNT = 1900;
 
 // 회의 ζ-5-A (2026-04-30): 가격 실험 — 6 tier 허용 amount.
 const ALLOWED_TIER_AMOUNTS = new Set<number>([990, 1900, 2900, 3900, 4900, 5900, 6900]);

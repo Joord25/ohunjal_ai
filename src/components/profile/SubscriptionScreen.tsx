@@ -450,9 +450,9 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
     return () => { cancelled = true; };
   }, [user?.uid, initialStatus]);
 
-  const tierKrwAmount = tier ? KRW_BY_TIER[tier] : 6900;
-  const tierUsdAmount = tier ? USD_BY_TIER[tier] : 4.99;
-  const tierPriceLabel = tier ? formatPriceForLocale(tier, locale === "ko" ? "ko" : "en") : (locale === "ko" ? "₩6,900" : "$4.99");
+  const tierKrwAmount = tier ? KRW_BY_TIER[tier] : 1900;
+  const tierUsdAmount = tier ? USD_BY_TIER[tier] : 1.99;
+  const tierPriceLabel = tier ? formatPriceForLocale(tier, locale === "ko" ? "ko" : "en") : (locale === "ko" ? "₩1,900" : "$1.99");
 
   useEffect(() => {
     if (!paddleDisabled || !user?.uid) return;
@@ -502,7 +502,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
       const data = await serverRes.json().catch(() => ({} as { paymentId?: string; amount?: number; plan?: string; currency?: string }));
       trackEvent("purchase", {
         transaction_id: data.paymentId || "",
-        value: data.amount || 6900,
+        value: data.amount || 1900,
         currency: data.currency || "KRW",
         plan: data.plan || "monthly",
         payment_method: "kakaopay",
@@ -546,7 +546,7 @@ export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = ({ user, on
     if (paddleSuccess === "1" && !sessionStorage.getItem("paddle_success_processed")) {
       sessionStorage.setItem("paddle_success_processed", "1");
       window.history.replaceState({}, "", window.location.pathname);
-      trackEvent("purchase", { plan: "monthly", value: 4.99, currency: "USD", payment_method: "paddle" });
+      trackEvent("purchase", { plan: "monthly", value: 1.99, currency: "USD", payment_method: "paddle" });
       // webhook 처리 여유 5초 후 재조회 (이벤트 → Firestore 반영 latency 대비)
       setTimeout(() => checkSubscription(), 5000);
     } else if (paddleSuccess) {

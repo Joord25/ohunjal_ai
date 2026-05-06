@@ -4,7 +4,9 @@ import crypto from "crypto";
 import { db } from "../helpers";
 
 const PORTONE_API_BASE = "https://api.portone.io";
-const SUBSCRIPTION_AMOUNT = 6900;
+// 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900 으로 고정. 기존 6,900원 결제자도
+// 다음 갱신 사이클부터 1,900원 청구 (대표 A안 결정 — 모두 인하).
+const SUBSCRIPTION_AMOUNT = 1900;
 const RENEW_WINDOW_HOURS = 6;
 
 /**

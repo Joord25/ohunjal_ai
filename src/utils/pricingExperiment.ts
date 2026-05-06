@@ -31,34 +31,26 @@ export type PricingTier = "t1" | "t2" | "t3" | "t4" | "t5" | "t6";
 
 const TIERS: PricingTier[] = ["t1", "t2", "t3", "t4", "t5", "t6"];
 
+// 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900 / $1.99 로 고정.
+// tier 시스템 골격은 보존 (재실험 시 매트릭스만 복구하면 됨).
+const FIXED_KRW = 1900;
+const FIXED_USD = 1.99;
+const FIXED_PADDLE_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRICE_199 ?? "";
+
 /** 한국 KRW 가격 — PortOne 결제 amount 로 직접 사용 */
 export const KRW_BY_TIER: Record<PricingTier, number> = {
-  t1: 990,
-  t2: 1900,
-  t3: 2900,
-  t4: 3900,
-  t5: 4900,
-  t6: 5900,
+  t1: FIXED_KRW, t2: FIXED_KRW, t3: FIXED_KRW, t4: FIXED_KRW, t5: FIXED_KRW, t6: FIXED_KRW,
 };
 
 /** 해외 USD 가격 — UI 표시용 (실제 결제는 Paddle Price ID 통해) */
 export const USD_BY_TIER: Record<PricingTier, number> = {
-  t1: 1.99,
-  t2: 2.99,
-  t3: 3.99,
-  t4: 4.99,
-  t5: 5.99,
-  t6: 6.99,
+  t1: FIXED_USD, t2: FIXED_USD, t3: FIXED_USD, t4: FIXED_USD, t5: FIXED_USD, t6: FIXED_USD,
 };
 
-/** Paddle Price ID — env 에서 6개 읽음 */
+/** Paddle Price ID — 단일 가격 고정 ($1.99) */
 const PADDLE_PRICE_ID_BY_TIER: Record<PricingTier, string> = {
-  t1: process.env.NEXT_PUBLIC_PADDLE_PRICE_199 ?? "",
-  t2: process.env.NEXT_PUBLIC_PADDLE_PRICE_299 ?? "",
-  t3: process.env.NEXT_PUBLIC_PADDLE_PRICE_399 ?? "",
-  t4: process.env.NEXT_PUBLIC_PADDLE_PRICE_499 ?? "",
-  t5: process.env.NEXT_PUBLIC_PADDLE_PRICE_599 ?? "",
-  t6: process.env.NEXT_PUBLIC_PADDLE_PRICE_699 ?? "",
+  t1: FIXED_PADDLE_PRICE_ID, t2: FIXED_PADDLE_PRICE_ID, t3: FIXED_PADDLE_PRICE_ID,
+  t4: FIXED_PADDLE_PRICE_ID, t5: FIXED_PADDLE_PRICE_ID, t6: FIXED_PADDLE_PRICE_ID,
 };
 
 export function getPaddlePriceIdForTier(tier: PricingTier): string {
