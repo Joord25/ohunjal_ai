@@ -971,7 +971,7 @@ export default function AdminPage() {
                 {/* 회의 ζ-5-A (2026-04-30): 유저 행동 퍼널 폐기 → 가격 실험 대시보드로 교체 */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="font-bold text-[#1B4332]">가격 실험 (SEED-002 ζ-5-A)</p>
+                    <p className="font-bold text-[#1B4332]">방문자당 수익 (RPV)</p>
                     <button
                       onClick={loadPricingStats}
                       disabled={pricingLoading}
