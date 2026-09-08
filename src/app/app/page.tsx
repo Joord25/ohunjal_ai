@@ -932,7 +932,7 @@ export default function Home() {
                 }}
                 className="w-full py-3 rounded-xl bg-[#1B4332] text-white text-[13px] font-bold active:scale-[0.97] transition-all hover:bg-[#2D6A4F]"
               >
-                {(typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en") ? "Unlock Premium · 6,900 KRW/mo" : "프리미엄 시작 · 월 6,900원"}
+                {(typeof window !== "undefined" && localStorage.getItem("ohunjal_language") === "en") ? "Unlock Premium · $4.99/mo" : "프리미엄 시작 · 월 4,900원"}
               </button>
             </div>
           </div>

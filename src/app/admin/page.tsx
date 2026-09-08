@@ -981,7 +981,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mb-4">
-                    가격 실험 종료 (2026-05-06) — 단일 가격 ₩1,900 / $1.99 고정. KO/EN 2행 집계. 과거 tier 할당 데이터는 보존됨.
+                    가격 개정 (2026-09-08) — 단일 가격 ₩4,900 / $4.99. KO/EN 2행 집계. 과거 tier 할당 데이터는 보존됨.
                   </p>
 
                   {!pricingStats && (
@@ -1016,13 +1016,13 @@ export default function AdminPage() {
                           <thead className="bg-gray-100 text-gray-600">
                             <tr>
                               <th className="text-left p-2">
-                                <InfoTooltip label="Tier" tip="가격 실험 종료 후 단일 가격 — 'all' 로 표시 (₩1,900 / $1.99)." />
+                                <InfoTooltip label="Tier" tip="단일 가격 — 'all' 로 표시 (₩4,900 / $4.99)." />
                               </th>
                               <th className="text-left p-2">
                                 <InfoTooltip label="Locale" tip="KO=한국어 유저(KRW · PortOne 카카오페이) / EN=해외 유저(USD · Paddle)." />
                               </th>
                               <th className="text-right p-2">
-                                <InfoTooltip label="가격" tip="단일 가격 — KO ₩1,900 / EN $1.99. 월간 구독료." />
+                                <InfoTooltip label="가격" tip="단일 가격 — KO ₩4,900 / EN $4.99. 월간 구독료." />
                               </th>
                               <th className="text-right p-2">
                                 <InfoTooltip label="할당" tip="이 locale 의 고유 유저 수 (가입 후 paywall 진입 경험)." />

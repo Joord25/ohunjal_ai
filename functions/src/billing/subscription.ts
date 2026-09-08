@@ -4,11 +4,11 @@ import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuth, db } from "../helpers";
 
 const PORTONE_API_BASE = "https://api.portone.io";
-// 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900. 클라이언트가 amount 안 보내면 fallback.
-const SUBSCRIPTION_AMOUNT = 1900;
-
-// 회의 ζ-5-A (2026-04-30): 가격 실험 — 6 tier 허용 amount.
-const ALLOWED_TIER_AMOUNTS = new Set<number>([990, 1900, 2900, 3900, 4900, 5900, 6900]);
+// 가격 개정 (2026-09-08): 할인 실험(₩1,900) 종료 → 신규 구독 ₩4,900.
+// 청구 금액은 항상 서버가 결정한다 (클라이언트 amount 는 무시).
+// 기존 구독자는 이 값의 영향을 받지 않는다 — 갱신은 lockedPriceKrw 기준
+// (renewPortOneSubscriptions.ts 의 resolveRenewalAmount 참고).
+const LIST_PRICE_KRW = 4900;
 
 function getPortOneSecret(): string {
   const secret = process.env.PORTONE_API_SECRET;
@@ -52,11 +52,11 @@ export const subscribe = onRequest(
         } catch (e) { console.warn("pricing_experiments tier lookup failed:", e); }
       }
 
-      const TIER_KRW: Record<string, number> = { t1: 990, t2: 1900, t3: 2900, t4: 3900, t5: 4900, t6: 5900 };
-      // amount 결정 우선순위: (1) 클라가 화이트리스트 amount 보냄 (2) 서버 조회 tier 가격 (3) fallback 6900
-      const subscriptionAmount = (typeof amountFromClient === "number" && ALLOWED_TIER_AMOUNTS.has(amountFromClient))
-        ? amountFromClient
-        : (tierLabel && TIER_KRW[tierLabel] ? TIER_KRW[tierLabel] : SUBSCRIPTION_AMOUNT);
+      // 정가 복귀 (2026-09-08): 신규 구독은 항상 LIST_PRICE_KRW. tierLabel 은 experimentTier 기록용으로만
+      // 유지하고, 청구 금액은 tier/클라 amount 와 무관하게 항상 서버 상수.
+      // (과거: 서버 TIER_KRW 잔재로 모바일 redirect 흐름(amount 누락) 시 t4=3,900원 등이 청구되던 누수 차단.)
+      void amountFromClient;
+      const subscriptionAmount = LIST_PRICE_KRW;
       const subRef = db.collection("subscriptions").doc(uid);
 
       // 0. Atomic pre-check via transaction — prevent race conditions & duplicate charges
@@ -168,6 +168,11 @@ export const subscribe = onRequest(
         plan: "monthly",
         amount: subscriptionAmount,
         currency: "KRW",
+        // 정가 복귀 (2026-09-08): 가입 시점 가격을 문서에 고정. 갱신 크론이 이 값으로 청구하므로
+        // 이후 정가가 또 바뀌어도 이 구독자는 가입 당시 가격을 유지한다.
+        lockedPriceKrw: subscriptionAmount,
+        priceLockedAt: new Date().toISOString(),
+        priceLockReason: "signup",
         lastPaymentId: paymentId,
         lastPaymentAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
@@ -268,7 +273,7 @@ export const getSubscription = onRequest(
         const createdAtDate = data.createdAt?.toDate?.() || new Date(data.lastPaymentAt);
         await subRef.collection("payments").doc(data.lastPaymentId).set({
           paymentId: data.lastPaymentId,
-          amount: data.amount || 9900,
+          amount: data.amount || data.lockedPriceKrw || LIST_PRICE_KRW,
           plan: data.plan || "monthly",
           status: "paid",
           paidAt: data.lastPaymentAt,

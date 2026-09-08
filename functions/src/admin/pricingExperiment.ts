@@ -6,7 +6,7 @@ import { verifyAdmin, db } from "../helpers";
  * Admin only — pricing_experiments 컬렉션 집계 (locale 분리, 단일 가격).
  *
  * 회의 ζ-5-A (2026-04-30): 가격 실험 시작 (6 tier × 2 locale = 12행).
- * 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900 / $1.99 고정 → KO/EN 2행 합산.
+ * 가격 개정 (2026-09-08): 단일 가격 ₩4,900 / $4.99 → KO/EN 2행 합산.
  * 과거 tier 할당 데이터는 컬렉션에 보존, 집계만 locale 차원으로 단순화.
  *
  * Response:
@@ -19,8 +19,8 @@ import { verifyAdmin, db } from "../helpers";
  * }
  */
 
-const FIXED_KRW = 1900;
-const FIXED_USD = 1.99;
+const FIXED_KRW = 4900;
+const FIXED_USD = 4.99;
 const LOCALES = ["ko", "en"] as const;
 const USD_TO_KRW = 1400;
 

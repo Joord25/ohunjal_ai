@@ -139,7 +139,7 @@ export default function RootLayout({
               "featureList": "체중감량 루틴, 홈트레이닝, 러닝 프로그램, 분할운동, AI 맞춤 추천, 운동 기록, 성장 분석",
               "offers": {
                 "@type": "Offer",
-                "price": "6900",
+                "price": "4900",
                 "priceCurrency": "KRW",
                 "description": "프리미엄 월간 구독 (초기 특가)"
               },
@@ -274,7 +274,7 @@ export default function RootLayout({
             <h3>운동 종류</h3>
             <p>스쿼트, 벤치프레스, 데드리프트, 오버헤드프레스, 바벨로우, 풀업, 딥스, 런지, 레그프레스, 케이블 운동 등 100가지 이상의 운동을 지원합니다.</p>
             <h3>요금</h3>
-            <p>무료 플랜: 하루 3회 AI 플랜 생성 / 프리미엄: 월 6,900원 (초기 특가)</p>
+            <p>무료 플랜: 하루 3회 AI 플랜 생성 / 프리미엄: 월 4,900원 (초기 특가)</p>
             <p>사업자: 주드(Joord) | 대표: 임주용 | 사업자등록번호: 623-36-01460</p>
           </div>
         </noscript>

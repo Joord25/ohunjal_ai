@@ -31,11 +31,11 @@ export type PricingTier = "t1" | "t2" | "t3" | "t4" | "t5" | "t6";
 
 const TIERS: PricingTier[] = ["t1", "t2", "t3", "t4", "t5", "t6"];
 
-// 가격 실험 종료 (2026-05-06): 단일 가격 ₩1,900 / $1.99 로 고정.
+// 가격 개정 (2026-09-08): 단일 가격 ₩4,900 / $4.99. (2026-05-06~09-08 할인 실험 ₩1,900 종료)
 // tier 시스템 골격은 보존 (재실험 시 매트릭스만 복구하면 됨).
-const FIXED_KRW = 1900;
-const FIXED_USD = 1.99;
-const FIXED_PADDLE_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRICE_199 ?? "";
+const FIXED_KRW = 4900;
+const FIXED_USD = 4.99;
+const FIXED_PADDLE_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRICE_499 ?? "";
 
 /** 한국 KRW 가격 — PortOne 결제 amount 로 직접 사용 */
 export const KRW_BY_TIER: Record<PricingTier, number> = {
@@ -47,7 +47,7 @@ export const USD_BY_TIER: Record<PricingTier, number> = {
   t1: FIXED_USD, t2: FIXED_USD, t3: FIXED_USD, t4: FIXED_USD, t5: FIXED_USD, t6: FIXED_USD,
 };
 
-/** Paddle Price ID — 단일 가격 고정 ($1.99) */
+/** Paddle Price ID — 단일 가격 고정 ($4.99) */
 const PADDLE_PRICE_ID_BY_TIER: Record<PricingTier, string> = {
   t1: FIXED_PADDLE_PRICE_ID, t2: FIXED_PADDLE_PRICE_ID, t3: FIXED_PADDLE_PRICE_ID,
   t4: FIXED_PADDLE_PRICE_ID, t5: FIXED_PADDLE_PRICE_ID, t6: FIXED_PADDLE_PRICE_ID,
@@ -141,7 +141,7 @@ export async function recordPaywallPaid(
   trackEvent("pricing_experiment_paid", { tier, amount, currency, provider });
 }
 
-/** 표시용: locale 기반 가격 문자열 ("₩2,900" / "$2.99") */
+/** 표시용: locale 기반 가격 문자열 ("₩4,900" / "$4.99") */
 export function formatPriceForLocale(tier: PricingTier, locale: "ko" | "en"): string {
   if (locale === "ko") {
     return `₩${KRW_BY_TIER[tier].toLocaleString("ko-KR")}`;

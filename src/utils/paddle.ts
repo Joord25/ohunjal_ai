@@ -23,9 +23,9 @@ export async function getPaddle(): Promise<Paddle | null> {
 }
 
 export function getPaddleMonthlyPriceId(): string {
-  // 가격 실험 종료 (2026-05-06): PADDLE_PRICE_MONTHLY env 가 archived $4.99 Price ID 가리킬 수 있음
-  // → PRICE_199 우선 사용 (단일 활성 가격), MONTHLY 는 backup.
-  return process.env.NEXT_PUBLIC_PADDLE_PRICE_199 || process.env.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY || "";
+  // 가격 개정 (2026-09-08): 단일 가격 $4.99 → PRICE_499 우선 사용.
+  // MONTHLY 는 backup (구 계약 잔재라 값이 어긋날 수 있음).
+  return process.env.NEXT_PUBLIC_PADDLE_PRICE_499 || process.env.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY || "";
 }
 
 /**
