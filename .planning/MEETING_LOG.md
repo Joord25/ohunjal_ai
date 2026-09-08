@@ -4832,3 +4832,63 @@ push는 Phase B/C 끝난 후 일괄. 단독 push 시 PADDLE_API_KEY 미등록 �
 6. `docs(claude-md): Paddle 환경변수 + functions secrets 명시`
 
 push는 Phase E (Paddle 본인 카드 검증) 통과 후 일괄.
+
+---
+
+## 회의 65 (2026-09-08) — 랜딩 FAQ 전면 재작성 + 허위 카피 제거
+
+**발단:** 대표 — FAQ 1~5번이 아쉽다. 원프레딕트 윤병동 대표(지식인초대석 CEO EP.6)의
+"소모성 데이터 → 자산성 데이터" 프레임이 본인 생각과 동일하니 FAQ에 연결해달라.
+
+**자문 프레임 (출처 확인):**
+- 윤병동: 제조 현장 데이터 대부분이 "한 번 쓰고 사라지는 소모성 데이터". AI 학습을 위해
+  생산이력·품질결과·작업자 판단 등 맥락이 담긴 "자산성 데이터"로 전환 필요.
+- "AI 모델만으로는 복잡성 해석 불가 → 산업 도메인 지식을 데이터에 접목"
+- 출처: industrynews.co.kr/articleView.html?idxno=60893, hellot.net/article.html?no=114498
+
+**근본 원인 (기존 FAQ 문제):**
+1. 시간 축 부재 — 5개 전부 "지금 좋다" 주장, "쓸수록 좋아진다" 0줄. 월 구독인데 축적 서사 없음
+2. 차별점이 "개인화"에 머묾 — 2026년 방어 불가 (ChatGPT도 개인화)
+3. "10명 중 9명" 3·4번 중복, 출처 불명
+4. 5번은 FAQ 아닌 가격표 (pricing 섹션 중복)
+
+**⚠ 허위 카피 발견 (대표 지적 → 코드 검증으로 확인):**
+- **Q3 "통증 부위를 말하면 관절에 무리 없는 대체 동작 제안"은 거짓.**
+  `UserCondition` = bodyPart/energyLevel/availableTime/체중/성별/출생연도/recentGymFrequency/pushupLevel.
+  **통증·부상 입력 채널 자체가 없음.** KO/EN 양쪽 모두 나가 있었음 → 삭제.
+- **Q1 초안의 "실패 세트·컨디션·교체 요청이 다음 세션 설계에 들어간다"도 거짓.**
+  `generateAdaptiveWorkout(dayIndex, condition, goal, selectedSessionType, intensityOverride,
+  sessionMode, targetMuscle, runType, lastUpperType, equipment, exerciseList, muscleGroup)`
+  — **히스토리 파라미터 없음.** 히스토리 파생 입력은 `lastUpperType`(push/pull 순환) 하나뿐.
+
+**히스토리를 실제로 읽는 곳 (자산성 데이터가 작동하는 범위):**
+- 성장 예측·레벨 분석 `computeReading(profile, workoutCount, workoutHistory, weightLog)`
+- 세션 분석 리포트 / AI 코치 메시지
+- 종목별 마지막 중량 `ohunjal_weight_{name}` → 다음 세션 시작 무게 (FitScreen.getStoredWeight)
+- 러닝 프로그램 게이트 (8주 GPS 자동 집계)
+→ **플랜 생성 엔진만 안 읽음.** 자산성 데이터 서사가 제품보다 반 발짝 앞서 있음.
+
+**무료 한도 검증:**
+- 코드: `session.ts:30 FREE_PLAN_LIMIT = 1` / `savedPlans.ts FREE_LIMIT=1, PREMIUM_LIMIT=5` /
+  영양 프리미엄 하드락 403. 게스트 분기는 회의 ζ-5-A P1-4에서 폐기(로그인 필수).
+- ⚠ `CURRENT_STATE.md` 는 "비로그인 1회 + 무료 2회"로 기재 — **드리프트**. `admin.ts:442`
+  주석도 `FREE_PLAN_LIMIT=2`로 낡음. 미수정.
+
+**결정 — FAQ 6개 → 5개 재편 (ko/en 동시):**
+| # | 질문 | 역할 |
+|---|---|---|
+| 1 | 운동 기록 앱·유튜브와 뭐가 다른가 | 소모성 vs 자산성 도입. "기록이 해석돼서 돌아옵니다" |
+| 2 | 무료로 어디까지 | 실제 한도(1회/1개) 명시 + 프리미엄 근거를 축적으로 설명 |
+| 3 | AI 운동 안전한가 | 허위 제거. 실기능만 — 자세 큐 / ACSM 권장휴식 / 컨디션 기반 강도 / 유저 주도 교체 |
+| 4 | PT와 비교 | 맞춤을 앞세우고 차별점은 소모 vs 자산 (대표 지시) |
+| 5 | 결제·해지·환불·데이터 | 기존 6번 이동 (대표 지시) |
+- 삭제: 의지력 질문 (대표 — "우리가 할 수 없는 것")
+- 삭제: "10명 중 9명" 수치 (중복 + 출처 미확보, 표시광고법 입증 부담)
+- EN은 직역 아닌 현지 광고 문법으로 재작성 (feedback_native_copy_frame)
+
+**파일:** `src/app/landing/landingTexts.ts` (ko.faq.items, en.faq.items)
+
+**미해결 과제:**
+1. 플랜 엔진에 workoutHistory 주입 여부 — 하면 Q1을 원안("다음 세션 설계에 반영")대로 쓸 수 있음
+2. `CURRENT_STATE.md` 무료 한도 기재 정정 + `admin.ts:442` 주석 정정
+3. 랜딩 `priceOld: 9,900원` + `50% 할인` 표기의 실판매 이력 확보 여부 (표시광고법)

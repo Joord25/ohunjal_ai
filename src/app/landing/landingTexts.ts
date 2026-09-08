@@ -143,24 +143,20 @@ const ko: LandingTexts = {
     title: "자주 묻는 질문",
     items: [
       {
-        q: "유튜브·인스타 루틴 따라 하는 거랑 뭐가 달라요?",
-        a: "유튜브 루틴은 '누구에게나' 해당하지만, 오운잘은 '오늘의 당신'에게만 맞춥니다. 컨디션 안 좋은 날엔 강도를 낮추고, 시간 부족한 날엔 핵심만 압축해요. 수만 명이 보는 고정 영상이 아니라, 실시간 대화로 나에게 딱 맞는 루틴을 **3초 만에** 받습니다.",
+        q: "운동 기록 앱, 유튜브 루틴 다 써봤는데 뭐가 달라요?",
+        a: "대부분의 앱에서 기록은 **저장되고 끝납니다.** 스쿼트 60kg 10회를 적어도 그 숫자가 나에게 돌아오는 건 없어요. 유튜브 영상은 아예 내가 뭘 했는지 모르고요. 쓰고 버려지는 데이터입니다. 오운잘에서는 그 기록이 세션 리포트로 해석되고, 성장 예측의 재료가 되고, AI 코치가 읽고 말을 겁니다. 종목별로 마지막에 든 무게도 기억해서 다음엔 거기서 시작해요. **기록이 쌓이는 게 아니라, 기록이 해석돼서 돌아옵니다.**",
       },
       {
-        q: "AI가 짜준 루틴, 믿고 따라 해도 안전한가요?",
-        a: "단순 텍스트 생성이 아닙니다. 국제 운동 가이드라인 **ACSM·NASM**과 **한체대** 운동과학 박사진 검수를 거친 알고리즘으로 설계됐어요. 부상·통증 부위를 말하면 해당 관절에 무리 가지 않는 대체 동작을 즉시 제안합니다.",
+        q: "무료로는 어디까지 써볼 수 있나요?",
+        a: "로그인하면 AI 운동 플랜을 **1회** 만들어볼 수 있어요. 어떤 방식으로 묻고 어떤 루틴이 나오는지, 결이 맞는지 확인하는 용도입니다. 플랜 저장도 1개까지 되고요. 세션 리포트, 성장 예측, AI 영양 코치처럼 **기록이 쌓여야 의미가 생기는 기능**은 프리미엄에 있습니다. 한 번 써보고 판단할 수 있는 건 취향이고, 데이터가 나에게 돌아오는 경험은 쌓여야 보이거든요.",
       },
       {
-        q: "PT 받기엔 비싸고 혼자 하긴 막막한데, 도움이 될까요?",
-        a: "바로 그런 분들을 위해 탄생했습니다. 회당 평균 **5~8만 원** 하는 PT가 부담스럽다면, 월 커피 한 잔 값으로 24시간 대기하는 AI 코치를 고용하세요. 뭘 할지 고민하는 시간은 0초로 줄이고, 이미 **10명 중 9명**의 유저가 루틴 완주에 성공 중입니다.",
+        q: "AI가 짜준 운동, 믿고 따라 해도 되나요?",
+        a: "오운잘의 AI는 문장을 만드는 게 아니라 **처방을 계산합니다.** 국제 가이드라인 **ACSM·NASM**과 **한체대** 운동과학 박사진 검수를 거친 규칙 위에서 돌아가고, 현장에서 회원을 가르치는 트레이너가 설계에 직접 참여했어요. 운동마다 자세 큐가 따라붙고, 세트 사이 휴식도 ACSM 권장값을 그대로 보여줍니다. 그날 몸 상태와 에너지를 입력하면 강도와 세트 수가 거기 맞춰 조정되고, 부담되는 동작은 같은 근육군의 다른 운동으로 **직접 바꿀 수 있어요.**",
       },
       {
-        q: "운동 의지가 약해서 금방 포기할까 봐 걱정돼요.",
-        a: "오운잘은 당신의 의지력에만 의존하지 않습니다. AI 코치가 매 세션 컨디션을 체크하고 \"어제보다 성장했네요\"라며 소통해요. 유저 **10명 중 9명**이 루틴을 끝까지 완수하는 비결은, 나를 지켜봐 주는 AI 코치가 함께하기 때문입니다.",
-      },
-      {
-        q: "무료로 충분한가요? 프리미엄은 뭐가 좋아요?",
-        a: "로그인하면 AI 운동 플랜 **1회 무료** 생성! 진짜 AI 코칭이 어떤 느낌인지 체험할 수 있어요. 프리미엄 구독시: 무제한 플랜, **장기 프로그램** 무제한 저장, AI 분석 리포트, **AI 영양 코치** 무제한 채팅, 성장 예측 리포트 전부 포함.",
+        q: "PT 받는 거랑 비교하면 어때요?",
+        a: "PT의 핵심은 **나에게 맞춘다**는 것입니다. 오운잘도 같은 걸 해요. 그날 컨디션, 가진 시간, 장비, 목표에 맞춰 매번 새로 짭니다. 차이는 그다음입니다. PT에서 오간 조정은 대부분 그 자리에서 소모되지만, 오운잘에서는 남아요. 내가 든 무게, 완주한 세션, 성장 추이가 계정에 **자산으로 쌓여서** 리포트와 예측으로 돌아옵니다. 회당 5~8만 원 대신 월 **4,900원**이라는 건 사실 두 번째 이유예요.",
       },
       {
         q: "결제 수단 / 구독 취소 / 환불 / 데이터 보호는?",
@@ -253,28 +249,24 @@ const en: LandingTexts = {
     title: "Frequently Asked Questions",
     items: [
       {
-        q: "How is this different from YouTube or Instagram routines?",
-        a: "YouTube routines are for 'anyone'. Ohunjal is for 'you, today'. Low-energy day? We drop intensity. No time? We compress to the essentials. Not a static video for millions — a custom routine built for you in **3 seconds**.",
+        q: "I have tried workout trackers and YouTube routines. What is different here?",
+        a: "In most apps your log is **where data goes to die.** You write down 60kg for 10 reps and nothing ever comes back. A YouTube video does not even know you exist. Ohunjal reads it instead: sessions become reports, reports become growth predictions, and your AI coach talks to you about what actually happened. It remembers the last weight you lifted on every exercise, so you start there next time. **Your log does not pile up. It comes back to you.**",
       },
       {
-        q: "Is the AI-built routine safe to follow?",
-        a: "It's not just text generation. The algorithm is built on **ACSM & NASM** international exercise guidelines and reviewed by KNSU exercise science PhDs. Mention an injury or pain and AI swaps in joint-safe alternatives on the spot.",
+        q: "How far can I get on the free plan?",
+        a: "Sign in and you can generate **1 AI plan** free, plus keep 1 saved plan. That is enough to see how it asks, what it builds, and whether the two of you get along. Session reports, growth predictions and the AI nutrition coach sit in Premium, because **those features need history to mean anything.** Taste you can judge in one session. Compounding you have to stack.",
       },
       {
-        q: "PT is too expensive and going solo feels lost — can this help?",
-        a: "Built for exactly that. If personal training at **$75–100/session** feels heavy, hire a 24/7 AI coach for the price of a coffee a month. Zero time wasted figuring out what to do — and **9 out of 10** users complete their routines.",
+        q: "Is an AI-built routine actually safe to follow?",
+        a: "Ohunjal AI does not write sentences. It **calculates prescriptions.** It runs on rules built from **ACSM and NASM** guidelines and reviewed by KNSU exercise science PhDs, designed hands-on by a trainer who coaches real clients. Every exercise carries form cues, and rest between sets shows the ACSM-recommended value. Tell it how your body feels and how much energy you have, and intensity and set count adjust to match. Anything that feels wrong, you **swap yourself** for another exercise in the same muscle group.",
       },
       {
-        q: "I'm worried I'll lose motivation and quit.",
-        a: "Ohunjal doesn't rely on your willpower alone. AI coach checks your condition every session and says \"You grew from yesterday\". The secret that **9 out of 10** users complete their routines: an AI coach that watches over you.",
-      },
-      {
-        q: "Is free enough? What does Premium add?",
-        a: "Sign in to **generate 1 AI plan free** and feel what real AI coaching is like. Premium subscription unlocks: unlimited plans, **unlimited long-term program saves**, AI analysis reports, **unlimited AI nutrition coach** chat, growth prediction reports.",
+        q: "How does this compare to a personal trainer?",
+        a: "A trainer's real job is **fitting the work to you**, and that is what Ohunjal does too, rebuilding every session around your condition, time, equipment and goal. The difference comes after. What a trainer adjusts in the room mostly disappears with the session. Here it stays: every weight, every completed session, every trend **compounds in your account** and returns as reports and predictions. Costing **$4.99/mo** instead of $75-100 a session is honestly the second reason.",
       },
       {
         q: "Payment, cancellation, refunds, data protection?",
-        a: "Pay by **card via Paddle** (international) or **KakaoPay** (Korea). **1-click cancel** in Profile. Refundable within 7 days if no AI plans were generated (KakaoPay 3-5 business days, Paddle 5-10 business days). All data encrypted on Google Cloud, never shared with third parties. Delete your account — all data permanently wiped.",
+        a: "Pay by **card via Paddle** (international) or **KakaoPay** (Korea). **1-click cancel** in Profile. Refundable within 7 days if no AI plans were generated (KakaoPay 3-5 business days, Paddle 5-10 business days). All data encrypted on Google Cloud, never shared with third parties. Delete your account and all data is permanently wiped.",
       },
     ],
   },
